@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CHAPTER_DIR = ROOT / "正文"
 READER = ROOT / "阅读器" / "镇冢秘术_全本阅读器.html"
-CANON_ID = "ZM-CANON-20260713-01"
+CANON_ID = "ZM-CANON-20260714-02"
 
 
 def cn_to_int(value: str) -> int:
@@ -122,21 +122,26 @@ def build_reader(original: str, chapters: list[dict[str, object]]) -> str:
 
     total = sum(int(chapter["char_count"]) for chapter in chapters)
     count = len(chapters)
-    result = re.sub(
-        r'<div class="desc">.*?</div><div class="meta">',
+    result, cover_hits = re.subn(
+        r'<div class="desc">.*?</div><div class="meta"(?:\s+data-canon-id="[^"]*")?>',
         '<div class="desc">给爷爷守灵那夜，我在自家地窖里，<br>'
-        '撞见一具躺了两千年、周身之气却仍在呼吸的秦衣古尸。<br>'
+        '撞见一具身着秦衣、经久不腐、周身之气却仍在呼吸的古尸。<br>'
         '它手中的血图，正指向我即将采访的柏冢。</div>'
         f'<div class="meta" data-canon-id="{CANON_ID}">',
         result,
         count=1,
         flags=re.S,
     )
+    if cover_hits != 1:
+        raise ValueError("阅读器封面简介或 meta 标签缺失／重复")
+
     def stamp_html(match: re.Match[str]) -> str:
         tag = re.sub(r'\s+data-canon-id="[^"]*"', '', match.group(0))
         return f'{tag[:-1]} data-canon-id="{CANON_ID}">'
 
-    result = re.sub(r'<html\b[^>]*>', stamp_html, result, count=1)
+    result, html_hits = re.subn(r'<html\b[^>]*>', stamp_html, result, count=1)
+    if html_hits != 1:
+        raise ValueError("阅读器 html 根标签缺失")
     result = re.sub(
         r"共 [\d,]+ 字 · 约 [\d.]+ 万字",
         f"共 {total:,} 字 · 约 {total / 10000:.1f} 万字",
@@ -149,6 +154,9 @@ def build_reader(original: str, chapters: list[dict[str, object]]) -> str:
         result,
         count=1,
     )
+    canon_stamps = re.findall(r'data-canon-id="([^"]+)"', result)
+    if len(canon_stamps) < 2 or set(canon_stamps) != {CANON_ID}:
+        raise ValueError(f"阅读器 CANON-ID 未统一：{canon_stamps}")
     return result
 
 

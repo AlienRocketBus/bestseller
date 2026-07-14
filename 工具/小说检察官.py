@@ -11,9 +11,9 @@
 常用命令：
   python3 工具/小说检察官.py             # 全部现有章节
   python3 工具/小说检察官.py 71          # 第71章（文件存在时）
-  python3 工具/小说检察官.py --开拍 71   # 从当前最后一章生成写前简报
+  python3 工具/小说检察官.py --开拍 72   # 从当前最后一章生成写前简报
   python3 工具/小说检察官.py --selftest  # 规则自检 + 项目接线自检
-  python3 工具/小说检察官.py --doctor    # 只查路径/canon/章号连续性
+  python3 工具/小说检察官.py --doctor    # 查路径/canon/章号/文档/阅读器接线
 
 正文修改后先运行 `python3 工具/同步全本阅读器.py`，再运行检察官；检察官本身
 只做阅读器 `--check`，不会自动改 HTML。
@@ -44,6 +44,8 @@ REPO_ROOT = _discover_repo_root()
 CHAPTER_DIR = os.path.join(REPO_ROOT, '正文')
 CANON_PATH = os.path.join(REPO_ROOT, '设定', 'canon事实库.json')
 MASTER_CANON_PATH = os.path.join(REPO_ROOT, '设定', '00_镇冢秘术_唯一总圣经.md')
+BUILD_TABLE_PATH = os.path.join(REPO_ROOT, '设定', '01_镇冢秘术_逐章施工与伏笔回收表.md')
+README_PATH = os.path.join(REPO_ROOT, 'README.md')
 EXPECTED_CANON_ID = 'ZM-CANON-20260714-02'
 EXPECTED_MASTER_REL = '设定/00_镇冢秘术_唯一总圣经.md'
 EXPECTED_AUTHORITY_ORDER = [
@@ -56,6 +58,21 @@ EXPECTED_ACTIVE_INPUTS = [
     '设定/01_镇冢秘术_逐章施工与伏笔回收表.md',
     '设定/canon事实库.json',
 ]
+# 代码侧独立开拍契约：JSON 只能提供卡片内容，不能靠缩短
+# required_state_cards 自行取消应有的人物／道具／证据／进度类别。
+# 写完下一章后，必须在这里同步新的开拍契约，否则 doctor 拒绝放行。
+OPEN_BRIEF_CARD_SCHEMA = {
+    72: (
+        '她·伤情',
+        '苏衍·青溪白光后伤情',
+        '老头·第72章入岭即时状态',
+        '钱满·第72章入岭即时状态',
+        '队伍·第72章道具与知情边界',
+        '青溪·第71章证据链',
+        '青溪·第72章进岭时钟与撤退线',
+        'E3·有意识校准进度',
+    ),
+}
 PROMPT_PATH = os.path.join(REPO_ROOT, '工具', '镇冢秘术_防前后矛盾提示词系统.md')
 READER_SYNC = os.path.join(REPO_ROOT, '工具', '同步全本阅读器.py')
 DENSE = 5  # 单句逗号 >= 这个数,算"顿得偏碎"
@@ -707,19 +724,37 @@ def print_knowledge():
 
 _CN = {'零': 0, '〇': 0, '一': 1, '二': 2, '三': 3, '四': 4,
        '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+_CN_UNITS = {'十': 10, '百': 100, '千': 1000, '万': 10000}
 _FILLER = set('的了着过来去下上一这那是我你他她它就都也还又很在和与')
+
+
+def _cn_int(value):
+    """解析常见中文整数，覆盖本书规划所需的一至数百章。"""
+    if not value or any(ch not in _CN and ch not in _CN_UNITS for ch in value):
+        return None
+    total = section = digit = 0
+    for ch in value:
+        if ch in _CN:
+            digit = _CN[ch]
+            continue
+        unit = _CN_UNITS[ch]
+        if unit == 10000:
+            section = (section + digit) * unit
+            total += section
+            section = digit = 0
+        else:
+            section += (digit or 1) * unit
+            digit = 0
+    return total + section + digit
 
 
 def _chap_num(path):
     """从文件名里抽"第X章"的章节号(中文数字→整数),好按章节顺序排,而不是按汉字编码。"""
-    m = re.search(r'第([零〇一二三四五六七八九十]+)章', os.path.basename(path))
+    m = re.search(r'第([零〇一二三四五六七八九十百千万]+)章', os.path.basename(path))
     if not m:
         return 9999
-    s = m.group(1)
-    if '十' in s:
-        a, _, b = s.partition('十')
-        return (_CN.get(a, 1) if a else 1) * 10 + (_CN.get(b, 0) if b else 0)
-    return _CN.get(s, 9999) if len(s) == 1 else 9999
+    number = _cn_int(m.group(1))
+    return number if number is not None else 9999
 
 
 def _body(text):
@@ -727,7 +762,8 @@ def _body(text):
     keep = []
     for l in text.split('\n'):
         s = l.strip()
-        if s in ('《镇冢秘术》', '《望气》') or re.match(r'^第.{0,4}章', s):
+        if (s in ('《镇冢秘术》', '《望气》') or
+                re.match(r'^第[零〇一二三四五六七八九十百千万]+章', s)):
             continue
         keep.append(l)
     return '\n'.join(keep)
@@ -1347,7 +1383,7 @@ def briefing(files,lib,next_ch=None):
     print('  【永禁机制词】',','.join(lib['perm_forbidden']))
     print('  【债词回避(新章一律绕开)】',','.join(sorted({p for fa in lib["facts"] if fa.get("level")=="FYI" for p in fa["forbid"]})))
     print('  【硬规矩】破折号零;半角零;英文零;单句逗≤4(真排比登记豁免);单字爷禁;打[这那北南东西明今后小心进出]禁;禀报转折禁;十二时辰禁;年份=二〇〇六;年龄=二十三;折寿只写白发/浅纹;回述必贴原场;高潮必给足慢镜头,严禁省字。')
-    print('  【本轮因果钉】ch28禁入夏以来/时间回声；ch40北京=同日傍晚；ch57电视揭黎东来并收章、ch58沈鸢报姓名；ch13血图与尸身联锁；柏冢外围封控不蒸发；终局沈鸢断气后不可救，赵阙只能诱骗，苏衍只能保尸，老头送刀只为割绳。')
+    print('  【本轮因果钉】ch28禁入夏以来/时间回声；ch40北京=同日傍晚；ch57电视揭黎东来并收章、ch58沈鸢报姓名；ch13血图与尸身联锁；柏冢外围封控不蒸发；ch70定两日时钟→ch71完整准备并抵第一弯外→ch72必须从黑缝外接写；终局沈鸢断气后不可救，赵阙只能诱骗，苏衍只能保尸，老头送刀只为割绳。')
     print('  【流程】足量写→小说检察官 章号(ERROR=0)→AI回执→新canon入库→交付四件套。')
     print(LAWS_DIGEST)
     if next_ch: statecard(next_ch); foreshadow_report(slice_for=next_ch); print('  ▶ 战情简报: python3 工具/小说检察官.py --军师 '+str(next_ch)+'  (唯一剧情权威=00_镇冢秘术_唯一总圣经.md; CANON-ID='+EXPECTED_CANON_ID+')')
@@ -1372,6 +1408,69 @@ def reader_sync_check():
         return 1
     return 0
 
+
+def _validate_master_contract(master_text, latest, next_ch):
+    """总圣经的 ID、已写末章和下一章接写锚必须同时对上当前正文。"""
+    master_id=re.search(r'^>\s*\*\*CANON-ID：([^*]+)\*\*', master_text, re.M)
+    if not master_id or master_id.group(1).strip()!=EXPECTED_CANON_ID:
+        raise ValueError('唯一总圣经 CANON-ID 不匹配')
+    if not latest:
+        return
+    written=re.search(
+        r'^## 十一、已写 1—(\d+) 章的唯一事件链[ \t]*$',
+        master_text, re.M)
+    if not written or int(written.group(1))!=latest:
+        raise ValueError(f'唯一总圣经“已写 1—{latest} 章”末章锚未同步')
+    next_anchor=re.search(
+        rf'第\s*{next_ch}\s*章必须从[^\n。]{{1,160}}接写',
+        master_text)
+    if not next_anchor:
+        raise ValueError(f'唯一总圣经缺少第 {next_ch} 章“必须从…接写”锚')
+
+
+def _validate_open_brief_contract(raw, latest, next_ch):
+    """以代码侧 schema 审核开拍卡，防止 JSON 缩表后自证齐全。"""
+    expected=OPEN_BRIEF_CARD_SCHEMA.get(next_ch)
+    if not expected:
+        raise ValueError(f'检察官尚未登记第{next_ch}章代码侧开拍状态卡契约')
+    brief=raw.get('open_brief')
+    if not isinstance(brief,dict) or brief.get('for_ch')!=next_ch:
+        raise ValueError(f'开拍状态卡批次必须指向下一章第{next_ch}章')
+    required=brief.get('required_state_cards')
+    if not isinstance(required,list) or not required or not all(
+            isinstance(label,str) and label.strip() for label in required):
+        raise ValueError('open_brief.required_state_cards 缺失或无效')
+    duplicate_required=sorted(label for label,count in Counter(required).items() if count>1)
+    missing_contract=sorted(set(expected)-set(required))
+    extra_contract=sorted(set(required)-set(expected))
+    if duplicate_required or missing_contract or extra_contract:
+        details=[]
+        if missing_contract: details.append('缺类别='+','.join(missing_contract))
+        if extra_contract: details.append('多余='+','.join(extra_contract))
+        if duplicate_required: details.append('重复='+','.join(duplicate_required))
+        raise ValueError(f'第{next_ch}章开拍状态卡与代码侧契约不一致: '+'；'.join(details))
+
+    rows=raw.get('state_canon')
+    if not isinstance(rows,list):
+        raise ValueError('state_canon 不是列表')
+    labels=[x.get('what') for x in rows if isinstance(x,dict) and isinstance(x.get('what'),str)]
+    duplicate_rows=sorted(label for label,count in Counter(labels).items() if count>1)
+    if duplicate_rows:
+        raise ValueError('状态卡同名重复: '+','.join(duplicate_rows))
+    state_rows={x.get('what'):x for x in rows if isinstance(x,dict)}
+    missing_rows=sorted(set(expected)-set(state_rows))
+    if missing_rows:
+        raise ValueError(f'第{next_ch}章开拍状态卡不完整: '+','.join(missing_rows))
+    invalid=[]
+    for label in expected:
+        row=state_rows[label]
+        if (not isinstance(row.get('state'),str) or not row['state'].strip() or
+                type(row.get('from')) is not int or row['from']>latest):
+            invalid.append(label)
+    if invalid:
+        raise ValueError(f'第{next_ch}章状态卡内容／生效章无效: '+','.join(invalid))
+
+
 def project_doctor(files, check_reader=True):
     """检查真实项目接线，返回(总错误数, 阅读器错误数)。"""
     print('════ 项目接线医生 ════')
@@ -1381,14 +1480,15 @@ def project_doctor(files, check_reader=True):
     print(f'  CANON-ID: {EXPECTED_CANON_ID}')
     print(f'  canon: {CANON_PATH}')
     errors=0
+    latest=max(files,default=0)
+    next_ch=latest+1 if latest else 1
     if not _os.path.isfile(MASTER_CANON_PATH):
         print('  ✗ 唯一总圣经缺失'); errors+=1
     else:
         try:
             master_text=open(MASTER_CANON_PATH,encoding='utf-8').read()
-            if EXPECTED_CANON_ID not in master_text:
-                raise ValueError('唯一总圣经 CANON-ID 不匹配')
-            print('  ✓ 唯一总圣经可读，CANON-ID 匹配')
+            _validate_master_contract(master_text,latest,next_ch)
+            print(f'  ✓ 唯一总圣经可读，CANON-ID 与第{latest}→{next_ch}章锚匹配')
         except (OSError, ValueError) as exc:
             print(f'  ✗ 唯一总圣经无效: {exc}'); errors+=1
     if not _os.path.isfile(CANON_PATH):
@@ -1406,13 +1506,32 @@ def project_doctor(files, check_reader=True):
                 raise ValueError('权威序必须为总圣经→JSON镜像→未被推翻原场')
             if authority.get('active_inputs') != EXPECTED_ACTIVE_INPUTS:
                 raise ValueError('活动canon输入必须且只能是唯一总圣经＋施工表＋事实库')
+            _validate_open_brief_contract(raw,latest,next_ch)
             print(f'  ✓ 外部 canon 可读: {len(raw["facts"])} 条事实规则，CANON-ID与权威序匹配')
             print('  ✓ 活动设定输入已锁为3份；其余旧“终极／唯一／定稿／框架／闭环录／交接稿”不进入检察官')
+            print(f'  ✓ 第{next_ch}章开拍状态卡批次、内容与生效章齐全')
         except (OSError, ValueError, TypeError) as exc:
             print(f'  ✗ 外部 canon 无效: {exc}'); errors+=1
     raw_paths=glob.glob(_os.path.join(CHAPTER_DIR,'镇冢秘术_第*章_*.md'))
     nums=[_chap_num(p) for p in raw_paths]
     dup=sorted(n for n,c in Counter(nums).items() if n!=9999 and c>1)
+    bad_names=[p for p,n in zip(raw_paths,nums) if n==9999]
+    title_mismatches=[]
+    for path,number in zip(raw_paths,nums):
+        if number==9999:
+            continue
+        try:
+            source=open(path,encoding='utf-8').read()
+        except OSError:
+            title_mismatches.append(os.path.basename(path)+'（不可读）')
+            continue
+        title_match=re.search(
+            r'^第([零〇一二三四五六七八九十百千万]+)章(?:[\u3000 ]|$)',
+            source, re.M)
+        title_number=_cn_int(title_match.group(1)) if title_match else None
+        if title_number!=number:
+            title_mismatches.append(
+                f'{os.path.basename(path)}（文件={number},标题={title_number}）')
     if not files:
         print('  ✗ 正文章数=0；拒绝输出假全绿'); errors+=1
     else:
@@ -1426,10 +1545,97 @@ def project_doctor(files, check_reader=True):
             print('  ✓ 章号从1连续到'+str(max(files)))
         if dup:
             print('  ✗ 重复章号: '+','.join(map(str,dup))); errors+=1
+        if bad_names:
+            print('  ✗ 无法解析章号的正文文件: '+','.join(map(os.path.basename,bad_names))); errors+=1
+        if title_mismatches:
+            print('  ✗ 文件名章号与 Markdown 标题不一致: '+'；'.join(title_mismatches)); errors+=1
+
+    if files:
+        try:
+            readme=open(README_PATH,encoding='utf-8').read()
+            stage=re.search(r'第 1—(\d+) 章已经同步封版；第 (\d+) 章开写前',readme)
+            if not stage or tuple(map(int,stage.groups()))!=(latest,next_ch):
+                raise ValueError('README 当前章数／下一章未同步')
+            if f'CANON-ID `{EXPECTED_CANON_ID}`' not in readme:
+                raise ValueError('README CANON-ID 未同步')
+
+            build=open(BUILD_TABLE_PATH,encoding='utf-8').read()
+            build_id=re.search(r'^> \*\*配套 CANON-ID：`([^`]+)`',build,re.M)
+            if not build_id or build_id.group(1)!=EXPECTED_CANON_ID:
+                raise ValueError('施工表 CANON-ID 未同步')
+            if f'## 四、续写第 {next_ch} 章前的硬门槛' not in build:
+                raise ValueError('施工表下一章硬门槛未同步')
+            if not re.search(rf'^\| {latest} \|',build,re.M):
+                raise ValueError('施工表缺少当前末章行')
+
+            prompt=open(PROMPT_PATH,encoding='utf-8').read()
+            prompt_id=re.search(r'CANON-ID=`([^`]+)`',prompt)
+            if not prompt_id or prompt_id.group(1)!=EXPECTED_CANON_ID:
+                raise ValueError('提示词系统 CANON-ID 未同步')
+            if f'python3 工具/小说检察官.py --开拍 {next_ch}' not in prompt:
+                raise ValueError('提示词系统开拍章号未同步')
+
+            sync_source=open(READER_SYNC,encoding='utf-8').read()
+            sync_id=re.search(r'^CANON_ID\s*=\s*[\'\"]([^\'\"]+)[\'\"]',sync_source,re.M)
+            if not sync_id or sync_id.group(1)!=EXPECTED_CANON_ID:
+                raise ValueError('阅读器同步器 CANON-ID 未同步')
+            print(f'  ✓ README／施工表／提示词／同步器均指向第{latest}→{next_ch}章与同一 CANON-ID')
+        except (OSError, ValueError) as exc:
+            print(f'  ✗ 项目文档接线无效: {exc}'); errors+=1
     reader=reader_sync_check() if check_reader and files else 0
     errors+=reader
     print(f'  医生结论: ERROR={errors}'+('（可进入正文检查）' if errors==0 else '（不放行）'))
     return errors,reader
+
+
+def contract_negative_selftest(files):
+    """故障注入负测：缩卡表或漂移总圣经锚时，校验器必须拒绝。"""
+    print('════ 自检附加·开拍契约故障注入 ════')
+    if not files:
+        print('  ✗ 正文为空，无法构造章数契约负测')
+        return 0,3
+    latest=max(files)
+    next_ch=latest+1
+    try:
+        raw=_json.load(open(CANON_PATH,encoding='utf-8'))
+        master_text=open(MASTER_CANON_PATH,encoding='utf-8').read()
+    except (OSError,ValueError) as exc:
+        print(f'  ✗ 负测基线无法读取: {exc}')
+        return 0,3
+
+    shrunk=_json.loads(_json.dumps(raw,ensure_ascii=False))
+    required=shrunk.get('open_brief',{}).get('required_state_cards',[])
+    shrunk['open_brief']['required_state_cards']=required[:1]
+    stale_count,count_hits=re.subn(
+        rf'(^## 十一、已写 1—){latest}( 章的唯一事件链[ \t]*$)',
+        lambda match: match.group(1)+str(max(0,latest-1))+match.group(2),
+        master_text,count=1,flags=re.M)
+    stale_next,next_hits=re.subn(
+        rf'第\s*{next_ch}\s*章必须从',
+        f'第 {next_ch+1} 章必须从',
+        master_text,count=1)
+    cases=[
+        ('JSON必需状态卡缩成1张', True,
+         lambda: _validate_open_brief_contract(shrunk,latest,next_ch)),
+        ('总圣经已写末章倒退1章', count_hits==1,
+         lambda: _validate_master_contract(stale_count,latest,next_ch)),
+        ('总圣经下一章接写锚漂移', next_hits==1,
+         lambda: _validate_master_contract(stale_next,latest,next_ch)),
+    ]
+    passed=0
+    for name,constructed,check in cases:
+        if not constructed:
+            print(f'  ✗ [{name}] 无法构造负测样本')
+            continue
+        try:
+            check()
+        except ValueError:
+            passed+=1
+            print(f'  ✓ [{name}] 已拒绝')
+        else:
+            print(f'  ✗ [{name}] 假全绿，未拒绝')
+    return passed,len(cases)
+
 
 def legacy_review_layer(files,focus=None,cap=16):
     """接回旧检察官的文气/物理/FYI 层；只作 REVIEW，不冒充硬矛盾。"""
@@ -1524,6 +1730,12 @@ def selftest(files,lib):
       ('霍钧不曾复活','霍钧早已死而复生。'),
       ('沈鸢死后不新接','沈鸢断气后又接上了续命线。'),
       ('老头不安排自尽','老头就是为了让沈鸢自尽，故意把刀送给她。'),
+      ('第71章准备日不得直跳进岭','第二天，我们直接进岭。'),
+      ('撤退触发后不得继续深入','前灯熄灭，我们仍往里走。'),
+      ('苏衍白光伤情不得睡一夜消失','睡了一夜，心口红印和燎泡全退了。'),
+      ('孩子不得补写废水槽路线','孩子的光脚印先绕过废水槽，再去了寨门。'),
+      ('夜行汉子不得补写入祭道','夜行汉子穿过上寨门，进入旧祭道。'),
+      ('五线不得伪造成同一全程','五个人全部经过废水槽，再进旧祭道。'),
     ]
     pats=[(fa['id'],pp,set(fa.get('only_ch',[]))) for fa in lib['facts'] if fa.get('level')=='ERROR' for pp in fa.get('forbid',[])]
     whole_ids=[fa['id'] for fa in lib['facts'] if fa.get('checker')=='whole_jade_after_merge']
@@ -1575,6 +1787,12 @@ def selftest(files,lib):
       ('外围在内场空','外围警车仍在巡查，只有专业排险内场被人为清空。'),
       ('三层机制负向表述','霍钧从未复活；沈鸢断气后赵阙不能真正救活，苏衍留流只能保尸。'),
       ('送刀本意割绳','老头把刀击到她手边，喊她割绳逃开。'),
+      ('第71章两日时钟安全写法','第二天先转移寨民、清路和设灯铃，再下一日日出抵达第一道弯外。'),
+      ('撤退触发安全写法','前灯熄灭，所有人立刻沿旧祭道原路退。'),
+      ('苏衍白光伤情安全写法','睡过一夜，心口燎泡仍疼，浅纹和白发也没有退。'),
+      ('孩子路线留白安全写法','孩子的脚印只钉到出寨。有没有绕过废水槽，没有记录。'),
+      ('夜行汉子边界安全写法','夜行汉子在寨门前被救。根本没有踏进旧祭道。'),
+      ('五线分段咬合安全写法','五条线各有凭据的几段，在上寨门前后接住了。'),
     ]
     for name,s in safe:
         got=hits(s); good=not got; passed+=good
@@ -1598,9 +1816,18 @@ def selftest(files,lib):
         passed+=good
         print(('  ✓' if good else '  ✗接线错'),f'[{name}]')
     total=len(cases)+len(safe)+len(scope_checks)+len(reveal_checks)
+    contract_passed,contract_total=contract_negative_selftest(files)
     wiring,_=project_doctor(files,check_reader=True)
-    print(f'  规则回归:{passed}/{total}；项目接线:{"通过" if wiring==0 else "失败"}')
-    return passed==total and wiring==0
+    latest_error=0
+    if files:
+        latest=max(files)
+        print(f'════ 自检附加·第{latest}章当前封版硬闸 ════')
+        latest_error=priority_one(files,latest,lib)+mech_layer(files,latest,lib)
+    print(f'  规则回归:{passed}/{total}；契约负测:{contract_passed}/{contract_total}；'
+          f'项目接线:{"通过" if wiring==0 else "失败"}；'
+          f'末章硬闸:{"通过" if latest_error==0 else "失败"}')
+    return (passed==total and contract_passed==contract_total and
+            wiring==0 and latest_error==0)
 
 # ═══════════ v5 军师级模块 ═══════════
 PLAYBOOK=[
@@ -1751,10 +1978,21 @@ def super_main():
     if args and args[0]=='--开拍':
         if not files:
             print('  ✗ 正文章数=0，拒绝生成无根简报'); return 2
-        gaps=_chapter_gaps(files)
-        if gaps:
-            print('  ✗ 章号不连续，先补齐: '+','.join(map(str,gaps))); return 2
-        nx=int(args[1]) if len(args)>1 and args[1].isdigit() else None
+        wiring,_=project_doctor(files,check_reader=True)
+        if wiring:
+            print('  ✗ 开拍被项目红灯拦下；先清零 doctor／阅读器错误'); return 1
+        expected=max(files)+1
+        if len(args)>1 and not args[1].isdigit():
+            print(f'  ✗ 开拍章号必须是整数；当前唯一合法下一章为第{expected}章'); return 2
+        nx=int(args[1]) if len(args)>1 else expected
+        if nx!=expected:
+            print(f'  ✗ 不得重复或跳章：当前末章第{max(files)}章，只允许 --开拍 {expected}')
+            return 2
+        print(f'════ 开拍前复核·第{max(files)}章封版硬闸 ════')
+        sealed=priority_one(files,max(files),lib)+mech_layer(files,max(files),lib)
+        if sealed:
+            print(f'  ✗ 第{max(files)}章封版硬错={sealed}；清零前不生成第{nx}章简报')
+            return 1
         briefing(files,lib,nx); return 0
     md=[a for a in args if a.endswith('.md')]; num=[a for a in args if a.isdigit()]
     if md:

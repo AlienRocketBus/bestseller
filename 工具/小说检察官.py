@@ -46,10 +46,10 @@ CANON_PATH = os.path.join(REPO_ROOT, '设定', 'canon事实库.json')
 MASTER_CANON_PATH = os.path.join(REPO_ROOT, '设定', '00_镇冢秘术_唯一总圣经.md')
 BUILD_TABLE_PATH = os.path.join(REPO_ROOT, '设定', '01_镇冢秘术_逐章施工与伏笔回收表.md')
 README_PATH = os.path.join(REPO_ROOT, 'README.md')
-EXPECTED_CANON_ID = 'ZM-CANON-20260717-08'
+EXPECTED_CANON_ID = 'ZM-CANON-20260717-09'
 EXPECTED_MASTER_REL = '设定/00_镇冢秘术_唯一总圣经.md'
 EXPECTED_AUTHORITY_ORDER = [
-    EXPECTED_MASTER_REL + '（唯一剧情权威，CANON-ID=ZM-CANON-20260717-08）',
+    EXPECTED_MASTER_REL + '（唯一剧情权威，CANON-ID=ZM-CANON-20260717-09）',
     '设定/canon事实库.json（机器镜像，无独立裁决权）',
     '最新正文中事件第一次完整演出的原场（仅在唯一总圣经未推翻该现场时生效）',
 ]
@@ -87,6 +87,28 @@ PROMPT_PATH = os.path.join(REPO_ROOT, '工具', '镇冢秘术_防前后矛盾提
 READER_SYNC = os.path.join(REPO_ROOT, '工具', '同步全本阅读器.py')
 DENSE = 5  # 单句逗号 >= 这个数,算"顿得偏碎"
 
+# ―― 分量反向闸(2026-07-17 作者令：机器从此咬"薄"，和咬"错"一样狠) ――
+MIN_CHARS_NEW = 2500      # 新章硬下限(章号>=WEIGHT_FROM_CH)；施工表"第 N 章短章豁免"可解
+MIN_CHARS_REVIEW = 2300   # 全书复核下限(REVIEW层)
+LONG_PARA_CHARS = 120     # "长段"=一段跑起来的持续描写
+WEIGHT_FROM_CH = 73
+_BUILD_CACHE = {}
+def _chapter_body(t):
+    return re.sub(r'^.*?第.+?章[^\n]*\n','',t,count=1,flags=re.S)
+def _weight_stats(t):
+    body=_chapter_body(t)
+    paras=[re.sub(r'\s','',p) for p in body.split('\n') if p.strip() and p.strip()!='＊']
+    chars=sum(len(p) for p in paras)
+    longp=sum(1 for p in paras if len(p)>=LONG_PARA_CHARS)
+    return chars,len(paras),longp
+def _short_ch_exempt(n):
+    if 'txt' not in _BUILD_CACHE:
+        try: _BUILD_CACHE['txt']=open(os.path.join(REPO_ROOT,'设定/01_镇冢秘术_逐章施工与伏笔回收表.md'),encoding='utf-8').read()
+        except OSError: _BUILD_CACHE['txt']=''
+    return bool(re.search(rf'第\s*{n}\s*章短章豁免',_BUILD_CACHE['txt']))
+def weight_violation(chars,ch,exempted):
+    return ch>=WEIGHT_FROM_CH and chars<MIN_CHARS_NEW and not exempted
+
 # ====================================================================
 #  〔一〕机器人肚子里的"创作规范全文"——它本身就懂的全部规矩
 # ====================================================================
@@ -115,6 +137,8 @@ DENSE = 5  # 单句逗号 >= 这个数,算"顿得偏碎"
 5-补. **物理反逻辑描述，铁律级禁止。** 凡写「X动了／X不动了／X停了」，先问一句：X 本来会动吗？胡茬是短硬的，不会动，也就无所谓「不动了」（长须被风吹才会动）；同理，方的不会滚、光照不进的地方别写「看清了物件」。写"全身静止"这类清单时，清单里的每一样都要单独过一遍物理关，不许为了排比顺手拉无辜的进来。
 
 6-补. **「X个字」必对齐、每章至多一次；方言先核籍贯。** 凡写「说了X个字／这X个字」,先把引号里的中文汉字一个一个数清（只数汉字，标点、省略号一律不算）,差一个都不行;这一招每章至多用一次,连用就是口头禅,吃不准就写「他只说了一句」。方言词入嘴前先核人物籍贯:关中老汉嘴里不出川味、东北味的词,拿不准是不是当地话,就换大白话。
+
+7. **分量反向闸（2026-07-17 作者令）。** 合规是底线，分量是骨肉：新章（第73章起）全章少于2500字＝硬错，除非施工表登记「第 N 章短章豁免」并写明理由（静水深流合法，但必须是选择，不是偷懒）；全书任何一章少于2300字、或全章没有一段≥120字的持续段、或均段长跌破30字，一律亮REVIEW。机器从此咬"薄"，和咬"错"一样狠——过闸最省事的路，不许再是"少写"。
 
 6-补2. **反逻辑描述，零容忍。** 每个描写落笔前，在脑子里过一遍物理：这个部位、这件物件，现实里真做得出这个动作吗？胡茬是根，不会动（长须迎风才会动）；记忆里的话不走耳朵；方的物件不会滚；隔着灯罩，手够不着灯芯。凡是现实里摆不出来的画面，一律重写成摆得出来的。**新写的章，交稿前必须单独跑一遍「反逻辑」检查。**
 
@@ -159,7 +183,7 @@ DENSE = 5  # 单句逗号 >= 这个数,算"顿得偏碎"
 **三问·读者**：一个普通读者读到这儿，会不会想往下翻？哪一段他会走神、想跳过？哪一句他会心头一动？读完这一章，他有没有非追下一章不可的冲动？——这个拷问比任何技术检查都重要，读者手指一划就走了。
 
 ## 〇、故事圣经要点（设定不许漂）
-- 唯一剧情权威：`设定/00_镇冢秘术_唯一总圣经.md`，CANON-ID=`ZM-CANON-20260717-08`。`canon事实库.json`只是机器镜像；写章与检索只允许再带入配套施工表，旧五项裁定、50轮闭环录、旧圣经、旧框架、旧“终极／唯一／定稿”文件与旧交接稿必须排除，均无裁决权。
+- 唯一剧情权威：`设定/00_镇冢秘术_唯一总圣经.md`，CANON-ID=`ZM-CANON-20260717-09`。`canon事实库.json`只是机器镜像；写章与检索只允许再带入配套施工表，旧五项裁定、50轮闭环录、旧圣经、旧框架、旧“终极／唯一／定稿”文件与旧交接稿必须排除，均无裁决权。
 - 主角苏衍：23岁，报社记者，由爷爷一人在关中塬上拉扯大；他从小就能看见“气”，不是合玉那晚才突然获得。
 - 【时间线·不许写错】苏衍16岁离家进城，一去七年没回过。那半块玉是【七年前离家那天、在车站】爷爷红着眼眶、攥着他手塞给他的（说「发烫就回来」），他贴身焐了七年。爷爷是近日才去世，苏衍当年走后一直与爷爷疏远、【死时不在场】。所以：① 塞玉、爷爷的红眼眶只能写「当年/七年前/离别那回」，绝不能写「临死前/临终」；② 苏衍没见过爷爷「临死前」的样子，别让他描述死时的神情。
 - 【年龄旧案·不许漂】沈鸢现年27岁，比苏衍大4岁；3岁时父母被霍钧杀害，距当前正好24年。霍钧此后抱走她、伪装救援并接管命令链。
@@ -459,7 +483,7 @@ MANUAL = [
     '章末钩子——每一章最后一段必须停在揭露/危机/悬念上,无一例外;收在"安稳"上的结尾重写?',
     '伏笔台账——本章新埋的每一颗种子(名字、道具、一行小字如"黎氏文化基金会"),登记埋在哪、计划哪一卷回收;写完一章对一次账(命令:框架)?',
     '巧合律——书里立过"这世上没有这样的巧合":此后每一处"巧",要么当场敲一记(人物起疑),要么是明写的敌方安排;不许出现作者图省事的免费巧合?',
-    '权威对表——只按《00_镇冢秘术_唯一总圣经.md》（CANON-ID=ZM-CANON-20260717-08）核本章；未被总圣经推翻的已演出事件再对第一次完整原场；旧设定稿不得反向覆盖?',
+    '权威对表——只按《00_镇冢秘术_唯一总圣经.md》（CANON-ID=ZM-CANON-20260717-09）核本章；未被总圣经推翻的已演出事件再对第一次完整原场；旧设定稿不得反向覆盖?',
     '度(反两极化)——本轮所有修改与规则调整,有没有矫枉过正?用户说"少一点"=调量,不是清零;说"这处换个说法"=换这一处,不是全书禁用;直白常用语(一片空白/手忙脚乱)一眼就懂、正当其位,就是好句。每次收紧规则前先问:这一刀,会不会把好的也一起砍了?',
     '文采病——本章有没有为了显文采写出的别扭描述(反例:警笛声"扎回"耳朵)?检验法:把这句念给普通读者听,他会不会皱眉问"啥意思"?会,就改成正常说法;为避重复换的词,是不是比原词更平更顺,而不是更冷更怪?',
     '字数对齐——本章每一处"X个字",引文汉字数点清了吗(标点不算)?这招全章用了几次(至多一次)?',
@@ -536,6 +560,14 @@ def check_file(path):
     if '您' in text:
         ln = [i + 1 for i, l in enumerate(lines) if '您' in l]
         iss.append(f'[称呼] "您" {text.count("您")} 处(行 {ln}) → 确认是否该用"你"')
+
+    w_chars,w_paras,w_long=_weight_stats(text)
+    if w_chars and w_chars<MIN_CHARS_REVIEW:
+        iss.append(f'[分量] 全章仅{w_chars}字(<{MIN_CHARS_REVIEW}) —— 偏薄；历史章由加厚轮处理，新章另有硬闸')
+    if w_paras and w_long==0:
+        iss.append(f'[分量] 全章没有一段≥{LONG_PARA_CHARS}字 —— 全是碎步，没有一段跑起来；该给的慢镜头要给足')
+    if w_paras and w_chars/w_paras<30:
+        iss.append(f'[分量] 均段长{w_chars/w_paras:.0f}字(<30) —— 段段皆短，查是否砍成了电报体')
 
     for pat, why in PHYS:
         for m in re.finditer(pat, text):
@@ -903,7 +935,7 @@ def cross_chapter_check(files):
 FRAMEWORK = """
 ════════ 《镇冢秘术》当前剧情权威入口 ════════
 唯一剧情权威：设定/00_镇冢秘术_唯一总圣经.md
-CANON-ID：ZM-CANON-20260717-08
+CANON-ID：ZM-CANON-20260717-09
 
 canon事实库.json 只是机器镜像。未被总圣经推翻的已演出事件，才再以第一次完整原场为现场锚点。
 活动输入只允许唯一总圣经、配套施工表和canon事实库。旧五项裁定、50轮闭环录、旧圣经、旧框架、
@@ -1282,6 +1314,9 @@ def mech_layer(files,focus,lib):
             for m in re.finditer(re.escape(w),t): pr.append(f'永禁[{w}]行{_ln(t,m.start())}')
         for w,rv in lib['reveal'].items():
             if (rv is None or n<rv) and w in t: pr.append(f'未到揭名[{w}≥{rv}]')
+        wc,_,_=_weight_stats(t)
+        if weight_violation(wc,n,_short_ch_exempt(n)):
+            pr.append(f'分量不足:全章{wc}字<硬下限{MIN_CHARS_NEW};如确属短章,须在施工表登记\u201c第 {n} 章短章豁免\u201d并说明理由(2026-07-17反向闸)')
         if pr: ERR+=len(pr); print(f'  ✗第{n}章《{nm}》:'); [print('     ',x) for x in pr]
     if ERR==0: print('  ✓ 全部通过')
     if not focus:
@@ -1361,7 +1396,7 @@ LAWS_DIGEST=("  ▣ 二十一项常驻守卫:①回述必贴原场,只补白不�
 "  ▣ ⑲门与血图:各墓石门只是本地物理隔断,关门不能取消共享气路(F021);血图原件—玄微尸腕—衣裹层源印联锁,ch13试取失败,卷六须卸力并整体装匣(F022/F058)\n"
 "  ▣ ⑳望气能力:苏衍从小能看见气;望气负责看气息/状态,玉可同时响应多个高浓度同源源头。二者互补,但都不自动判断敌我或安全路线\n"
 "  ▣ ㉑终局生命三层:霍钧=未断气旧伤续命,沈鸢断气后不可救,赵阙只能拿霍钧作伪证诱骗;苏衍留流只能保尸;老头送刀只为割绳\n"
-"  ▣ ⑫账尺归机器,心策归执笔:唯一剧情权威=《00_镇冢秘术_唯一总圣经.md》(CANON-ID=ZM-CANON-20260717-08);只带入配套施工表和事实库,其余旧设定全部排除;未被推翻的已演出事件再对首个完整原场;到期账必裁决(接/展期/废)\n"
+"  ▣ ⑫账尺归机器,心策归执笔:唯一剧情权威=《00_镇冢秘术_唯一总圣经.md》(CANON-ID=ZM-CANON-20260717-09);只带入配套施工表和事实库,其余旧设定全部排除;未被推翻的已演出事件再对首个完整原场;到期账必裁决(接/展期/废)\n"
 "  ▣ 全文见《镇冢秘术_防前后矛盾提示词系统.md》(python3 小说检察官.py --提示词 一键打印;两文件同步进化,永为一体)")
 
 def second_gate(scope):
@@ -1825,7 +1860,16 @@ def selftest(files,lib):
     for name,good in reveal_checks:
         passed+=good
         print(('  ✓' if good else '  ✗接线错'),f'[{name}]')
-    total=len(cases)+len(safe)+len(scope_checks)+len(reveal_checks)
+    weight_checks=[
+      ('分量闸·薄章拒绝', weight_violation(2000,73,False)),
+      ('分量闸·厚章放行', not weight_violation(2600,73,False)),
+      ('分量闸·豁免放行', not weight_violation(2000,73,True)),
+      ('分量闸·旧章不硬咬', not weight_violation(1600,72,False)),
+    ]
+    for name,good in weight_checks:
+        passed+=good
+        print(('  ✓' if good else '  ✗分量闸错'),f'[{name}]')
+    total=len(cases)+len(safe)+len(scope_checks)+len(reveal_checks)+len(weight_checks)
     contract_passed,contract_total=contract_negative_selftest(files)
     wiring,_=project_doctor(files,check_reader=True)
     latest_error=0

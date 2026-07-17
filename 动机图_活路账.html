@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动机图 · 活路账 —《镇冢秘术》全书行走引擎</title>
+<style>
+:root{
+  --cloth:#232f3f; --cloth-deep:#182230; --paper:#efe6d3; --paper2:#e7dbc2;
+  --ink:#26221b; --ink-soft:#5f5749; --zhu:#9e3325; --zhu-deep:#7c2318;
+  --lamp:#d9a441; --line:#cabc9e; --line-soft:#dccfae; --ok:#3f5d3a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--cloth);color:var(--ink);
+  font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  font-size:16px;line-height:1.85;}
+.serif{font-family:"Songti SC","STSong","SimSun",serif}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+
+/* ── 头 ── */
+header{background:linear-gradient(180deg,var(--cloth-deep),var(--cloth));color:#e8e0cf;padding:56px 0 40px;border-bottom:3px solid var(--zhu)}
+.book{letter-spacing:.35em;font-size:13px;color:#9fb0c4;text-transform:none}
+h1{font-family:"Songti SC","STSong","SimSun",serif;font-size:44px;font-weight:900;letter-spacing:.06em;margin:10px 0 6px;color:#f2ead6}
+h1 .dot{color:var(--lamp)}
+.thesis{font-family:"Songti SC","STSong","SimSun",serif;font-size:19px;color:#d8cdb4;margin:14px 0 20px;border-left:3px solid var(--zhu);padding-left:14px}
+.stamps{display:flex;flex-wrap:wrap;gap:8px;font-size:12px}
+.stamp{border:1px solid #4a5a70;color:#b9c6d6;padding:3px 10px;border-radius:2px;letter-spacing:.08em}
+.stamp.hot{border-color:var(--zhu);color:#e6b3a4}
+
+/* ── 导航 ── */
+nav{position:sticky;top:0;z-index:9;background:var(--cloth-deep);border-bottom:1px solid #33414f;padding:8px 0}
+nav .wrap{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+nav a{flex:0 0 auto;color:#aeb9c6;text-decoration:none;font-size:13px;padding:4px 11px;border:1px solid #3a4757;border-radius:2px;letter-spacing:.05em}
+nav a.cur{color:#1c1610;background:var(--lamp);border-color:var(--lamp);font-weight:700}
+
+/* ── 纸面 ── */
+main{padding:36px 0 80px}
+section.panel{background:var(--paper);border-radius:3px;box-shadow:0 3px 0 rgba(0,0,0,.35);
+  padding:34px 34px 30px;margin-bottom:34px;position:relative;overflow:hidden}
+section.panel::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(158,51,37,.05) 46px 47px)}
+h2{font-family:"Songti SC","STSong","SimSun",serif;font-size:27px;font-weight:900;color:var(--zhu-deep);
+  border-bottom:2px solid var(--zhu);padding-bottom:8px;margin-bottom:18px;letter-spacing:.04em}
+h2 small{font-size:14px;color:var(--ink-soft);font-weight:400;letter-spacing:0;font-family:"PingFang SC","Noto Sans SC",sans-serif;margin-left:10px}
+h3{font-family:"Songti SC","STSong","SimSun",serif;font-size:19px;color:var(--ink);margin:22px 0 8px}
+p{margin:10px 0}
+b,strong{color:var(--zhu-deep)}
+.note{font-size:13.5px;color:var(--ink-soft);border-top:1px dashed var(--line);margin-top:18px;padding-top:10px}
+blockquote{font-family:"Songti SC","STSong","SimSun",serif;font-size:17.5px;background:var(--paper2);
+  border-left:4px solid var(--zhu);padding:12px 16px;margin:14px 0;color:#3c3226}
+
+/* 表 */
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:14px 0;background:#f4ecdc}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--paper2);font-family:"Songti SC","STSong","SimSun",serif;color:var(--zhu-deep);white-space:nowrap}
+td b{color:var(--zhu-deep)}
+.tscroll{overflow-x:auto}
+
+/* 八问 */
+.qa{margin:16px 0 20px;padding-left:14px;border-left:3px solid var(--line)}
+.qa h3{margin-top:0}
+.qa h3 .q{color:var(--zhu);margin-right:6px}
+
+/* ── 九站铁轨 ── */
+.rail{position:relative;padding-left:44px}
+.rail::before{content:"";position:absolute;left:15px;top:8px;bottom:8px;width:2px;
+  background:repeating-linear-gradient(180deg,var(--zhu) 0 7px,transparent 7px 13px)}
+.station{position:relative;margin-bottom:30px}
+.station .knot{position:absolute;left:-44px;top:14px;width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;
+  font-family:"Songti SC","STSong","SimSun",serif}
+.knot.done{background:var(--zhu);box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--zhu)}
+.knot.now{background:var(--lamp);color:#231a08;box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--lamp),0 0 18px 2px rgba(217,164,65,.55)}
+.knot.todo{background:var(--paper);border:2px solid var(--zhu);color:var(--zhu)}
+.knot.core{background:var(--cloth-deep);border:2px solid var(--lamp);color:var(--lamp)}
+@media (prefers-reduced-motion:no-preference){.knot.now{animation:lamp 2.6s ease-in-out infinite}}
+@keyframes lamp{0%,100%{box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--lamp),0 0 12px 1px rgba(217,164,65,.4)}50%{box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--lamp),0 0 22px 4px rgba(217,164,65,.7)}}
+
+.card{background:var(--paper);border-radius:3px;box-shadow:0 3px 0 rgba(0,0,0,.35);padding:24px 26px 20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(158,51,37,.045) 46px 47px)}
+.eyebrow{font-size:12.5px;letter-spacing:.22em;color:var(--zhu);font-weight:700;margin-bottom:4px}
+.card h2{font-size:23px;border:none;padding:0;margin:0 0 2px}
+.meta{font-size:13px;color:var(--ink-soft);margin-bottom:10px}
+.badge{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:2px;margin-left:8px;vertical-align:2px;letter-spacing:.06em}
+.badge.done{background:var(--ok);color:#f0ead8}
+.badge.now{background:var(--lamp);color:#231a08;font-weight:700}
+.badge.todo{background:transparent;border:1px solid var(--ink-soft);color:var(--ink-soft)}
+.say{font-family:"Songti SC","STSong","SimSun",serif;font-size:17.5px;background:var(--paper2);
+  border-left:4px solid var(--lamp);padding:10px 14px;margin:10px 0 14px;color:#3c3226}
+.row{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:9px 0;border-top:1px dashed var(--line);font-size:15px}
+.row .k{font-family:"Songti SC","STSong","SimSun",serif;font-weight:800;color:var(--zhu-deep);letter-spacing:.06em}
+.tune{display:inline-block;font-size:11px;border:1px solid var(--lamp);color:#8a6410;padding:0 5px;border-radius:2px;margin:0 2px;vertical-align:1px}
+.lock{display:inline-block;font-size:11px;border:1px solid var(--zhu);color:var(--zhu);padding:0 5px;border-radius:2px;margin:0 2px;vertical-align:1px}
+
+footer{color:#9aa8b8;text-align:center;font-size:13px;padding:10px 0 60px;line-height:2}
+footer b{color:#d8b98a}
+@media(max-width:640px){
+  h1{font-size:31px}.thesis{font-size:16.5px}
+  section.panel{padding:24px 18px}
+  .card{padding:18px 16px}
+  .rail{padding-left:36px}.station .knot{left:-36px;width:27px;height:27px;font-size:10px}
+  .row{grid-template-columns:1fr;gap:2px}
+  .row .k{border-left:3px solid var(--zhu);padding-left:8px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="book serif">《镇冢秘术》· 作者全知手册</div>
+    <h1>动机图 <span class="dot">·</span> 活路账</h1>
+    <div class="thesis">把天下想成一张国家电网。这张网，两千年前被一个人动过手脚。<br>他不走会死；他每走一步，是在给自己续命——也是在替那个人上弦。</div>
+    <div class="stamps">
+      <span class="stamp hot">CANON-ID：ZM-CANON-20260717-02</span>
+      <span class="stamp">母本：总圣经 三、6之补 ＋ 十二之补二</span>
+      <span class="stamp">本页只是阅读版 · 一切以总圣经为准</span>
+    </div>
+  </div>
+</header>
+
+<nav><div class="wrap" id="chips">
+  <a href="#leibi">电网总类比</a><a href="#bawen">八问八答</a><a href="#muban">一站怎么写</a><a href="#fanpai">反派帮还是挡</a>
+  <a href="#e1">E1柏冢</a><a href="#e2">E2楼兰</a><a href="#e3">E3青溪</a><a href="#e4">E4巴蜀</a><a href="#e5">E5贺兰</a><a href="#e6">E6公输</a><a href="#e7">E7东海</a><a href="#e8">E8都市</a><a href="#c9">C骊山</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ═══ 一、电网总类比 ═══ -->
+<section class="panel" id="leibi">
+  <h2>一、电网总类比<small>先把这个比方立住，后面所有账全用它算</small></h2>
+  <div class="tscroll"><table>
+    <tr><th>书里的东西</th><th>电网里的东西</th><th>一句话</th></tr>
+    <tr><td>天下气运</td><td>电</td><td>养活地面上一切的那股流</td></tr>
+    <tr><td>九脉</td><td>九条主干线路</td><td>九州＝九个供电片区；<b>整个天下都在网上，没有一寸"网外"</b></td></tr>
+    <tr><td>九鼎</td><td>九座总闸站</td><td>禹立的枢纽变电站，一州一座——"九个片区是一个整体"的接线盒</td></tr>
+    <tr><td>赵阙干的事</td><td>把九座闸站全改成<b>抽电站</b></td><td>九条线的电不再回各自片区，全拐上一条私线，送给一个用户——他自己</td></tr>
+    <tr><td>赵阙被钉</td><td>私接户被自己的改装电死锁在总站</td><td>人动不了，但<b>他挂在网上的那口"吸"（常引），两千年没断</b></td></tr>
+    <tr><td>鼎心</td><td>长在苏家血里的<b>活接口</b></td><td>大电流要走必须有活接口；接口沉睡＝线路空转。苏家两脉两千年的家法就一件事：把活钥藏成死钥——爷爷把望气说成"病"，藏的就是这个</td></tr>
+    <tr><td>缝里漏的细流</td><td>私接户从裂缝偷的小电</td><td>只够办小事（续霍钧的命、递话）。<b>小漏成不了阵</b></td></tr>
+    <tr><td>觉醒</td><td>接口通电</td><td>守灵夜他的手伸进那人掌心——两千年来头一回，网上有了一个活接口</td></tr>
+    <tr><td>九股拉力</td><td>九条失修线路的漏电＋那口常引，全往活接口上窜</td><td>人成了带九股漏电的电线，不处理慢慢烧穿。<b>三档：麻（拉痛）→ 烫（夜烧、雾发红）→ 击穿（见血、晕厥、望气反噬）</b></td></tr>
+    <tr><td>安点</td><td><b>到站检修</b></td><td>电工拧螺丝必须到场，钥匙必须插进锁孔——所以不能遥控、不能代走、不能跳过</td></tr>
+    <tr><td>失稳外鼎（青溪）</td><td>失修的闸乱跳，见"活电"就乱咬</td><td>叫魂＝失修闸在乱抽周围的活人。<b>它是苏衍、赵阙、黎东来三方共同的敌人</b></td></tr>
+    <tr><td>次序爬梯</td><td>电压等级由低到高</td><td>低压站练熟才扛得住高压站；<b>跳级＝拿低压的身子摸高压排＝当场击穿</b>。玄微当年亲脚按此序走通过一遍——血图那条线，是他试出来的检修顺序</td></tr>
+    <tr><td>八枝一根</td><td>八座外站的漏电是支路病；中心那股是<b>有人在主动抽</b></td><td>支路病检修能除；主动抽的那家，必须进总站把线剪了（截源）</td></tr>
+    <tr><td>安点＝上弦</td><td>检修复位后的闸是"可控"的</td><td><b>可控的闸既能终局把电送回各片区（复流），也能全拨给私接户（成阵）。闸不修好，两条路都走不通——所以赵阙护着他修。</b></td></tr>
+    <tr><td>终局四步</td><td>对线 → 排线 → 合总闸 → 松手送电回家</td><td>认位／定向／承流／分流。承流只撑数息；分流不是现场接线，是松开一路上好弦的八道闸</td></tr>
+  </table></div>
+  <p class="note">类比只进圣经和这张动机图，不进正文。正文口径照旧只许身体话：拉、拽、抽着走、烫、火、安、熄（F083、永禁机制词表）。</p>
+</section>
+
+<!-- ═══ 二、八问八答 ═══ -->
+<section class="panel" id="bawen">
+  <h2>二、八问八答<small>整台引擎，一问一答说到底</small></h2>
+
+  <div class="qa"><h3><span class="q">问一</span>他不走，怎么个死法？</h3>
+  <p>觉醒当夜，他成了整张网上唯一的活接口。九条失修线路的漏电、失稳外鼎的乱流、赵阙那口两千年没断的常引，全顺着血找他——身上九股拉力，一向一股，对着九个点。不安的点，那一股一天比一天烫：先麻，再烫，最后击穿。躲？<b>九州就是九脉的影子，图上没有"网外"</b>——跑到哪儿，血还是血，只是煮得慢一点，一寸账都不进。撑多久，canon 故意不锁日历数，只锁三档爬梯和"不走单调加重、安一点该向清零"。</p></div>
+
+  <div class="qa"><h3><span class="q">问二</span>到一个点，具体做什么？</h3>
+  <p>五步，全是民间口径能写的：<b>走近</b>（近到同源气搭得上——玉温差复核那套）→ <b>认血</b>（这座站认出持钥的血，它两千年就在等）→ <b>寻回路</b>（望气把这条线自己的回流口摸出来）→ <b>安下去</b>（把这座站从"漂移乱抽"校回"归位可控"）→ <b>验熄</b>（身上朝这一向的那股拉力，当场断）。每一站的气性不同，五步都得跟着变形——十二之补二逐站写死了怎么变。</p></div>
+
+  <div class="qa"><h3><span class="q">问三</span>他得到什么？</h3>
+  <p>每站五本账，本本能验：<b>命账</b>（身上少一股火）｜<b>人账</b>（这一片不再被乱抽、不再死人）｜<b>谜账</b>（每站揭一层家史）｜<b>东西账</b>（图、数据、记号、图纸）｜<b>本事账</b>（鼎心吃透这一档气性，望气跟着升级——为下一站爬梯）。</p></div>
+
+  <div class="qa"><h3><span class="q">问四</span>为什么走完九个才算活？</h3>
+  <p>九股里八股是<b>枝</b>、一股是<b>根</b>。八座外站的漏电是枝——安一座熄一股，安完八座枝全清。中心那股不是失衡，<b>是有人在主动抽</b>：安不掉，只能进骊山把抽的人截断。全账：安八外鼎＝火灭到只剩根；入骊山截源＝拔根，才是真活。<b>只安八、不入中心＝缓死。</b>第 30 章那句「查清并截断它」，说的就是这个根。</p></div>
+
+  <div class="qa"><h3><span class="q">问五</span>为什么必须一站一站、按次序？</h3>
+  <p>电压爬梯。九种气性由浅入深，吃透浅的才咬得住深的。玄微当年<b>亲脚把九站按这个次序走通过一遍</b>（第 13 章原文：「像有人提笔，一站一站，亲脚走过去画的」）——血图那条线不是路线建议，是他试出来的唯一可行检修序。<b>跳站＝当场击穿，白走且伤身。</b></p></div>
+
+  <div class="qa"><h3><span class="q">问六</span>他自己怎么知道这本账的？</h3>
+  <p>知情四级阶梯：<b>一级·身体先给证据</b>——柏冢是不知情走完的，出关中后九股里唯独柏冢那向熄了：独一份的对照实验，长在自己身上；<b>二级·老头旧账三条规矩</b>——认上退不掉／安一处松一寸／照次序走，<b>只授怎么做、不授为什么</b>（他自己也不知道为什么）；<b>三级·门后那句话有了底</b>——「那是你唯一能活的法子」，它没骗他；<b>四级·卷五图纸给学名</b>——他才知道"安点"叫校准、叫上弦，也才看见：自己的活命账，同时是赵阙的成阵账。</p></div>
+
+  <div class="qa"><h3><span class="q">问七</span>是谁在引他走？神秘力量？反派下饵？</h3>
+  <p><b>谁也没引。倒计时长在他自己血里，路书是先人留的。</b>反派不下饵——下饵会露。赵阙干的是修路、清障、喂真话，因为苏衍每一次安点保命恰好就是他要的一次上弦。<b>鱼是被骗上钩的；他是被自己的求生心套上轭的——没有一个人骗过他。</b></p></div>
+
+  <div class="qa"><h3><span class="q">问八</span>护栏</h3>
+  <p>①禁写神秘感召／天命呼唤——拉力是生理的、可描述的、单调变化的，不是玄音；②禁写反派设饵引诱；③安点不减终局代价——承流仍只撑数息，灼烧、白发、折寿一分不少；④正文只许身体话（拉／拽／抽着走／烫／火／安／熄）。（F079—F083）</p></div>
+</section>
+
+<!-- ═══ 三、一站怎么写 ═══ -->
+<section class="panel" id="muban">
+  <h2>三、一站的标准写法<small>每站开拍简报，照这条流水线过一遍</small></h2>
+  <blockquote><b>动身三证</b>（拉力向＋旧账站名＋现场证据，三样叠合、由苏衍拍板——59 章是范式）→ <b>路途</b>（"怎么去"本身要死人，交通即剧情）→ <b>到站近核</b>（玉温差／望气把大概落向收成准地方）→ <b>本站独有的麻烦</b>（麻烦必须挡在安点前面——安点是解题，不是开锁）→ <b>顶着麻烦做五步</b>（每站按气性变形，禁止复制上一站）→ <b>验熄与清账</b>（该向拉力熄＋五本账各落一笔）→ <b>反派侧落一笔</b> → <b>下一向接班收章</b>（哪股最烫＋旧账对名，钩下一站）。</blockquote>
+</section>
+
+<!-- ═══ 四、反派三方 ═══ -->
+<section class="panel" id="fanpai">
+  <h2>四、反派是帮还是挡<small>三方动作总表</small></h2>
+  <blockquote><b>总纲：九站里没有一站是反派拦路。拦路的只有失修的鼎和天灾人祸。反派的恐怖恰恰在于他们一路陪跑护送——真正的对抗只发生在两处：卷七收网的人质局，终局"定向"那一步。</b></blockquote>
+  <div class="tscroll"><table>
+    <tr><th>反派</th><th>一路在干什么</th><th>为什么不拦</th><th>逐站要点</th></tr>
+    <tr><td><b>黎东来</b><br>明线·人间的手</td><td>修路、批钱、清障、递资源；卷四起每卷 1 篇他的流程视角——看他怎么开会、批钱、把一次灭口写成一份工程变更单</td><td>他要的东西也在骊山尽头；苏衍走得越顺，"货"到得越快。<b>他拦的从来不是苏衍，是别人抢在他前面</b></td><td>E1 下局送人进站｜E2 查项目露"延寿"之贪｜E3—E5 清障＋流程篇｜E6 与霍钧同框争图｜E7 收网前最后的抢｜E8 收网主使｜C 人质局的资源侧</td></tr>
+    <tr><td><b>霍钧</b><br>暗线·只露一只手</td><td>处理失稳节点、盯沈鸢的线、执行赵阙的差</td><td>他的命拴在赵阙身上；赵阙要苏衍走完，他就护着走完</td><td>青溪是他 27 年前的旧伤地（暗线篇写他对这地名的反应，不露名）｜E6 争图｜E8 把叛变的沈鸢"收回"作人质｜C 被老头拖住</td></tr>
+    <tr><td><b>赵阙</b><br>等的人</td><td>等、护、喂真话；只在已连接者的梦与节点异象里出现，无全知</td><td><b>苏衍每一次安点保命＝他要的一次上弦。他不需要骗，只需要真话</b></td><td>21 章递第一句真话｜E4 递一句（内容写时定）｜E6 全书最大一次喂真话｜C 终局唯一一次真出手：拿霍钧作"复活伪证"骗定向</td></tr>
+  </table></div>
+</section>
+
+<!-- ═══ 五、九站铁轨 ═══ -->
+<h2 style="color:#f2ead6;border-color:var(--lamp);margin:44px 0 24px;font-family:'Songti SC','STSong','SimSun',serif;font-size:27px;border-bottom:2px solid var(--lamp);padding-bottom:8px">五、九站动机总表 <small style="color:#9fb0c4;font-size:14px;font-weight:400">每站七格 · 标<span class="tune" style="border-color:var(--lamp);color:var(--lamp)">可调</span>的是戏，没标的是账，一字不许漂移</small></h2>
+
+<div class="rail">
+
+  <!-- E1 -->
+  <div class="station" id="e1"><span class="knot done">E1</span>
+  <div class="card">
+    <div class="eyebrow">开户站 · 接口在这儿通电</div>
+    <h2>柏冢／关中 <span class="badge done">1—41 章 已写</span></h2>
+    <div class="meta">气性：土层墓气（最低压档）</div>
+    <div class="say">「我家地底为什么躺着一个秦朝人？我这双眼，是怎么回事？」</div>
+    <div class="row"><span class="k">为什么来</span><span>还没上账。报社差事（头一回带队、转正的机会）＋活着出去＋弄明白家里的事。差事本身是黎东来早两个月摆好的局（第 4 章老头点破的三样巧合）。</span></div>
+    <div class="row"><span class="k">具体操作</span><span>无自觉操作——被动完成第一层脉象记录与被动安点。<b>正因是被动的，出关中后"柏冢向独熄"才成了独一份的对照实验</b>——知情阶梯第一级的地基。</span></div>
+    <div class="row"><span class="k">会遇上什么</span><span>古尸、活玉、墓道凶气、强开内层的塌方回压、诱捕局本身（已写）。</span></div>
+    <div class="row"><span class="k">反派</span><span>黎东来<b>修路</b>——把采访差事、悬赏、考古队摆成一条线，把他"送"进站；霍钧不露面；赵阙借门后之物递第一句真话（21 章「唯一能活的法子」）。</span></div>
+    <div class="row"><span class="k">五本账</span><span>命＝第一股熄（他不懂）｜人＝六名民工全活｜谜＝没病过／家与墓有干系／这一姓做过大事｜东西＝合玉、血图两层影像、铜钥匙、悬赏原件｜本事＝吃透土脉档，望气从"隔雾"到"睁眼"。</span></div>
+    <div class="row"><span class="k">走完</span><span>柏冢向熄；<b>西向接班，烧得最凶。</b></span></div>
+  </div></div>
+
+  <!-- E2 -->
+  <div class="station" id="e2"><span class="knot done">E2</span>
+  <div class="card">
+    <div class="eyebrow">教学站，也是太平间</div>
+    <h2>楼兰／罗布泊 <span class="badge done">42—60 章 已写</span></h2>
+    <div class="meta">气性：干燥死气、断流结构 · 九站里唯一一座导流侧被硬切过的站</div>
+    <div class="say">「我这一姓，两千年前到底干了什么？」</div>
+    <div class="row"><span class="k">为什么来</span><span>柏冢向独熄是人证 → 老头交出旧账三条规矩（认上退不掉／安一处松一寸／照次序走）<span class="tune">欠针②</span> → 西向那股烧得最凶，旧账留名"楼兰"。</span></div>
+    <div class="row"><span class="k">具体操作</span><span>第一次<b>知情</b>安点：玉温差近处复核（43 章原样）→ 走近 → 认血（门后那东西两千年就在等这一姓的血）→ 寻回路——<b>死城的回路只剩半截：安的是闸，不是城。城救不回来——这一课他在这儿上的</b> → 安下 → 验熄（头一回亲手验<span class="tune">欠针③前半</span>）。</span></div>
+    <div class="row"><span class="k">会遇上什么</span><span>沙海三缺一死；满城枯骨；门后认血之物（已写）。</span></div>
+    <div class="row"><span class="k">反派</span><span>黎东来查项目、露"延寿"之贪；"师父"令沈鸢继续建立信任；老头发现死信痕迹。赵阙侧无动作——死城无障可清，他等。</span></div>
+    <div class="row"><span class="k">五本账</span><span>命＝西向熄｜人＝无（这一站教他的正是"迟到的人救不了谁"）｜谜＝"一城换天下"口传·壮烈版＋做下此事者姓苏（<span class="lock">真相锁死留 E7</span>）｜东西＝旧账楼兰一页抄件<span class="tune">可调</span>｜本事＝吃透死气档——学会在"没有活气"的地方读气。</span></div>
+    <div class="row"><span class="k">走完</span><span><b>西南向接班。</b></span></div>
+  </div></div>
+
+  <!-- E3 -->
+  <div class="station" id="e3"><span class="knot now">E3</span>
+  <div class="card">
+    <div class="eyebrow">事故站 · 警报站 · 全书倒计时从这儿起步</div>
+    <h2>青溪／黔东南 <span class="badge now">61—100 章 · 写到 71</span></h2>
+    <div class="meta">气性：从活人身上抽的活气 · 第一座正在失稳、见活电就乱咬的站</div>
+    <div class="say">「怎么止住，别再死人。」——从这一站起，安点第一次不只是他自己的命。</div>
+    <div class="row"><span class="k">为什么来</span><span>59 章三证叠合（拉力向＋报纸异响＋旧账站名），他自己拍板，还立了"动身前说清"的规矩。</span></div>
+    <div class="row"><span class="k">具体操作</span><span><b>带电作业。</b>前两站对象是死物，这一站必须在闸还乱咬时靠近。"走近"被拆成一整段戏：72 章跨黑缝是走近的第一寸；入岭后按圣经三、11——切断外溢、顶着叫魂与探针做五步、取第一组校准数据。<b>安下那一刻，叫魂当场哑、黑影不再聚</b>（过程<span class="tune">可调</span>，这个结果不可调）。</span></div>
+    <div class="row"><span class="k">会遇上什么</span><span>61—71 已写：叫魂、黑影、五条证据线、双柱黑口、塌方、灯救孤老太。72 起按施工表硬门槛（绳队、铃号、撤退规矩；黑口性质只许一段段咬合，不许宣布查明）。72—100 剩余弧<span class="tune">可调</span>：进岭 → 按证据摸清抽取路数 → 带电安点 → 外鼎回稳、寨子得救 → 取数据与子母记号撤出。</span></div>
+    <div class="row"><span class="k">反派</span><span>黎东来清障＋流程篇（把青溪伤亡写成工程变更单）；霍钧——<b>这地名是他 27 年前的旧伤地</b>，暗线篇写他对"青溪"两个字的反应，不露名；赵阙借总网波动感知、不能逐句遥控。<b>三方在此与苏衍同仇：失稳的鼎咬死了钥，三家全完。</b></span></div>
+    <div class="row"><span class="k">五本账</span><span>命＝西南熄｜人＝一寨人——<b>全书第一次"安点救的是别人"</b>｜谜＝外鼎会失稳＝时间有限这件事本身｜东西＝第一组校准数据＋子母记号（卷五钩子）｜本事＝吃透活气档：在乱流里稳住自己的气。</span></div>
+    <div class="row"><span class="k">走完</span><span><b>巴蜀向接班。</b></span></div>
+  </div></div>
+
+  <!-- E4 -->
+  <div class="station" id="e4"><span class="knot todo">E4</span>
+  <div class="card">
+    <div class="eyebrow">高压证明站 · "次序＝爬梯"在此撞成物理事实</div>
+    <h2>巴蜀水下 <span class="badge todo">101—145 章 未写</span></h2>
+    <div class="meta">气性：水压、浑流、低氧——电压跳档最狠的一站</div>
+    <div class="say">「我爸妈到底怎么死的？」</div>
+    <div class="row"><span class="k">为什么来</span><span>巴蜀向接班，旧账指向水下。</span></div>
+    <div class="row"><span class="k">具体操作</span><span>水下五步：望气隔水读、玉温差在冷水里失灵半截、"走近"变成潜与憋——<b>第一次出现"安到一半必须撤、二进宫"</b>：爬梯吃力的具象<span class="tune">可调</span>。</span></div>
+    <div class="row"><span class="k">会遇上什么</span><span>高压浑流低氧＋水下守物<span class="tune">可调·留白</span>；察觉沈鸢的联络渠道被人追踪（<span class="lock">只埋不揭</span>）。</span></div>
+    <div class="row"><span class="k">反派</span><span>黎东来卷四起流程篇（配额）；霍钧收紧沈鸢的线；赵阙递一句真话（内容写时定，过揭秘节奏表）。</span></div>
+    <div class="row"><span class="k">五本账</span><span>命账｜谜＝"苏家那一夜"表层版（父母为带他逃走而死、老头来迟）｜本事＝吃透水气档——<b>没有这一站，读者不信他 E7 能在海底看全复流。</b></span></div>
+    <div class="row"><span class="k">走完</span><span><b>贺兰向接班。</b></span></div>
+  </div></div>
+
+  <!-- E5 -->
+  <div class="station" id="e5"><span class="knot todo">E5</span>
+  <div class="card">
+    <div class="eyebrow">认知翻转站 · 外鼎≠古墓</div>
+    <h2>贺兰无墓 <span class="badge todo">146—165 章 未写</span></h2>
+    <div class="meta">气性：风蚀荒原、裸露错乱气路</div>
+    <div class="say">「没有墓，那鼎长什么样？」</div>
+    <div class="row"><span class="k">为什么来</span><span>贺兰向接班。</span></div>
+    <div class="row"><span class="k">具体操作</span><span>没有墓道墙壁作参照，气路全裸露且错乱——<b>"寻回路"最难的一站：一堆裸线里找回流母排</b>；附近有现代测绘队<span class="tune">可调</span>，动静不能大。</span></div>
+    <div class="row"><span class="k">会遇上什么</span><span>荒原环境＋"没有墓"这个认知本身；<b>钱满线正式启动</b>——凭黑市子母记号去找保图人。</span></div>
+    <div class="row"><span class="k">反派</span><span>照配额；霍钧线推进<span class="tune">可调</span>。</span></div>
+    <div class="row"><span class="k">五本账</span><span>谜＝认知翻转：他找的是鼎，不是墓｜本事＝学会在无结构处读结构——为 E6 看懂图纸做眼睛上的准备。</span></div>
+    <div class="row"><span class="k">走完</span><span>E6 向接班——<b>但下一站的名字旧账里没有，是子母记号牵出来的</b>（旧账到此开始"断页"<span class="tune">可调</span>，为"图纸才是全图"铺垫）。</span></div>
+  </div></div>
+
+  <!-- E6 -->
+  <div class="station" id="e6"><span class="knot todo">E6</span>
+  <div class="card">
+    <div class="eyebrow">图纸站 · ★全书转折站 · 外鼎与解题钥匙合二为一</div>
+    <h2>公输维护节点／保图线 <span class="badge todo">166—185 章 未写</span></h2>
+    <div class="meta">气性：材料与工程校准 · 图纸必须与这座节点互校才算数</div>
+    <div class="say">进站：「我得看懂我到底在干什么。」<br>出站：「原来我每一步都在替他干活。——那也得走完。」</div>
+    <div class="row"><span class="k">为什么来</span><span>上第六道弦＋拿三套图纸——怎么把"抽"逆成"放"的完整原理、骊山三台的进入方案，只在公输图纸里。</span></div>
+    <div class="row"><span class="k">具体操作与事件</span><span><span class="lock">已锁全文</span>：保图人不信祖训不肯给 → 赵阙霍钧也来抢 → <b>"苏衍的罪"在此下手</b>（把带假线索的危险路线交给沈鸢引开追兵；沈鸢重伤归来，只看了他一眼；不能被爱情洗白）→ 三套图纸互校 → 九鼎出身落地（"我们只管造"）。</span></div>
+    <div class="row"><span class="k">知情登顶</span><span><b>知情阶梯第四级在此登顶：他看懂了图，也看懂了自己——每一次安点保命，同时是赵阙的一次上弦。</b>此后每一站他都是睁着眼干的，悲剧浓度从此换挡。</span></div>
+    <div class="row"><span class="k">反派</span><span>黎东来与霍钧同框争图；赵阙全书最大一次喂真话。</span></div>
+    <div class="row"><span class="k">五本账</span><span>东西＝三套图纸＋运尸匣方案＋骊山进入方案｜谜＝九鼎出身、三台、玉复制品无用、子母记号谜底｜<b>罪账开户＝沈鸢那一眼。</b></span></div>
+    <div class="row"><span class="k">走完</span><span><b>东海向接班</b>（图纸与拉力双证）。</span></div>
+  </div></div>
+
+  <!-- E7 -->
+  <div class="station" id="e7"><span class="knot todo">E7</span>
+  <div class="card">
+    <div class="eyebrow">样机站 · 全网唯一自己会把"抽"倒成"放"的闸</div>
+    <h2>东海潮汐节点 <span class="badge todo">186—220 章 未写</span></h2>
+    <div class="meta">气性：跟着潮汐一涨一落的周期性反向流</div>
+    <div class="say">进站：「亲眼看一遍，我才敢在骊山做。」<br>出站：「先人也会错。图我照走，但从今天起，每一步我自己核。」</div>
+    <div class="row"><span class="k">为什么来</span><span>看全"抽怎么逆成放"——终局操作手册的最后一页。</span></div>
+    <div class="row"><span class="k">具体操作</span><span>这一站重"读"不重"安"：抓潮汐翻向的那个瞬间看清机理；同时集齐玄微血图的解释层。</span></div>
+    <div class="row"><span class="k">会遇上什么</span><span>涨落之间气路整个翻向的诡异；黎东来收网前最后的抢<span class="tune">可调</span>。</span></div>
+    <div class="row"><span class="k">谜账大爆发</span><span><span class="lock">已锁</span><b>楼兰真相在此揭破</b>——壮烈版塌了：玄微当时还不会、手生害死一城。他对图的信任从此带着裂缝走——<b>这道裂缝，是终局"定向"他敢自己拿主意的种子。</b></span></div>
+    <div class="row"><span class="k">副线</span><span>老头拿到霍钧三桩罪证仍暂压（沈鸢尚在敌方命令链中）；运尸匣制成、玄微余温进入明确倒计时；卷末秘返老宅装匣。</span></div>
+    <div class="row"><span class="k">走完</span><span><b>都市向接班——最后一股枝。</b></span></div>
+  </div></div>
+
+  <!-- E8 -->
+  <div class="station" id="e8"><span class="knot todo">E8</span>
+  <div class="card">
+    <div class="eyebrow">倒数第二闸 ＋ 人局站 · 明线总收网</div>
+    <h2>都市地下 <span class="badge todo">221—260 章 未写</span></h2>
+    <div class="meta">气性：现代城市工程接通的最后一座——接线替不了鼎心指纹，最后一道校准仍须他亲手</div>
+    <div class="say">「只差一座了。」</div>
+    <div class="row"><span class="k">为什么来</span><span>八站只差一座。</span></div>
+    <div class="row"><span class="k">具体操作</span><span>在收网的城市里做第八次五步——环境从荒野换成人间（监控、封控、人流），<b>"走近"的敌人第一次不是鼎，而是人</b><span class="tune">可调</span>。</span></div>
+    <div class="row"><span class="k">会遇上什么</span><span><span class="lock">已锁</span>明线全面收网、身份崩塌；<b>沈鸢得知师父杀了父母、倒向苏衍，随即被霍钧收回作人质</b>；运尸队遭袭；钱满备份账本，埋黎东来的人间结局。</span></div>
+    <div class="row"><span class="k">反派转向</span><span>唯一一次"帮"变"收"——但收网收的是<b>人和定向的筹码</b>，不是拦他去骊山。<b>恰恰相反：收完网，所有人都在把他往骊山送。</b></span></div>
+    <div class="row"><span class="k">五本账</span><span>命＝八枝全清，<b>身上第一次"安静"——只剩根子那一股，日夜指着骊山：全书最吓人的一次安静</b>｜罪＝沈鸢落进人质局。</span></div>
+    <div class="row"><span class="k">走完</span><span><b>中心向独存。</b></span></div>
+  </div></div>
+
+  <!-- C -->
+  <div class="station" id="c9"><span class="knot core">C</span>
+  <div class="card">
+    <div class="eyebrow">总站 · 终局四步</div>
+    <h2>骊山三台 <span class="badge todo">261—300 章 终卷</span></h2>
+    <div class="meta">对线（认位）→ 排线（定向）→ 合总闸（承流，只撑数息）→ 松手（分流，松开八座一路上好弦的闸）</div>
+    <div class="say">「把根拔了。」</div>
+    <div class="row"><span class="k">定向即战场</span><span>主回路的旧默认全指赵阙台——他若不亲手把九条一一夺回，力量就按两千年前的老路全灌给赵阙。<b>沈鸢人质局全压在这一步：赵阙不需要抢玉、不需要搬人，只需要让他自己把流向定过去。</b></span></div>
+    <div class="row"><span class="k">反派终局</span><span>赵阙唯一一次真出手＝拿仍能行动的霍钧作"复活伪证"，把"活着时接线拖死"偷换成"死后还能救回"，骗他定向（圣经三、10 的偷换）；霍钧被老头拖住；黎东来的人间结局由钱满的账本收。</span></div>
+    <div class="row"><span class="k">收束</span><span>每个人都在用自己认为正确的方式，毁掉最想保护的东西。</span></div>
+  </div></div>
+
+</div>
+
+</main>
+
+<footer>
+  <b>全表通用护栏：</b>逐站"他此刻那句话"是动机锚，开拍简报必须引用并核对；标【可调】处改戏不必回圣经，未标处一字不许漂移；<br>
+  揭秘节奏（楼兰真相 E7 · 霍钧露名节奏 · 黎东来配额 · 原理词卷五）任何一站不得提前。<br>
+  本页为《镇冢秘术》总圣经（CANON-ID：ZM-CANON-20260717-02）三、6之补 与 十二之补二 的阅读版 · <b>一切以总圣经为准</b>
+</footer>
+
+<script>
+(function(){
+  var links=document.querySelectorAll('#chips a');
+  var map={};links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a});
+  var obs=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.remove('cur')});
+      var a=map[e.target.id];if(a){a.classList.add('cur');a.scrollIntoView({block:'nearest',inline:'nearest'})}}});
+  },{rootMargin:'-25% 0px -65% 0px'});
+  document.querySelectorAll('section.panel, .station').forEach(function(s){obs.observe(s)});
+})();
+</script>
+</body>
+</html>

@@ -926,4 +926,14 @@ footer b{color:#d8b98a}
 
 </main>
 <footer>《镇冢秘术》总站 · 母本＝设定/00_唯一总圣经（唯一裁决权）＋ 动机图（引擎细讲）＋ 人物册（速查）<br><b>本站与两份灵魂拷问档案均无裁决权 · 待裁四条未拍板前不写一字新正文</b></footer>
-</body></html>
+<script>
+document.querySelectorAll('h3').forEach(function(h){
+ if(h.closest('details'))return;
+ var d=document.createElement('details'),s=document.createElement('summary');
+ s.textContent=h.textContent;
+ s.style.cssText='cursor:pointer;font-weight:700;font-size:1.12em;padding:9px 0';
+ d.appendChild(s);h.parentNode.insertBefore(d,h);
+ var n=h.nextSibling;h.remove();
+ while(n&&!(n.tagName&&/^H[123]$/.test(n.tagName))){var x=n;n=n.nextSibling;d.appendChild(x);}
+});
+</script></body></html>

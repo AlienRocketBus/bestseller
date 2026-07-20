@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CHAPTER_DIR = ROOT / "正文"
 READER = ROOT / "阅读器" / "镇冢秘术_全本阅读器.html"
-CANON_ID = "ZM-CANON-20260719-57"
+CANON_ID = "ZM-CANON-20260719-58"
 
 
 def cn_to_int(value: str) -> int:

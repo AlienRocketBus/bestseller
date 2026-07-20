@@ -936,4 +936,46 @@ document.querySelectorAll('h3').forEach(function(h){
  var n=h.nextSibling;h.remove();
  while(n&&!(n.tagName&&/^H[123]$/.test(n.tagName))){var x=n;n=n.nextSibling;d.appendChild(x);}
 });
+</script><style id="zz-redesign">
+:root{--c0:#c9a86a;--c1:#6fc3c9;--c2:#8fbf7f;--c3:#d98a9c;--c4:#b39ddb;--c5:#e0a06a;--c6:#7fa8d9}
+body{margin-left:262px;max-width:1120px;padding:0 28px 60px;line-height:1.95}
+@media(max-width:900px){body{margin-left:0}#zzSide{display:none}}
+#zzSide{position:fixed;left:0;top:0;bottom:0;width:246px;overflow:auto;background:rgba(0,0,0,.28);border-right:1px solid rgba(210,190,150,.25);padding:14px 12px;font-size:.92em}
+#zzSide input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(210,190,150,.4);background:rgba(255,255,255,.06);color:inherit;margin-bottom:12px}
+#zzSide a{display:block;padding:5px 8px;border-radius:6px;color:inherit;text-decoration:none;opacity:.9}
+#zzSide a:hover{background:rgba(210,190,150,.14)}
+#zzSide .sub{margin-left:14px;font-size:.9em;opacity:.75;border-left:2px solid rgba(210,190,150,.25);padding-left:8px}
+h2{border-left:5px solid var(--ac,#c9a86a);padding-left:12px;margin-top:44px}
+details>summary{border-left:3px solid var(--ac,#c9a86a);padding-left:10px;border-radius:4px}
+details[open]>summary{background:rgba(255,255,255,.04)}
+.zzdim{display:none!important}
+</style>
+<script id="zz-redesign-js">
+(function(){
+var pal=['--c0','--c1','--c2','--c3','--c4','--c5','--c6'];
+var side=document.createElement('nav');side.id='zzSide';
+side.innerHTML='<input id="zzQ" placeholder="🔍 搜全站…（如：暗道 / 手生 / 血图）">';
+document.body.appendChild(side);
+var hs=document.querySelectorAll('h2');
+hs.forEach(function(h,i){
+ var c='var('+pal[i%7]+')';if(!h.id)h.id='sec'+i;h.style.setProperty('--ac',c);
+ var a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent.slice(0,22);a.style.borderLeft='4px solid '+c;a.style.fontWeight='700';side.appendChild(a);
+ var n=h.nextElementSibling,k=0;
+ while(n&&n.tagName!='H2'){
+  n.style&&n.style.setProperty('--ac',c);
+  if(n.tagName=='DETAILS'&&k<14){var s=n.querySelector(':scope>summary');
+   if(s){var b=document.createElement('a');b.className='sub';b.textContent=s.textContent.slice(0,20);
+    b.onclick=function(d){return function(e){e.preventDefault();d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});};}(n);
+    side.appendChild(b);k++;}}
+  n=n.nextElementSibling;}
+});
+var q=document.getElementById('zzQ');
+q.oninput=function(){var v=q.value.trim();
+ document.querySelectorAll('body>details,body>div,body>p,body>h2').forEach(function(el){
+  if(!v){el.classList.remove('zzdim');if(el.tagName=='DETAILS')el.open=false;return;}
+  var hit=el.textContent.indexOf(v)>-1;
+  el.classList.toggle('zzdim',!hit&&el.tagName!='H2');
+  if(hit&&el.tagName=='DETAILS'){el.open=true;el.querySelectorAll('details').forEach(function(d){if(d.textContent.indexOf(v)>-1)d.open=true;});}
+ });};
+})();
 </script></body></html>

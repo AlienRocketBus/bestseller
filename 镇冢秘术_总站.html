@@ -926,56 +926,74 @@ footer b{color:#d8b98a}
 
 </main>
 <footer>《镇冢秘术》总站 · 母本＝设定/00_唯一总圣经（唯一裁决权）＋ 动机图（引擎细讲）＋ 人物册（速查）<br><b>本站与两份灵魂拷问档案均无裁决权 · 待裁四条未拍板前不写一字新正文</b></footer>
-<script>
-document.querySelectorAll('h3').forEach(function(h){
- if(h.closest('details'))return;
- var d=document.createElement('details'),s=document.createElement('summary');
- s.textContent=h.textContent;
- s.style.cssText='cursor:pointer;font-weight:700;font-size:1.12em;padding:9px 0';
- d.appendChild(s);h.parentNode.insertBefore(d,h);
- var n=h.nextSibling;h.remove();
- while(n&&!(n.tagName&&/^H[123]$/.test(n.tagName))){var x=n;n=n.nextSibling;d.appendChild(x);}
-});
-</script><style id="zz-redesign">
-:root{--c0:#c9a86a;--c1:#6fc3c9;--c2:#8fbf7f;--c3:#d98a9c;--c4:#b39ddb;--c5:#e0a06a;--c6:#7fa8d9}
-body{margin-left:262px;max-width:1120px;padding:0 28px 60px;line-height:1.95}
-@media(max-width:900px){body{margin-left:0}#zzSide{display:none}}
-#zzSide{position:fixed;left:0;top:0;bottom:0;width:246px;overflow:auto;background:#1b2430;color:#ecdfc2;border-right:1px solid rgba(210,190,150,.3);padding:14px 12px;font-size:.93em}
-#zzSide input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(210,190,150,.45);background:#243040;color:#f2e8d5;margin-bottom:12px}#zzSide input::placeholder{color:#bfae8c;opacity:.85}
-#zzSide a{display:block;padding:6px 8px;border-radius:6px;color:#ecdfc2;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#zzSide a:hover{background:rgba(210,190,150,.14)}
-#zzSide .sub{margin-left:14px;font-size:.9em;color:#c9b98f;border-left:2px solid rgba(210,190,150,.3);padding-left:8px}
-h2{border-left:5px solid var(--ac,#c9a86a);padding-left:12px;margin-top:44px}
-details>summary{border-left:3px solid var(--ac,#c9a86a);padding-left:10px;border-radius:4px}
-details[open]>summary{background:rgba(255,255,255,.04)}
+
+<style id="zzV2">
+:root{--line:#d9c9a6;--ink:#33291a}
+html{scroll-behavior:smooth}
+body{margin-left:272px;max-width:1160px;padding:26px 40px 90px;line-height:2;font-size:16.5px}
+@media(max-width:960px){body{margin-left:0}#zzSide{display:none}}
+h2{font-size:1.45em;margin:58px 0 20px;padding:14px 20px;border-left:6px solid var(--ac,#c9a86a);background:linear-gradient(90deg,rgba(0,0,0,.05),transparent);border-radius:10px}
+div[style*="dashed"]{border:1px solid var(--line)!important;background:rgba(255,255,255,.35);border-radius:14px!important;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:18px 22px!important}
+details[style]{border:1px solid var(--line)!important;border-radius:12px!important;background:rgba(255,255,255,.45)!important;padding:2px 16px!important;margin:12px 0!important}
+details>summary{list-style:none;cursor:pointer;font-weight:700;padding:12px 6px 12px 14px!important;border-left:4px solid var(--ac,#c9a86a);border-radius:4px}
+details>summary::before{content:"▸ ";color:var(--ac,#c9a86a)}
+details[open]>summary::before{content:"▾ "}
+.row{display:grid!important;grid-template-columns:118px 1fr;gap:6px 16px;padding:10px 2px;border-bottom:1px dashed var(--line)}
+.row .k,.row span.k{font-weight:700;opacity:.75}
+#zzSide{position:fixed;left:0;top:0;bottom:0;width:252px;overflow:auto;background:#171f2a;color:#ead9b5;border-right:1px solid #3a4656;padding:14px 12px;font-size:.92em}
+#zzSide input{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:9px;border:1px solid #4a5668;background:#232e3d;color:#f4ead2;margin-bottom:6px}
+#zzSide input::placeholder{color:#b7a583}
+#zzCnt{font-size:.85em;color:#b7a583;margin:0 0 10px 2px;min-height:1.2em}
+#zzSide details{margin:4px 0}
+#zzSide summary{cursor:pointer;font-weight:700;padding:7px 8px;border-radius:7px;border-left:5px solid var(--ac);list-style:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f0e2bd}
+#zzSide a{display:block;padding:5px 8px 5px 20px;border-radius:6px;color:#cdbb92;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.94em}
+#zzSide a:hover,#zzSide summary:hover{background:#243141}
+#zzSide a.on{background:#2b3a4d;color:#ffe9b8}
 .zzdim{display:none!important}
 </style>
-<script id="zz-redesign-js">
+<script id="zzV2js">
 (function(){
-var pal=['--c0','--c1','--c2','--c3','--c4','--c5','--c6'];
+var old=[...document.querySelectorAll('a')].find(a=>a.textContent.trim().indexOf('一 · 起源')==0);
+if(old){var p=old.closest('div,nav');if(p&&p.id!='zzSide')p.style.display='none';}
+document.querySelectorAll('h3').forEach(function(hd){
+ if(hd.closest('details'))return;
+ var d=document.createElement('details'),s=document.createElement('summary');
+ s.textContent=hd.textContent;d.appendChild(s);hd.parentNode.insertBefore(d,hd);
+ var n=hd.nextSibling;hd.remove();
+ while(n&&!(n.tagName&&/^H[123]$/.test(n.tagName))){var x=n;n=n.nextSibling;d.appendChild(x);}
+});
+var pal=['#c9a86a','#6fc3c9','#8fbf7f','#d98a9c','#b39ddb','#e0a06a','#7fa8d9'];
 var side=document.createElement('nav');side.id='zzSide';
-side.innerHTML='<input id="zzQ" placeholder="🔍 搜全站…（如：暗道 / 手生 / 血图）">';
+side.innerHTML='<input id="zzQ" placeholder="🔍 搜全站（回车跳到第一处）"><div id="zzCnt"></div>';
 document.body.appendChild(side);
-var hs=document.querySelectorAll('h2');
-hs.forEach(function(h,i){
- var c='var('+pal[i%7]+')';if(!h.id)h.id='sec'+i;h.style.setProperty('--ac',c);
- var a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent.slice(0,22);a.style.borderLeft='4px solid '+c;a.style.fontWeight='700';side.appendChild(a);
- var n=h.nextElementSibling,k=0;
+var map=[];
+document.querySelectorAll('h2').forEach(function(hd,i){
+ var c=pal[i%7];hd.style.setProperty('--ac',c);if(!hd.id)hd.id='sec'+i;
+ var g=document.createElement('details');if(i<3)g.open=true;g.style.setProperty('--ac',c);
+ var gs=document.createElement('summary');gs.textContent=hd.textContent.replace(/·.*$/,'').slice(0,16)||hd.textContent.slice(0,16);
+ gs.onclick=function(e){};g.appendChild(gs);
+ var top=document.createElement('a');top.href='#'+hd.id;top.textContent='» 到本区顶部';g.appendChild(top);
+ var n=hd.nextElementSibling,k=0;
  while(n&&n.tagName!='H2'){
   n.style&&n.style.setProperty('--ac',c);
-  if(n.tagName=='DETAILS'&&k<14){var s=n.querySelector(':scope>summary');
-   if(s){var b=document.createElement('a');b.className='sub';b.textContent=s.textContent.slice(0,20);
-    b.onclick=function(d){return function(e){e.preventDefault();d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});};}(n);
-    side.appendChild(b);k++;}}
+  if(n.tagName=='DETAILS'&&k<18){var s=n.querySelector(':scope>summary');
+   if(s){var a=document.createElement('a');a.textContent=s.textContent.slice(0,19);
+    a.href='javascript:;';a.onclick=(function(d){return function(){d.open=true;d.scrollIntoView({block:'start'});};})(n);
+    g.appendChild(a);k++;map.push([hd,a]);}}
   n=n.nextElementSibling;}
+ side.appendChild(g);
 });
-var q=document.getElementById('zzQ');
-q.oninput=function(){var v=q.value.trim();
- document.querySelectorAll('body>details,body>div,body>p,body>h2').forEach(function(el){
+var q=document.getElementById('zzQ'),cnt=document.getElementById('zzCnt'),first=null;
+q.oninput=function(){var v=q.value.trim(),n=0;first=null;
+ document.querySelectorAll('body>*').forEach(function(el){
+  if(el.id=='zzSide'||/SCRIPT|STYLE/.test(el.tagName))return;
   if(!v){el.classList.remove('zzdim');if(el.tagName=='DETAILS')el.open=false;return;}
   var hit=el.textContent.indexOf(v)>-1;
   el.classList.toggle('zzdim',!hit&&el.tagName!='H2');
-  if(hit&&el.tagName=='DETAILS'){el.open=true;el.querySelectorAll('details').forEach(function(d){if(d.textContent.indexOf(v)>-1)d.open=true;});}
- });};
+  if(hit){n++;if(el.tagName=='DETAILS'){el.open=true;if(!first)first=el;
+    el.querySelectorAll('details').forEach(function(d){if(d.textContent.indexOf(v)>-1)d.open=true;});}}
+ });
+ cnt.textContent=v?('命中 '+n+' 块'):'';};
+q.onkeydown=function(e){if(e.key=='Enter'&&first)first.scrollIntoView({block:'start'});};
 })();
 </script></body></html>

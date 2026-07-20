@@ -950,6 +950,12 @@ details[open]>summary::before{content:"▾ "}
 #zzSide a:hover,#zzSide summary:hover{background:#243141}
 #zzSide a.on{background:#2b3a4d;color:#ffe9b8}
 .zzdim{display:none!important}
+#zzSide details{border:none!important;background:none!important;padding:0!important;margin:2px 0!important;box-shadow:none!important}
+#zzSide details>summary{border-left:5px solid var(--gc,#c9a86a)!important;background:none!important;padding:8px 9px!important;font-size:.98em;color:#ffe9b8;border-radius:7px}
+#zzSide details[open]>summary{background:#22303f!important}
+#zzSide details>summary::before{content:"▸ "}
+#zzSide details[open]>summary::before{content:"▾ "}
+.h2sub{font-size:1.12em!important;margin:28px 0 10px!important;padding:8px 14px!important;border-left-width:4px!important;background:none!important;border-radius:6px}
 </style>
 <script id="zzV2js">
 (function(){
@@ -962,24 +968,32 @@ document.querySelectorAll('h3').forEach(function(hd){
  var n=hd.nextSibling;hd.remove();
  while(n&&!(n.tagName&&/^H[123]$/.test(n.tagName))){var x=n;n=n.nextSibling;d.appendChild(x);}
 });
-var pal=['#c9a86a','#6fc3c9','#8fbf7f','#d98a9c','#b39ddb','#e0a06a','#7fa8d9'];
+var KEY=['起源','人物设定集','九鼎图鉴','物件百科','名词术语','灵魂拷问·50','二十五刀','裁清单'];
+function isSec(t){return KEY.some(function(k){return t.indexOf(k)>-1;});}
+var pal=['#c9a86a','#6fc3c9','#8fbf7f','#d98a9c','#b39ddb','#e0a06a','#7fa8d9','#c9a86a'];
+var hs=[...document.querySelectorAll('h2')],gi=0;
 var side=document.createElement('nav');side.id='zzSide';
-side.innerHTML='<input id="zzQ" placeholder="🔍 搜全站（回车跳到第一处）"><div id="zzCnt"></div>';
+side.innerHTML='<input id="zzQ" placeholder="🔍 搜全站（回车跳到第一处命中）"><div id="zzCnt"></div>';
 document.body.appendChild(side);
-var map=[];
-document.querySelectorAll('h2').forEach(function(hd,i){
- var c=pal[i%7];hd.style.setProperty('--ac',c);if(!hd.id)hd.id='sec'+i;
- var g=document.createElement('details');if(i<3)g.open=true;g.style.setProperty('--ac',c);
- var gs=document.createElement('summary');gs.textContent=hd.textContent.replace(/·.*$/,'').slice(0,16)||hd.textContent.slice(0,16);
- gs.onclick=function(e){};g.appendChild(gs);
- var top=document.createElement('a');top.href='#'+hd.id;top.textContent='» 到本区顶部';g.appendChild(top);
+hs.forEach(function(hd,i){
+ var t=hd.textContent.trim();
+ if(!isSec(t)){hd.classList.add('h2sub');if(!hd.id)hd.id='sub'+i;return;}
+ var c=pal[gi%8];gi++;hd.style.setProperty('--ac',c);if(!hd.id)hd.id='sec'+i;
+ var g=document.createElement('details');
+ var gs=document.createElement('summary');gs.textContent=t;gs.style.setProperty('--gc',c);gs.title=t;
+ g.appendChild(gs);
+ var top=document.createElement('a');top.href='#'+hd.id;top.textContent='» 本区顶部';g.appendChild(top);
  var n=hd.nextElementSibling,k=0;
- while(n&&n.tagName!='H2'){
+ while(n&&!(n.tagName=='H2'&&isSec(n.textContent))){
   n.style&&n.style.setProperty('--ac',c);
-  if(n.tagName=='DETAILS'&&k<18){var s=n.querySelector(':scope>summary');
-   if(s){var a=document.createElement('a');a.textContent=s.textContent.slice(0,19);
-    a.href='javascript:;';a.onclick=(function(d){return function(){d.open=true;d.scrollIntoView({block:'start'});};})(n);
-    g.appendChild(a);k++;map.push([hd,a]);}}
+  if(k<30){
+   if(n.tagName=='DETAILS'){var s=n.querySelector(':scope>summary');
+    if(s){var a=document.createElement('a');a.textContent=s.textContent.trim().slice(0,26);a.title=s.textContent.trim();
+     a.href='javascript:;';a.onclick=(function(d){return function(){d.open=true;d.scrollIntoView({block:'start'});};})(n);
+     g.appendChild(a);k++;}}
+   else if(n.tagName=='H2'){var a2=document.createElement('a');a2.textContent='◆ '+n.textContent.trim().slice(0,24);a2.title=n.textContent.trim();
+    a2.href='#'+n.id;a2.style.color='#ffd98e';g.appendChild(a2);k++;}
+  }
   n=n.nextElementSibling;}
  side.appendChild(g);
 });
@@ -989,7 +1003,7 @@ q.oninput=function(){var v=q.value.trim(),n=0;first=null;
   if(el.id=='zzSide'||/SCRIPT|STYLE/.test(el.tagName))return;
   if(!v){el.classList.remove('zzdim');if(el.tagName=='DETAILS')el.open=false;return;}
   var hit=el.textContent.indexOf(v)>-1;
-  el.classList.toggle('zzdim',!hit&&el.tagName!='H2');
+  el.classList.toggle('zzdim',!hit&&!/^H2$/.test(el.tagName));
   if(hit){n++;if(el.tagName=='DETAILS'){el.open=true;if(!first)first=el;
     el.querySelectorAll('details').forEach(function(d){if(d.textContent.indexOf(v)>-1)d.open=true;});}}
  });

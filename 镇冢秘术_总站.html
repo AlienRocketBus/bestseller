@@ -943,6 +943,7 @@ details[open]>summary::before{content:"▾ "}
 #zzSide{position:fixed;left:0;top:0;bottom:0;width:252px;overflow:auto;background:#171f2a;color:#ead9b5;border-right:1px solid #3a4656;padding:14px 12px;font-size:.92em}
 #zzSide input{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:9px;border:1px solid #4a5668;background:#232e3d;color:#f4ead2;margin-bottom:6px}
 #zzSide input::placeholder{color:#b7a583}
+#zzTitle{font-weight:700;font-size:1.02em;color:#ffe9b8;padding:4px 4px 12px;letter-spacing:.5px}
 #zzCnt{font-size:.85em;color:#b7a583;margin:0 0 10px 2px;min-height:1.2em}
 #zzSide details{margin:4px 0}
 #zzSide summary{cursor:pointer;font-weight:700;padding:7px 8px;border-radius:7px;border-left:5px solid var(--ac);list-style:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f0e2bd}
@@ -959,8 +960,6 @@ details[open]>summary::before{content:"▾ "}
 </style>
 <script id="zzV2js">
 (function(){
-var old=[...document.querySelectorAll('a')].find(a=>a.textContent.trim().indexOf('一 · 起源')==0);
-if(old){var p=old.closest('div,nav');if(p&&p.id!='zzSide')p.style.display='none';}
 document.querySelectorAll('h3').forEach(function(hd){
  if(hd.closest('details'))return;
  var d=document.createElement('details'),s=document.createElement('summary');
@@ -968,31 +967,38 @@ document.querySelectorAll('h3').forEach(function(hd){
  var n=hd.nextSibling;hd.remove();
  while(n&&!(n.tagName&&/^H[123]$/.test(n.tagName))){var x=n;n=n.nextSibling;d.appendChild(x);}
 });
-var KEY=['起源','人物设定集','九鼎图鉴','物件百科','名词术语','灵魂拷问·50','二十五刀','裁清单'];
-function isSec(t){return KEY.some(function(k){return t.indexOf(k)>-1;});}
-var pal=['#c9a86a','#6fc3c9','#8fbf7f','#d98a9c','#b39ddb','#e0a06a','#7fa8d9','#c9a86a'];
-var hs=[...document.querySelectorAll('h2')],gi=0;
+var navs=[...document.querySelectorAll('a[href^="#"]')].filter(function(a){return a.textContent.trim().length<20&&document.getElementById(a.getAttribute('href').slice(1));});
+var seen={},secs=[];
+navs.forEach(function(a){var id=a.getAttribute('href').slice(1);if(seen[id])return;seen[id]=1;
+ var el=document.getElementById(id);if(el)secs.push({name:a.textContent.trim(),el:el,id:id});});
+if(secs.length<4){secs=[...document.querySelectorAll('h2')].map(function(e,i){if(!e.id)e.id='s'+i;return{name:e.textContent.trim().split(/\s{2,}|　/)[0].slice(0,18),el:e,id:e.id};});}
+var bar=navs.length?navs[0].closest('div,nav,header'):null;if(bar&&bar.id!='zzSide')bar.style.display='none';
+var pal=['#e0b871','#6fc3c9','#8fbf7f','#e58fa6','#b9a3e8','#e8a06a','#7fa8d9','#d3c07a'];
 var side=document.createElement('nav');side.id='zzSide';
-side.innerHTML='<input id="zzQ" placeholder="🔍 搜全站（回车跳到第一处命中）"><div id="zzCnt"></div>';
+side.innerHTML='<div id="zzTitle">镇冢秘术 · 总站</div><input id="zzQ" placeholder="🔍 搜全站（回车跳第一处）"><div id="zzCnt"></div>';
 document.body.appendChild(side);
-hs.forEach(function(hd,i){
- var t=hd.textContent.trim();
- if(!isSec(t)){hd.classList.add('h2sub');if(!hd.id)hd.id='sub'+i;return;}
- var c=pal[gi%8];gi++;hd.style.setProperty('--ac',c);if(!hd.id)hd.id='sec'+i;
+secs.forEach(function(sec,i){
+ var c=pal[i%8];var start=sec.el;start.style.setProperty('--ac',c);
+ var stop=secs[i+1]?secs[i+1].el:null;
  var g=document.createElement('details');
- var gs=document.createElement('summary');gs.textContent=t;gs.style.setProperty('--gc',c);gs.title=t;
+ var gs=document.createElement('summary');gs.textContent=sec.name;gs.title=sec.name;gs.style.setProperty('--gc',c);
  g.appendChild(gs);
- var top=document.createElement('a');top.href='#'+hd.id;top.textContent='» 本区顶部';g.appendChild(top);
- var n=hd.nextElementSibling,k=0;
- while(n&&!(n.tagName=='H2'&&isSec(n.textContent))){
+ var top=document.createElement('a');top.href='#'+sec.id;top.textContent='» 本区顶部';g.appendChild(top);
+ var n=start.nextElementSibling,k=0;
+ while(n&&n!==stop){
   n.style&&n.style.setProperty('--ac',c);
-  if(k<30){
-   if(n.tagName=='DETAILS'){var s=n.querySelector(':scope>summary');
-    if(s){var a=document.createElement('a');a.textContent=s.textContent.trim().slice(0,26);a.title=s.textContent.trim();
+  if(k<40){
+   if(n.tagName=='H2'){n.classList.add('h2sub');if(!n.id)n.id='x'+i+'-'+k;
+    var a2=document.createElement('a');a2.textContent='◆ '+n.textContent.trim().split(/\s{2,}|　/)[0].slice(0,22);
+    a2.title=n.textContent.trim();a2.href='#'+n.id;a2.style.color='#ffd98e';a2.style.fontWeight='700';g.appendChild(a2);k++;}
+   else if(n.tagName=='DETAILS'){var s=n.querySelector(':scope>summary');
+    if(s){var a=document.createElement('a');a.textContent=s.textContent.trim().slice(0,24);a.title=s.textContent.trim();
      a.href='javascript:;';a.onclick=(function(d){return function(){d.open=true;d.scrollIntoView({block:'start'});};})(n);
      g.appendChild(a);k++;}}
-   else if(n.tagName=='H2'){var a2=document.createElement('a');a2.textContent='◆ '+n.textContent.trim().slice(0,24);a2.title=n.textContent.trim();
-    a2.href='#'+n.id;a2.style.color='#ffd98e';g.appendChild(a2);k++;}
+   else if(n.querySelector){var ds=n.querySelectorAll(':scope>details>summary');
+    ds.forEach(function(s2){if(k>=40)return;var a3=document.createElement('a');a3.textContent=s2.textContent.trim().slice(0,24);a3.title=s2.textContent.trim();
+     a3.href='javascript:;';a3.onclick=(function(d){return function(){d.open=true;d.scrollIntoView({block:'start'});};})(s2.parentElement);
+     g.appendChild(a3);k++;});}
   }
   n=n.nextElementSibling;}
  side.appendChild(g);
@@ -1003,9 +1009,9 @@ q.oninput=function(){var v=q.value.trim(),n=0;first=null;
   if(el.id=='zzSide'||/SCRIPT|STYLE/.test(el.tagName))return;
   if(!v){el.classList.remove('zzdim');if(el.tagName=='DETAILS')el.open=false;return;}
   var hit=el.textContent.indexOf(v)>-1;
-  el.classList.toggle('zzdim',!hit&&!/^H2$/.test(el.tagName));
-  if(hit){n++;if(el.tagName=='DETAILS'){el.open=true;if(!first)first=el;
-    el.querySelectorAll('details').forEach(function(d){if(d.textContent.indexOf(v)>-1)d.open=true;});}}
+  el.classList.toggle('zzdim',!hit&&el.tagName!='H2');
+  if(hit){n++;if(el.tagName=='DETAILS'){el.open=true;if(!first)first=el;}
+   el.querySelectorAll&&el.querySelectorAll('details').forEach(function(d){if(d.textContent.indexOf(v)>-1){d.open=true;if(!first)first=d;}});}
  });
  cnt.textContent=v?('命中 '+n+' 块'):'';};
 q.onkeydown=function(e){if(e.key=='Enter'&&first)first.scrollIntoView({block:'start'});};

@@ -155,6 +155,30 @@ def delivery_stats(t):
                             or any(w in tail for w in _HOOK_DEBT))
     return dict(obj=obj,led=led,hand=hand,dlg=dlg,water=water,hook=hook,paras=len(paras))
 
+_OPEN_BAD=('天','雾','风','光','山','夜','雨','空气','四下','四周','心里','我想','静')
+def hook_stats(t):
+    """章级钩子体检：开篇三行/中段翻面/信息增量。"""
+    body=_bodyx(t)
+    paras=[p.strip() for p in body.split('\n') if p.strip()]
+    head=''.join(paras[:3])
+    open_ok = ('"' in head or '「' in head or any(w in head for w in _D_HAND)
+               or '？' in head or any(w in head for w in ('断','没了','失踪','来了','不对','停','止')))
+    if not open_ok and paras:
+        h0=re.sub(r'\s','',paras[0])[:12]
+        open_ok = not any(h0.startswith(w) for w in _OPEN_BAD)
+    mid=''.join(paras[len(paras)//4:len(paras)*3//4])
+    turn=sum(1 for w in ('不对','可是','偏偏','忽然','这一回','原来','才','竟','没想到','反过来','止了','断了','变了','不是','而是') if w in mid)
+    fact=sum(1 for w in ('原来','其实','这才','说明','就是','叫','名','法子','规矩','门道','记法','谜','答案') if w in body)
+    return dict(open_ok=open_ok,turn=turn,fact=fact)
+
+def hook_violation(hs,ch):
+    out=[]
+    if ch>=DELIVERY_FROM_CH:
+        if not hs['open_ok']: out.append('开篇无钩:头三行写景/心情起手(须以动作、对白或悬念开场)')
+        if hs['turn']<2: out.append(f"中段太平:全章翻面处仅{hs['turn']}(须≥2;每章至少一处推翻旧判断/一句让人一凛的话/一笔对不上的账)")
+        if hs['fact']<3: out.append(f"信息零增量:本章新讲明白的事仅{hs['fact']}处(须≥3;读者每章必须新知道一件能进档案的硬事实)")
+    return out
+
 def delivery_violation(ds,ch):
     """返回(硬错列表, 复核列表)"""
     hard=[];rev=[]
@@ -1379,6 +1403,7 @@ def mech_layer(files,focus,lib):
             pr.append(f'超上限参考:全章{wc}字>10000,请确认是否分章')
         _ds=delivery_stats(t); _hard,_rev=delivery_violation(_ds,n)
         pr.extend(_hard)
+        pr.extend(hook_violation(hook_stats(t),n))
         for _r in _rev: print(f'  ▲第{n}章精彩复核: {_r}')
         if weight_violation(wc,n,_short_ch_exempt(n)):
             pr.append(f'分量不足:全章{wc}字<硬下限{MIN_CHARS_NEW};如确属短章,须在施工表登记\u201c第 {n} 章短章豁免\u201d并说明理由(2026-07-17反向闸)')

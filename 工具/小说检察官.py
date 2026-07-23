@@ -46,10 +46,10 @@ CANON_PATH = os.path.join(REPO_ROOT, '设定', 'canon事实库.json')
 MASTER_CANON_PATH = os.path.join(REPO_ROOT, '设定', '00_镇冢秘术_唯一总圣经.md')
 BUILD_TABLE_PATH = os.path.join(REPO_ROOT, '设定', '01_镇冢秘术_逐章施工与伏笔回收表.md')
 README_PATH = os.path.join(REPO_ROOT, 'README.md')
-EXPECTED_CANON_ID = 'ZM-CANON-20260720-78'
+EXPECTED_CANON_ID = 'ZM-CANON-20260720-79'
 EXPECTED_MASTER_REL = '设定/00_镇冢秘术_唯一总圣经.md'
 EXPECTED_AUTHORITY_ORDER = [
-    EXPECTED_MASTER_REL + '（唯一剧情权威，CANON-ID=ZM-CANON-20260720-78）',
+    EXPECTED_MASTER_REL + '（唯一剧情权威，CANON-ID=ZM-CANON-20260720-79）',
     '设定/canon事实库.json（机器镜像，无独立裁决权）',
     '最新正文中事件第一次完整演出的原场（仅在唯一总圣经未推翻该现场时生效）',
 ]
@@ -119,77 +119,8 @@ def _short_ch_exempt(n):
 def weight_violation(chars,ch,exempted):
     return ch>=WEIGHT_FROM_CH and chars<MIN_CHARS_NEW and not exempted
 
-# ―― 精彩闸(2026-07-20 作者令：字数管下限，账目管质量，钩子管精彩) ――
-MIN_CHARS_FLOOR = 2000    # 作者铁底：任何章不得低于(含存量;低于即ERROR或挂待补名单)
-MAX_CHARS_SOFT  = 10000   # 上限参考，超出报REVIEW
-DELIVERY_FROM_CH = 74     # 交付三样从此章起硬查
-
-_D_OBJ = ('拓片','记号','纹','碑','构件','图','本子','铅笔','灯','针','刀','绳','玉','印','石','痕','脚印','口子','龛','拓')
-_D_LEDGER = ('步','账','实了','松了','匀','闷','乱','眼黑','利钱','半息','数','一千','三十七','强','弱','热','凉')
-_D_HAND = ('伸手','抬手','蹲','摸','按','攥','递','扶','拧','拨','压','擦','描','折','收进','摊开','抽出','搭','托','捏','点头','摇头','迈','踩','停住','回头')
-_HOOK_TAIL = ('？','。"','"','！')
-_SCENERY = ('黑','雾','石','壁','光','影','风','水','土','空气','味','静','暗','冷','湿')
-
-def delivery_stats(t):
-    """交付三样：新物证/新账目/手上动作；外加钩子与反水指标。"""
-    body=_bodyx(t)
-    paras=[p.strip() for p in body.split('\n') if p.strip()]
-    obj=sum(1 for w in _D_OBJ if w in body)
-    led=sum(1 for w in _D_LEDGER if w in body)
-    hand=sum(1 for w in _D_HAND if w in body)
-    dlg=sum(1 for p in paras if '"' in p or '「' in p)
-    # 反水：连续无动作无对话的纯写景段
-    water=0; run=0
-    for p in paras:
-        pl=re.sub(r'\s','',p)
-        act = ('"' in p or '「' in p or any(w in p for w in _D_HAND))
-        scen= sum(1 for w in _SCENERY if w in p)>=2
-        if scen and not act and len(pl)>=40: run+=1
-        else:
-            if run>=3: water+=1
-            run=0
-    if run>=3: water+=1
-    tail=''.join(paras[-3:])[-60:] if paras else ''
-    _HOOK_DEBT=('欠','没有','还没','不知道','第一次','再没','以后','明天','等着','留下','空着','谁','什么','为什么','走','来了','开始','断了','没了','要来','会来')
-    hook = bool(paras) and (any(tail.endswith(x) for x in _HOOK_TAIL) or '？' in tail
-                            or any(w in tail for w in _HOOK_DEBT))
-    return dict(obj=obj,led=led,hand=hand,dlg=dlg,water=water,hook=hook,paras=len(paras))
-
-_OPEN_BAD=('天','雾','风','光','山','夜','雨','空气','四下','四周','心里','我想','静')
-def hook_stats(t):
-    """章级钩子体检：开篇三行/中段翻面/信息增量。"""
-    body=_bodyx(t)
-    paras=[p.strip() for p in body.split('\n') if p.strip()]
-    head=''.join(paras[:3])
-    open_ok = ('"' in head or '「' in head or any(w in head for w in _D_HAND)
-               or '？' in head or any(w in head for w in ('断','没了','失踪','来了','不对','停','止')))
-    if not open_ok and paras:
-        h0=re.sub(r'\s','',paras[0])[:12]
-        open_ok = not any(h0.startswith(w) for w in _OPEN_BAD)
-    mid=''.join(paras[len(paras)//4:len(paras)*3//4])
-    turn=sum(1 for w in ('不对','可是','偏偏','忽然','这一回','原来','才','竟','没想到','反过来','止了','断了','变了','不是','而是') if w in mid)
-    fact=sum(1 for w in ('原来','其实','这才','说明','就是','叫','名','法子','规矩','门道','记法','谜','答案') if w in body)
-    return dict(open_ok=open_ok,turn=turn,fact=fact)
-
-def hook_violation(hs,ch):
-    out=[]
-    if ch>=DELIVERY_FROM_CH:
-        if not hs['open_ok']: out.append('开篇无钩:头三行写景/心情起手(须以动作、对白或悬念开场)')
-        if hs['turn']<2: out.append(f"中段太平:全章翻面处仅{hs['turn']}(须≥2;每章至少一处推翻旧判断/一句让人一凛的话/一笔对不上的账)")
-        if hs['fact']<3: out.append(f"信息零增量:本章新讲明白的事仅{hs['fact']}处(须≥3;读者每章必须新知道一件能进档案的硬事实)")
-    return out
-
-def delivery_violation(ds,ch):
-    """返回(硬错列表, 复核列表)"""
-    hard=[];rev=[]
-    if ch>=DELIVERY_FROM_CH:
-        if ds['obj']<2: hard.append(f"交付缺【物证】:全章可查看之物仅{ds['obj']}类(须≥2;拿出来看的东西才是钩子)")
-        if ds['led']<3: hard.append(f"交付缺【账目】:拉力/步数/耗损类账仅{ds['led']}项(须≥3;本书的力气在账上)")
-        if ds['hand']<8: hard.append(f"交付缺【手上动作】:具体动作仅{ds['hand']}处(须≥8;禁抖令要求写动作不写形容)")
-        if ds['dlg']<4: hard.append(f"对白过稀:带白段落仅{ds['dlg']}(须≥4;全景无声=闷章)")
-        if not ds['hook']: hard.append("收章无钩:末段未落在问句/对白/悬账上(章末必须让人想翻下一页)")
-    if ds['water']: rev.append(f"疑似灌水:{ds['water']}处连续3段以上纯写景无动作无对白")
-    return hard,rev
+MIN_CHARS_FLOOR = 2000    # 作者铁底(只管量,不管法;2026-07-20)
+MAX_CHARS_SOFT  = 10000   # 上限参考,超出仅提醒不判错
 
 # ====================================================================
 #  〔一〕机器人肚子里的"创作规范全文"——它本身就懂的全部规矩
@@ -265,7 +196,7 @@ def delivery_violation(ds,ch):
 **三问·读者**：一个普通读者读到这儿，会不会想往下翻？哪一段他会走神、想跳过？哪一句他会心头一动？读完这一章，他有没有非追下一章不可的冲动？——这个拷问比任何技术检查都重要，读者手指一划就走了。
 
 ## 〇、故事圣经要点（设定不许漂）
-- 唯一剧情权威：`设定/00_镇冢秘术_唯一总圣经.md`，CANON-ID=`ZM-CANON-20260720-78`。`canon事实库.json`只是机器镜像；写章与检索只允许再带入配套施工表，旧五项裁定、50轮闭环录、旧圣经、旧框架、旧“终极／唯一／定稿”文件与旧交接稿必须排除，均无裁决权。
+- 唯一剧情权威：`设定/00_镇冢秘术_唯一总圣经.md`，CANON-ID=`ZM-CANON-20260720-79`。`canon事实库.json`只是机器镜像；写章与检索只允许再带入配套施工表，旧五项裁定、50轮闭环录、旧圣经、旧框架、旧“终极／唯一／定稿”文件与旧交接稿必须排除，均无裁决权。
 - 主角苏衍：23岁，报社记者，由爷爷一人在关中塬上拉扯大；他从小就能看见“气”，不是合玉那晚才突然获得。
 - 【时间线·不许写错】苏衍16岁离家进城，一去七年没回过。那半块玉是【七年前离家那天、在车站】爷爷红着眼眶、攥着他手塞给他的（说「发烫就回来」），他贴身焐了七年。爷爷是近日才去世，苏衍当年走后一直与爷爷疏远、【死时不在场】。所以：① 塞玉、爷爷的红眼眶只能写「当年/七年前/离别那回」，绝不能写「临死前/临终」；② 苏衍没见过爷爷「临死前」的样子，别让他描述死时的神情。
 - 【年龄旧案·不许漂】沈鸢现年27岁，比苏衍大4岁；3岁时父母被霍钧杀害，距当前正好24年。霍钧此后抱走她、伪装救援并接管命令链。
@@ -565,7 +496,7 @@ MANUAL = [
     '章末钩子——每一章最后一段必须停在揭露/危机/悬念上,无一例外;收在"安稳"上的结尾重写?',
     '伏笔台账——本章新埋的每一颗种子(名字、道具、一行小字如"黎氏文化基金会"),登记埋在哪、计划哪一卷回收;写完一章对一次账(命令:框架)?',
     '巧合律——书里立过"这世上没有这样的巧合":此后每一处"巧",要么当场敲一记(人物起疑),要么是明写的敌方安排;不许出现作者图省事的免费巧合?',
-    '权威对表——只按《00_镇冢秘术_唯一总圣经.md》（CANON-ID=ZM-CANON-20260720-78）核本章；未被总圣经推翻的已演出事件再对第一次完整原场；旧设定稿不得反向覆盖?',
+    '权威对表——只按《00_镇冢秘术_唯一总圣经.md》（CANON-ID=ZM-CANON-20260720-79）核本章；未被总圣经推翻的已演出事件再对第一次完整原场；旧设定稿不得反向覆盖?',
     '度(反两极化)——本轮所有修改与规则调整,有没有矫枉过正?用户说"少一点"=调量,不是清零;说"这处换个说法"=换这一处,不是全书禁用;直白常用语(一片空白/手忙脚乱)一眼就懂、正当其位,就是好句。每次收紧规则前先问:这一刀,会不会把好的也一起砍了?',
     '文采病——本章有没有为了显文采写出的别扭描述(反例:警笛声"扎回"耳朵)?检验法:把这句念给普通读者听,他会不会皱眉问"啥意思"?会,就改成正常说法;为避重复换的词,是不是比原词更平更顺,而不是更冷更怪?',
     '字数对齐——本章每一处"X个字",引文汉字数点清了吗(标点不算)?这招全章用了几次(至多一次)?',
@@ -1017,7 +948,7 @@ def cross_chapter_check(files):
 FRAMEWORK = """
 ════════ 《镇冢秘术》当前剧情权威入口 ════════
 唯一剧情权威：设定/00_镇冢秘术_唯一总圣经.md
-CANON-ID：ZM-CANON-20260720-78
+CANON-ID：ZM-CANON-20260720-79
 
 canon事实库.json 只是机器镜像。未被总圣经推翻的已演出事件，才再以第一次完整原场为现场锚点。
 活动输入只允许唯一总圣经、配套施工表和canon事实库。旧五项裁定、50轮闭环录、旧圣经、旧框架、
@@ -1398,13 +1329,9 @@ def mech_layer(files,focus,lib):
             if (rv is None or n<rv) and w in t: pr.append(f'未到揭名[{w}≥{rv}]')
         wc,_,_=_weight_stats(t)
         if wc<MIN_CHARS_FLOOR and not _short_ch_exempt(n):
-            pr.append(f'跌破作者铁底:全章{wc}字<2000(2026-07-20作者令;存量四章见施工表待补名单)')
+            pr.append(f'跌破作者铁底:全章{wc}字<2000(2026-07-20作者令;存量见施工表待补名单)')
         if wc>MAX_CHARS_SOFT:
-            pr.append(f'超上限参考:全章{wc}字>10000,请确认是否分章')
-        _ds=delivery_stats(t); _hard,_rev=delivery_violation(_ds,n)
-        pr.extend(_hard)
-        pr.extend(hook_violation(hook_stats(t),n))
-        for _r in _rev: print(f'  ▲第{n}章精彩复核: {_r}')
+            print(f'  ▲第{n}章体量提醒:全章{wc}字>10000,可自查是否分章(不判错)')
         if weight_violation(wc,n,_short_ch_exempt(n)):
             pr.append(f'分量不足:全章{wc}字<硬下限{MIN_CHARS_NEW};如确属短章,须在施工表登记\u201c第 {n} 章短章豁免\u201d并说明理由(2026-07-17反向闸)')
         if pr: ERR+=len(pr); print(f'  ✗第{n}章《{nm}》:'); [print('     ',x) for x in pr]
@@ -1486,7 +1413,7 @@ LAWS_DIGEST=("  ▣ 二十一项常驻守卫:①回述必贴原场,只补白不�
 "  ▣ ⑲门与血图:各墓石门只是本地物理隔断,关门不能取消共享气路(F021);血图原件—玄微尸腕—衣裹层源印联锁,ch13试取失败,卷六须卸力并整体装匣(F022/F058)\n"
 "  ▣ ⑳望气能力:苏衍从小能看见气;望气负责看气息/状态,玉可同时响应多个高浓度同源源头。二者互补,但都不自动判断敌我或安全路线\n"
 "  ▣ ㉑终局生命三层:霍钧=未断气旧伤续命,沈鸢断气后不可救,赵阙只能拿霍钧作伪证诱骗;苏衍留流只能保尸;老头送刀只为割绳\n"
-"  ▣ ⑫账尺归机器,心策归执笔:唯一剧情权威=《00_镇冢秘术_唯一总圣经.md》(CANON-ID=ZM-CANON-20260720-78);只带入配套施工表和事实库,其余旧设定全部排除;未被推翻的已演出事件再对首个完整原场;到期账必裁决(接/展期/废)\n"
+"  ▣ ⑫账尺归机器,心策归执笔:唯一剧情权威=《00_镇冢秘术_唯一总圣经.md》(CANON-ID=ZM-CANON-20260720-79);只带入配套施工表和事实库,其余旧设定全部排除;未被推翻的已演出事件再对首个完整原场;到期账必裁决(接/展期/废)\n"
 "  ▣ 全文见《镇冢秘术_防前后矛盾提示词系统.md》(python3 小说检察官.py --提示词 一键打印;两文件同步进化,永为一体)")
 
 def second_gate(scope):

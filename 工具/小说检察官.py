@@ -119,6 +119,52 @@ def _short_ch_exempt(n):
 def weight_violation(chars,ch,exempted):
     return ch>=WEIGHT_FROM_CH and chars<MIN_CHARS_NEW and not exempted
 
+# ―― 精彩闸(2026-07-20 作者令：字数管下限，账目管质量，钩子管精彩) ――
+MIN_CHARS_FLOOR = 2000    # 作者铁底：任何章不得低于(含存量;低于即ERROR或挂待补名单)
+MAX_CHARS_SOFT  = 10000   # 上限参考，超出报REVIEW
+DELIVERY_FROM_CH = 74     # 交付三样从此章起硬查
+
+_D_OBJ = ('拓片','记号','纹','碑','构件','图','本子','铅笔','灯','针','刀','绳','玉','印','石','痕','脚印','口子','龛','拓')
+_D_LEDGER = ('步','账','实了','松了','匀','闷','乱','眼黑','利钱','半息','数','一千','三十七','强','弱','热','凉')
+_D_HAND = ('伸手','抬手','蹲','摸','按','攥','递','扶','拧','拨','压','擦','描','折','收进','摊开','抽出','搭','托','捏','点头','摇头','迈','踩','停住','回头')
+_HOOK_TAIL = ('？','。"','"','！')
+_SCENERY = ('黑','雾','石','壁','光','影','风','水','土','空气','味','静','暗','冷','湿')
+
+def delivery_stats(t):
+    """交付三样：新物证/新账目/手上动作；外加钩子与反水指标。"""
+    body=_bodyx(t)
+    paras=[p.strip() for p in body.split('\n') if p.strip()]
+    obj=sum(1 for w in _D_OBJ if w in body)
+    led=sum(1 for w in _D_LEDGER if w in body)
+    hand=sum(1 for w in _D_HAND if w in body)
+    dlg=sum(1 for p in paras if '"' in p or '「' in p)
+    # 反水：连续无动作无对话的纯写景段
+    water=0; run=0
+    for p in paras:
+        pl=re.sub(r'\s','',p)
+        act = ('"' in p or '「' in p or any(w in p for w in _D_HAND))
+        scen= sum(1 for w in _SCENERY if w in p)>=2
+        if scen and not act and len(pl)>=40: run+=1
+        else:
+            if run>=3: water+=1
+            run=0
+    if run>=3: water+=1
+    tail=''.join(paras[-2:])[-40:] if paras else ''
+    hook = bool(paras) and (any(tail.endswith(x) for x in _HOOK_TAIL) or '？' in tail)
+    return dict(obj=obj,led=led,hand=hand,dlg=dlg,water=water,hook=hook,paras=len(paras))
+
+def delivery_violation(ds,ch):
+    """返回(硬错列表, 复核列表)"""
+    hard=[];rev=[]
+    if ch>=DELIVERY_FROM_CH:
+        if ds['obj']<2: hard.append(f"交付缺【物证】:全章可查看之物仅{ds['obj']}类(须≥2;拿出来看的东西才是钩子)")
+        if ds['led']<3: hard.append(f"交付缺【账目】:拉力/步数/耗损类账仅{ds['led']}项(须≥3;本书的力气在账上)")
+        if ds['hand']<8: hard.append(f"交付缺【手上动作】:具体动作仅{ds['hand']}处(须≥8;禁抖令要求写动作不写形容)")
+        if ds['dlg']<4: hard.append(f"对白过稀:带白段落仅{ds['dlg']}(须≥4;全景无声=闷章)")
+        if not ds['hook']: hard.append("收章无钩:末段未落在问句/对白/悬账上(章末必须让人想翻下一页)")
+    if ds['water']: rev.append(f"疑似灌水:{ds['water']}处连续3段以上纯写景无动作无对白")
+    return hard,rev
+
 # ====================================================================
 #  〔一〕机器人肚子里的"创作规范全文"——它本身就懂的全部规矩
 # ====================================================================
@@ -1325,6 +1371,13 @@ def mech_layer(files,focus,lib):
         for w,rv in lib['reveal'].items():
             if (rv is None or n<rv) and w in t: pr.append(f'未到揭名[{w}≥{rv}]')
         wc,_,_=_weight_stats(t)
+        if wc<MIN_CHARS_FLOOR and not _short_ch_exempt(n):
+            pr.append(f'跌破作者铁底:全章{wc}字<2000(2026-07-20作者令;存量四章见施工表待补名单)')
+        if wc>MAX_CHARS_SOFT:
+            pr.append(f'超上限参考:全章{wc}字>10000,请确认是否分章')
+        _ds=delivery_stats(t); _hard,_rev=delivery_violation(_ds,n)
+        pr.extend(_hard)
+        for _r in _rev: print(f'  ▲第{n}章精彩复核: {_r}')
         if weight_violation(wc,n,_short_ch_exempt(n)):
             pr.append(f'分量不足:全章{wc}字<硬下限{MIN_CHARS_NEW};如确属短章,须在施工表登记\u201c第 {n} 章短章豁免\u201d并说明理由(2026-07-17反向闸)')
         if pr: ERR+=len(pr); print(f'  ✗第{n}章《{nm}》:'); [print('     ',x) for x in pr]

@@ -149,8 +149,10 @@ def delivery_stats(t):
             if run>=3: water+=1
             run=0
     if run>=3: water+=1
-    tail=''.join(paras[-2:])[-40:] if paras else ''
-    hook = bool(paras) and (any(tail.endswith(x) for x in _HOOK_TAIL) or '？' in tail)
+    tail=''.join(paras[-3:])[-60:] if paras else ''
+    _HOOK_DEBT=('欠','没有','还没','不知道','第一次','再没','以后','明天','等着','留下','空着','谁','什么','为什么','走','来了','开始','断了','没了','要来','会来')
+    hook = bool(paras) and (any(tail.endswith(x) for x in _HOOK_TAIL) or '？' in tail
+                            or any(w in tail for w in _HOOK_DEBT))
     return dict(obj=obj,led=led,hand=hand,dlg=dlg,water=water,hook=hook,paras=len(paras))
 
 def delivery_violation(ds,ch):

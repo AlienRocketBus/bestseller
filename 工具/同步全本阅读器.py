@@ -78,6 +78,11 @@ def read_chapters() -> list[dict[str, object]]:
                 f"标题={number}"
             )
         body_text = "\n".join(lines[header_index + 1:]).strip()
+        highlight = ""
+        if "【本章亮点】" in body_text:
+            body_text, _, hl_part = body_text.partition("【本章亮点】")
+            body_text = body_text.strip()
+            highlight = " ".join(hl_part.strip().split())
         paragraphs = [
             " ".join(part.strip().splitlines())
             for part in re.split(r"\n\s*\n", body_text)
@@ -90,6 +95,7 @@ def read_chapters() -> list[dict[str, object]]:
             "title": title,
             "paragraphs": paragraphs,
             "char_count": char_count,
+            "highlight": highlight,
             "path": path,
         })
 
@@ -115,8 +121,19 @@ def render_section(chapter: dict[str, object]) -> str:
         f'<div class="chead"><div class="cnum">第 {number_cn} 章</div>'
         f'<h2 class="cname">{title}</h2>'
         f'<div class="cmeta">本章 {count} 字</div></div>'
-        f'{paragraphs}<div class="cend">◇</div></section>'
+        f'{paragraphs}'
+        + (f'<div class="hl-note"><b>本章亮点</b>｜'
+           f'{html.escape(str(chapter["highlight"]), quote=False)}</div>'
+           if chapter.get("highlight") else "")
+        + f'<div class="cfoot">本章 {count} 字</div>'
+        f'<div class="cend">◇</div></section>'
     )
+
+
+def ensure_css(reader: str) -> str:
+    if ".hl-note{" in reader:
+        return reader
+    return reader.replace("</style>", ".cfoot{opacity:.6;font-size:.85em;text-align:right;margin:14px 0 2px}.hl-note{background:rgba(217,160,30,.16);border-left:4px solid #d9a01e;padding:10px 14px;margin:20px 0 6px;line-height:1.95;border-radius:0 8px 8px 0}</style>", 1)
 
 
 def render_toc_item(chapter: dict[str, object]) -> str:
@@ -330,6 +347,7 @@ def main() -> int:
 
     chapters = read_chapters()
     original = READER.read_text(encoding="utf-8")
+    original = ensure_css(original)
     updated = build_reader(original, chapters)
 
     if args.selftest:

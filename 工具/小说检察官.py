@@ -124,6 +124,7 @@ LONG_PARA_CHARS = 120     # "长段"=一段跑起来的持续描写
 WEIGHT_FROM_CH = 73
 _BUILD_CACHE = {}
 def _chapter_body(t):
+    t=t.split('【本章亮点】')[0]
     return re.sub(r'^.*?第.+?章[^\n]*\n','',t,count=1,flags=re.S)
 def _weight_stats(t):
     body=_chapter_body(t)
@@ -1245,7 +1246,9 @@ def _whole_jade_violations(text):
         hits.append((m.start(),sent.strip()))
     return hits
 def _ln(t,pos): return t.count('\n',0,pos)+1
-def _bodyx(t): return re.sub(r'^.*?第.+?章[^\n]*\n','',t,count=1,flags=re.S)
+def _bodyx(t):
+    t=t.split('【本章亮点】')[0]
+    return re.sub(r'^.*?第.+?章[^\n]*\n','',t,count=1,flags=re.S)
 
 def priority_one(files,focus,lib):
     ERR=0

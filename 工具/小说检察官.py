@@ -1802,7 +1802,7 @@ def selftest(files,lib):
     pats=[(fa['id'],pp,set(fa.get('only_ch',[]))) for fa in lib['facts'] if fa.get('level')=='ERROR' for pp in fa.get('forbid',[])]
     whole_ids=[fa['id'] for fa in lib['facts'] if fa.get('checker')=='whole_jade_after_merge']
     def hits(s,chapter=None):
-        out=[fid for fid,p,only in pats if (chapter is None or not only or chapter in only) and re.search(p,s)]
+        out=[fid for fid,p,only in pats if ((not only) or (chapter is not None and chapter in only)) and re.search(p,s)]
         if _whole_jade_violations(s): out+=whole_ids
         return sorted(set(out))
     passed=0

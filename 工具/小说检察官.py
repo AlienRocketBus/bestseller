@@ -1802,7 +1802,7 @@ def selftest(files,lib):
     pats=[(fa['id'],pp,set(fa.get('only_ch',[]))) for fa in lib['facts'] if fa.get('level')=='ERROR' for pp in fa.get('forbid',[])]
     whole_ids=[fa['id'] for fa in lib['facts'] if fa.get('checker')=='whole_jade_after_merge']
     def hits(s,chapter=None):
-        out=[fid for fid,p,only in pats if ((not only) or (chapter is not None and chapter in only)) and re.search(p,s)]
+        out=[fid for fid,p,only in pats if (chapter is None or not only or chapter in only) and re.search(p,s)]
         if _whole_jade_violations(s): out+=whole_ids
         return sorted(set(out))
     passed=0
@@ -1824,7 +1824,6 @@ def selftest(files,lib):
       ('叫魂只仿近场声口','叫魂只借近场最强情感记忆仿一段声口。'),
       ('黑影为本地探针','黑影是绑在本地气路上的无人格接口探针。'),
       ('楼兰外鼎残损仍在','楼兰只毁城侧导流，外鼎本体残损仍在。'),
-      ('骊山只是中心','骊山只是八外站的中心。'),
       ('三台就位仍由苏衍选','三台同时就位后旧默认仍指赵阙，流向必须由苏衍选。'),
       ('两步交接与运输联锁分立','守灵夜半玉加旧钥匙首开；第13章完整玉复开核图，关门取钥后转入运输联锁。'),
       ('人物早期猜测不误伤','我一时甚至怀疑，黎东来是不是能预知未来。'),
@@ -1863,6 +1862,8 @@ def selftest(files,lib):
       ('无锚暮色转场只禁第40章', 39, '而在北京，暮色正沉下来。', False),
       ('无锚暮色转场命中第40章', 40, '而在北京，暮色正沉下来。', True),
       ('第40章锚定后暮色放行', 40, '同日傍晚，北京。窗外暮色渐沉。', False),
+      ('骊山知识句域外放行', 21, '骊山只是八外站的中心。', False),
+      ('骊山卷三域内即咬', 73, '那一夜骊山方向的针稳了。', True),
       ('倒拨只禁第57章', 56, '我把时辰往回拨一夜去想。', False),
       ('倒拨命中第57章', 57, '时辰往回拨一夜，电视里才报出黎东来。', True),
     ]

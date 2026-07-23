@@ -1066,8 +1066,6 @@ def hooks_report(max_ch):
     return out, red
 
 def main():
-    print('◆灵魂三问(每启必答):这一章最神的一句在哪?读者会在哪一段合不上书?删掉此章,全书断什么?')
-    print('◆循环令:九轮必走;ERROR或自检未满格=修了再跑,循环至双绿,方许交付作者(推送闸即此令之铁)。')
     # 兼容旧调用名，但统一进入下方当前入口；以下旧实现保留作历史代码且不可达。
     return super_main()
     args = sys.argv[1:]
@@ -2178,4 +2176,6 @@ def super_main():
         return 0 if e==0 else 1
 
 if __name__ == '__main__':
+    print('◆灵魂三问(每启必答):这一章最神的一句在哪?读者会在哪一段合不上书?删掉此章,全书断什么?')
+    print('◆循环令:九轮必走;ERROR或自检未满格=修了再跑,循环至双绿,方许交付作者(推送闸即此令之铁)。')
     raise SystemExit(super_main())

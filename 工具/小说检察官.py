@@ -164,9 +164,45 @@ def _receipt_ok(n):
         try: tx=open(fp,encoding='utf-8').read()
         except OSError: continue
         if (re.search(rf'第\s*{n}\s*[章《]',tx) and '五钩' in tx and '伏笔' in tx
-                and (n<76 or '新锚' in tx)):
+                and (n<76 or '新锚' in tx) and (n<78 or ('病历' in tx and '清单' in tx))):
             return True
     return False
+
+def _load_side(fn, head_n=0, grep=None):
+    """读取设定层伴生文档(病历本/开笔清单),供--开拍总调度喷发。"""
+    p=os.path.join(REPO_ROOT,'设定',fn)
+    try: tx=open(p,encoding='utf-8').read()
+    except OSError: return []
+    lines=[l.rstrip() for l in tx.split('\n') if l.strip()]
+    if grep: lines=[l for l in lines if grep in l]
+    return lines[:head_n] if head_n else lines
+
+
+def print_dispatch():
+    """开笔总调度:病历本前三大病号 + 开笔前必答清单三十二问 + 三层机制令。"""
+    print('\n████ 开笔总调度 · 三层机制一次喷发(批九十) ████')
+    print('\n【第一层·病历本 前三大病号(每章开笔必读)】')
+    rows=[l for l in _load_side('执笔病历本_模式性错误档案.md') if l.startswith('| P')]
+    if not rows:
+        print('  ⚠ 病历本未找到——机制缺件,禁止开笔')
+    else:
+        def _cnt(l):
+            cells=[x.strip() for x in l.split('|')]
+            try: return int(cells[4])
+            except (ValueError,IndexError): return 0
+        for l in sorted(rows,key=_cnt,reverse=True)[:3]:
+            cells=[x.strip() for x in l.split('|')]
+            print(f'  ▣ {cells[1]} {cells[2]}(复发{cells[4]}次) → 处方:{cells[5]}')
+        over=[l for l in rows if _cnt(l)>=3]
+        if over: print(f'  ⚠ 累犯达3次者{len(over)}项:处方已判无效,须按升级栏执行,不许只写"下次注意"')
+    print('\n【第二层·开笔前必答清单(答不完不许落笔)】')
+    q=_load_side('开笔前必答清单_十八轮真伤倒推.md')
+    heads=[l for l in q if l.startswith('## ')]
+    items=[l for l in q if re.match(r'^[A-G]\d ',l)]
+    for h in heads: print('  '+h.replace('## ',''))
+    print(f'  共{len(items)}问,逐条作答后写入开拍笔记;封版时与回执对账。')
+    print('\n【第三层·十庭复核(封版前)】常开①硬伤②越权③回声 + 抽开二庭;收庭三问入回执。')
+    print('【禁语】见底/没法再改/已达最好。合法申报:"第N轮已清零;换镜头,仍可再挖。"')
 def weight_violation(chars,ch,exempted):
     return ch>=WEIGHT_FROM_CH and chars<MIN_CHARS_NEW and not exempted
 
@@ -1496,10 +1532,11 @@ def second_gate(scope):
     print('  ③ 欠写雷达每条:判"设计留白/真省字→当场增厚"')
     print('  ④ 数字负向:年龄23·年份2006·台阶27级·悬赏2-17·手机7610,逐个再对一遍')
     print('  ⑤ 封神三问+九轮走查;⑥新canon若立→当场追加canon事实库.json')
-    print('  ⑦ 因果与经济配位:每处惊叹/稀罕断言与每笔大宗交易,答\"证据配不配\"(1+1=2式惊叹=病)\n  ⑧ 原场与概念:爷爷丧事、老宅地窖古尸发现、柏冢入口与各次照面分别服从各自首次完整原场;老宅地窖≠柏冢;地图给目的地,玉只响应同源信号\n  ⑨ 台词绝对化:每处"头一句/几天没说话",核该人物该时段真沉默否、与机敏在场人设冲突否\n  ⑪ 状态弧与哨兵:沈鸢伤势、合玉状态、玉温、钱包、在场、题眼、季节逐条对表。\n  ⑩ 修复回访:本次一切改动处连同前后各两段重读,核原生感与逻辑涟漪。\n  ⑫ 翻页力与闭环:五钩必答;到期伏笔必显式裁决(接/展期/废)并登记。\n  ⑬ 阅读器同步检查须通过;回执未交或ERROR未清零,禁止封版。\n  ⑭ 回执闸已机器化(第73章起ERROR级):当章回执缺档即红灯;圣经三闸(末章锚/下一章接写锚/CANON-ID同一)由医生逐次核验——写后全流程靠闸门,不靠记性。\n  ⑮ 新锚催办(76起入回执闸):每章新生数字量词候选自动列出,AI逐条裁决钉入F规则或豁免——未来的雷,在出生当章登记造册。\n  ⑯复读哨兵:章内四字串≥3次自动列出,AI裁回声或灌。⑰时长断言哨兵:半年/X个月类必对时间卡——75章欠了半年案为祖案。')
+    print('  ⑦ 因果与经济配位:每处惊叹/稀罕断言与每笔大宗交易,答\"证据配不配\"(1+1=2式惊叹=病)\n  ⑧ 原场与概念:爷爷丧事、老宅地窖古尸发现、柏冢入口与各次照面分别服从各自首次完整原场;老宅地窖≠柏冢;地图给目的地,玉只响应同源信号\n  ⑨ 台词绝对化:每处"头一句/几天没说话",核该人物该时段真沉默否、与机敏在场人设冲突否\n  ⑪ 状态弧与哨兵:沈鸢伤势、合玉状态、玉温、钱包、在场、题眼、季节逐条对表。\n  ⑩ 修复回访:本次一切改动处连同前后各两段重读,核原生感与逻辑涟漪。\n  ⑫ 翻页力与闭环:五钩必答;到期伏笔必显式裁决(接/展期/废)并登记。\n  ⑬ 阅读器同步检查须通过;回执未交或ERROR未清零,禁止封版。\n  ⑭ 回执闸已机器化(第73章起ERROR级):当章回执缺档即红灯;圣经三闸(末章锚/下一章接写锚/CANON-ID同一)由医生逐次核验——写后全流程靠闸门,不靠记性。\n  ⑮ 新锚催办(76起入回执闸):每章新生数字量词候选自动列出,AI逐条裁决钉入F规则或豁免——未来的雷,在出生当章登记造册。\n  ⑱ 三层机制总调度:--开拍即喷发病历本前三大病号＋开笔清单三十二问＋十庭令;78起回执须含"病历归档"与"清单对账",缺即红灯。\n  ⑯复读哨兵:章内四字串≥3次自动列出,AI裁回声或灌。⑰时长断言哨兵:半年/X个月类必对时间卡——75章欠了半年案为祖案。')
 
 def briefing(files,lib,next_ch=None):
     print('═'*50); print('  ◆ 开拍简报 —— 写新章前必读(检察官自动生成) ◆'); print('═'*50)
+    print_dispatch()
     mx=max(files,default=0)
     nx=next_ch or mx+1
     print(f'  已收录至第{mx}章,即将审写:第{nx}章')

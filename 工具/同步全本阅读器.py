@@ -23,6 +23,9 @@ READER = ROOT / "阅读器" / "镇冢秘术_全本阅读器.html"
 CANON_ID = "ZM-CANON-20260722-88"
 
 
+_P14 = []
+
+
 def cn_to_int(value: str) -> int:
     digits = {"零": 0, "一": 1, "二": 2, "三": 3, "四": 4,
               "五": 5, "六": 6, "七": 7, "八": 8, "九": 9,
@@ -78,6 +81,8 @@ def read_chapters() -> list[dict[str, object]]:
                 f"标题={number}"
             )
         body_text = "\n".join(lines[header_index + 1:]).strip()
+        if re.search(r"[。！？”]\n(?!\n)(?=[^\n])", body_text):
+            _P14.append(path.name)
         highlight = ""
         if "【本章亮点】" in body_text:
             body_text, _, hl_part = body_text.partition("【本章亮点】")
@@ -378,6 +383,11 @@ def main() -> int:
         if temp_path is not None:
             temp_path.unlink(missing_ok=True)
     total = sum(int(chapter["char_count"]) for chapter in chapters)
+    if _P14:
+        _new=[x for x in _P14 if any(k in x for k in ("七十","八十"))]
+        if _new:
+            raise SystemExit("段间漏空行(P14硬检·新章): "+"、".join(_new)+" —— 补齐空行后重跑")
+        print("  ⚠P14存量待补(不拦):", "、".join(_P14))
     print(f"已同步阅读器：{len(chapters)} 章，{total:,} 字")
     return 0
 

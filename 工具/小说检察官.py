@@ -206,7 +206,7 @@ def _receipt_ok(n):
         if (re.search(rf'第\s*{n}\s*[章《]',tx) and '五钩' in tx and '伏笔' in tx
                 and (n<76 or '新锚' in tx) and (n<78 or ('病历' in tx and '清单' in tx and '原场' in tx))
                 and (n<81 or '到期账' in tx)
-                and (n<82 or ('章魂' in tx and '生死检' in tx))):
+                and (n<82 or ('章魂' in tx and '生死检' in tx and '改动闸' in tx))):
             return True
     return False
 
@@ -441,7 +441,7 @@ def acceptance(n, files):
                 print()
     print('【六·收庭三问】1.刀口原文与改后原文逐条 2.本轮高光句 3.三验（原生／抬杠／涟漪）')
     print('  禁语：见底／没法再改／已达最好。合法申报：第N轮已清零；换镜头，仍可再挖。')
-    print('\n【七·回执八项token（缺一红灯）】五钩·伏笔·新锚·病历·清单·原场·到期账·章魂与三拳·生死检')
+    print('\n【七·回执九项token（缺一红灯）】五钩·伏笔·新锚·病历·清单·原场·到期账·章魂与三拳·生死检·**改动闸**')
     print('  归档路径：设定/回执_*_第%d章作业单.md'%n)
     print('\n【八·双绿闸】仪表盘ERROR=0 ＋ 自检满格 ＋ 契约负测3/3，缺一不许推送')
     print('\n【九·翻页八件套】圣经双锚／README／施工表N行＋§四／SCHEMA插N+1／json状态卡＋brief／提示词号／两站成对／**滚动到期账**')
@@ -1778,6 +1778,21 @@ def mech_layer(files,focus,lib):
         if n==max(files):
             for _x in due_report(n, as_gate=True):
                 pr.append('到期账逾期%d章未清: [%s] %s（限第%d章）——须先清账或在到期账改期并记因' % (n-_x['到期章'],_x['id'],_x['事'],_x['到期章']))
+
+        if n==max(files):
+
+            try:
+
+                import io,contextlib
+
+                _buf=io.StringIO()
+
+                with contextlib.redirect_stdout(_buf): _dg=diff_gate(n)
+
+                if _dg: pr.append('改动闸机械层未清零(工作区较HEAD的变动段含破折/半角/英文/五逗/禁词)——跑 --改检 %d 清零后再封版'%n)
+
+            except Exception: pass
+
 
         if n==max(files) and n>=73 and not _receipt_ok(n):
             pr.append('回执未交:当章《检察官回执》未在设定/回执_*.md归档(须含本章标记+五钩+伏笔裁决)——回执未交禁止封版')

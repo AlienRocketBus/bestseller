@@ -425,6 +425,11 @@ def diff_gate(n, base="HEAD"):
     print('\n  ── 五·数字冲突（变动段中的数，与全章同类数对表） ──')
     nums=sorted(set(re.findall(r'[一二三四五六七八九十百千两]{1,4}(?:息|步|根|道|尺|天|回|声|指|寸|丈)',''.join(x for _,x in changed))))
     print('    '+('▣ '+ '、'.join(nums) +' —— 逐个与全章及前章对表' if nums else '✓变动段无数字'))
+    print('\n  ── 五·五·章号泄漏（第一人称正文不得出现章号） ──')
+    _bd=re.sub(r'^.*?第.+?章[^\n]*\n','',new.split('【本章亮点】')[0],count=1,flags=re.S)
+    _ln=re.findall(r'[一二三四五六七八九十百]+章',_bd)
+    if _ln: bad+=len(_ln); print('    ⛔章号入正文×%d:'%len(_ln), '、'.join(_ln[:5]), '（叙述者不可能说出章号＝作者出画）')
+    else: print('    ✓无')
     print('\n  ── 六·五·亮点段专检（P19：改正文必重写亮点段，重写必先自检） ──')
     _h=new[new.find('【本章亮点】'):] if '【本章亮点】' in new else ''
     if not _h:

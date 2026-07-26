@@ -194,7 +194,8 @@ def _receipt_ok(n):
         try: tx=open(fp,encoding='utf-8').read()
         except OSError: continue
         if (re.search(rf'第\s*{n}\s*[章《]',tx) and '五钩' in tx and '伏笔' in tx
-                and (n<76 or '新锚' in tx) and (n<78 or ('病历' in tx and '清单' in tx and '原场' in tx))):
+                and (n<76 or '新锚' in tx) and (n<78 or ('病历' in tx and '清单' in tx and '原场' in tx))
+                and (n<81 or '到期账' in tx)):
             return True
     return False
 
@@ -234,6 +235,23 @@ def print_dispatch():
     print('\n【第三层·十庭复核(封版前)】常开①硬伤②越权③回声 + 抽开二庭;收庭三问入回执。')
     print('【禁语】见底/没法再改/已达最好。合法申报:"第N轮已清零;换镜头,仍可再挖。"')
 
+
+def _cold_done(n):
+    """冷眼轮完成判定：该章回执含"N章冷眼轮"即视为已签核。"""
+    for fp in glob.glob(os.path.join(REPO_ROOT,'设定','回执_*.md')):
+        try: tx=open(fp,encoding='utf-8').read()
+        except OSError: continue
+        if f'{n}章冷眼轮' in tx: return True
+    return False
+
+
+def _auto_cold(files):
+    """冷轮自动派生：每章N之冷眼轮于第N+2章写完时到期，无需手工登记。"""
+    if not files: return []
+    cur=max(files)
+    return [{'id':'COLD-%d'%n,'类':'冷轮(自动)','事':'第%d章冷眼轮（镜头须避开该章热轮已开者）'%n,
+             '立账章':n,'到期章':n+2,'状态':'open'}
+            for n in sorted(files) if n>=73 and n+2<=cur and not _cold_done(n)]
 def _load_due():
     p=os.path.join(REPO_ROOT,'设定','到期账.json')
     try: return json.load(open(p,encoding='utf-8')).get('items',[])
@@ -243,6 +261,8 @@ def _load_due():
 def due_report(cur, as_gate=False):
     """统一欠账催办：逾期1章WARN，逾期>=2章ERROR。cur=当前最新章号。"""
     items=[x for x in _load_due() if x.get('状态') not in ('done','废弃')]
+    items=[x for x in items if not x['id'].startswith('COLD-')]
+    items+=_auto_cold(sorted(_chapters().keys()))
     due=[x for x in items if x.get('到期章',10**9)<=cur]
     err=[x for x in due if cur-x['到期章']>=2]
     if not as_gate:

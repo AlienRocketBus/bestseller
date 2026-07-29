@@ -114,6 +114,29 @@ def score(txt):
     return hard, soft
 
 
+
+# ══════ 术语裸奔检测（ENG-TERM·批105）══════
+# 立法：专名首现须带解释，不得裸奔。近四十字内须含解释锚（是／叫／门里管这个叫／就是／指的是等）。
+TERMS = ['长明', '安点', '半拍', '衔木', '见壳记位不动', '不呼名', '血印', '测点',
+         '合玉', '拓片', '稳楼', '记号', '数道', '同拍']
+ANCHORS = ['是', '叫', '就是', '指的是', '门里', '意思', '＝', '＝', '所谓']
+
+
+def term_check(txt, prev_text=''):
+    """返回本章首现且四十字内无解释锚之术语。prev_text＝此前各章正文，用于判定是否首现。"""
+    body = body_of(txt)
+    naked = []
+    for w in TERMS:
+        if w in prev_text:
+            continue  # 前章已解释过，非首现
+        i = body.find(w)
+        if i < 0:
+            continue
+        win = body[max(0, i - 40):i + 40]
+        if not any(a in win for a in ANCHORS):
+            naked.append(w)
+    return naked
+
 # 棘轮方向：min＝越小越好，max＝越大越好
 RATCHET_MIN = ('四字串三现', '顿悟起手')
 RATCHET_MAX = ('嗅', '沈鸢')
@@ -128,6 +151,11 @@ def save(n, note=''):
         return 1
     txt = open(src, encoding='utf-8').read()
     hard, soft = score(txt)
+    prev = ''
+    for pf in sorted(glob.glob(os.path.join(ROOT, '正文', '*.md'))):
+        if chap_num(pf) < n:
+            prev += open(pf, encoding='utf-8').read()
+    naked = term_check(txt, prev)
     ledger = json.load(open(led, encoding='utf-8')) if os.path.exists(led) \
         else {'章': n, '版本': []}
     v = len(ledger['版本']) + 1
@@ -144,6 +172,10 @@ def save(n, note=''):
              soft['老头'], soft['钱满'], soft['沈鸢'],
              soft['四字串三现'], soft['顿悟起手']))
 
+    if naked:
+        print('  ── 术语裸奔检测（ENG-TERM·批105） ──')
+        print('   ⚠首现而四十字内无解释锚：' + '、'.join(naked))
+        print('   （专名首现须带解释；若确为前文已解而本章复用，可裁定豁免并记回执）')
     if ledger['版本']:
         best = {}
         for r in ledger['版本']:

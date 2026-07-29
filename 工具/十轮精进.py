@@ -211,9 +211,13 @@ def compare(n):
     champs = {}
     for k, pick in [('净重', max), ('长段数', max), ('嗅', max), ('触', max),
                     ('沈鸢', max), ('四字串三现', min), ('顿悟起手', min)]:
-        w = pick(pool, key=lambda r: r['soft'][k])
-        champs[k] = w['版']
-        print('   %-8s 冠军 %s（%d）' % (k, w['版'], w['soft'][k]))
+        best_val = pick(r['soft'][k] for r in pool)
+        holders = [r['版'] for r in pool if r['soft'][k] == best_val]
+        # 【批104】并列修正：末版若同为最优即算持有，避免"首次达标版"误判为唯一冠军
+        champs[k] = pool[-1]['版'] if pool[-1]['soft'][k] == best_val else holders[0]
+        tie = '（并列%d版，末版持有）' % len(holders) if len(holders) > 1 and \
+              pool[-1]['soft'][k] == best_val else ''
+        print('   %-8s 最优值%-6d 持有 %s%s' % (k, best_val, champs[k], tie))
 
     print('\n  ── 四·择优裁定（机器只给候选，最终由AI四席定夺） ──')
     if not clean:
@@ -225,8 +229,8 @@ def compare(n):
     print('   逐项冠军分布：%s' % dict(dist))
     if dist.most_common(1)[0][0] != last['版']:
         losing = [k for k, v in champs.items() if v != last['版']]
-        print('   ⚠末版并非多数项冠军。须逐项核对以下项是否在后续轮次被改坏：%s' % '、'.join(losing))
-        print('     改回该项，而非退回旧版。')
+        print('   ⚠末版未持有以下项之最优值，须逐项核对是否在后续轮次被改坏：%s' % '、'.join(losing))
+        print('     改回该项，而非退回旧版；若经裁定为必要代价，须在回执记因。')
     else:
         print('   ✓末版同时为多数项冠军，累积有效。')
     print('\n  【铁律】择优不是挑一版丢九版。取末版为底，逐项回补其余版之冠军项；')

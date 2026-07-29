@@ -2646,6 +2646,42 @@ def _usage():
     print(__doc__.strip())
     print('\n附加命令: --伏笔 [N] | --军师 N | --心电图 N | --提示词 | 框架 | 规范')
 
+
+def jj_hook(n, note=''):
+    """【批103】十轮精进挂钩：--验收 跑完自动存版＋棘轮闸；满十轮自动横评。
+    立法：机制不设平行命令，一律走检察官单一入口；作者只说"续"与"挑刺"。"""
+    try:
+        import importlib.util as _ilu
+        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '十轮精进.py')
+        if not os.path.exists(_p):
+            return
+        _s = _ilu.spec_from_file_location('_jj', _p)
+        _m = _ilu.module_from_spec(_s)
+        _s.loader.exec_module(_m)
+    except Exception as e:
+        print('  ⚠十轮精进模块未能加载：%s' % e)
+        return
+    print('\n' + '=' * 64)
+    print('   【十轮精进 · 批103自动挂钩】本轮挑刺完毕，自动存版')
+    print('=' * 64)
+    _m.save(n, note or '（本轮说明未填，须在回执补记开庭与真伤级别）')
+    _d, _led = _m.paths(n)
+    try:
+        import json as _j
+        _v = _j.load(open(_led, encoding='utf-8'))['版本']
+        if len(_v) >= 10:
+            print('\n  ✓已满十轮，自动横评：')
+            _m.compare(n)
+        else:
+            _tab = ['封版轮', '冷轮补执', '四堂会审', '挑刺王终读', '升华庭',
+                    '十庭①(资源/感官)', '十庭②(在场/内面)', '十庭③(时序/节奏/留白)',
+                    '跨章复审', '减法轮']
+            _nx = _tab[len(_v)] if len(_v) < 10 else '横评'
+            print('  ▶下一轮该开：**%s**（第%d轮／共10轮）' % (_nx, len(_v) + 1))
+    except Exception:
+        pass
+
+
 def super_main():
     args=sys.argv[1:]
     if args and args[0] in ('-h','--help'):
@@ -2683,7 +2719,10 @@ def super_main():
         if not files: print('  ✗ 正文章数=0'); return 2
         m=max(files)
         n=int(args[1]) if len(args)>1 and args[1].isdigit() else m
-        acceptance(n, files); return 0
+        acceptance(n, files)
+        note=args[2] if len(args)>2 else ''
+        jj_hook(n, note)
+        return 0
     if args and args[0]=='--开拍':
         if not files:
             print('  ✗ 正文章数=0，拒绝生成无根简报'); return 2

@@ -2753,6 +2753,17 @@ def jj_hook(n, note=''):
 
 
 def super_main():
+    # 【批107】并发闸前置：开拍／验收之前先查仓库是否被别路动过
+    if len(sys.argv) > 1 and sys.argv[1] in ('--开拍', '--验收'):
+        try:
+            import importlib.util as _i2
+            _p2 = os.path.join(os.path.dirname(os.path.abspath(__file__)), '十轮精进.py')
+            if os.path.exists(_p2):
+                _s2 = _i2.spec_from_file_location('_jj2', _p2)
+                _m2 = _i2.module_from_spec(_s2); _s2.loader.exec_module(_m2)
+                _m2.concurrency_check()
+        except Exception as _e2:
+            print('  ⚠并发闸未能运行：%s' % _e2)
     args=sys.argv[1:]
     if args and args[0] in ('-h','--help'):
         _usage(); return 0

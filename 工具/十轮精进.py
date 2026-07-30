@@ -137,12 +137,77 @@ def term_check(txt, prev_text=''):
             naked.append(w)
     return naked
 
+
+# ══════ 并发闸（批107·2026-07-30 立法）══════
+# 立法：两路以上写作流同写一仓时，双绿闸与棘轮闸只对"当前文件"负责，
+# 拦不住"另一路刚改过而我不知道"。故立此闸：每次开拍／验收前，先查仓库是否被别路动过。
+FINGERPRINT = os.path.join(JJ_DIR, '_并发指纹.json')
+
+
+def _git(*args):
+    import subprocess
+    try:
+        r = subprocess.run(['git'] + list(args), cwd=ROOT,
+                           capture_output=True, text=True, timeout=30)
+        return r.stdout.strip()
+    except Exception:
+        return ''
+
+
+def concurrency_check(quiet=False):
+    """返回 (是否检出别路改动, 报告文本)。并更新指纹。"""
+    head = _git('rev-parse', 'HEAD')
+    if not head:
+        return False, '  ⚠并发闸：非 git 仓库或 git 不可用，本闸跳过。'
+    os.makedirs(JJ_DIR, exist_ok=True)
+    rec = {}
+    if os.path.exists(FINGERPRINT):
+        try:
+            rec = json.load(open(FINGERPRINT, encoding='utf-8'))
+        except Exception:
+            rec = {}
+    lines = ['  ── 并发闸（批107） ──']
+    found = False
+    if not rec.get('head'):
+        lines.append('   ✓首次建档：记下当前 HEAD 为基线。')
+    elif rec['head'] == head:
+        lines.append('   ✓无别路提交（HEAD 与上次一致）。')
+    else:
+        found = True
+        rng = '%s..%s' % (rec['head'], head)
+        log = _git('log', '--pretty=%h %an %s', rng)
+        files = _git('diff', '--name-only', rng)
+        lines.append('   ⚠检出别路提交！自上次本闸记录以来，仓库已前进：')
+        for x in [l for l in log.split('\n') if l.strip()][:8]:
+            lines.append('     · ' + x[:96])
+        if files:
+            fl = [f for f in files.split('\n') if f.strip()]
+            lines.append('   ⚠涉及文件 %d 个：' % len(fl))
+            for f in fl[:10]:
+                lines.append('     · ' + f)
+        lines.append('   **处方**：先读别路所改之处再落笔；若与本轮拟改同段，须先并轨，不得直接覆写。')
+    dirty = _git('status', '--porcelain')
+    if dirty:
+        dl = [l for l in dirty.split('\n') if l.strip()]
+        lines.append('   ⚠工作区有未提交改动 %d 处（可能来自别路）：' % len(dl))
+        for l in dl[:6]:
+            lines.append('     · ' + l[:90])
+        found = True
+    rec['head'] = head
+    rec['时'] = datetime.datetime.now().strftime('%m-%d %H:%M')
+    json.dump(rec, open(FINGERPRINT, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    txt = '\n'.join(lines)
+    if not quiet:
+        print(txt)
+    return found, txt
+
 # 棘轮方向：min＝越小越好，max＝越大越好
 RATCHET_MIN = ('四字串三现', '顿悟起手')
 RATCHET_MAX = ('嗅', '沈鸢')
 
 
 def save(n, note=''):
+    concurrency_check()
     d, led = paths(n)
     os.makedirs(d, exist_ok=True)
     src = find_chapter(n)

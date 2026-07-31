@@ -147,13 +147,23 @@ def _stream_id():
     sid = os.environ.get('ZM_STREAM', '').strip()
     if sid:
         return re.sub(r'[^A-Za-z0-9_-]', '', sid)[:24] or 'anon'
-    marker = os.path.join(JJ_DIR, '_本流号.txt')
+    # 【批109·再修】后备档不得置于仓库内：仓内之档两路皆可读，二流遂同号，指纹重归共用而本闸再被抹平。
+    # 故后备档移出仓库，落于本机 HOME，随会话／容器而异；无则当场生成一个随机号并落盘。
+    marker = os.path.join(os.path.expanduser('~'), '.zm_stream')
     if os.path.exists(marker):
         try:
-            return open(marker, encoding='utf-8').read().strip() or 'anon'
+            sid = open(marker, encoding='utf-8').read().strip()
+            if sid:
+                return sid
         except Exception:
-            return 'anon'
-    return 'anon'
+            pass
+    import uuid
+    sid = 'S' + uuid.uuid4().hex[:8]
+    try:
+        open(marker, 'w', encoding='utf-8').write(sid)
+    except Exception:
+        return 'anon'
+    return sid
 
 
 def _fp_path():

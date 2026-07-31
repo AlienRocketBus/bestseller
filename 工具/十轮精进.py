@@ -196,7 +196,7 @@ def concurrency_check(quiet=False):
     lines = ['  ── 并发闸（批107·批108修） ──', '   本流号：%s' % _stream_id()]
     found = False
     if not rec.get('head'):
-        lines.append('   ✓首次建档：记下当前 HEAD 为基线。')
+        lines.append('   ⚠指纹缺失（首次或被清），本次无法与上次比对——不等于无别路提交。已建档，下次起可比。')
     elif rec['head'] == head:
         lines.append('   ✓无别路提交（HEAD 与上次一致）。')
     else:

@@ -636,6 +636,10 @@ def diff_gate(n, base="HEAD"):
             if 0<=j<len(nb): idxs.add(j)
     zone='\n'.join(nb[j] for j in sorted(idxs))
     bad=0
+    _rn, _rl = rel_day_check(n, new)
+    if _rl:
+        for _x in _rl:
+            print(_x)
     print('\n  ── 一·机械层（仅变动段及左右邻段） ──')
     for name,pat in [('破折号','—'),('半角逗号',','),('英文',r'[A-Za-z]'),
                      ('抖族','哆嗦|颤'),('永禁机制词','点亮|鼎心|气运|换锚|阵眼'),('骊山僵尸','骊山|僵尸')]:
@@ -2810,6 +2814,31 @@ def jj_hook(n, note=''):
             print('  ▶下一轮该开：**%s**（第%d轮／共10轮）' % (_nx, len(_v) + 1))
     except Exception:
         pass
+
+
+
+# ══════ 批110·日号相对词检（2026-07-31 立）══════
+# 立法之由：105（七处）、106（五处）、107（二处）连续三章误用"昨天/前天/大前天"，
+# 皆因所指之事出于他章而未回查该章日号。故立此检：凡见相对日词，报出本章日号与其所指之可能章，令AI逐处核。
+REL_DAY = ('昨天', '前天', '大前天', '四天前', '五天前')
+
+
+def rel_day_check(n, body):
+    """返回 (命中数, 报告行列表)。只报不拦，令AI逐处核对。"""
+    lines = []
+    hits = 0
+    m = re.search(r'第([一二三四五六七八九十百]+)天', body)
+    today = m.group(0) if m else '（本章未见日号）'
+    for w in REL_DAY:
+        cnt = len(re.findall(w if w != '前天' else r'(?<!大)前天', body))
+        if cnt:
+            hits += cnt
+            lines.append('    · %s ×%d' % (w, cnt))
+    if hits:
+        lines.insert(0, '  ── 日号相对词检（批110·只报不拦） ──')
+        lines.insert(1, '    本章日号：%s；以下相对日词共 %d 处，**须逐处回查所指之事出于第几章、该章日号为何**：' % (today, hits))
+        lines.append('    （P07主型：105七处／106五处／107二处，连续三章皆栽于此）')
+    return hits, lines
 
 
 def super_main():

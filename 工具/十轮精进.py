@@ -141,7 +141,23 @@ def term_check(txt, prev_text=''):
 # ══════ 并发闸（批107·2026-07-30 立法）══════
 # 立法：两路以上写作流同写一仓时，双绿闸与棘轮闸只对"当前文件"负责，
 # 拦不住"另一路刚改过而我不知道"。故立此闸：每次开拍／验收前，先查仓库是否被别路动过。
-FINGERPRINT = os.path.join(JJ_DIR, '_并发指纹.json')
+# 【批108·修】指纹须按写作流分档：共用一档时，别路跑存版亦刷新基线，本闸遂被抹平。
+# 流号取自环境变量 ZM_STREAM（未设则以 会话起始HEAD 之短号为号，落盘后不再变）。
+def _stream_id():
+    sid = os.environ.get('ZM_STREAM', '').strip()
+    if sid:
+        return re.sub(r'[^A-Za-z0-9_-]', '', sid)[:24] or 'anon'
+    marker = os.path.join(JJ_DIR, '_本流号.txt')
+    if os.path.exists(marker):
+        try:
+            return open(marker, encoding='utf-8').read().strip() or 'anon'
+        except Exception:
+            return 'anon'
+    return 'anon'
+
+
+def _fp_path():
+    return os.path.join(JJ_DIR, '_并发指纹_%s.json' % _stream_id())
 
 
 def _git(*args):
@@ -161,12 +177,13 @@ def concurrency_check(quiet=False):
         return False, '  ⚠并发闸：非 git 仓库或 git 不可用，本闸跳过。'
     os.makedirs(JJ_DIR, exist_ok=True)
     rec = {}
-    if os.path.exists(FINGERPRINT):
+    FP = _fp_path()
+    if os.path.exists(FP):
         try:
-            rec = json.load(open(FINGERPRINT, encoding='utf-8'))
+            rec = json.load(open(FP, encoding='utf-8'))
         except Exception:
             rec = {}
-    lines = ['  ── 并发闸（批107） ──']
+    lines = ['  ── 并发闸（批107·批108修） ──', '   本流号：%s' % _stream_id()]
     found = False
     if not rec.get('head'):
         lines.append('   ✓首次建档：记下当前 HEAD 为基线。')
@@ -195,7 +212,7 @@ def concurrency_check(quiet=False):
         found = True
     rec['head'] = head
     rec['时'] = datetime.datetime.now().strftime('%m-%d %H:%M')
-    json.dump(rec, open(FINGERPRINT, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    json.dump(rec, open(FP, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     txt = '\n'.join(lines)
     if not quiet:
         print(txt)

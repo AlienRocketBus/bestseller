@@ -300,8 +300,20 @@ def save(n, note=''):
         '说明': note, 'hard': hard, 'soft': soft})
     json.dump(ledger, open(led, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print('  台账：%s（共%d版）' % (os.path.relpath(led, ROOT), v))
-    print('  ⏳十轮精进：已%d轮，还差%d轮' % (v, 10 - v) if v < 10
-          else '  ✓十轮已满，请跑 --横评 %d' % n)
+    # 【批111·修】原以"版本数"充"轮数"：而 v01 为封版基线、冷轮／终版回补／定案皆在十轮之外，
+    # 故"10版"实为"基线＋9轮"，机器却报十轮已满。改为只数真轮（说明以"第N轮"起者）。
+    _rounds = set()
+    for _r in ledger['版本']:
+        _m = re.match(r'第(\d+)轮', _r.get('说明', ''))
+        if _m:
+            _rounds.add(int(_m.group(1)))
+    _done = len(_rounds)
+    _miss = [i for i in range(1, 11) if i not in _rounds]
+    if _done < 10:
+        print('  ⏳十轮精进：真轮已跑 %d/10（版本%d）；**未跑之轮：%s**'
+              % (_done, v, '、'.join('第%d轮' % i for i in _miss)))
+    else:
+        print('  ✓十轮已满（真轮10/10，版本%d），请跑 --横评 %d' % (v, n))
     return 0
 
 

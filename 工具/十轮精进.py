@@ -527,6 +527,21 @@ def lens_table():
     return out
 
 
+def _sha(t):
+    import hashlib
+    return hashlib.sha256(t.strip().encode('utf-8')).hexdigest()[:16]
+
+
+def _ling_path(n):
+    return os.path.join(paths(n)[0], '_领轮.json')
+
+
+def _last_snap_sha(n):
+    d = paths(n)[0]
+    snaps = sorted(glob.glob(os.path.join(d, 'v[0-9][0-9].md')))
+    return _sha(open(snaps[-1], encoding='utf-8').read()) if snaps else None
+
+
 def _lunji_path(n):
     return os.path.join(paths(n)[0], '_轮记.md')
 
@@ -570,6 +585,19 @@ def nextround(n):
         if len(miss) > 1:
             print('   其后未跑：%s' % '、'.join('第%d轮(%s)' % (i, tab[i]) for i in miss[1:]))
         print('   【铁则】只跑「下一个未跑之轮」，不认作者所报之号——号会漂，台账不会。')
+    # 【批114·闸八】领轮基线落盘：七闸皆在存版时拦，而祸起于「动手在前」。
+    # 领轮基线记下「起轮那一刻正文是什么样」，存版时回验，遂把防线提前到动手之前。
+    src2 = find_chapter(n)
+    if src2:
+        base = {'时': datetime.datetime.now().strftime('%m-%d %H:%M'),
+                '正文sha': _sha(open(src2, encoding='utf-8').read()),
+                '末版sha': _last_snap_sha(n),
+                '目标轮': (miss[0] if miss else None)}
+        os.makedirs(paths(n)[0], exist_ok=True)
+        json.dump(base, open(_ling_path(n), 'w', encoding='utf-8'),
+                  ensure_ascii=False, indent=1)
+        print('   ✓领轮基线已落盘（起轮时正文 %s）。存版时回验。' % base['正文sha'])
+
     lp = _lunji_path(n)
     if os.path.exists(lp):
         t = open(lp, encoding='utf-8').read()
@@ -717,6 +745,9 @@ def selftest():
             else:
                 fail += 1
                 print('  ✗端到端失败：%s（rc=%s，期望%s）' % (name, rc, want_rc))
+                for _l in buf.getvalue().split('\n'):
+                    if '⛔' in _l or '✗' in _l:
+                        print('      ' + _l.strip()[:96])
         finally:
             ROOT, JJ_DIR = _R, _J
             shutil.rmtree(tmp, ignore_errors=True)
@@ -732,24 +763,87 @@ def selftest():
                   encoding='utf-8'), ensure_ascii=False)
         return d
 
+    def _cur(tmp):
+        return open(os.path.join(tmp, '正文', '镇冢秘术_第七章_测.md'), encoding='utf-8').read()
+
+    def _ling(tmp, target, zheng=None, mo=None):
+        d = os.path.join(tmp, '版本', '第7章')
+        os.makedirs(d, exist_ok=True)
+        json.dump({'时': 'x', '正文sha': zheng, '末版sha': mo, '目标轮': target},
+                  open(os.path.join(d, '_领轮.json'), 'w', encoding='utf-8'),
+                  ensure_ascii=False)
+
+    def _ready(tmp, prev_round, target, body_now, log=True):
+        """布置一个「第prev_round轮已存版并录记，现起第target轮」之合法局面。"""
+        _ch(tmp, '原始内容')
+        snap = _cur(tmp)
+        d = _led(tmp, [v('第%d轮·前' % prev_round, ch=1)])
+        open(os.path.join(d, 'v01.md'), 'w', encoding='utf-8').write(snap)
+        if log:
+            open(os.path.join(d, '_轮记.md'), 'w', encoding='utf-8').write(
+                '\n## 第%d轮|v01|x|净重9\n所见若干\n' % prev_round)
+        _ling(tmp, target, zheng=_sha(snap), mo=_sha(snap))
+        _ch(tmp, body_now)          # 本轮之改动
+        return d
+
     def s_receipt(tmp):
-        _ch(tmp)
-        _led(tmp, [v('第9轮·乙', ch=1)])
+        _ready(tmp, 9, 4, '改过的内容')
         open(os.path.join(tmp, '设定', '回执_x_第7章作业单.md'), 'w',
              encoding='utf-8').write('x')
 
     def s_clean(tmp):
-        _ch(tmp)
+        _ch(tmp, '甲乙丙丁')
+        _ling(tmp, 1, zheng=_sha(_cur(tmp)), mo=None)
 
     def s_empty(tmp):
-        _ch(tmp)
-        d = _led(tmp, [v('第3轮·乙', ch=1)])
-        open(os.path.join(d, 'v01.md'), 'w', encoding='utf-8').write(
-            open(os.path.join(tmp, '正文', '镇冢秘术_第七章_测.md'), encoding='utf-8').read())
+        """正文与末版逐字相同＝空轮。"""
+        _ch(tmp, '原始内容')
+        snap = _cur(tmp)
+        d = _led(tmp, [v('第3轮·前', ch=1)])
+        open(os.path.join(d, 'v01.md'), 'w', encoding='utf-8').write(snap)
+        open(os.path.join(d, '_轮记.md'), 'w', encoding='utf-8').write(
+            '\n## 第3轮|v01|x|净重9\n所见\n')
+        _ling(tmp, 4, zheng=_sha(snap), mo=_sha(snap))
+
+    def s_nolog(tmp):
+        _ready(tmp, 1, 2, '改过的内容', log=False)
+
+    def s_withlog(tmp):
+        _ready(tmp, 1, 2, '改过的内容')
+
+    def s_reopen(tmp):
+        d = _ready(tmp, 1, 2, '改过的内容')
+        led2 = os.path.join(d, '_台账.json')
+        lg = json.load(open(led2, encoding='utf-8'))
+        lg['版本'].append({'版': '重开', '时': 'x', '说明': '【重开·记因】测',
+                          'hard': {}, 'soft': {}, '全书章数': 1})
+        json.dump(lg, open(led2, 'w', encoding='utf-8'), ensure_ascii=False)
+
+    def s_noling(tmp):
+        _ready(tmp, 1, 2, '改过的内容')
+        os.remove(os.path.join(tmp, '版本', '第7章', '_领轮.json'))
+
+    def s_wronground(tmp):
+        d = _ready(tmp, 1, 2, '改过的内容')
+        _ling(tmp, 5, zheng='x', mo='x')
+
+    def s_drifted(tmp):
+        """起轮时正文已偏离末版＝上一轮之刀没落进台账。"""
+        d = _ready(tmp, 1, 2, '改过的内容')
+        _ling(tmp, 2, zheng='deadbeefdeadbee0', mo='deadbeefdeadbee1')
 
     e2e('回执已交＋轮次倒退须拦停且零写入', s_receipt, '第4轮·升华庭', 2)
     e2e('空轮须拦停且零写入', s_empty, '第4轮·升华庭', 2)
     e2e('干净首版须放行并写入', s_clean, '第1轮·感官庭', 0)
+    e2e('前轮未录轮记须拦停且零写入', s_nolog, '第2轮·四堂会审', 2)
+    e2e('前轮已录轮记须放行', s_withlog, '第2轮·四堂会审', 0)
+    e2e('台账含空soft之重开记录时存版不得崩', s_reopen, '第2轮·四堂会审', 0)
+    e2e('未领轮即存版须拦停且零写入', s_noling, '第2轮·四堂会审', 2)
+    e2e('所报之轮与所领不符须拦停', s_wronground, '第2轮·四堂会审', 2)
+    e2e('起轮时正文已偏离末版须拦停', s_drifted, '第2轮·四堂会审', 2)
+    e2e('非第N轮之说明（回补／定案）不受领轮闸拘', s_noling, '终版回补·器物', 0)
+    e2e('存版成功后领轮基线须销（一领一存不得复用）',
+        s_withlog, '第2轮·四堂会审', 0)
 
     # ── 漂移哨端到端：临时 git 库，封版后改动须被逮到 ──
     tmp = tempfile.mkdtemp(prefix='zm_drift_')
@@ -805,31 +899,8 @@ def selftest():
         gates(1, '第4轮·升华庭', L([v('第3轮·乙', ch=5)]), 5, [], same_as_last=True)[0])
 
     # 闸七·轮记闸端到端
-    def s_nolog(tmp):
-        _ch(tmp, '甲乙丙丁')
-        d = _led(tmp, [v('第1轮·感官庭', ch=1)])
-        open(os.path.join(d, 'v01.md'), 'w', encoding='utf-8').write('别的内容')
 
-    def s_withlog(tmp):
-        s_nolog(tmp)
-        open(os.path.join(tmp, '版本', '第7章', '_轮记.md'), 'w',
-             encoding='utf-8').write('\n## 第1轮｜v01｜x｜净重9\n所见若干\n')
-
-    e2e('前轮未录轮记须拦停且零写入', s_nolog, '第2轮·四堂会审', 2)
-    e2e('前轮已录轮记须放行', s_withlog, '第2轮·四堂会审', 0)
-
-    def s_reopen(tmp):
-        """台账含空 soft 之「重开」记录：棘轮闸须容得下，不得 KeyError。"""
-        s_withlog(tmp)
-        d, led = os.path.join(tmp, '版本', '第7章'), os.path.join(tmp, '版本', '第7章', '_台账.json')
-        lg = json.load(open(led, encoding='utf-8'))
-        lg['版本'].append({'版': '重开', '时': 'x', '说明': '【重开·记因】测',
-                          'hard': {}, 'soft': {}, '全书章数': 1})
-        json.dump(lg, open(led, 'w', encoding='utf-8'), ensure_ascii=False)
-
-    e2e('台账含空soft之重开记录时存版不得崩', s_reopen, '第2轮·四堂会审', 0)
-
-    print('\n  七闸负测（含端到端真跑）：%d/%d' % (ok, ok + fail))
+    print('\n  八闸负测（含端到端真跑）：%d/%d' % (ok, ok + fail))
     return 0 if fail == 0 else 1
 
 
@@ -854,6 +925,33 @@ def save(n, note=''):
         open(snaps[-1], encoding='utf-8').read().strip() == txt.strip()
     halt, glines = gates(n, note, ledger, chapters_now, receipts,
                          reopen, force, same_as_last)
+    # 闸八·领轮闸（批114）：凡报「第N轮」者，须先经 --下一轮 领轮。
+    # 其验有三：①领过没有（未领＝未对表即动手）；
+    #          ②起轮时之正文与末版是否一致（不一致＝这一轮起手时地就已经动过了）；
+    #          ③所报之轮与所领之轮是否相符（不符＝轮号漂移，P23）。
+    _r0 = _round_of(note)
+    if _r0 and not force:
+        _lg = _ling_path(n)
+        if not os.path.exists(_lg):
+            halt = True
+            glines.append('   ⛔领轮闸：未见领轮基线——本轮未经 --下一轮 领轮即动手。')
+            glines.append('     七闸皆在存版时拦，而祸起于「动手在前」；领轮是唯一能把防线提到动手之前的一步。')
+            glines.append('     处方：跑 python3 工具/十轮精进.py --下一轮 %d，读末版与前轮所见，再落笔。' % n)
+        else:
+            _b = json.load(open(_lg, encoding='utf-8'))
+            _ls = _last_snap_sha(n)
+            if _ls and _b.get('正文sha') != _b.get('末版sha'):
+                halt = True
+                glines.append('   ⛔领轮闸·起手即已偏：领轮时正文(%s)与当时末版(%s)不同。'
+                              % (_b.get('正文sha'), _b.get('末版sha')))
+                glines.append('     即这一轮起手之前，正文就已被改过而未存版——上一轮之刀没落进台账。')
+                glines.append('     处方：先查那笔改动之来历，补存或还原，再起本轮。')
+            if _b.get('目标轮') and _r0 != _b['目标轮']:
+                halt = True
+                glines.append('   ⛔领轮闸·轮号不符：所领为第%d轮，而本次报第%d轮。'
+                              % (_b['目标轮'], _r0))
+                glines.append('     只跑「下一个未跑之轮」——号会漂，台账不会。')
+
     # 闸七·轮记闸（批113）：前一轮未录轮记，不许存下一轮。
     # 轮记是压缩之后唯一能接上的东西；若可选，则必不写（本会话已反复证明「文档≠闸」）。
     _r = _round_of(note)
@@ -952,6 +1050,11 @@ def save(n, note=''):
         '说明': note, 'hard': hard, 'soft': soft,
         '全书章数': chapters_now, '流': _stream_id()})
     json.dump(ledger, open(led, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    try:
+        if os.path.exists(_ling_path(n)):
+            os.remove(_ling_path(n))   # 一领一存，基线用毕即销，下一轮须重领
+    except Exception:
+        pass
     print('  台账：%s（共%d版）' % (os.path.relpath(led, ROOT), v))
     # 【批111·修】原以"版本数"充"轮数"：而 v01 为封版基线、冷轮／终版回补／定案皆在十轮之外，
     # 故"10版"实为"基线＋9轮"，机器却报十轮已满。改为只数真轮（说明以"第N轮"起者）。

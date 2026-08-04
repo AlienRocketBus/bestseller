@@ -232,12 +232,23 @@ RATCHET_MIN = ('四字串三现', '顿悟起手')
 RATCHET_MAX = ('嗅', '沈鸢')
 
 
-# 【批112·立】并发三闸——不认人，只认"世界在我脚下动了没有"。
-# 病因（151章第三回撞车实录）：批107—109之并发闸有三处失效——
-#   ①只比 git HEAD，而别路直接写工作区未提交，HEAD 不动，遂报"无别路提交"；
+# 【批112·立｜立法理由已由作者当面订正】四闸——不认人，只认"磁盘之账与我脑中之认知对不对得上"。
+#
+# 【订正】本闸初立时执笔断为"二路并发撞车"（151章台账 v01—v03 与 v04—v09 分属两段，
+#   而执笔对后六轮全无记忆）。作者澄清：**全程只有一个对话、一个执笔**。
+#   那六轮是同一执笔所作，只是其往来已被上下文压缩冲掉。
+#   故真病为 P22 断层续手病：执笔之认知落后于磁盘实况，而按过期认知续手。
+#   连带存疑：批107起"另一路·并发协作"诸记（101章为首）多半为同型误判；
+#   其上所立之并发设施（ZM_STREAM 分档、_并发指纹_*.json）建于未经证实之前提，留而不用。
+#
+# 【做法恰对，理由说错，故闸留】旧闸（批107—109）失效有三，皆实测：
+#   ①只比 git HEAD，而改动只写工作区未提交时 HEAD 不动，遂报"无别路提交"；
 #   ②concurrency_check 的返回值被 save() 丢弃，是打印机不是闸（"只喷字的，等于没做"）；
 #   ③流号靠 ZM_STREAM 分档，而本项目约定每次调用皆冠 ZM_STREAM=streamA-cli，二流同号，分档自废。
-# 故三闸一律不依赖提交、不依赖流号、不依赖工作区脏否（脏是自噪声），只用确定性状态差。
+# 故四闸一律不依赖提交、不依赖流号、不依赖工作区脏否（脏是自噪声），只用确定性状态差。
+#
+# 【归属戒律】不得由"我不记得"推出"不是我"。凡无记忆之改动，先按"己作而失忆"处理，
+#   跑 --对表 核实后再定；不得据此新立并发设施。
 def _receipts_of(n):
     return sorted(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
 
@@ -252,7 +263,7 @@ def _book_chapters():
 
 
 def gates(n, note, ledger, chapters_now, receipts, reopen='', force=''):
-    """三闸纯函数（可负测）。返回 (halt, lines)。"""
+    """闸一至闸三之纯函数（可负测）。闸四·验轮在 duibiao。返回 (halt, lines)。"""
     lines, halt = [], False
     vs = ledger.get('版本', [])
     r = _round_of(note)
@@ -274,7 +285,7 @@ def gates(n, note, ledger, chapters_now, receipts, reopen='', force=''):
         lines.append('   ⛔轮次闸：台账已跑到第%d轮（末版 %s「%s」%s），本次报第%d轮，轮次倒退。'
                      % (max(done), last.get('版', ''), last.get('说明', ''),
                         last.get('时', ''), r))
-        lines.append('     多半是别路已推进而本路仍按旧认知落笔——先读末版再定。')
+        lines.append('     多半是自己已推进而记不得（P22断层续手），仍按旧认知落笔——先读末版再定。')
 
     # 闸三·章界闸：自上次存版以来全书章数变了＝别路拆了章或续了章，脚下的地已经动了。
     prev_ch = None
@@ -288,10 +299,10 @@ def gates(n, note, ledger, chapters_now, receipts, reopen='', force=''):
                      % (prev_ch, chapters_now))
         lines.append('     章数变动多半来自拆章／续章，本章之界与净重基线俱已不同，不得按旧认知续改。')
         lines.append('     若系本路方才拆章／续章，置 ZM_FORCE="拆章 N→N+N1" 记因后再跑；')
-        lines.append('     若不知情，则是别路动了地，须先对表让路。')
+        lines.append('     若不知情，则是自己失忆而地已动（P22），须先对表认路。')
 
     if not halt:
-        lines.append('   ✓并发三闸（回执／轮次／章界）全通。')
+        lines.append('   ✓三闸（回执／轮次／章界）全通。')
     else:
         lines.append('   **处方**：先跑 --对表 %d 读末版与回执，再决定并轨或让路。' % n)
     return halt, lines
@@ -398,7 +409,7 @@ def selftest():
     chk('三闸俱通时不得拦', not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 151, [])[0])
 
     # 151实录回放：当日之真况须被拦下
-    chk('151实录回放须拦（回执已交＋轮次倒退＋章数增）',
+    chk('151实录回放须拦（回执已交＋轮次倒退＋章数增·同一执笔失忆续手）',
         gates(151, '第4轮·升华庭', L([v('第3轮·校对庭逐数对表', ch=151)]), 152,
               ['设定/回执_20260804_第151章作业单.md'])[0])
 
@@ -409,7 +420,7 @@ def selftest():
     chk('151实录回放·验轮须报缺第10轮',
         rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == [10])
 
-    print('\n  并发四闸负测：%d/%d' % (ok, ok + fail))
+    print('\n  四闸负测：%d/%d' % (ok, ok + fail))
     return 0 if fail == 0 else 1
 
 
@@ -423,13 +434,13 @@ def save(n, note=''):
     ledger = json.load(open(led, encoding='utf-8')) if os.path.exists(led) \
         else {'章': n, '版本': []}
 
-    # 【批112】并发三闸须在落盘之前拦：拦得住交付的才算闸。
+    # 【批112】四闸须在落盘之前拦：拦得住交付的才算闸。
     reopen = os.environ.get('ZM_REOPEN', '').strip()
     force = os.environ.get('ZM_FORCE', '').strip()
     chapters_now = _book_chapters()
     receipts = _receipts_of(n)
     halt, glines = gates(n, note, ledger, chapters_now, receipts, reopen, force)
-    print('\n  ── 并发三闸（批112·不认人只认状态差） ──')
+    print('\n  ── 四闸（批112·不认人，只认磁盘之账与认知对不对得上） ──')
     for l in glines:
         print(l)
     git_found, git_txt = concurrency_check(quiet=True)
@@ -437,7 +448,7 @@ def save(n, note=''):
         print(git_txt)
     if git_found and not force:
         halt = True
-        print('   ⛔别路提交闸：自上次记录以来 HEAD 已前进，须先读别路所改再落笔。')
+        print('   ⛔HEAD前进闸：自上次记录以来 HEAD 已前进，须先读其所改再落笔。')
     if halt:
         print('  ⛔存版已拦停，未写入任何文件。')
         return 2

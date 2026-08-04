@@ -336,12 +336,15 @@ def gates(n, note, ledger, chapters_now, receipts, reopen='', force='', same_as_
         lines.append('     若不知情，则是自己失忆而地已动（P22），须先对表认路。')
 
     # 闸六·空轮闸（防假跑第1条）：正文与末版逐字相同＝本轮零改动，却要记一版。
-    if same_as_last and not force:
+    # 【批113·修】初版与验轮闸相犯：零刀之轮若被迫改用非「第N轮」之说明，验轮闸即判其未跑，
+    #   遂令「审毕判不补」这一合法结局无从表述。故凡说明中明记判不补者放行，仍挂其轮号。
+    _nocut = bool(re.search(r'判不补|零刀|不补|无真伤', note or ''))
+    if same_as_last and not force and not _nocut:
         halt = True
         lines.append('   ⛔空轮闸：正文与末版逐字相同，本轮零改动。')
         lines.append('     记一版空轮＝台账上多一个跑过的样子，而实无一刀，日后横评择优必被它带偏。')
-        lines.append('     若确为「本轮审毕判不补」，请以非「第N轮」之说明存版（如「第N轮·判不补·记因」），')
-        lines.append('     或置 ZM_FORCE="判不补之由" 明记。')
+        lines.append('     若确为「本轮审毕判不补」，说明中明写「判不补」（如「第N轮·XX庭·判不补·记因」），')
+        lines.append('     轮号照挂，验轮闸不会再判其未跑。')
 
     if not halt:
         lines.append('   ✓四闸（回执／轮次／章界／空轮）全通。')
@@ -358,6 +361,62 @@ def rounds_state(ledger):
         if r:
             rs.add(r)
     return rs, [i for i in range(1, 11) if i not in rs]
+
+
+def rounds_verdict(ledger):
+    """【批113·修】验轮之裁。
+    病因（自证）：初版验轮闸把「真轮不足1—10」一律判为无凭据，遂对105/106/143误报——
+      105/106之末版为「定案轮／冷轮补执（十轮之外）」，活儿续跑了只是没挂第10轮之号；
+      143之第9轮即收官减法并当场拆章，其末轮本就是9号。**此为轮号漂移，非丢版。**
+      （轮号漂移之实证：全书台账中第8轮惯用「减法轮」、第9轮「收官减法轮」、第10轮「收官轮」，三者重叠。）
+    故改判两级：
+      · 洞（中间缺号，如1,2,3,5）＝确有一轮跑了而未存版 → 硬伤，须补。
+      · 短（末尾不足十）＝或为轮号压缩，或为真丢 → 存疑，须回执写明，不得径判无凭据。
+    返回 (holes, short, verdict_lines)。"""
+    rs, _ = rounds_state(ledger)
+    if not rs:
+        return [], [], []
+    top = max(rs)
+    holes = [i for i in range(1, top) if i not in rs]
+    short = [i for i in range(top + 1, 11)]
+    lines = []
+    if holes:
+        lines.append('   ⛔验轮闸·洞：真轮缺 %s，而其后之轮已存——'
+                     % '、'.join('第%d轮' % i for i in holes))
+        lines.append('     中间缺号＝确有一轮跑了却未存版：未过棘轮闸，亦无快照可回退。须补存或于回执记因。')
+    if short:
+        # 【批113·再修】前修曰"机器判不了是哪一种"——此语亦错，凭据本就在台账里：
+        #   ①末轮之后尚有「十轮之外」之版（定案轮／冷轮补执）＝流程走完了，只是没挂号（105、106即此）；
+        #   ②末轮说明已达终局镜头（收官／减法／定案）＝其末轮本就是那一轮（143即此）。
+        #   二者皆无，方为真存疑（151即此：末轮为跨章复审，其后无版）。
+        vs = ledger.get('版本', [])
+        tail = []
+        seen_top = False
+        for x in vs:
+            if _round_of(x.get('说明', '')) == top:
+                seen_top = True
+                continue
+            if seen_top:
+                tail.append(x.get('说明', ''))
+        after = [t for t in tail if re.search(r'十轮之外|定案|冷轮|横评|器物总账', t)]
+        topnote = ''
+        for x in vs:
+            if _round_of(x.get('说明', '')) == top:
+                topnote = x.get('说明', '')
+        terminal = bool(re.search(r'收官|减法|定案', topnote))
+        if after:
+            lines.append('   ✓验轮闸·短而判合：真轮止于第%d轮，然其后尚有十轮之外之版（%s）——'
+                         % (top, after[0][:20]))
+            lines.append('     流程走完了，只是末轮未挂号（轮号压缩）。')
+        elif terminal:
+            lines.append('   ✓验轮闸·短而判合：真轮止于第%d轮，而该轮即终局镜头（%s）——'
+                         % (top, topnote[:20]))
+            lines.append('     其末轮本就是这一轮，非丢版。')
+        else:
+            lines.append('   ⚠验轮闸·短而存疑：真轮止于第%d轮（%s），其后既无十轮之外之版，'
+                         % (top, topnote[:18]))
+            lines.append('     该轮亦非终局镜头——多半确有一轮跑了未存版，须于回执写明。')
+    return holes, short, lines
 
 
 def duibiao(n):
@@ -394,13 +453,10 @@ def duibiao(n):
         rs, miss = rounds_state(lg)
         print('  真轮：%d/10%s' % (len(rs), '' if not miss else
               '｜缺 ' + '、'.join('第%d轮' % i for i in miss)))
-        # 【批112·闸四】封版凭据之验：回执已交而真轮未满＝有轮跑了却未存版，
-        # 该轮既未过棘轮闸、亦无快照可回退，回执之"十轮跑毕"遂无凭据。
-        if rc and miss:
-            print('  ⛔验轮闸：回执已交，而真轮缺 %s——'
-                  % '、'.join('第%d轮' % i for i in miss))
-            print('     该轮无版可查：未过棘轮闸，亦无快照可回退，回执所称十轮跑毕无凭据。')
-            print('     处方：补存该轮之版（说明以「第N轮」起），或在回执写明该轮并入他轮并记因。')
+        # 【批112·闸四｜批113修】封版凭据之验，两级判：洞＝硬伤，短＝存疑。
+        if rc:
+            for l in rounds_verdict(lg)[2]:
+                print(l)
     else:
         print('  台账：无')
     return 0
@@ -547,9 +603,8 @@ def duibiao_brief(n):
                    % (len(vs), last.get('版', ''), last.get('说明', ''), last.get('时', '')))
         out.append('   真轮：%d/10%s' % (len(rs), '' if not miss else
                    '｜缺 ' + '、'.join('第%d轮' % i for i in miss)))
-        if rc and miss:
-            out.append('   ⛔验轮闸：回执已交而真轮缺 %s，「十轮跑毕」无凭据。'
-                       % '、'.join('第%d轮' % i for i in miss))
+        if rc:
+            out.extend(rounds_verdict(lg)[2])
     else:
         out.append('   台账：无（本章尚未起轮）')
     if src:
@@ -571,8 +626,11 @@ def selftest():
             print('  ✗负测失败：' + name)
 
     L = lambda vs: {'章': 1, '版本': vs}
+    _SOFT = {'净重': 100, '段数': 9, '均段': 11, '长段数': 0, '嗅': 3, '听': 4,
+             '触': 7, '视': 2, '老头': 1, '钱满': 1, '沈鸢': 0,
+             '四字串三现': 0, '顿悟起手': 0}
     v = lambda note, ch=None: ({'版': 'v01', '时': '', '说明': note,
-                                'hard': {}, 'soft': {'净重': 100}}
+                                'hard': {}, 'soft': dict(_SOFT)}
                                | ({'全书章数': ch} if ch else {}))
 
     # 闸一·回执闸
@@ -720,7 +778,58 @@ def selftest():
         ROOT, JJ_DIR = _R, _J
         shutil.rmtree(tmp, ignore_errors=True)
 
-    print('\n  六闸负测（含端到端真跑）：%d/%d' % (ok, ok + fail))
+    # 闸四·验轮两级判（批113修·防误报）
+    R = lambda ls: L([v('第%d轮·x' % i) for i in ls])
+    chk('验轮·洞：中间缺号须判硬伤', rounds_verdict(R([1, 2, 3, 5, 6]))[0] == [4])
+    chk('验轮·洞：满十轮不得报洞', rounds_verdict(R(range(1, 11)))[0] == [])
+    chk('验轮·短：止于第9轮须判存疑而非硬伤',
+        rounds_verdict(R(range(1, 10)))[0] == [] and rounds_verdict(R(range(1, 10)))[1] == [10])
+    _txt = lambda ls: '\n'.join(rounds_verdict(ls)[2])
+    _R9 = [v('第%d轮·x' % i) for i in range(1, 10)]
+    chk('验轮·105/106实录：第9轮后有「定案轮（十轮之外）」须判合',
+        '判合' in _txt(L(_R9 + [v('定案轮（十轮之外）：逐版比对')])))
+    chk('验轮·143实录：第9轮即收官减法轮须判合',
+        '判合' in _txt(L([v('第%d轮·x' % i) for i in range(1, 9)] +
+                         [v('第9轮·收官减法轮：七刀减9字')])))
+    chk('验轮·151实录：第9轮为跨章复审且其后无版，须判存疑',
+        '存疑' in _txt(L([v('第%d轮·x' % i) for i in range(1, 9)] +
+                         [v('第9轮·跨章复审')])))
+    chk('验轮·满十轮不得报短', rounds_verdict(R(range(1, 11)))[1] == [])
+    chk('验轮·空台账不得报', rounds_verdict(L([])) == ([], [], []))
+
+    # 闸六·空轮闸与验轮闸不得相犯（批113修）
+    chk('空轮闸须放行明记判不补之轮（轮号照挂）',
+        not gates(1, '第4轮·升华庭·判不补·记因', L([v('第3轮·乙', ch=5)]), 5, [],
+                  same_as_last=True)[0])
+    chk('空轮闸仍拦未记判不补之零改动轮',
+        gates(1, '第4轮·升华庭', L([v('第3轮·乙', ch=5)]), 5, [], same_as_last=True)[0])
+
+    # 闸七·轮记闸端到端
+    def s_nolog(tmp):
+        _ch(tmp, '甲乙丙丁')
+        d = _led(tmp, [v('第1轮·感官庭', ch=1)])
+        open(os.path.join(d, 'v01.md'), 'w', encoding='utf-8').write('别的内容')
+
+    def s_withlog(tmp):
+        s_nolog(tmp)
+        open(os.path.join(tmp, '版本', '第7章', '_轮记.md'), 'w',
+             encoding='utf-8').write('\n## 第1轮｜v01｜x｜净重9\n所见若干\n')
+
+    e2e('前轮未录轮记须拦停且零写入', s_nolog, '第2轮·四堂会审', 2)
+    e2e('前轮已录轮记须放行', s_withlog, '第2轮·四堂会审', 0)
+
+    def s_reopen(tmp):
+        """台账含空 soft 之「重开」记录：棘轮闸须容得下，不得 KeyError。"""
+        s_withlog(tmp)
+        d, led = os.path.join(tmp, '版本', '第7章'), os.path.join(tmp, '版本', '第7章', '_台账.json')
+        lg = json.load(open(led, encoding='utf-8'))
+        lg['版本'].append({'版': '重开', '时': 'x', '说明': '【重开·记因】测',
+                          'hard': {}, 'soft': {}, '全书章数': 1})
+        json.dump(lg, open(led, 'w', encoding='utf-8'), ensure_ascii=False)
+
+    e2e('台账含空soft之重开记录时存版不得崩', s_reopen, '第2轮·四堂会审', 0)
+
+    print('\n  七闸负测（含端到端真跑）：%d/%d' % (ok, ok + fail))
     return 0 if fail == 0 else 1
 
 
@@ -745,6 +854,18 @@ def save(n, note=''):
         open(snaps[-1], encoding='utf-8').read().strip() == txt.strip()
     halt, glines = gates(n, note, ledger, chapters_now, receipts,
                          reopen, force, same_as_last)
+    # 闸七·轮记闸（批113）：前一轮未录轮记，不许存下一轮。
+    # 轮记是压缩之后唯一能接上的东西；若可选，则必不写（本会话已反复证明「文档≠闸」）。
+    _r = _round_of(note)
+    _prev = max([x for x in rounds_state(ledger)[0]], default=0)
+    if _r and _prev and _r > _prev and not force:
+        _lp = _lunji_path(n)
+        _has = os.path.exists(_lp) and ('第%d轮' % _prev) in open(_lp, encoding='utf-8').read()
+        if not _has:
+            halt = True
+            glines.append('   ⛔轮记闸：第%d轮未录轮记，不许起第%d轮。' % (_prev, _r))
+            glines.append('     轮记是压缩之后唯一能接上的东西；此刻不写，下一坐就接不上。')
+            glines.append('     补录：printf \'...\' | python3 工具/十轮精进.py --轮记 %d' % n)
     print('\n  ── 六闸（批112·不认人，只认磁盘之账与认知对不对得上） ──')
     for l in glines:
         print(l)
@@ -793,21 +914,28 @@ def save(n, note=''):
         print('   ⚠首现而四十字内无解释锚：' + '、'.join(naked))
         print('   （专名首现须带解释；若确为前文已解而本章复用，可裁定豁免并记回执）')
     if ledger['版本']:
+        # 【批113·修】棘轮闸须容得下 soft 不全之旧版与「重开」记录（其 soft 为空）。
+        # 原码直取 r['soft'][k]，遇缺键即 KeyError——ZM_REOPEN 所写之重开记录正是空 soft，
+        # 故此前只要用过一次重开，下一次存版必崩。逐键存在方参与比对。
         best = {}
         for r in ledger['版本']:
+            sf = r.get('soft') or {}
             for k in RATCHET_MIN:
-                best[k] = min(best.get(k, r['soft'][k]), r['soft'][k])
+                if k in sf:
+                    best[k] = min(best.get(k, sf[k]), sf[k])
             for k in RATCHET_MAX:
-                best[k] = max(best.get(k, r['soft'][k]), r['soft'][k])
-            best['净重'] = max(best.get('净重', r['soft']['净重']), r['soft']['净重'])
+                if k in sf:
+                    best[k] = max(best.get(k, sf[k]), sf[k])
+            if '净重' in sf:
+                best['净重'] = max(best.get('净重', sf['净重']), sf['净重'])
         worse = []
         for k in RATCHET_MIN:
-            if soft[k] > best[k]:
+            if k in best and soft[k] > best[k]:
                 worse.append('%s %d→%d(升)' % (k, best[k], soft[k]))
         for k in RATCHET_MAX:
-            if soft[k] < best[k]:
+            if k in best and soft[k] < best[k]:
                 worse.append('%s %d→%d(降)' % (k, best[k], soft[k]))
-        if soft['净重'] < best['净重'] * 0.92:
+        if '净重' in best and soft['净重'] < best['净重'] * 0.92:
             worse.append('净重 %d→%d(减逾8%%)' % (best['净重'], soft['净重']))
         print('  ── 棘轮闸（与历史最优逐项比） ──')
         if worse:

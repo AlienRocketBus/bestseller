@@ -249,6 +249,40 @@ RATCHET_MAX = ('嗅', '沈鸢')
 #
 # 【归属戒律】不得由"我不记得"推出"不是我"。凡无记忆之改动，先按"己作而失忆"处理，
 #   跑 --对表 核实后再定；不得据此新立并发设施。
+def _rel(path):
+    return os.path.relpath(path, ROOT).replace(os.sep, '/')
+
+
+def _git_raw(*args):
+    import subprocess
+    try:
+        r = subprocess.run(['git'] + list(args), cwd=ROOT,
+                           capture_output=True, text=True, timeout=30)
+        return r.stdout if r.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def drift_of(n, receipts, src, txt):
+    """【批112·闸五】封版后漂移哨。
+    回执已交＝该章已封版；其工作区正文若与 HEAD 所存不同，即封版之后又被改过。
+    此闸补的是四闸之盲区：四闸只在存版时拦，而正文早在存版之前就被改了。
+    返回 (drifted, lines)。非 git／未入库者一律不判漂移（宁可不报，不可误报）。"""
+    if not receipts:
+        return False, []
+    head = _git_raw('show', 'HEAD:%s' % _rel(src))
+    if head is None:
+        return False, ['   ℹ漂移哨：该章尚未入库或 git 不可用，本哨跳过。']
+    if head.strip() == txt.strip():
+        return False, ['   ✓漂移哨：已封版之正文与 HEAD 一致，封版后未被改动。']
+    a = len([c for c in head if not c.isspace()])
+    b = len([c for c in txt if not c.isspace()])
+    return True, [
+        '   ⛔漂移哨：第%d章回执已交（已封版），而工作区正文与 HEAD 不同。' % n,
+        '     全文字数（含亮点段，非正文净重）HEAD %d → 工作区 %d（差%+d）。' % (a, b, b - a),
+        '     封版之后的改动须走回补／定案并记因；若系误改，跑 --还原 %d 确认 复原。' % n]
+
+
 def _receipts_of(n):
     return sorted(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
 
@@ -262,7 +296,7 @@ def _book_chapters():
     return len([p for p in glob.glob(os.path.join(ROOT, '正文', '*.md')) if chap_num(p)])
 
 
-def gates(n, note, ledger, chapters_now, receipts, reopen='', force=''):
+def gates(n, note, ledger, chapters_now, receipts, reopen='', force='', same_as_last=False):
     """闸一至闸三之纯函数（可负测）。闸四·验轮在 duibiao。返回 (halt, lines)。"""
     lines, halt = [], False
     vs = ledger.get('版本', [])
@@ -301,8 +335,16 @@ def gates(n, note, ledger, chapters_now, receipts, reopen='', force=''):
         lines.append('     若系本路方才拆章／续章，置 ZM_FORCE="拆章 N→N+N1" 记因后再跑；')
         lines.append('     若不知情，则是自己失忆而地已动（P22），须先对表认路。')
 
+    # 闸六·空轮闸（防假跑第1条）：正文与末版逐字相同＝本轮零改动，却要记一版。
+    if same_as_last and not force:
+        halt = True
+        lines.append('   ⛔空轮闸：正文与末版逐字相同，本轮零改动。')
+        lines.append('     记一版空轮＝台账上多一个跑过的样子，而实无一刀，日后横评择优必被它带偏。')
+        lines.append('     若确为「本轮审毕判不补」，请以非「第N轮」之说明存版（如「第N轮·判不补·记因」），')
+        lines.append('     或置 ZM_FORCE="判不补之由" 明记。')
+
     if not halt:
-        lines.append('   ✓三闸（回执／轮次／章界）全通。')
+        lines.append('   ✓四闸（回执／轮次／章界／空轮）全通。')
     else:
         lines.append('   **处方**：先跑 --对表 %d 读末版与回执，再决定并轨或让路。' % n)
     return halt, lines
@@ -337,6 +379,10 @@ def duibiao(n):
         print('  ✗未找到第%d章正文' % n)
     rc = _receipts_of(n)
     print('  回执：%s' % ('、'.join(os.path.basename(x) for x in rc) if rc else '未交'))
+    if src:
+        _, dl = drift_of(n, rc, src, open(src, encoding='utf-8').read())
+        for l in dl:
+            print(l)
     if os.path.exists(led):
         lg = json.load(open(led, encoding='utf-8'))
         vs = lg.get('版本', [])
@@ -358,6 +404,67 @@ def duibiao(n):
     else:
         print('  台账：无')
     return 0
+
+
+def huanyuan(n, confirm=''):
+    """自 HEAD 复原某章正文（误改封版之章时用）。须显式带「确认」二字。"""
+    src = find_chapter(n)
+    if not src:
+        print('  ✗未找到第%d章正文' % n)
+        return 1
+    head = _git_raw('show', 'HEAD:%s' % _rel(src))
+    if head is None:
+        print('  ✗该章尚未入库或 git 不可用，无从复原。')
+        return 1
+    cur = open(src, encoding='utf-8').read()
+    if cur.strip() == head.strip():
+        print('  ✓第%d章正文与 HEAD 一致，无须复原。' % n)
+        return 0
+    a = len([c for c in cur if not c.isspace()])
+    b = len([c for c in head if not c.isspace()])
+    print('\n███ 还原 · 第%d章 ███' % n)
+    print('  全文字数（含亮点段）工作区 %d → HEAD %d' % (a, b))
+    if confirm.strip() != '确认':
+        print('  ⛔未确认，未改动任何文件。')
+        print('     确要复原请跑：python3 工具/十轮精进.py --还原 %d 确认' % n)
+        print('     （复原将丢弃工作区对该章之全部改动，不可撤销）')
+        return 2
+    bak = src + '.漂移备份'
+    open(bak, 'w', encoding='utf-8').write(cur)
+    open(src, 'w', encoding='utf-8').write(head)
+    print('  ✓已复原至 HEAD；工作区原文另存为 %s' % os.path.basename(bak))
+    return 0
+
+
+def duibiao_brief(n):
+    """精简对表：供检察官逐章封版门内嵌，三五行给出「磁盘之实况」。
+    其价值在于：执笔每章必看封版门，遂不必倚赖「记得去跑 --对表」——
+    而「记得」正是 P22 断层续手病所毁之器官。"""
+    out = []
+    src = find_chapter(n)
+    rc = _receipts_of(n)
+    d, led = paths(n)
+    out.append('  ── 开轮对表（批112·磁盘为准，非记忆为准） ──')
+    out.append('   回执：%s｜全书%d章'
+               % ('已交（十轮已闭，只许回补／定案）' if rc else '未交', _book_chapters()))
+    if os.path.exists(led):
+        lg = json.load(open(led, encoding='utf-8'))
+        vs = lg.get('版本', [])
+        rs, miss = rounds_state(lg)
+        last = vs[-1] if vs else {}
+        out.append('   台账：共%d版，末版 %s「%s」%s'
+                   % (len(vs), last.get('版', ''), last.get('说明', ''), last.get('时', '')))
+        out.append('   真轮：%d/10%s' % (len(rs), '' if not miss else
+                   '｜缺 ' + '、'.join('第%d轮' % i for i in miss)))
+        if rc and miss:
+            out.append('   ⛔验轮闸：回执已交而真轮缺 %s，「十轮跑毕」无凭据。'
+                       % '、'.join('第%d轮' % i for i in miss))
+    else:
+        out.append('   台账：无（本章尚未起轮）')
+    if src:
+        dr, dl = drift_of(n, rc, src, open(src, encoding='utf-8').read())
+        out.extend(dl)
+    return '\n'.join(out)
 
 
 def selftest():
@@ -420,7 +527,109 @@ def selftest():
     chk('151实录回放·验轮须报缺第10轮',
         rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == [10])
 
-    print('\n  四闸负测：%d/%d' % (ok, ok + fail))
+    # 闸六·空轮闸
+    chk('空轮闸须拦零改动之轮',
+        gates(1, '第4轮·甲', L([v('第3轮·乙', ch=5)]), 5, [], same_as_last=True)[0])
+    chk('空轮闸不得误拦有改动之轮',
+        not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=5)]), 5, [], same_as_last=False)[0])
+    chk('空轮闸须认 ZM_FORCE 之豁免',
+        not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=5)]), 5, [],
+                  force='审毕判不补', same_as_last=True)[0])
+
+    # ── 端到端负测：在临时 ROOT 上真跑 save()，验其确实拦停且零写入 ──
+    import tempfile, shutil, io, contextlib, subprocess
+    global ROOT, JJ_DIR
+    _R, _J = ROOT, JJ_DIR
+
+    def e2e(name, mk, note, want_rc):
+        """mk(tmp) 布置场景；跑 save；验返回码与「版本目录零增长」。"""
+        nonlocal ok, fail
+        global ROOT, JJ_DIR
+        tmp = tempfile.mkdtemp(prefix='zm_e2e_')
+        try:
+            os.makedirs(os.path.join(tmp, '正文'))
+            os.makedirs(os.path.join(tmp, '设定'))
+            ROOT, JJ_DIR = tmp, os.path.join(tmp, '版本')
+            mk(tmp)
+            before = sorted(glob.glob(os.path.join(tmp, '版本', '**', '*'), recursive=True))
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = save(7, note)
+            after = sorted(glob.glob(os.path.join(tmp, '版本', '**', '*'), recursive=True))
+            good = (rc == want_rc)
+            if want_rc == 2:
+                # 拦停之轮：除自动建出的空目录外，不得多出任何文件
+                nf = [x for x in after if x not in before and os.path.isfile(x)]
+                good = good and not nf
+                if nf:
+                    print('  ✗端到端：拦停却写入了 %s' % nf)
+            if good:
+                ok += 1
+            else:
+                fail += 1
+                print('  ✗端到端失败：%s（rc=%s，期望%s）' % (name, rc, want_rc))
+        finally:
+            ROOT, JJ_DIR = _R, _J
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def _ch(tmp, body='一二三四五六七八九十'):
+        open(os.path.join(tmp, '正文', '镇冢秘术_第七章_测.md'), 'w',
+             encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n' + body + '\n')
+
+    def _led(tmp, vs):
+        d = os.path.join(tmp, '版本', '第7章')
+        os.makedirs(d, exist_ok=True)
+        json.dump({'章': 7, '版本': vs}, open(os.path.join(d, '_台账.json'), 'w',
+                  encoding='utf-8'), ensure_ascii=False)
+        return d
+
+    def s_receipt(tmp):
+        _ch(tmp)
+        _led(tmp, [v('第9轮·乙', ch=1)])
+        open(os.path.join(tmp, '设定', '回执_x_第7章作业单.md'), 'w',
+             encoding='utf-8').write('x')
+
+    def s_clean(tmp):
+        _ch(tmp)
+
+    def s_empty(tmp):
+        _ch(tmp)
+        d = _led(tmp, [v('第3轮·乙', ch=1)])
+        open(os.path.join(d, 'v01.md'), 'w', encoding='utf-8').write(
+            open(os.path.join(tmp, '正文', '镇冢秘术_第七章_测.md'), encoding='utf-8').read())
+
+    e2e('回执已交＋轮次倒退须拦停且零写入', s_receipt, '第4轮·升华庭', 2)
+    e2e('空轮须拦停且零写入', s_empty, '第4轮·升华庭', 2)
+    e2e('干净首版须放行并写入', s_clean, '第1轮·感官庭', 0)
+
+    # ── 漂移哨端到端：临时 git 库，封版后改动须被逮到 ──
+    tmp = tempfile.mkdtemp(prefix='zm_drift_')
+    try:
+        os.makedirs(os.path.join(tmp, '正文'))
+        os.makedirs(os.path.join(tmp, '设定'))
+        ROOT, JJ_DIR = tmp, os.path.join(tmp, '版本')
+        f = os.path.join(tmp, '正文', '镇冢秘术_第七章_测.md')
+        open(f, 'w', encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n原文\n')
+        rp = os.path.join(tmp, '设定', '回执_x_第7章作业单.md')
+        open(rp, 'w', encoding='utf-8').write('x')
+        q = lambda *a: subprocess.run(a, cwd=tmp, capture_output=True, text=True)
+        q('git', 'init', '-q')
+        q('git', 'config', 'user.email', 't@t')
+        q('git', 'config', 'user.name', 't')
+        q('git', 'add', '-A')
+        q('git', 'commit', '-q', '-m', 'x')
+        chk('漂移哨：未改动时不得误报',
+            not drift_of(7, [rp], f, open(f, encoding='utf-8').read())[0])
+        open(f, 'w', encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n原文被改了\n')
+        chk('漂移哨：封版后被改须逮到',
+            drift_of(7, [rp], f, open(f, encoding='utf-8').read())[0])
+        chk('漂移哨：未交回执之章不判漂移',
+            not drift_of(7, [], f, open(f, encoding='utf-8').read())[0])
+    finally:
+        ROOT, JJ_DIR = _R, _J
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('\n  六闸负测（含端到端真跑）：%d/%d' % (ok, ok + fail))
     return 0 if fail == 0 else 1
 
 
@@ -434,15 +643,25 @@ def save(n, note=''):
     ledger = json.load(open(led, encoding='utf-8')) if os.path.exists(led) \
         else {'章': n, '版本': []}
 
-    # 【批112】四闸须在落盘之前拦：拦得住交付的才算闸。
+    # 【批112】诸闸须在落盘之前拦：拦得住交付的才算闸。
     reopen = os.environ.get('ZM_REOPEN', '').strip()
     force = os.environ.get('ZM_FORCE', '').strip()
     chapters_now = _book_chapters()
     receipts = _receipts_of(n)
-    halt, glines = gates(n, note, ledger, chapters_now, receipts, reopen, force)
-    print('\n  ── 四闸（批112·不认人，只认磁盘之账与认知对不对得上） ──')
+    txt = open(src, encoding='utf-8').read()
+    snaps = sorted(glob.glob(os.path.join(d, 'v[0-9][0-9].md')))
+    same_as_last = bool(snaps) and \
+        open(snaps[-1], encoding='utf-8').read().strip() == txt.strip()
+    halt, glines = gates(n, note, ledger, chapters_now, receipts,
+                         reopen, force, same_as_last)
+    print('\n  ── 六闸（批112·不认人，只认磁盘之账与认知对不对得上） ──')
     for l in glines:
         print(l)
+    drifted, dlines = drift_of(n, receipts, src, txt)
+    for l in dlines:
+        print(l)
+    if drifted and not force:
+        halt = True
     git_found, git_txt = concurrency_check(quiet=True)
     if git_found:
         print(git_txt)
@@ -458,7 +677,6 @@ def save(n, note=''):
                                '全书章数': chapters_now})
         print('   ⚠已记重开：%s' % reopen)
 
-    txt = open(src, encoding='utf-8').read()
     hard, soft = score(txt)
     prev = ''
     for pf in sorted(glob.glob(os.path.join(ROOT, '正文', '*.md'))):
@@ -604,6 +822,8 @@ def main():
     n = int(sys.argv[2])
     if cmd == '--对表':
         return duibiao(n)
+    if cmd == '--还原':
+        return huanyuan(n, sys.argv[3] if len(sys.argv) > 3 else '')
     if cmd == '--存版':
         return save(n, sys.argv[3] if len(sys.argv) > 3 else '')
     if cmd == '--横评':

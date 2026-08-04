@@ -2185,6 +2185,22 @@ def hooks_report(max_ch):
             out.append(f'   ⏳ 排期中：「{name}」(埋于第{born}章 → {due})')
     return out, red
 
+def _kailun_duibiao(ch):
+    """【批112】内嵌开轮对表：把磁盘实况印在执笔每章必看之处。
+    全程 try/except 包死——本块任何异常一律静默降级，绝不得拖累检察官。"""
+    try:
+        import importlib.util as _ilu
+        _f = os.path.join(os.path.dirname(os.path.abspath(__file__)), '十轮精进.py')
+        if not os.path.exists(_f):
+            return
+        _sp = _ilu.spec_from_file_location('_zm_shilun', _f)
+        _m = _ilu.module_from_spec(_sp)
+        _sp.loader.exec_module(_m)
+        print(_m.duibiao_brief(ch))
+    except Exception:
+        pass
+
+
 def main():
     # 兼容旧调用名，但统一进入下方当前入口；以下旧实现保留作历史代码且不可达。
     return super_main()
@@ -3386,6 +3402,7 @@ def super_main():
             r=legacy_review_layer(files,ch)
             total_error+=e; total_review+=r
             print(f'  封版门:ERROR={e}(须0) REVIEW={r}(人工裁定)')
+            _kailun_duibiao(ch)
             ai_homework(ch,files); second_gate(f'第{ch}章')
         return 0 if total_error==0 else 1
     elif num:
@@ -3396,6 +3413,7 @@ def super_main():
         e=priority_one(files,ch,lib); abs_collide(files,ch,lib); underwrite_radar(files,ch); e+=mech_layer(files,ch,lib)
         r=legacy_review_layer(files,ch)
         print(f'  封版门:ERROR={e}(须0) REVIEW={r}(人工裁定)')
+        _kailun_duibiao(ch)
         ai_homework(ch,files); second_gate(f'第{ch}章')
         return 0 if e==0 else 1
     else:

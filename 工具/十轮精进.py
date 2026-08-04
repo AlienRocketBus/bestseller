@@ -214,33 +214,239 @@ def concurrency_check(quiet=False):
                 lines.append('     · ' + f)
         lines.append('   **处方**：先读别路所改之处再落笔；若与本轮拟改同段，须先并轨，不得直接覆写。')
     dirty = _git('status', '--porcelain')
-    if dirty:
-        dl = [l for l in dirty.split('\n') if l.strip()]
-        lines.append('   ⚠工作区有未提交改动 %d 处（可能来自别路）：' % len(dl))
-        for l in dl[:6]:
-            lines.append('     · ' + l[:90])
-        found = True
+    dn = len([l for l in dirty.split('\n') if l.strip()]) if dirty else 0
+    if dn:
+        # 【批112·修】工作区脏是本路自身之噪声，每跑必响则真信号被淹（原闸失效第二因）。
+        # 故降为一行提示，不参与拦停判定；拦停只认 HEAD 前进。
+        lines.append('   ℹ工作区未提交改动 %d 处（含本路自身之改，非撞车凭据）。' % dn)
     rec['head'] = head
     rec['时'] = datetime.datetime.now().strftime('%m-%d %H:%M')
     json.dump(rec, open(FP, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     txt = '\n'.join(lines)
     if not quiet:
         print(txt)
-    return found, txt
+    return found, txt   # found ＝ HEAD 已前进（真撞车），不含工作区脏
 
 # 棘轮方向：min＝越小越好，max＝越大越好
 RATCHET_MIN = ('四字串三现', '顿悟起手')
 RATCHET_MAX = ('嗅', '沈鸢')
 
 
+# 【批112·立】并发三闸——不认人，只认"世界在我脚下动了没有"。
+# 病因（151章第三回撞车实录）：批107—109之并发闸有三处失效——
+#   ①只比 git HEAD，而别路直接写工作区未提交，HEAD 不动，遂报"无别路提交"；
+#   ②concurrency_check 的返回值被 save() 丢弃，是打印机不是闸（"只喷字的，等于没做"）；
+#   ③流号靠 ZM_STREAM 分档，而本项目约定每次调用皆冠 ZM_STREAM=streamA-cli，二流同号，分档自废。
+# 故三闸一律不依赖提交、不依赖流号、不依赖工作区脏否（脏是自噪声），只用确定性状态差。
+def _receipts_of(n):
+    return sorted(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
+
+
+def _round_of(note):
+    m = re.match(r'\s*第\s*(\d+)\s*轮', note or '')
+    return int(m.group(1)) if m else None
+
+
+def _book_chapters():
+    return len([p for p in glob.glob(os.path.join(ROOT, '正文', '*.md')) if chap_num(p)])
+
+
+def gates(n, note, ledger, chapters_now, receipts, reopen='', force=''):
+    """三闸纯函数（可负测）。返回 (halt, lines)。"""
+    lines, halt = [], False
+    vs = ledger.get('版本', [])
+    r = _round_of(note)
+
+    # 闸一·回执闸：回执已交＝十轮已闭。此后只许回补／定案（说明不以"第N轮"起），不许再报新轮。
+    if receipts and r is not None and not reopen:
+        halt = True
+        lines.append('   ⛔回执闸：第%d章回执已交（%s），十轮已闭。'
+                     % (n, os.path.basename(receipts[-1])))
+        lines.append('     本次说明报「第%d轮」＝在已封版之章上重开轮次。' % r)
+        lines.append('     若确须重开，置 ZM_REOPEN="理由" 再跑；回补／定案请勿以「第N轮」起头。')
+
+    # 闸二·轮次单调闸：轮次只许持平或前进，不许倒退。
+    done = [_round_of(x.get('说明', '')) for x in vs]
+    done = [x for x in done if x]
+    if r is not None and done and r < max(done) and not reopen:
+        halt = True
+        last = vs[-1]
+        lines.append('   ⛔轮次闸：台账已跑到第%d轮（末版 %s「%s」%s），本次报第%d轮，轮次倒退。'
+                     % (max(done), last.get('版', ''), last.get('说明', ''),
+                        last.get('时', ''), r))
+        lines.append('     多半是别路已推进而本路仍按旧认知落笔——先读末版再定。')
+
+    # 闸三·章界闸：自上次存版以来全书章数变了＝别路拆了章或续了章，脚下的地已经动了。
+    prev_ch = None
+    for x in reversed(vs):
+        if isinstance(x.get('全书章数'), int):
+            prev_ch = x['全书章数']
+            break
+    if prev_ch is not None and chapters_now != prev_ch and not force:
+        halt = True
+        lines.append('   ⛔章界闸：上次存版时全书%d章，现为%d章。'
+                     % (prev_ch, chapters_now))
+        lines.append('     章数变动多半来自拆章／续章，本章之界与净重基线俱已不同，不得按旧认知续改。')
+        lines.append('     若系本路方才拆章／续章，置 ZM_FORCE="拆章 N→N+N1" 记因后再跑；')
+        lines.append('     若不知情，则是别路动了地，须先对表让路。')
+
+    if not halt:
+        lines.append('   ✓并发三闸（回执／轮次／章界）全通。')
+    else:
+        lines.append('   **处方**：先跑 --对表 %d 读末版与回执，再决定并轨或让路。' % n)
+    return halt, lines
+
+
+def rounds_state(ledger):
+    """返回 (已跑真轮集合, 缺轮列表)。真轮＝说明以「第N轮」起者。"""
+    rs = set()
+    for x in ledger.get('版本', []):
+        r = _round_of(x.get('说明', ''))
+        if r:
+            rs.add(r)
+    return rs, [i for i in range(1, 11) if i not in rs]
+
+
+def duibiao(n):
+    """开轮前对表：末版、回执、当前实况一屏看全。"""
+    d, led = paths(n)
+    print('\n███ 对表 · 第%d章 ███' % n)
+    src = find_chapter(n)
+    if src:
+        txt = open(src, encoding='utf-8').read()
+        body = body_of(txt)
+        ls = [l for l in body.split('\n') if l.strip()]
+        print('  正文：%s' % os.path.relpath(src, ROOT))
+        print('  净重%d｜全书%d章' % (len([c for c in body if not c.isspace()]),
+                                     _book_chapters()))
+        if ls:
+            print('  首句：%s' % ls[0][:60])
+            print('  末句：%s' % ls[-1][:60])
+    else:
+        print('  ✗未找到第%d章正文' % n)
+    rc = _receipts_of(n)
+    print('  回执：%s' % ('、'.join(os.path.basename(x) for x in rc) if rc else '未交'))
+    if os.path.exists(led):
+        lg = json.load(open(led, encoding='utf-8'))
+        vs = lg.get('版本', [])
+        print('  台账共%d版，末三版：' % len(vs))
+        for x in vs[-3:]:
+            print('    · %s %s 「%s」净重%s'
+                  % (x.get('版', ''), x.get('时', ''), x.get('说明', ''),
+                     x.get('soft', {}).get('净重', '?')))
+        rs, miss = rounds_state(lg)
+        print('  真轮：%d/10%s' % (len(rs), '' if not miss else
+              '｜缺 ' + '、'.join('第%d轮' % i for i in miss)))
+        # 【批112·闸四】封版凭据之验：回执已交而真轮未满＝有轮跑了却未存版，
+        # 该轮既未过棘轮闸、亦无快照可回退，回执之"十轮跑毕"遂无凭据。
+        if rc and miss:
+            print('  ⛔验轮闸：回执已交，而真轮缺 %s——'
+                  % '、'.join('第%d轮' % i for i in miss))
+            print('     该轮无版可查：未过棘轮闸，亦无快照可回退，回执所称十轮跑毕无凭据。')
+            print('     处方：补存该轮之版（说明以「第N轮」起），或在回执写明该轮并入他轮并记因。')
+    else:
+        print('  台账：无')
+    return 0
+
+
+def selftest():
+    """契约负测：每闸须能拦（正测）且不误拦（负测）。"""
+    ok = fail = 0
+
+    def chk(name, cond):
+        nonlocal ok, fail
+        if cond:
+            ok += 1
+        else:
+            fail += 1
+            print('  ✗负测失败：' + name)
+
+    L = lambda vs: {'章': 1, '版本': vs}
+    v = lambda note, ch=None: ({'版': 'v01', '时': '', '说明': note,
+                                'hard': {}, 'soft': {'净重': 100}}
+                               | ({'全书章数': ch} if ch else {}))
+
+    # 闸一·回执闸
+    chk('回执闸须拦已封版之章上报新轮',
+        gates(1, '第4轮·升华庭', L([v('第10轮·收官')]), 5, ['设定/回执_x_第1章作业单.md'])[0])
+    chk('回执闸不得误拦回补（说明非第N轮起）',
+        not gates(1, '终版回补·器物', L([v('终版回补')]), 5, ['设定/回执_x_第1章作业单.md'])[0])
+    chk('回执闸不得误拦未交回执之章',
+        not gates(1, '第4轮·升华庭', L([v('第3轮·校对')]), 5, [])[0])
+    chk('回执闸须认 ZM_REOPEN 之豁免',
+        not gates(1, '第4轮·升华庭', L([v('第10轮·收官')]), 5,
+                  ['设定/回执_x_第1章作业单.md'], reopen='作者令重开')[0])
+
+    # 闸二·轮次单调闸
+    chk('轮次闸须拦倒退', gates(1, '第4轮·甲', L([v('第9轮·乙')]), 5, [])[0])
+    chk('轮次闸不得误拦持平', not gates(1, '第9轮·甲', L([v('第9轮·乙')]), 5, [])[0])
+    chk('轮次闸不得误拦前进', not gates(1, '第10轮·甲', L([v('第9轮·乙')]), 5, [])[0])
+    chk('轮次闸不得误拦首版', not gates(1, '第1轮·甲', L([]), 5, [])[0])
+
+    # 闸三·章界闸
+    chk('章界闸须拦章数增（别路拆章）',
+        gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 152, [])[0])
+    chk('章界闸须拦章数减', gates(1, '第4轮·甲', L([v('第3轮·乙', ch=152)]), 151, [])[0])
+    chk('章界闸不得误拦章数不变',
+        not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 151, [])[0])
+    chk('章界闸不得误拦旧台账（无全书章数字段）',
+        not gates(1, '第4轮·甲', L([v('第3轮·乙')]), 151, [])[0])
+    chk('章界闸须认 ZM_FORCE 之豁免',
+        not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 152, [], force='已对表')[0])
+
+    # 全清之常态
+    chk('三闸俱通时不得拦', not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 151, [])[0])
+
+    # 151实录回放：当日之真况须被拦下
+    chk('151实录回放须拦（回执已交＋轮次倒退＋章数增）',
+        gates(151, '第4轮·升华庭', L([v('第3轮·校对庭逐数对表', ch=151)]), 152,
+              ['设定/回执_20260804_第151章作业单.md'])[0])
+
+    # 闸四·验轮
+    chk('验轮须认满十轮', rounds_state(L([v('第%d轮·x' % i) for i in range(1, 11)]))[1] == [])
+    chk('验轮须报缺第10轮', rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == [10])
+    chk('验轮不得把回补当真轮', rounds_state(L([v('终版回补')]))[0] == set())
+    chk('151实录回放·验轮须报缺第10轮',
+        rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == [10])
+
+    print('\n  并发四闸负测：%d/%d' % (ok, ok + fail))
+    return 0 if fail == 0 else 1
+
+
 def save(n, note=''):
-    concurrency_check()
     d, led = paths(n)
     os.makedirs(d, exist_ok=True)
     src = find_chapter(n)
     if not src:
         print('  ✗未找到第%d章正文' % n)
         return 1
+    ledger = json.load(open(led, encoding='utf-8')) if os.path.exists(led) \
+        else {'章': n, '版本': []}
+
+    # 【批112】并发三闸须在落盘之前拦：拦得住交付的才算闸。
+    reopen = os.environ.get('ZM_REOPEN', '').strip()
+    force = os.environ.get('ZM_FORCE', '').strip()
+    chapters_now = _book_chapters()
+    receipts = _receipts_of(n)
+    halt, glines = gates(n, note, ledger, chapters_now, receipts, reopen, force)
+    print('\n  ── 并发三闸（批112·不认人只认状态差） ──')
+    for l in glines:
+        print(l)
+    git_found, git_txt = concurrency_check(quiet=True)
+    if git_found:
+        print(git_txt)
+    if git_found and not force:
+        halt = True
+        print('   ⛔别路提交闸：自上次记录以来 HEAD 已前进，须先读别路所改再落笔。')
+    if halt:
+        print('  ⛔存版已拦停，未写入任何文件。')
+        return 2
+    if reopen:
+        ledger['版本'].append({'版': '重开', '时': datetime.datetime.now().strftime('%m-%d %H:%M'),
+                               '说明': '【重开·记因】' + reopen, 'hard': {}, 'soft': {},
+                               '全书章数': chapters_now})
+        print('   ⚠已记重开：%s' % reopen)
+
     txt = open(src, encoding='utf-8').read()
     hard, soft = score(txt)
     prev = ''
@@ -248,8 +454,6 @@ def save(n, note=''):
         if chap_num(pf) < n:
             prev += open(pf, encoding='utf-8').read()
     naked = term_check(txt, prev)
-    ledger = json.load(open(led, encoding='utf-8')) if os.path.exists(led) \
-        else {'章': n, '版本': []}
     v = len(ledger['版本']) + 1
     open(os.path.join(d, 'v%02d.md' % v), 'w', encoding='utf-8').write(txt)
 
@@ -297,7 +501,8 @@ def save(n, note=''):
     ledger['版本'].append({
         '版': 'v%02d' % v,
         '时': datetime.datetime.now().strftime('%m-%d %H:%M'),
-        '说明': note, 'hard': hard, 'soft': soft})
+        '说明': note, 'hard': hard, 'soft': soft,
+        '全书章数': chapters_now, '流': _stream_id()})
     json.dump(ledger, open(led, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print('  台账：%s（共%d版）' % (os.path.relpath(led, ROOT), v))
     # 【批111·修】原以"版本数"充"轮数"：而 v01 为封版基线、冷轮／终版回补／定案皆在十轮之外，
@@ -377,11 +582,17 @@ def compare(n):
 
 
 def main():
+    if len(sys.argv) == 2 and sys.argv[1] == '--自测':
+        return selftest()
     if len(sys.argv) < 3:
         print(__doc__)
         return 1
     cmd = sys.argv[1]
+    if cmd == '--自测':
+        return selftest()
     n = int(sys.argv[2])
+    if cmd == '--对表':
+        return duibiao(n)
     if cmd == '--存版':
         return save(n, sys.argv[3] if len(sys.argv) > 3 else '')
     if cmd == '--横评':

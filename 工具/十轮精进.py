@@ -436,6 +436,97 @@ def huanyuan(n, confirm=''):
     return 0
 
 
+# 【批113·立】轮记——每轮之所见须落盘。
+# 病因（实证）：105／106／143／151四章皆「跑到第9轮，缺第10轮」，丢的永远是最后一轮；
+#   第10轮为最重之一turn（收官减法＋器物总账＋拆章＋写回执），正是上下文最满、最易压缩之刻。
+#   存版只存文本与数字，不存「这一轮看见了什么」；压缩一来，那一部分就没了，
+#   下一轮遂无从承前，而执笔尚不自知（P22断层续手）。
+# 故立轮记：一轮一录，落盘即不怕忘。轮记在，则「一次跑几轮」这个问题自然消解——
+#   任何一轮之边界皆成安全重启点，压缩至多损一轮。
+LENS_FALLBACK = {
+    1: '感官庭', 2: '四堂会审', 3: '挑刺王终读（逐数对表）', 4: '升华庭（招式比对）',
+    5: '在场庭＋内面庭', 6: '内心庭', 7: '时序＋节奏＋留白', 8: '跨章复审',
+    9: '收官减法轮', 10: '收官轮（器物总账＋逐段生死）'}
+
+
+def lens_table():
+    """各轮惯用镜头：自全书台账取历史众数，取不到则用兜底表。"""
+    from collections import Counter, defaultdict
+    tab = defaultdict(Counter)
+    for f in glob.glob(os.path.join(JJ_DIR, '第*章', '_台账.json')):
+        try:
+            d = json.load(open(f, encoding='utf-8'))
+        except Exception:
+            continue
+        for x in d.get('版本', []):
+            m = re.match(r'第\s*(\d+)\s*轮[·．、]?\s*(.*)', x.get('说明', ''))
+            if not m:
+                continue
+            nm = re.split(r'[：:]', m.group(2))[0].strip()
+            if nm:
+                tab[int(m.group(1))][nm] += 1
+    out = {}
+    for r in range(1, 11):
+        out[r] = tab[r].most_common(1)[0][0] if tab[r] else LENS_FALLBACK[r]
+    return out
+
+
+def _lunji_path(n):
+    return os.path.join(paths(n)[0], '_轮记.md')
+
+
+def lunji_append(n, text):
+    """append 一条轮记。轮次自台账末版推得。"""
+    d, led = paths(n)
+    os.makedirs(d, exist_ok=True)
+    r, ver, jz = '?', '', ''
+    if os.path.exists(led):
+        vs = json.load(open(led, encoding='utf-8')).get('版本', [])
+        if vs:
+            last = vs[-1]
+            ver = last.get('版', '')
+            jz = last.get('soft', {}).get('净重', '')
+            m = _round_of(last.get('说明', ''))
+            if m:
+                r = str(m)
+    head = '\n## 第%s轮｜%s｜%s｜净重%s\n' % (
+        r, ver, datetime.datetime.now().strftime('%m-%d %H:%M'), jz)
+    with open(_lunji_path(n), 'a', encoding='utf-8') as f:
+        f.write(head + text.rstrip() + '\n')
+    print('  ✓轮记已落盘：%s（第%s轮）' % (os.path.relpath(_lunji_path(n), ROOT), r))
+    return 0
+
+
+def nextround(n):
+    """开轮之总入口：告诉执笔下一轮该跑哪一轮、镜头为何、前几轮看见了什么。
+    前几轮之所见取自磁盘轮记，故压缩冲掉记忆亦不碍。"""
+    print(duibiao_brief(n))
+    d, led = paths(n)
+    lg = json.load(open(led, encoding='utf-8')) if os.path.exists(led) else {'版本': []}
+    rs, miss = rounds_state(lg)
+    tab = lens_table()
+    print('  ── 下一轮 ──')
+    if not miss:
+        print('   ✓十轮已满，请跑 --横评 %d 定案。' % n)
+    else:
+        nx = miss[0]
+        print('   **该跑第%d轮：%s**' % (nx, tab[nx]))
+        if len(miss) > 1:
+            print('   其后未跑：%s' % '、'.join('第%d轮(%s)' % (i, tab[i]) for i in miss[1:]))
+        print('   【铁则】只跑「下一个未跑之轮」，不认作者所报之号——号会漂，台账不会。')
+    lp = _lunji_path(n)
+    if os.path.exists(lp):
+        t = open(lp, encoding='utf-8').read()
+        blocks = [b for b in t.split('\n## ') if b.strip()]
+        print('  ── 前轮所见（自磁盘轮记，共%d条，录末二条）──' % len(blocks))
+        for b in blocks[-2:]:
+            for line in ('## ' + b).strip().split('\n')[:9]:
+                print('   ' + line[:100])
+    else:
+        print('  ── 前轮所见：无轮记（本章尚未起轮，或起于轮记立法之前）──')
+    return 0
+
+
 def duibiao_brief(n):
     """精简对表：供检察官逐章封版门内嵌，三五行给出「磁盘之实况」。
     其价值在于：执笔每章必看封版门，遂不必倚赖「记得去跑 --对表」——
@@ -824,6 +915,10 @@ def main():
         return duibiao(n)
     if cmd == '--还原':
         return huanyuan(n, sys.argv[3] if len(sys.argv) > 3 else '')
+    if cmd == '--下一轮':
+        return nextround(n)
+    if cmd == '--轮记':
+        return lunji_append(n, sys.stdin.read())
     if cmd == '--存版':
         return save(n, sys.argv[3] if len(sys.argv) > 3 else '')
     if cmd == '--横评':

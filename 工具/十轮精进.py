@@ -587,16 +587,19 @@ def nextround(n):
         print('   【铁则】只跑「下一个未跑之轮」，不认作者所报之号——号会漂，台账不会。')
     # 【批114·闸八】领轮基线落盘：七闸皆在存版时拦，而祸起于「动手在前」。
     # 领轮基线记下「起轮那一刻正文是什么样」，存版时回验，遂把防线提前到动手之前。
+    # 【批120·修】新章起手时正文尚未存在，find_chapter 返回空则基线不落盘，
+    #   闸八遂令新章之第1轮永远过不去。故无正文者亦落基线，只是标为新章、免其sha之验。
     src2 = find_chapter(n)
-    if src2:
-        base = {'时': datetime.datetime.now().strftime('%m-%d %H:%M'),
-                '正文sha': _sha(open(src2, encoding='utf-8').read()),
-                '末版sha': _last_snap_sha(n),
-                '目标轮': (miss[0] if miss else None)}
-        os.makedirs(paths(n)[0], exist_ok=True)
-        json.dump(base, open(_ling_path(n), 'w', encoding='utf-8'),
-                  ensure_ascii=False, indent=1)
-        print('   ✓领轮基线已落盘（起轮时正文 %s）。存版时回验。' % base['正文sha'])
+    base = {'时': datetime.datetime.now().strftime('%m-%d %H:%M'),
+            '正文sha': _sha(open(src2, encoding='utf-8').read()) if src2 else None,
+            '末版sha': _last_snap_sha(n),
+            '目标轮': (miss[0] if miss else None),
+            '新章': src2 is None}
+    os.makedirs(paths(n)[0], exist_ok=True)
+    json.dump(base, open(_ling_path(n), 'w', encoding='utf-8'),
+              ensure_ascii=False, indent=1)
+    print('   ✓领轮基线已落盘（%s）。存版时回验。'
+          % ('新章起手，尚无正文' if src2 is None else '起轮时正文 ' + base['正文sha']))
 
     lp = _lunji_path(n)
     if os.path.exists(lp):
@@ -691,6 +694,11 @@ def selftest():
 
     # 全清之常态
     chk('三闸俱通时不得拦', not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 151, [])[0])
+    # 批120：HEAD前进不得再作拦停之据（自噪声）
+    import inspect as _ins
+    _src = _ins.getsource(save)
+    chk('HEAD前进不得再拦停（批120降级）',
+        'ℹHEAD自上次记录以来已前进' in _src and '⛔HEAD前进闸' not in _src)
 
     # 151实录回放：当日之真况须被拦下
     chk('151实录回放须拦（回执已交＋轮次倒退＋章数增·同一执笔失忆续手）',
@@ -842,6 +850,16 @@ def selftest():
     e2e('所报之轮与所领不符须拦停', s_wronground, '第2轮·四堂会审', 2)
     e2e('起轮时正文已偏离末版须拦停', s_drifted, '第2轮·四堂会审', 2)
     e2e('非第N轮之说明（回补／定案）不受领轮闸拘', s_noling, '终版回补·器物', 0)
+
+    def s_newch(tmp):
+        """新章起手：领轮时正文尚不存在，基线标新章，第1轮须放行。"""
+        _ch(tmp, '新章正文')
+        d = os.path.join(tmp, '版本', '第7章')
+        os.makedirs(d, exist_ok=True)
+        json.dump({'时': 'x', '正文sha': None, '末版sha': None, '目标轮': 1, '新章': True},
+                  open(os.path.join(d, '_领轮.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+
+    e2e('新章起手（基线无正文sha）第1轮须放行', s_newch, '第1轮·感官庭', 0)
     e2e('存版成功后领轮基线须销（一领一存不得复用）',
         s_withlog, '第2轮·四堂会审', 0)
 
@@ -940,6 +958,8 @@ def save(n, note=''):
         else:
             _b = json.load(open(_lg, encoding='utf-8'))
             _ls = _last_snap_sha(n)
+            if _b.get('新章'):
+                _ls = None      # 新章起手无正文可比，免其sha之验
             if _ls and _b.get('正文sha') != _b.get('末版sha'):
                 halt = True
                 glines.append('   ⛔领轮闸·起手即已偏：领轮时正文(%s)与当时末版(%s)不同。'
@@ -975,9 +995,14 @@ def save(n, note=''):
     git_found, git_txt = concurrency_check(quiet=True)
     if git_found:
         print(git_txt)
-    if git_found and not force:
-        halt = True
-        print('   ⛔HEAD前进闸：自上次记录以来 HEAD 已前进，须先读其所改再落笔。')
+    if git_found:
+        # 【批120·修】HEAD前进降为提示，不再拦停。
+        # 病因：本路自己推送之后 HEAD 必然前进，故每推必响＝自噪声；
+        #   响多了真信号被淹，此为批112所修「工作区脏」之同型（旧闸失效第二因）。
+        # 且内容安全已由闸八（领轮基线：起轮时正文sha vs 当时末版sha）覆盖，
+        #   HEAD 这一路本就不是内容之凭据，只是「有人提交过」之弱信号。
+        print('   ℹHEAD自上次记录以来已前进（多为本路自身推送）；'
+              '内容安全由闸八领轮基线把守，此处只报不拦。')
     if halt:
         print('  ⛔存版已拦停，未写入任何文件。')
         return 2

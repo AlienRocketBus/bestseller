@@ -282,7 +282,82 @@ def chk_lunci():
         import shutil as _sh
         _sh.rmtree(tmp2, ignore_errors=True)
 
-    return not bad, ('；'.join(bad) if bad else '正测2/负测7 全通')
+    # ── 第十一轮总核（批123）──
+    tmp3 = tempfile.mkdtemp(prefix='zm_zh_')
+    try:
+        _o.makedirs(_o.path.join(tmp3, '正文'))
+        _o.makedirs(_o.path.join(tmp3, '设定'))
+        m.ROOT, m.JJ_DIR = tmp3, _o.path.join(tmp3, '版本')
+        f3 = _o.path.join(tmp3, '正文', '镇冢秘术_第七章_测.md')
+        d3 = _o.path.join(tmp3, '版本', '第7章')
+        _o.makedirs(d3)
+        SOFT = {'净重': 100, '段数': 9, '均段': 11, '长段数': 1, '嗅': 3, '听': 4, '触': 7,
+                '视': 2, '老头': 1, '钱满': 1, '沈鸢': 0, '四字串三现': 0, '顿悟起手': 0}
+        def build(rounds, logs, same=None):
+            vs = []
+            for k, r in enumerate(rounds, 1):
+                vn = 'v%02d' % k
+                body = '《镇冢秘术》\n\n第七章　测\n\n' + ('同一段' if (same and k in same) else '第%d段内容' % k) + '\n'
+                open(_o.path.join(d3, vn + '.md'), 'w', encoding='utf-8').write(body)
+                vs.append({'版': vn, '时': 'x', '说明': r, 'hard': {}, 'soft': dict(SOFT), '全书章数': 1})
+            json.dump({'章': 7, '版本': vs}, open(_o.path.join(d3, '_台账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+            open(f3, 'w', encoding='utf-8').write(
+                open(_o.path.join(d3, 'v%02d.md' % len(rounds)), encoding='utf-8').read())
+            open(_o.path.join(d3, '_轮记.md'), 'w', encoding='utf-8').write(logs)
+            for z in ('_总核.json', '_拦停.json'):
+                if _o.path.exists(_o.path.join(d3, z)):
+                    _o.remove(_o.path.join(d3, z))
+        full_log = ''.join(
+            '\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**真伤**：一根，已改。%s\n'
+            % (i, i, '｜'.join(m.LENS_KEY[i]), '补白之句' * 40) for i in range(1, 11))
+        # 正测：十轮齐、记齐、无空轮 → 须过
+        build(['第%d轮·甲' % i for i in range(1, 11)], full_log)
+        b6 = io.StringIO()
+        with contextlib.redirect_stdout(b6):
+            rc_full = m.zonghe(7)
+        if rc_full != 0:
+            bad.append('误拦:十轮齐备之章总核应过（%s）' % b6.getvalue()[-160:].replace('\n', ' '))
+        elif not _o.path.exists(_o.path.join(d3, '_总核.json')):
+            bad.append('漏写:总核过而未出凭据')
+        # 负测一：缺第10轮
+        build(['第%d轮·甲' % i for i in range(1, 10)],
+              ''.join('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**真伤**：一根。%s\n'
+                      % (i, i, '｜'.join(m.LENS_KEY[i]), '补白之句' * 40) for i in range(1, 10)))
+        with contextlib.redirect_stdout(io.StringIO()):
+            if m.zonghe(7) != 2:
+                bad.append('漏拦:缺第10轮仍判总核过')
+        # 负测二：版齐而轮记缺一轮
+        build(['第%d轮·甲' % i for i in range(1, 11)],
+              ''.join('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**真伤**：一根。%s\n'
+                      % (i, i, '｜'.join(m.LENS_KEY[i]), '补白之句' * 40) for i in range(1, 11) if i != 4))
+        with contextlib.redirect_stdout(io.StringIO()):
+            if m.zonghe(7) != 2:
+                bad.append('漏拦:缺一轮之轮记仍判总核过')
+        # 负测三：空轮而未记判不补
+        build(['第%d轮·甲' % i for i in range(1, 11)], full_log, same={5, 6})
+        with contextlib.redirect_stdout(io.StringIO()):
+            if m.zonghe(7) != 2:
+                bad.append('漏拦:空轮未记判不补仍判总核过')
+        # 负测四：轮记过简
+        build(['第%d轮·甲' % i for i in range(1, 11)],
+              ''.join('\n## 第%d轮|v%02d|x|净重100\n真伤：无\n' % (i, i) for i in range(1, 11)))
+        with contextlib.redirect_stdout(io.StringIO()):
+            if m.zonghe(7) != 2:
+                bad.append('漏拦:轮记过简仍判总核过')
+        # 负测五：拦停旗未销
+        build(['第%d轮·甲' % i for i in range(1, 11)], full_log)
+        m.raise_flag(7, '测', '第9轮')
+        with contextlib.redirect_stdout(io.StringIO()):
+            if m.zonghe(7) != 2:
+                bad.append('漏拦:拦停旗未销仍判总核过')
+    finally:
+        m.ROOT, m.JJ_DIR = _R, _J
+        import shutil as _s2
+        _s2.rmtree(tmp3, ignore_errors=True)
+    if not hasattr(m2, '_zonghe_ok'):
+        bad.append('缺:封版总核闸未接线')
+
+    return not bad, ('；'.join(bad) if bad else '正测3/负测13 全通')
 
 
 def chk_hookspath():

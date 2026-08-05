@@ -2252,6 +2252,22 @@ def hooks_report(max_ch):
             out.append(f'   ⏳ 排期中：「{name}」(埋于第{born}章 → {due})')
     return out, red
 
+def _zonghe_ok(n):
+    """【批123·封版闸】第153章起，未过第十一轮总核者不许封版。
+    立此闸之由（作者令）：十条记录齐全不等于每一轮真干了活；
+    总核轮专核跑满与跑透，其凭据为 版本/第N章/_总核.json，只由一次通过之总核写出。
+    只对 n>=153 生效（历史章之轮号编法不一，P23）。try/except 包死，取不到一律放行。"""
+    try:
+        f = _os.path.join(REPO_ROOT, '版本', '第%d章' % n, '_总核.json')
+        if _os.path.exists(f):
+            return None
+        return ('第十一轮总核未过:未见 版本/第%d章/_总核.json——'
+                '十轮跑完须再跑 python3 工具/十轮精进.py --十一轮 %d 总核'
+                '(核跑满/跑透/空轮/补存/兑现/横评择优),总核不过不许封版(批123)' % (n, n))
+    except Exception:
+        return None
+
+
 def _rounds_full(n):
     """【批121·封版闸】第153章起，十轮不满不许封版。
     病灶（作者亲报）：「十轮有时只跑了七轮／八轮，或轮次跳号」。
@@ -2677,6 +2693,8 @@ def mech_layer(files,focus,lib):
         if n>=153 and _receipt_ok(n):
             _rf=_rounds_full(n)
             if _rf: pr.append(_rf)
+            _zh=_zonghe_ok(n)
+            if _zh: pr.append(_zh)
         _rv=rhythm_violation(files[n][2],n,_rhythm_exempt(n))
         if _rv: pr.append(_rv)
         if weight_violation(wc,n,_short_ch_exempt(n)):

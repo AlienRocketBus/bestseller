@@ -757,6 +757,154 @@ def duibiao_brief(n):
     return '\n'.join(out)
 
 
+LENS_KEY = {1: ['嗅', '听', '触', '密度', '感官'], 2: ['canon', '原场', '逻辑', '器物', '时序', '四堂'],
+            3: ['数', '对表', '日', '逐数'], 4: ['招'], 5: ['在场', '内面', '分位', '人物'],
+            6: ['器物', '耗材', '资源'], 7: ['节奏', '留白', '方差', '时序'],
+            8: ['减', '刀', '删'], 9: ['减', '刀', '拆'], 10: ['器物总账', '逐段', '收官', '生死']}
+
+
+def _lunji_blocks(n):
+    """轮记按轮号归拢。同一轮可有多条（补记），一并归之。"""
+    f = _lunji_path(n)
+    if not os.path.exists(f):
+        return {}
+    out = {}
+    for b in open(f, encoding='utf-8').read().split('\n## '):
+        if not b.strip():
+            continue
+        m = re.match(r'第(\d+)轮', b)
+        if m:
+            out.setdefault(int(m.group(1)), []).append('## ' + b)
+    return out
+
+
+def zonghe(n):
+    """【批123·第十一轮·总核轮】十轮跑完之后的那一轮，专核前十轮「跑满」与「跑透」。
+    立此轮之由（作者令）：十条记录齐全不等于每一轮真干了活；
+    而本会话已实证漏跑之链（P28），故须有一轮专门回头查，且其结论须能禁封版。
+    四查一断：甲·跑满查（版与轮记齐否）乙·跑透查（空轮／实质／镜头相符／补存／兑现）
+    丙·状态查（旗／正文与末版）丁·横评择优。任一硬项不过即不出总核凭据，封版闸据此拦。"""
+    d, led = paths(n)
+    if not os.path.exists(led):
+        print('  ✗第%d章尚无台账。' % n)
+        return 2
+    lg = json.load(open(led, encoding='utf-8'))
+    vs = lg.get('版本', [])
+    lj = _lunji_blocks(n)
+    src = find_chapter(n)
+    txt = open(src, encoding='utf-8').read() if src else ''
+    hz = ''.join(c for c in txt if '\u4e00' <= c <= '\u9fa5')
+    hard, soft_warn = [], []
+
+    print('\n████ 第十一轮·总核轮 · 第%d章 ████' % n)
+
+    # 甲·跑满查
+    print('\n  ── 甲·跑满查 ──')
+    byr = {}
+    for x in vs:
+        r = _round_of(x.get('说明', ''))
+        if r:
+            byr.setdefault(r, []).append(x)
+    miss_v = [i for i in range(1, 11) if i not in byr]
+    miss_l = [i for i in range(1, 11) if i not in lj]
+    print('   有版之轮：%s' % ('、'.join(str(i) for i in sorted(byr)) or '无'))
+    print('   有记之轮：%s' % ('、'.join(str(i) for i in sorted(lj)) or '无'))
+    if miss_v:
+        hard.append('缺版之轮：' + '、'.join('第%d轮' % i for i in miss_v))
+    if miss_l:
+        hard.append('缺轮记之轮：' + '、'.join('第%d轮' % i for i in miss_l))
+    if not miss_v and not miss_l:
+        print('   ✓十轮之版与记俱齐。')
+
+    # 乙·跑透查
+    print('\n  ── 乙·跑透查 ──')
+    prev_txt = None
+    for i, x in enumerate(vs):
+        vp = os.path.join(d, x.get('版', '') + '.md')
+        cur = open(vp, encoding='utf-8').read() if os.path.exists(vp) else None
+        r = _round_of(x.get('说明', ''))
+        tag = []
+        if cur is not None and prev_txt is not None and cur.strip() == prev_txt.strip():
+            tag.append('**空轮（与前版逐字相同）**')
+            if '判不补' not in x.get('说明', ''):
+                hard.append('%s 第%s轮为空轮而未记判不补' % (x.get('版'), r))
+        if '补存' in x.get('说明', ''):
+            tag.append('补存（非当场所存）')
+        if r and r in lj:
+            body = '\n'.join(lj[r])
+            n_ch = len(re.sub(r'\s', '', body))
+            if n_ch < 120:
+                hard.append('第%d轮轮记过简（仅%d字），不足以证其跑透' % (r, n_ch))
+                tag.append('轮记仅%d字' % n_ch)
+            if not re.search(r'真伤|判不补|零刀|判合', body):
+                hard.append('第%d轮轮记无「真伤／判不补／零刀／判合」之裁，不足以证其跑透' % r)
+                tag.append('无裁语')
+            if r in LENS_KEY and not any(k in body for k in LENS_KEY[r]):
+                soft_warn.append('第%d轮轮记未见其镜头关键词%s（轮号或已漂，须人裁）' % (r, LENS_KEY[r]))
+                tag.append('镜头存疑')
+        print('   %-5s %-26s %s' % (x.get('版'), x.get('说明', '')[:26], '｜'.join(tag) or '✓'))
+        if cur is not None:
+            prev_txt = cur
+
+    # 兑现查：轮记所称之改是否真在正文
+    print('\n  ── 乙2·兑现抽查（轮记所引之句是否真在正文）──')
+    print('     【读法】此为软项，不作硬拦。低命中有三种正当解：'
+          '①所引系别章原场（比对canon用）②已被后头减法轮减去③引的是外部凭据。'
+          '**须人裁者只有第四种：当初根本没落笔。**')
+    for r in sorted(lj):
+        qs = [q for q in re.findall(r'「([^」]{6,40})」', '\n'.join(lj[r]))]
+        qs = [q for q in qs if len(''.join(c for c in q if '\u4e00' <= c <= '\u9fa5')) >= 6]
+        if not qs:
+            print('   第%-2d轮 无可抽之引句' % r)
+            continue
+        hit = sum(1 for q in qs
+                  if ''.join(c for c in q if '\u4e00' <= c <= '\u9fa5') in hz)
+        print('   第%-2d轮 引句%2d 句，现存正文 %2d 句（%d%%）%s'
+              % (r, len(qs), hit, 100 * hit // len(qs),
+                 '' if hit else '  ← 一句不存，须人裁：是被后轮减去，还是当初未落笔'))
+
+    # 丙·状态查
+    print('\n  ── 丙·状态查 ──')
+    fl = read_flag(n)
+    if fl:
+        hard.append('拦停旗未销（%s）' % fl.get('时'))
+    ls = _last_snap_sha(n)
+    cur_sha = _sha(txt) if txt else None
+    drift = bool(ls and cur_sha and ls != cur_sha)
+    if drift:
+        hard.append('正文与末版已偏（末轮之刀没落台账）')
+    print('   拦停旗：%s｜正文与末版：%s｜补存版数：%d'
+          % ('无' if not fl else '**有**', '已偏' if drift else '一致',
+             sum(1 for x in vs if '补存' in x.get('说明', ''))))
+
+    # 丁·横评择优
+    print('\n  ── 丁·横评择优 ──')
+    compare(n)
+
+    print('\n  ══════════════════════════════════════════')
+    if hard:
+        print('  【总核·不过】硬项 %d 条：' % len(hard))
+        for h in hard:
+            print('     ⛔ %s' % h)
+        for w in soft_warn:
+            print('     ⚠ %s' % w)
+        print('  第%d章：**总核未过，禁封版**。修毕重跑 --十一轮 %d。' % (n, n))
+        print('  ══════════════════════════════════════════')
+        return 2
+    for w in soft_warn:
+        print('     ⚠ %s（软项，须于回执裁定）' % w)
+    json.dump({'时': datetime.datetime.now().strftime('%m-%d %H:%M'),
+               '版数': len(vs), '真轮': sorted(byr), '轮记轮': sorted(lj),
+               '补存版数': sum(1 for x in vs if '补存' in x.get('说明', '')),
+               '软项': soft_warn, '流': _stream_id()},
+              open(os.path.join(d, '_总核.json'), 'w', encoding='utf-8'),
+              ensure_ascii=False, indent=1)
+    print('  【总核·通过】十轮之版与记俱齐、无未记之空轮、无旗、正文与末版一致。')
+    print('  已出总核凭据：版本/第%d章/_总核.json（封版闸据此放行）。' % n)
+    print('  ══════════════════════════════════════════')
+    return 0
+
+
 def yanlun(n):
     """【批122】权威轮况一屏。
     立此口之由：批121之末，执笔曾向作者误报「第7轮跑完」而台账实无其版。
@@ -1337,6 +1485,8 @@ def main():
     n = int(sys.argv[2])
     if cmd == '--对表':
         return duibiao(n)
+    if cmd in ('--十一轮', '--总核'):
+        return zonghe(n)
     if cmd == '--验轮':
         return yanlun(n)
     if cmd == '--补存':

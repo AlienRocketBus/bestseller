@@ -882,6 +882,16 @@ OPEN_BRIEF_CARD_SCHEMA = {
         '青溪·第153章弯内规矩与撤退线',
         'E3·有意识校准进度',
     ),
+    155: (
+        '她·伤情',
+        '苏衍·青溪白光后伤情',
+        '老头·第155章弯内即时状态',
+        '钱满·第155章弯内即时状态',
+        '队伍·第155章位置与知情边界',
+        '青溪·第154章新证据链',
+        '青溪·第155章弯内规矩与撤退线',
+        'E3·有意识校准进度',
+    ),
     140: (
         '她·伤情',
         '苏衍·青溪白光后伤情',
@@ -2272,6 +2282,17 @@ def round11_audit(n):
     lp = _os.path.join(d, '_轮记.md')
     if _os.path.exists(lp):
         lj = open(lp, encoding='utf-8').read()
+    else:
+        # 【批127】拆出之章无自己的轮记，其十轮之记在母章（母章第9轮拆出、第10轮覆盖两章）。
+        # 此为正当情形：认母章之轮记，并於输出印明所认为何。
+        pp = _os.path.join(REPO_ROOT, '版本', '第%d章' % (n - 1), '_轮记.md')
+        if _os.path.exists(pp):
+            lj = open(pp, encoding='utf-8').read()
+            if ('拆' in lj) and (str(n) in lj):
+                out.append('  ℹ第%d章无自己的轮记：其系第%d章拆出，本查认母章之轮记。'
+                           % (n, n - 1))
+            else:
+                lj = ''
 
     out.append('  ── 检一·圣经入册查 ──')
     try:
@@ -2325,21 +2346,24 @@ def round11_audit(n):
         if not got:
             hard.append('前三大病号之「%s」全十轮未见专查' % nm)
 
-    out.append('  ── 检五·翻页备料查（下一章之锚与状态卡）──')
+    out.append('  ── 检五·翻页备料查（下一未写之章之锚与状态卡）──')
     try:
+        # 【批126·修】原码硬取 n+1，而拆章之后 n+1 往往已写出（153拆出154即是）。
+        # 该备的是「下一未写之章」＝全书最大章号＋1。
+        nx = max(files) + 1
         mt = open(MASTER_CANON_PATH, encoding='utf-8').read()
-        has_anchor = bool(re.search(r'第\s*%d\s*章必须从' % (n + 1), mt))
+        has_anchor = bool(re.search(r'第\s*%d\s*章必须从' % nx, mt))
         import json as _j2
         cb = _j2.load(open(CANON_PATH, encoding='utf-8'))
         ob = cb.get('open_brief', {})
-        has_cards = (ob.get('for_ch') == n + 1)
-        out.append('   第%d章锚：%s｜第%d章开拍状态卡批次：%s'
-                   % (n + 1, '有' if has_anchor else '**无**',
-                      n + 1, '有' if has_cards else '**无**'))
+        has_cards = (ob.get('for_ch') == nx)
+        out.append('   第%d章锚：%s｜第%d章开拍状态卡批次：%s（下一未写之章）'
+                   % (nx, '有' if has_anchor else '**无**',
+                      nx, '有' if has_cards else '**无**'))
         if not has_anchor:
-            hard.append('第%d章锚未备（翻页未做，封版即断链）' % (n + 1))
+            hard.append('第%d章锚未备（翻页未做，封版即断链）' % nx)
         if not has_cards:
-            hard.append('第%d章开拍状态卡批次未指向（open_brief.for_ch≠%d）' % (n + 1, n + 1))
+            hard.append('第%d章开拍状态卡批次未指向（open_brief.for_ch≠%d）' % (nx, nx))
     except Exception as e:
         out.append('   ℹ备料查失败(%s)，跳过' % e)
 

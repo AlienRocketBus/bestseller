@@ -419,14 +419,14 @@ def chk_lunci():
         bad.append('缺:第十一轮两眼齐审总入口未接线')
     else:
         try:
+            # 【批127·修】原测断言「第153章须有硬项」，而那是写测当日之临时状态；
+            # 该章补齐之后此测反红——**负测不得钉在会变的状态上，须钉在不变的契约上**。
             o, h, sf = m2.round11_audit(153)
-            if not isinstance(h, list):
-                bad.append('检察官侧第十一轮返回值不合约')
-            elif not h:
-                bad.append('漏拦:第153章尚未入圣经册且154锚未备,五检竟无硬项')
-            keys = ('圣经', '账', '病号', '锚')
-            if not any(any(k in x for k in keys) for x in h):
-                bad.append('检察官侧第十一轮之硬项未覆盖五检要目')
+            if not (isinstance(o, list) and isinstance(h, list) and isinstance(sf, list)):
+                bad.append('检察官侧第十一轮返回值不合约（须为三列表）')
+            keys = ('圣经', '到期账', '回述', '病号', '翻页')
+            if not all(any(k in x for x in o) for k in keys):
+                bad.append('检察官侧第十一轮之五检要目不全（应出圣经／到期账／回述／病号／翻页五节）')
             o2, h2, _ = m2.round11_audit(999999)
             if not h2:
                 bad.append('漏拦:不存在之章竟无硬项')

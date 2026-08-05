@@ -920,7 +920,18 @@ def zonghe(n):
     丙·状态查（旗／正文与末版）丁·横评择优。任一硬项不过即不出总核凭据，封版闸据此拦。"""
     d, led = paths(n)
     if not os.path.exists(led):
-        print('  ✗第%d章尚无台账。' % n)
+        # 【批127】拆出之章无自己的台账，其十轮即母章之十轮（母章第9轮拆出、第10轮覆盖两章）。
+        # 此为正当情形，非缺轮：故认母章之账，并印明所认为何。
+        pd, pled = paths(n - 1)
+        plj = _lunji_blocks(n - 1)
+        ptxt = '\n'.join('\n'.join(v) for v in plj.values())
+        if os.path.exists(pled) and ('拆' in ptxt and str(n) in ptxt):
+            print('\n  ℹ第%d章无自己的台账：其系第%d章第9轮依三步法拆出，'
+                  '十轮之版与记俱在母章。**左眼改核母章第%d章。**' % (n, n - 1, n - 1))
+            # 【批127·修】此处原顺手写 _总核.json 作凭据——**等于左眼一只眼就把封版闸开了，绕过右眼**。
+            # 凭据只许由 小说检察官 --十一轮（两眼齐审）写出。此处只返回左眼之结论。
+            return zonghe(n - 1)
+        print('  ✗第%d章尚无台账，亦未见其为拆出之章。' % n)
         return 2
     lg = json.load(open(led, encoding='utf-8'))
     vs = lg.get('版本', [])

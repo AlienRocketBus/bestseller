@@ -2809,7 +2809,7 @@ def mech_layer(files,focus,lib):
 
         if n==max(files) and n>=73 and not _receipt_ok(n):
             pr.append('回执未交:当章《检察官回执》未在设定/回执_*.md归档(须含本章标记+五钩+伏笔裁决)——回执未交禁止封版')
-        if n>=153 and _receipt_ok(n):
+        if n>=153 and _receipt_filed(n):
             _rf=_rounds_full(n)
             if _rf: pr.append(_rf)
             _zh=_zonghe_ok(n)
@@ -2960,6 +2960,38 @@ def reader_sync_check():
     return 0
 
 
+def _receipt_filed(n):
+    """【批127】严判：本章之回执**文件**是否已归档（设定/回执_*_第N章作业单.md）。
+    与 _receipt_ok 之别：后者扫全部回执找「第N章」字样，而前章回执常提及下一章（留予之事），
+    遂将在跑之章误判为已交回执——封版三闸（十轮不满／第十一轮／翻页）因此对一个还在跑轮的章开火，
+    逼得每一轮推送都要绕行，绕行成常态则闸失效（批122之审计当日即被撞满12次而硬拒）。
+    故凡「是否该受封版闸约束」一律用本函数，不用 _receipt_ok。"""
+    try:
+        return bool(glob.glob(os.path.join(REPO_ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
+    except Exception:
+        return False
+
+
+def _last_sealed(files):
+    """【批127】末「已封版」之章。
+    病灶（本会话实证）：翻页三检（圣经末章锚／下一章状态卡／README章数）以「末一个正文文件」为准，
+    而一章自起草至封版要跑十轮，其间下一章之锚与状态卡按例尚未备——
+    **故整整十轮里医生一路报红，每一次推送都得绕行**，绕行遂成常态，
+    而绕行成了常态即闸已失效（批122之绕行审计当日即被自己撞满12次而硬拒）。
+    此非滥用，是设计把一个**合法的中间态**判成了错误。
+    故改：**未交回执之章视为「在跑」，不计入「已写」**；翻页三检对着末一个已封版之章。
+    如此十轮之间医生自然全绿，封版时回执一交，翻页债即刻现形——闸不必再靠人绕。
+    try/except 包死，取不到一律退回旧behaviour（宁可严，不可漏）。"""
+    try:
+        # 不用 _receipt_ok：其法为「扫全部回执找『第N章』字样」，
+        # 而前章之回执常提及下一章（留予之事），遂将在跑之章误判为已封版。
+        # 此处须严，故按**回执之文件名**认章：设定/回执_*_第N章作业单.md。
+        sealed=[n for n in files if _receipt_filed(n)]
+        return max(sealed) if sealed else max(files, default=0)
+    except Exception:
+        return max(files, default=0)
+
+
 def _validate_master_contract(master_text, latest, next_ch):
     """总圣经的 ID、已写末章和下一章接写锚必须同时对上当前正文。"""
     master_id=re.search(r'^>\s*\*\*CANON-ID：([^*]+)\*\*', master_text, re.M)
@@ -3031,7 +3063,7 @@ def project_doctor(files, check_reader=True):
     print(f'  CANON-ID: {EXPECTED_CANON_ID}')
     print(f'  canon: {CANON_PATH}')
     errors=0
-    latest=max(files,default=0)
+    latest=_last_sealed(files)
     next_ch=latest+1 if latest else 1
     if not _os.path.isfile(MASTER_CANON_PATH):
         print('  ✗ 唯一总圣经缺失'); errors+=1
@@ -3146,7 +3178,7 @@ def contract_negative_selftest(files):
     if not files:
         print('  ✗ 正文为空，无法构造章数契约负测')
         return 0,3
-    latest=max(files)
+    latest=_last_sealed(files)
     next_ch=latest+1
     try:
         raw=_json.load(open(CANON_PATH,encoding='utf-8'))
@@ -3391,7 +3423,7 @@ def selftest(files,lib):
     wiring,_=project_doctor(files,check_reader=True)
     latest_error=0
     if files:
-        latest=max(files)
+        latest=_last_sealed(files)
         print(f'════ 自检附加·第{latest}章当前封版硬闸 ════')
         latest_error=priority_one(files,latest,lib)+mech_layer(files,latest,lib)
     print(f'  规则回归:{passed}/{total}；契约负测:{contract_passed}/{contract_total}；'

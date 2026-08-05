@@ -2185,6 +2185,24 @@ def hooks_report(max_ch):
             out.append(f'   ⏳ 排期中：「{name}」(埋于第{born}章 → {due})')
     return out, red
 
+def _hooks_armed():
+    """【批115】钩子挂载哨:重新clone后 core.hooksPath 默认未设,pre-push闸遂形同虚设
+    (钩子文件在仓库里,指向它的那根线却不受版本管理)。此哨只报不拦——拦之则新克隆之库寸步难行。
+    全程 try/except 包死。"""
+    try:
+        import subprocess as _sp
+        _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        _r = _sp.run(['git', 'config', '--get', 'core.hooksPath'],
+                     cwd=_root, capture_output=True, text=True, timeout=20)
+        if _r.stdout.strip() == '工具/githooks':
+            print('  \u2713 pre-push 闸已挂(core.hooksPath=工具/githooks)')
+        else:
+            print('  \u26a0 pre-push 闸未挂:core.hooksPath 为「%s」——重新clone后须先跑 '
+                  'python3 工具/全测.py 挂回,否则推送无人把守' % (_r.stdout.strip() or '未设'))
+    except Exception:
+        pass
+
+
 def _kailun_duibiao(ch):
     """【批112】内嵌开轮对表：把磁盘实况印在执笔每章必看之处。
     全程 try/except 包死——本块任何异常一律静默降级，绝不得拖累检察官。"""
@@ -2874,6 +2892,7 @@ def project_doctor(files, check_reader=True):
             print(f'  ✗ 项目文档接线无效: {exc}'); errors+=1
     reader=reader_sync_check() if check_reader and files else 0
     errors+=reader
+    _hooks_armed()
     print(f'  医生结论: ERROR={errors}'+('（可进入正文检查）' if errors==0 else '（不放行）'))
     return errors,reader
 

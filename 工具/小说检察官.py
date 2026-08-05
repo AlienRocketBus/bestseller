@@ -912,6 +912,52 @@ def _weight_stats(t):
     chars=sum(len(p) for p in paras)
     longp=sum(1 for p in paras if len(p)>=LONG_PARA_CHARS)
     return chars,len(paras),longp
+def rhythm_stats(text):
+    """段长分位与长段数。【批119】节奏方差之量器。"""
+    ps = [re.sub(r'\s', '', x) for x in _chapter_body(text).split('\n')
+          if x.strip() and x.strip() != '＊']
+    L = sorted(len(x) for x in ps)
+    if not L:
+        return 0, 0, 0.0
+    p90 = L[int(len(L) * 0.9)] if len(L) > 1 else L[0]
+    long120 = sum(1 for x in L if x >= LONG_PARA_CHARS)
+    r60 = 100.0 * sum(1 for x in L if x >= 60) / len(L)
+    return p90, long120, r60
+
+
+def rhythm_violation(text, n, exempt=False):
+    """【批119·节奏方差闸】第153章起为硬错，其前为REVIEW。
+    立法之据（全书实测）：段长90分位 1-30章91字→61-90章56→121-152章28；
+    ≥60字段占比 25.7%→8.8%→0.3%；单句段占比 34.2%→50.4%→71.0%。
+    塌的不是均值是方差：近三十章九成段落短于28字，一章之内几无换气处。
+    病不在短在齐——招使成了唯一的招，就不再是招，是底噪（P26）。
+    判：新章须至少一处≥120字之长段，且段长90分位≥30字。二者缺一即违。
+    豁免：施工表登记「第 N 章节奏豁免」并写明理由。"""
+    if n < 153 or exempt:
+        return None
+    p90, long120, r60 = rhythm_stats(text)
+    bad = []
+    if long120 < 1:
+        bad.append('无一段≥%d字' % LONG_PARA_CHARS)
+    if p90 < 30:
+        bad.append('段长90分位仅%d字(<30)' % p90)
+    if not bad:
+        return None
+    return ('节奏方差塌缩:%s;≥60字段占比%.1f%% —— 每章须至少一处连跑%d字之长段且90分位≥30字'
+            '(P26/批119);缝出来的不算(拆回单句独行若读来无异即为缝的);'
+            '确属例外须在施工表登记"第 %d 章节奏豁免"并说明理由'
+            % ('、'.join(bad), r60, LONG_PARA_CHARS, n))
+
+
+def _rhythm_exempt(n):
+    if 'txt' not in _BUILD_CACHE:
+        try:
+            _BUILD_CACHE['txt'] = open(_os.path.join(REPO_ROOT, '设定/01_镇冢秘术_逐章施工与伏笔回收表.md'), encoding='utf-8').read()
+        except OSError:
+            _BUILD_CACHE['txt'] = ''
+    return bool(re.search(rf'第\s*{n}\s*章节奏豁免', _BUILD_CACHE['txt']))
+
+
 def _short_ch_exempt(n):
     if 'txt' not in _BUILD_CACHE:
         try: _BUILD_CACHE['txt']=open(os.path.join(REPO_ROOT,'设定/01_镇冢秘术_逐章施工与伏笔回收表.md'),encoding='utf-8').read()
@@ -2594,6 +2640,8 @@ def mech_layer(files,focus,lib):
 
         if n==max(files) and n>=73 and not _receipt_ok(n):
             pr.append('回执未交:当章《检察官回执》未在设定/回执_*.md归档(须含本章标记+五钩+伏笔裁决)——回执未交禁止封版')
+        _rv=rhythm_violation(files[n][2],n,_rhythm_exempt(n))
+        if _rv: pr.append(_rv)
         if weight_violation(wc,n,_short_ch_exempt(n)):
             pr.append(f'跌破铁底:全章{wc}字<2000(唯一硬线·质量优先严禁凑字);如确属短章,须在施工表登记\u201c第 {n} 章短章豁免\u201d并说明理由(2026-07-17反向闸)')
         if pr: ERR+=len(pr); print(f'  ✗第{n}章《{nm}》:'); [print('     ',x) for x in pr]

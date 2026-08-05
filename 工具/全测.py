@@ -137,6 +137,41 @@ def chk_zishu():
     return not bad, ('；'.join(bad) if bad else '正测%d/负测%d 全通' % (len(POS), len(NEG)))
 
 
+def chk_rhythm():
+    """节奏方差闸之回归（批119）。
+    此闸为第153章起之硬错，若静默失效则新章之方差塌缩无人拦，
+    而其病正是「机器一直在报却没人当真」（P26）——故正负测并立。"""
+    import importlib.util as u, sys
+    sys.argv = ['x']
+    sp = u.spec_from_file_location('_i3', os.path.join(ROOT, '工具', '小说检察官.py'))
+    m = u.module_from_spec(sp)
+    sp.loader.exec_module(m)
+    hdr = '《镇冢秘术》\n\n第一百五十三章　测\n\n'
+    short = '\n\n'.join(['他站住了。', '风从右边来。', '我数到三。'] * 12)
+    longp = '这一段要连着跑到一百二十字以上，不断行，不换气，' \
+            '把该慢下来的地方慢足了：他把手按在壁上，先是掌心，' \
+            '再是掌根，最后是整只手贴上去，土从指缝里往下掉，' \
+            '掉到鞋面上，又从鞋面上滑下去，落地没有声音，' \
+            '因为地上原本就铺着一层同样的土；他就那么按着，' \
+            '按到掌心底下那一块也凉了，才把手收回来。'
+    mid = '\n\n'.join(['他把灯举起来又放下，举的时候手是稳的，放的时候手抖了一下，抖不是怕，是举得久了。'] * 8)
+    V = m.rhythm_violation
+    bad = []
+    # 正测：新章违规须报
+    if not V(hdr + short, 153):
+        bad.append('漏报:全短段之新章')
+    if not V(hdr + short + '\n\n' + mid, 153):
+        bad.append('漏报:90分位不足30字')
+    # 负测：不得误报
+    if V(hdr + mid + '\n\n' + longp + '\n\n' + mid, 153):
+        bad.append('误报:有长段且90分位达标')
+    if V(hdr + short, 152):
+        bad.append('误报:历史章(第152章)不受此闸')
+    if V(hdr + short, 153, exempt=True):
+        bad.append('误报:已登记节奏豁免者')
+    return not bad, ('；'.join(bad) if bad else '正测2/负测3 全通')
+
+
 def chk_hookspath():
     """钩子须挂上：容器每次重建后 .git 皆新，故 hooksPath 须指向受版本管理之目录。"""
     want = '工具/githooks'
@@ -163,6 +198,7 @@ def main():
     quick = '--快' in sys.argv
     items = [('重名定义扫描', chk_dup_defs), ('钩子挂载', chk_hookspath),
              ('字数对齐回归', chk_zishu),
+             ('节奏方差闸回归', chk_rhythm),
              ('检察官自测', chk_selftest), ('医生', chk_doctor),
              ('十轮精进负测', chk_shilun)]
     if not quick:

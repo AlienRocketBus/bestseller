@@ -307,9 +307,20 @@ def chk_lunci():
             for z in ('_总核.json', '_拦停.json'):
                 if _o.path.exists(_o.path.join(d3, z)):
                     _o.remove(_o.path.join(d3, z))
-        full_log = ''.join(
-            '\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**真伤**：一根，已改。%s\n'
-            % (i, i, '｜'.join(m.LENS_KEY[i]), '补白之句' * 40) for i in range(1, 11))
+        # 必答表自正文抽出，故须先有正文，_log 方取得到（否则 duty_list 返回空表）
+        open(f3, 'w', encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n三天两头十三天四个人五样两副三圈\n')
+
+        def _log(i):
+            try:
+                duties = m.duty_list(7, i)[0]
+            except Exception:
+                duties = []
+            return ('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**必答逐项**：%s\n'
+                    '**真伤**：一根，已改。%s\n'
+                    % (i, i, '｜'.join(m.LENS_KEY[i]),
+                       '；'.join(duties) if duties else '本轮无可机抽之必答项',
+                       '补白之句' * 40))
+        full_log = ''.join(_log(i) for i in range(1, 11))
         # 正测：十轮齐、记齐、无空轮 → 须过
         build(['第%d轮·甲' % i for i in range(1, 11)], full_log)
         b6 = io.StringIO()
@@ -321,15 +332,13 @@ def chk_lunci():
             bad.append('漏写:总核过而未出凭据')
         # 负测一：缺第10轮
         build(['第%d轮·甲' % i for i in range(1, 10)],
-              ''.join('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**真伤**：一根。%s\n'
-                      % (i, i, '｜'.join(m.LENS_KEY[i]), '补白之句' * 40) for i in range(1, 10)))
+''.join(_log(i) for i in range(1, 10)))
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:缺第10轮仍判总核过')
         # 负测二：版齐而轮记缺一轮
         build(['第%d轮·甲' % i for i in range(1, 11)],
-              ''.join('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**真伤**：一根。%s\n'
-                      % (i, i, '｜'.join(m.LENS_KEY[i]), '补白之句' * 40) for i in range(1, 11) if i != 4))
+''.join(_log(i) for i in range(1, 11) if i != 4))
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:缺一轮之轮记仍判总核过')

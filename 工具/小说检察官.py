@@ -2252,18 +2252,113 @@ def hooks_report(max_ch):
             out.append(f'   ⏳ 排期中：「{name}」(埋于第{born}章 → {due})')
     return out, red
 
+def round11_audit(n):
+    """【批126·检察官侧第十一轮】作者令：第十一轮须启动小说检察官，查这十轮到底有没有认真干、有没有尽全力。
+
+    分工（不合并，各守其长；合并即是给三千行之工具再添险，P25）：
+      · 十轮精进 `--十一轮` 查「**轮**跑透没有」：跑满／空轮／轮记实质／覆盖／裁定／对数／产出基线／横评择优。
+      · 检察官此口查「这一章对**全书**交代清楚没有」——用其独有之料：
+        canon事实库、圣经、到期账、回述实证哨兵、病历本前三大病号、翻页备料。
+    二者皆过，方为第十一轮通过。
+    """
+    out, hard, soft = [], [], []
+    files = _chapters()
+    if n not in files:
+        return ['✗第%d章未见正文' % n], ['无正文'], []
+    txt = files[n][2]
+    body = txt.split('【本章亮点】')[0]
+    d = _os.path.join(REPO_ROOT, '版本', '第%d章' % n)
+    lj = ''
+    lp = _os.path.join(d, '_轮记.md')
+    if _os.path.exists(lp):
+        lj = open(lp, encoding='utf-8').read()
+
+    out.append('  ── 检一·圣经入册查 ──')
+    try:
+        mt = open(MASTER_CANON_PATH, encoding='utf-8').read()
+        if re.search(r'第\s*%d\s*章《[^》]*》已接写' % n, mt):
+            out.append('   ✓第%d章已入圣经册（已接写）' % n)
+        else:
+            hard.append('第%d章未入圣经册：圣经无「第 %d 章《…》已接写」之条' % (n, n))
+            out.append('   ⛔第%d章未入圣经册' % n)
+    except Exception as e:
+        out.append('   ℹ圣经读取失败(%s)，本查跳过' % e)
+
+    out.append('  ── 检二·到期账查（限本章者须已判）──')
+    try:
+        import json as _j
+        led = _j.load(open(_os.path.join(REPO_ROOT, '设定', '到期账.json'), encoding='utf-8'))
+        its = led if isinstance(led, list) else led.get('items', led.get('账', []))
+        due = [x for x in its if x.get('到期章') == n and x.get('状态') == 'open']
+        over = [x for x in its if isinstance(x.get('到期章'), int)
+                and x.get('到期章') < n and x.get('状态') == 'open']
+        out.append('   限本章而未判：%d 笔｜已逾期而未判：%d 笔' % (len(due), len(over)))
+        for x in due[:6]:
+            out.append('     · [%s] %s' % (x.get('id'), str(x.get('事'))[:34]))
+        if due:
+            hard.append('限第%d章之账 %d 笔未判（%s）——十一轮须逐笔判：清／展期记因／销明其法'
+                        % (n, len(due), '、'.join(str(x.get('id')) for x in due[:6])))
+        if over:
+            soft.append('已逾期而未判 %d 笔，须于回执逐笔说明' % len(over))
+    except Exception as e:
+        out.append('   ℹ到期账读取失败(%s)，本查跳过' % e)
+
+    out.append('  ── 检三·回述实证查（A级防线：凡涉前章事件须贴原场）──')
+    hs = set()
+    for m in re.finditer(r'(想起|记得|那天|那一回|昨天|今天早上|早上|前几天|前十[一二三四五六七八九十]*天|二十七年前)', body):
+        hs.add(m.group(1))
+    unchecked = [w for w in sorted(hs) if w not in lj]
+    out.append('   本章回述词 %d 种；轮记中未见交代者 %d 种%s'
+               % (len(hs), len(unchecked), ('：' + '、'.join(unchecked)) if unchecked else ''))
+    if len(hs) and len(unchecked) * 2 > len(hs):
+        hard.append('回述词过半未在轮记中交代（%d/%d）——A级防线未走透'
+                    % (len(unchecked), len(hs)))
+    elif unchecked:
+        soft.append('回述词 %s 未在轮记中见交代，须补贴原场' % '、'.join(unchecked))
+
+    out.append('  ── 检四·病历本前三大病号专查 ──')
+    trio = [('P04越权', ('越权', '视角', 'P04')), ('P07时序自破', ('时序', '日历', 'P07')),
+            ('P05复读', ('复读', '重复', '近距', 'P05'))]
+    for nm, keys in trio:
+        got = any(k in lj for k in keys)
+        out.append('   %s %s' % ('✓' if got else '⛔', nm))
+        if not got:
+            hard.append('前三大病号之「%s」全十轮未见专查' % nm)
+
+    out.append('  ── 检五·翻页备料查（下一章之锚与状态卡）──')
+    try:
+        mt = open(MASTER_CANON_PATH, encoding='utf-8').read()
+        has_anchor = bool(re.search(r'第\s*%d\s*章必须从' % (n + 1), mt))
+        import json as _j2
+        cb = _j2.load(open(CANON_PATH, encoding='utf-8'))
+        ob = cb.get('open_brief', {})
+        has_cards = (ob.get('for_ch') == n + 1)
+        out.append('   第%d章锚：%s｜第%d章开拍状态卡批次：%s'
+                   % (n + 1, '有' if has_anchor else '**无**',
+                      n + 1, '有' if has_cards else '**无**'))
+        if not has_anchor:
+            hard.append('第%d章锚未备（翻页未做，封版即断链）' % (n + 1))
+        if not has_cards:
+            hard.append('第%d章开拍状态卡批次未指向（open_brief.for_ch≠%d）' % (n + 1, n + 1))
+    except Exception as e:
+        out.append('   ℹ备料查失败(%s)，跳过' % e)
+
+    return out, hard, soft
+
+
 def _zonghe_ok(n):
     """【批123·封版闸】第153章起，未过第十一轮总核者不许封版。
     立此闸之由（作者令）：十条记录齐全不等于每一轮真干了活；
     总核轮专核跑满与跑透，其凭据为 版本/第N章/_总核.json，只由一次通过之总核写出。
     只对 n>=153 生效（历史章之轮号编法不一，P23）。try/except 包死，取不到一律放行。"""
     try:
-        f = _os.path.join(REPO_ROOT, '版本', '第%d章' % n, '_总核.json')
-        if _os.path.exists(f):
-            return None
-        return ('第十一轮总核未过:未见 版本/第%d章/_总核.json——'
-                '十轮跑完须再跑 python3 工具/十轮精进.py --十一轮 %d 总核'
-                '(核跑满/跑透/空轮/补存/兑现/横评择优),总核不过不许封版(批123)' % (n, n))
+        for fn in ('_十一轮.json', '_总核.json'):
+            if _os.path.exists(_os.path.join(REPO_ROOT, '版本', '第%d章' % n, fn)):
+                return None
+        return ('第十一轮未过:未见 版本/第%d章/_十一轮.json——'
+                '十轮跑完须跑 python3 工具/小说检察官.py --十一轮 %d '
+                '(两眼齐审:左眼十轮精进查轮跑透没有,右眼检察官查这一章对全书交代清楚没有),'
+                '不过不许封版(批123/126)' % (n, n))
     except Exception:
         return None
 
@@ -3460,6 +3555,57 @@ def rel_day_check(n, body):
     return hits, lines
 
 
+def _round11_main(n):
+    """【批126】第十一轮总入口：两只眼一起睁。
+    左眼＝十轮精进（轮跑透没有）：跑满／空轮／轮记实质／覆盖／裁定／对数／产出基线／横评择优。
+    右眼＝检察官（这一章对全书交代清楚没有）：圣经入册／到期账／回述实证／前三大病号／翻页备料。
+    **二者皆过方算第十一轮通过**，并由本口写出合并凭据 _十一轮.json；
+    封版闸认此凭据（旧 _总核.json 亦认，向下兼容）。"""
+    print('\n████████ 第十一轮 · 两眼齐审 · 第%d章 ████████' % n)
+    lhard = []
+    print('\n■■ 左眼：十轮精进（轮跑透没有）■■')
+    try:
+        import importlib.util as _i3
+        _p3 = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '十轮精进.py')
+        _s3 = _i3.spec_from_file_location('_jj3', _p3)
+        _m3 = _i3.module_from_spec(_s3); _s3.loader.exec_module(_m3)
+        rc_left = _m3.zonghe(n)
+        if rc_left != 0:
+            lhard.append('十轮精进侧总核未过（见上）')
+    except Exception as e:
+        lhard.append('十轮精进侧总核未能运行：%s' % e)
+        print('  ⚠%s' % e)
+
+    print('\n■■ 右眼：检察官（这一章对全书交代清楚没有）■■')
+    out, rhard, rsoft = round11_audit(n)
+    for l in out:
+        print(l)
+
+    hard = lhard + rhard
+    print('\n  ════════════════════════════════════════')
+    if hard:
+        print('  【第十一轮·不过】硬项 %d 条：' % len(hard))
+        for h in hard:
+            print('     ⛔ %s' % h)
+        for w in rsoft:
+            print('     ⚠ %s' % w)
+        print('  第%d章：**第十一轮未过，禁封版。** 修毕重跑。' % n)
+        print('  ════════════════════════════════════════')
+        return 2
+    for w in rsoft:
+        print('     ⚠ %s（软项，须于回执裁定）' % w)
+    import json as _j3, datetime as _dt
+    d = _os.path.join(REPO_ROOT, '版本', '第%d章' % n)
+    _os.makedirs(d, exist_ok=True)
+    _j3.dump({'时': _dt.datetime.now().strftime('%m-%d %H:%M'),
+              '左眼': '十轮精进总核·过', '右眼': '检察官五检·过', '软项': rsoft},
+             open(_os.path.join(d, '_十一轮.json'), 'w', encoding='utf-8'),
+             ensure_ascii=False, indent=1)
+    print('  【第十一轮·通过】两眼皆过。已出凭据：版本/第%d章/_十一轮.json' % n)
+    print('  ════════════════════════════════════════')
+    return 0
+
+
 def super_main():
     # 【批107】并发闸前置：开拍／验收之前先查仓库是否被别路动过
     if len(sys.argv) > 1 and sys.argv[1] in ('--开拍', '--验收'):
@@ -3475,6 +3621,8 @@ def super_main():
     args=sys.argv[1:]
     if args and args[0] in ('-h','--help'):
         _usage(); return 0
+    if args and args[0] in ('--十一轮','--总核'):
+        return _round11_main(int(args[1]))
     lib=_load_lib()
     files=_chapters()
     if args and args[0] in ('框架','--framework'):

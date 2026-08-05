@@ -412,8 +412,28 @@ def chk_lunci():
         _s2.rmtree(tmp3, ignore_errors=True)
     if not hasattr(m2, '_zonghe_ok'):
         bad.append('缺:封版总核闸未接线')
+    # ── 检察官侧第十一轮五检（批126）──
+    if not hasattr(m2, 'round11_audit'):
+        bad.append('缺:检察官侧第十一轮未接线')
+    elif not hasattr(m2, '_round11_main'):
+        bad.append('缺:第十一轮两眼齐审总入口未接线')
+    else:
+        try:
+            o, h, sf = m2.round11_audit(153)
+            if not isinstance(h, list):
+                bad.append('检察官侧第十一轮返回值不合约')
+            elif not h:
+                bad.append('漏拦:第153章尚未入圣经册且154锚未备,五检竟无硬项')
+            keys = ('圣经', '账', '病号', '锚')
+            if not any(any(k in x for k in keys) for x in h):
+                bad.append('检察官侧第十一轮之硬项未覆盖五检要目')
+            o2, h2, _ = m2.round11_audit(999999)
+            if not h2:
+                bad.append('漏拦:不存在之章竟无硬项')
+        except Exception as e:
+            bad.append('检察官侧第十一轮运行失败:%s' % e)
 
-    return not bad, ('；'.join(bad) if bad else '正测3/负测16 全通')
+    return not bad, ('；'.join(bad) if bad else '正测3/负测20 全通')
 
 
 def chk_hookspath():

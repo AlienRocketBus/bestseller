@@ -1,0 +1,18 @@
+#!/bin/sh
+# 【批115】双绿方推之闸。此前「双绿方推」只是一句话，git push 谁也拦不住;
+# 而本会话反复自证:文档≠闸。故改为钩子强制——全测不过，推不上去。
+# 紧急绕行:ZM_SKIP_HOOK=1 git push  (绕行须于回执记因)
+if [ "$ZM_SKIP_HOOK" = "1" ]; then
+  echo "⚠ pre-push 已被 ZM_SKIP_HOOK 绕行——须于回执记因。"
+  exit 0
+fi
+echo "── pre-push:全测中(批115)……"
+cd "$(git rev-parse --show-toplevel)" || exit 1
+ZM_STREAM="${ZM_STREAM:-streamA-cli}" python3 工具/全测.py
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "⛔ 全测未过,推送已拦停。修好再推,或 ZM_SKIP_HOOK=1 绕行并记因。"
+  exit 1
+fi
+echo "✓ 全测通过,放行。"
+exit 0

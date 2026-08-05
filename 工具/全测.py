@@ -353,6 +353,53 @@ def chk_lunci():
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:轮记过简仍判总核过')
+        # 负测六：抄清单而不裁（提及100%而裁定0%）——批125之核心
+        def _naked_log(i):
+            try:
+                du = m.duty_list(7, i)[0]
+            except Exception:
+                du = []
+            return ('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n'
+                    '本轮所涉：%s\n段数9 长段1\n%s\n'
+                    % (i, i, '｜'.join(m.LENS_KEY[i]),
+                       '、'.join(du) if du else '无', '补白之句' * 40))
+        build(['第%d轮·甲' % i for i in range(1, 11)],
+              ''.join(_naked_log(i) for i in range(1, 11)))
+        with contextlib.redirect_stdout(io.StringIO()):
+            if m.zonghe(7) != 2:
+                bad.append('漏拦:抄清单而不逐项裁定仍判总核过（批125之核心）')
+        # 负测七：对数对不上（轮记不含台账所记之数）
+        def _nonum_log(i):
+            try:
+                du = m.duty_list(7, i)[0]
+            except Exception:
+                du = []
+            return ('\n## 第%d轮|v%02d|x|净重甚多\n**镜头**：%s\n'
+                    '%s\n**真伤**：一根，已改核合。%s\n'
+                    % (i, i, '｜'.join(m.LENS_KEY[i]),
+                       '；'.join('%s：已核判合' % x for x in du) if du else '无',
+                       '补白之句' * 40))
+        build(['第%d轮·甲' % i for i in range(1, 11)],
+              ''.join(_nonum_log(i) for i in range(1, 11)))
+        with contextlib.redirect_stdout(io.StringIO()):
+            if m.zonghe(7) != 2:
+                bad.append('漏拦:轮记之数对不上台账仍判总核过')
+        # 负测八：轮轮判合、全章无真伤
+        def _nohurt_log(i):
+            try:
+                du = m.duty_list(7, i)[0]
+            except Exception:
+                du = []
+            return ('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n段数9 长段1\n'
+                    '%s\n**本轮真伤无，判不补。**%s\n'
+                    % (i, i, '｜'.join(m.LENS_KEY[i]),
+                       '；'.join('%s：已核判合' % x for x in du) if du else '无',
+                       '补白之句' * 40))
+        build(['第%d轮·甲·判不补' % i for i in range(1, 11)],
+              ''.join(_nohurt_log(i) for i in range(1, 11)))
+        with contextlib.redirect_stdout(io.StringIO()):
+            if m.zonghe(7) != 2:
+                bad.append('漏拦:全章十轮皆无真伤仍判总核过（产出基线）')
         # 负测五：拦停旗未销
         build(['第%d轮·甲' % i for i in range(1, 11)], full_log)
         m.raise_flag(7, '测', '第9轮')
@@ -366,7 +413,7 @@ def chk_lunci():
     if not hasattr(m2, '_zonghe_ok'):
         bad.append('缺:封版总核闸未接线')
 
-    return not bad, ('；'.join(bad) if bad else '正测3/负测13 全通')
+    return not bad, ('；'.join(bad) if bad else '正测3/负测16 全通')
 
 
 def chk_hookspath():

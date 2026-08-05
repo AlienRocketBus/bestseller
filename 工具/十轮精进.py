@@ -853,6 +853,56 @@ def bida(n, r):
     return 0
 
 
+VERDICT = ('✓', '合', '改', '核', '真伤', '判', '未见', '零', '缺', '对', '错', '撞', '补')
+
+
+def duty_cover2(n, r, logtext, win=70):
+    """【批125·逐项裁定查】覆盖查只测「提没提」，而**抄一遍清单就能得100%**——
+    那才是最像干活的偷懒。故加一层：每一必答项之近旁（±win字）须见裁语，
+    方算「碰过」；只提名而无裁，计入「提了没裁」。
+    返回 (提及率, 裁定率, 提及数, 裁定数, 总数, 只提未裁之项)。"""
+    items, _ = duty_list(n, r)
+    if not items:
+        return None, None, 0, 0, 0, []
+    ment, judged, naked = 0, 0, []
+    for x in items:
+        pos = [m.start() for m in re.finditer(re.escape(x), logtext)]
+        if not pos:
+            continue
+        ment += 1
+        ok = False
+        for i in pos:
+            seg = logtext[max(0, i - win):i + len(x) + win]
+            if any(v in seg for v in VERDICT):
+                ok = True
+                break
+        if ok:
+            judged += 1
+        else:
+            naked.append(x)
+    tot = len(items)
+    return ment * 100 // tot, judged * 100 // tot, ment, judged, tot, naked
+
+
+def metric_reconcile(n, r, logtext):
+    """【批125·对数查】轮记所报之数须对得上机器所记之数。
+    立此查之由：**说了不算，得对得上**——凡未真跑量器而凭印象写的轮记，
+    其数必与台账所存对不上；对得上者，至少证明写记时人眼在机器输出上。
+    验：本轮之版所记诸软项（净重／段数／长段数／嗅／触／四字串三现）之数值，
+    须至少有 2 个以字面出现在其轮记里。"""
+    d, led = paths(n)
+    if not os.path.exists(led):
+        return None, []
+    for x in json.load(open(led, encoding='utf-8')).get('版本', []):
+        if _round_of(x.get('说明', '')) != r:
+            continue
+        sf = x.get('soft') or {}
+        keys = ['净重', '段数', '长段数', '嗅', '触', '四字串三现']
+        hit = [k for k in keys if k in sf and str(sf[k]) in logtext]
+        return len(hit), [k for k in keys if k in sf and k not in hit]
+    return None, []
+
+
 def duty_cover(n, r, logtext):
     """算某轮之覆盖率：必答项中有几项在其轮记里被点到。"""
     items, _ = duty_list(n, r)
@@ -951,17 +1001,42 @@ def zonghe(n):
     print('\n  ── 乙3·覆盖查（必答表·自正文抽出，事先凑不了）──')
     print('     【读法】此测覆盖，不测努力。覆盖不足＝该轮有该碰而没碰的地方。')
     for r in sorted(lj):
-        pct, h, tot = duty_cover(n, r, '\n'.join(lj[r]))
-        if pct is None:
+        body_r = '\n'.join(lj[r])
+        mp, jp, mc, jc, tot, naked = duty_cover2(n, r, body_r)
+        if mp is None:
             print('   第%-2d轮 无可机抽之必答项' % r)
-            continue
-        mark = '✓' if pct >= 80 else ('⚠' if pct >= 50 else '⛔')
-        print('   第%-2d轮 覆盖 %3d%% （%d/%d）%s' % (r, pct, h, tot, mark))
-        if pct < 50:
-            hard.append('第%d轮覆盖仅%d%%（%d/%d）——该碰而没碰者过半，不足以证其跑透'
-                        % (r, pct, h, tot))
-        elif pct < 80:
-            soft_warn.append('第%d轮覆盖%d%%（%d/%d），须于回执逐项说明未点者之由' % (r, pct, h, tot))
+        else:
+            mark = '✓' if jp >= 80 else ('⚠' if jp >= 50 else '⛔')
+            print('   第%-2d轮 提及 %3d%%（%d/%d）｜**裁定 %3d%%（%d/%d）** %s'
+                  % (r, mp, mc, tot, jp, jc, tot, mark))
+            if naked:
+                print('        只提未裁：%s' % '、'.join(naked[:8]))
+            if jp < 50:
+                hard.append('第%d轮裁定率仅%d%%（%d/%d）——提了而未裁者过半，'
+                            '抄清单不算干活' % (r, jp, jc, tot))
+            elif jp < 80:
+                soft_warn.append('第%d轮裁定率%d%%（%d/%d），只提未裁者须于回执补裁'
+                                 % (r, jp, jc, tot))
+        nh, nmiss = metric_reconcile(n, r, body_r)
+        if nh is not None:
+            print('        对数：轮记与台账相符 %d 项%s'
+                  % (nh, '' if nh >= 2 else '  ← **不足2项**'))
+            if nh < 2:
+                hard.append('第%d轮对数不足（仅%d项与台账相符）——'
+                            '未真跑量器而凭印象写记者，其数必对不上' % (r, nh))
+
+    # 乙4·产出基线查（批125）：一章十轮而真伤寥寥者，须解释
+    print('\n  ── 乙4·产出基线查（防「轮轮判合」之应付）──')
+    zc = sum(len(re.findall(r'真伤', '\n'.join(v))) for v in lj.values())
+    nz = sum(1 for r, v in lj.items() if not re.search(r'真伤[^无]', '\n'.join(v)))
+    print('     全章轮记提「真伤」%d 处；无真伤之轮 %d 个。' % (zc, nz))
+    print('     【基线】全书152份回执实测：各轮含真伤之比例为 60%—76%，'
+          '即十轮中约六到七轮当有所获。')
+    if nz >= 5:
+        hard.append('无真伤之轮达%d个（≥5）——远低于全书基线（十轮中约六七轮有所获），'
+                    '须逐轮说明何以皆无，否则视为应付' % nz)
+    elif nz >= 3:
+        soft_warn.append('无真伤之轮%d个，须于回执说明其由' % nz)
 
     # 丙·状态查
     print('\n  ── 丙·状态查 ──')

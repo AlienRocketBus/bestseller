@@ -1739,7 +1739,13 @@ def check_file(path):
     if w_chars and w_chars<MIN_CHARS_REVIEW:
         iss.append(f'[分量] 全章仅{w_chars}字(<{MIN_CHARS_REVIEW}) —— 偏薄；历史章由加厚轮处理，新章另有硬闸')
     if w_paras and w_long==0:
-        iss.append(f'[分量] 全章没有一段≥{LONG_PARA_CHARS}字 —— 全是碎步，没有一段跑起来；该给的慢镜头要给足')
+        _ps=[re.sub(r'\s','',x) for x in _chapter_body(text).split('\n') if x.strip() and x.strip()!='＊']
+        _ps=sorted(len(x) for x in _ps) or [0]
+        _p90=_ps[int(len(_ps)*0.9)] if _ps else 0
+        _r60=100.0*sum(1 for x in _ps if x>=60)/len(_ps) if _ps else 0
+        iss.append(f'[分量] 全章没有一段≥{LONG_PARA_CHARS}字 —— 全是碎步，没有一段跑起来；该给的慢镜头要给足'
+                   f'（本章段长90分位={_p90}字、≥60字段占比{_r60:.1f}%；全书1-30章此二数为91字/25.7%,'
+                   f'121-152章已跌至28字/0.3% —— 塌的不是均值是方差,见P26）')
     if w_paras and w_chars/w_paras<30:
         iss.append(f'[分量] 均段长{w_chars/w_paras:.0f}字(<30) —— 段段皆短，查是否砍成了电报体')
 
@@ -1848,16 +1854,31 @@ def check_file(path):
     NUMMAP={'一':1,'两':2,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10}
     def _hanzi(s): return len([c for c in s if '\u4e00'<=c<='\u9fa5'])
     zmis=[]
+    # 【批117·修】此规则原有二处系统性误报,17项实查中占6项(23/58/75/99/134/142章):
+    #   ①前向配对之误——规则一遇"N个字"即向后取引文,而原文常向前指
+    #     (「"等。"他说。就一个字。」指前句"等"=1字,非后句"等天黑");
+    #   ②成对计数之误——两句老话合计报数被判为单句不符
+    #     (75章"发烫就回来"5＋"灯灭莫回头"5=十个字,算式成立)。
+    # 事实核对类之精度最要紧:会喊狼来了的核对器比没有更糟——它训练人跳过它。
+    def _bq(pos,n):
+        seg=text[max(0,pos-60):pos]
+        return any(_hanzi(q)==n for q in re.findall(r'["“]([^"”\n]{1,16})["”]', seg))
+    def _pair(pos,n):
+        qs=re.findall(r'["“]([^"”\n]{1,20})["”]', text[max(0,pos-170):pos])
+        return len(qs)>=2 and _hanzi(qs[-1])+_hanzi(qs[-2])==n
     for m in re.finditer(r'([一两二三四五六七八九十])个字[，、。：:！？\s]{0,6}["“]([^"”]{1,14})["”]', text, re.S):
         if text[max(0,m.start()-1):m.start()] in ('是','字'): continue  # "一个字是一个字"成语,跳过
         n=NUMMAP.get(m.group(1)); c=_hanzi(m.group(2))
+        if n and _bq(m.start(),n): continue                      # 此数指前不指后
         if n and c!=n: zmis.append('「'+m.group(1)+'个字→“'+m.group(2)+'”实为'+str(c)+'字」')
     for m in re.finditer(r'["“]([^"”]{1,14})["”][^。\n]{0,14}[这那]([一两二三四五六七八九十])个字', text):
         n=NUMMAP.get(m.group(2)); c=_hanzi(m.group(1))
+        if n and _pair(m.end(),n): continue                      # 成对计数
         if n and c!=n: zmis.append('「“'+m.group(1)+'”被写成'+m.group(2)+'个字,实为'+str(c)+'字」')
     for m in re.finditer(r'["“]([^"”]{1,16})["”][。！？]?\s*\n+\s*[这那]?([一两二三四五六七八九十])个字(.)', text):
         if m.group(3) in ('是','也','都','没','一'): continue  # "一个字也/都…"类成语,跳过
         n=NUMMAP.get(m.group(2)); c=_hanzi(m.group(1))
+        if n and _pair(m.end(),n): continue                      # 成对计数
         if n and c!=n: zmis.append('「“'+m.group(1)+'”换行后被写成'+m.group(2)+'个字,实为'+str(c)+'字」')
     if zmis: iss.append('[字数对齐] "X个字"和引文对不上,一个都不许差: ' + '；'.join(zmis))
     # 文采病:为秀文采写出的别扭搭配(具体黑名单,逮到新的就加)
@@ -2953,7 +2974,7 @@ def legacy_review_layer(files,focus=None,cap=16):
         if n not in files: continue
         path=files[n][0]
         issues,_,_=check_file(path)
-        issues+=intra_repeat(files[n][2])
+        issues+=intra_repeat(_chapter_body(files[n][2]))  # 【批117】只查正文；原取整份含亮点段，是拿正文跟自己的摘要比对
         rows.extend((n,it) for it in issues)
     print('█【旧检察官复核层 · REVIEW】文气/物理/重复提示（需人工裁定，不直接计硬错）')
     if not rows:

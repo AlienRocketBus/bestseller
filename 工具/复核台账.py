@@ -34,7 +34,27 @@ VERDICTS = ('未判', '改', '判合', '待定')
 
 
 def _iid(ch, item):
-    return hashlib.sha256(('%d|%s' % (ch, item.strip())).encode('utf-8')).hexdigest()[:12]
+    """【批117·修】id 须对措辞稳定。
+    病灶：初版以整条消息文本入哈希，故检察官一改告警措辞（如为「分量」加上分位数诊断），
+    44 条已判之项即因哈希变动而变成新的未判项——账被措辞重开。
+    今改为只取「章＋类目＋条内关键内容」：关键内容优先取「」中之引串，
+    无引串则取消息中之首个定量特征（数字＋量词），再无则取类目后前12字。
+    如此告警措辞可自由改进而账不动。"""
+    t = item.strip()
+    cat = re.match(r'\[([^\]]+)\]', t)
+    cat = cat.group(1) if cat else '无类目'
+    body = t[len(cat) + 2:] if cat != '无类目' else t
+    keys = re.findall(r'「([^」]{2,})」', body)
+    if keys:
+        key = '｜'.join(sorted(set(keys)))
+    else:
+        m = re.search(r'"([^"]+)"\s*(\d+)\s*处', body)
+        if m:
+            key = m.group(1)
+        else:
+            m2 = re.search(r'(全章仅|均段长|没有一段≥)', body)
+            key = m2.group(1) if m2 else re.sub(r'[\d０-９]+', 'N', body)[:12]
+    return hashlib.sha256(('%d|%s|%s' % (ch, cat, key)).encode('utf-8')).hexdigest()[:12]
 
 
 def _load():

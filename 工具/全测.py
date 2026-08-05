@@ -96,6 +96,47 @@ def chk_dup_defs():
     return not bad, ('；'.join(bad) if bad else '工具目录内无重名定义')
 
 
+def chk_zishu():
+    """字数对齐探测器之回归。
+    此规则住在 check_file 内，而检察官 138 条自测只跑 canon 正则（hits 不经 check_file），
+    故其从来无回归——批117 修其二处误报时才发现。修探测器最忌静默削弱，
+    故正测（真错须报）与负测（误报须不报）并立。"""
+    import tempfile, importlib.util as u, sys
+    sys.argv = ['x']
+    sp = u.spec_from_file_location('_i2', os.path.join(ROOT, '工具', '小说检察官.py'))
+    m = u.module_from_spec(sp)
+    sp.loader.exec_module(m)
+
+    def flagged(body):
+        d = tempfile.mkdtemp()
+        f = os.path.join(d, '镇冢秘术_第七章_测.md')
+        open(f, 'w', encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n' + body + '\n')
+        iss, _, _ = m.check_file(f)
+        return any(x.startswith('[字数对齐]') for x in iss)
+
+    POS = [   # 真错，必须报
+        ('前向·数在前引在后', '过了几步他说了四个字。\n\n“今天你对了。”\n\n他点了点头。'),
+        ('后向·引在前数在后', '“不知道。”\n\n这两个字从他嘴里出来，我心里咯噔一下。'),
+        ('换行·引在前数在后', '“留给回来的人。”\n\n这四个字他说得很平。'),
+    ]
+    NEG = [   # 误报，必须不报
+        ('数指前句非后句', '“等。”他说。\n\n就一个字。\n\n“等天黑。”'),
+        ('数指前句非后句·二', '“不信。”\n\n就两个字。\n\n“那你来干什么。”'),
+        ('数指前句非后句·三', '“摸。”\n\n一个字。\n\n“我先过。”'),
+        ('两句合计报数', '“发烫，就回来。”\n\n他看着我。\n\n“灯灭。莫回头。”\n\n十个字，一个不差。'),
+        ('数与引全合', '他说了五个字。\n\n“水一直在流。”'),
+    ]
+    bad = []
+    for name, body in POS:
+        if not flagged(body):
+            bad.append('漏报:' + name)
+    for name, body in NEG:
+        if flagged(body):
+            bad.append('误报:' + name)
+    n = len(POS) + len(NEG)
+    return not bad, ('；'.join(bad) if bad else '正测%d/负测%d 全通' % (len(POS), len(NEG)))
+
+
 def chk_hookspath():
     """钩子须挂上：容器每次重建后 .git 皆新，故 hooksPath 须指向受版本管理之目录。"""
     want = '工具/githooks'
@@ -121,6 +162,7 @@ def chk_hookspath():
 def main():
     quick = '--快' in sys.argv
     items = [('重名定义扫描', chk_dup_defs), ('钩子挂载', chk_hookspath),
+             ('字数对齐回归', chk_zishu),
              ('检察官自测', chk_selftest), ('医生', chk_doctor),
              ('十轮精进负测', chk_shilun)]
     if not quick:

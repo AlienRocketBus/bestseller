@@ -659,6 +659,19 @@ def lunji_append(n, text):
     return 0
 
 
+def buji(n, r, text):
+    """【批124】补记：把某轮之补核落在**其本轮之下**。
+    与 --轮记 之别：轮记之轮号自台账末版推得（现轮），补记显式指定轮号，
+    使覆盖查（按轮号归拢）能认得这是哪一轮补上的。必留「补记」之痕。"""
+    d = paths(n)[0]
+    os.makedirs(d, exist_ok=True)
+    head = '\n## 第%d轮【补记·%s】\n' % (r, datetime.datetime.now().strftime('%m-%d %H:%M'))
+    with open(_lunji_path(n), 'a', encoding='utf-8') as f:
+        f.write(head + text.rstrip() + '\n')
+    print('  ✓补记已落盘：第%d轮（%s）' % (r, os.path.relpath(_lunji_path(n), ROOT)))
+    return 0
+
+
 def nextround(n):
     """开轮之总入口：告诉执笔下一轮该跑哪一轮、镜头为何、前几轮看见了什么。
     前几轮之所见取自磁盘轮记，故压缩冲掉记忆亦不碍。"""
@@ -778,6 +791,77 @@ def _lunji_blocks(n):
     return out
 
 
+def duty_list(n, r):
+    """【批124·必答表】某轮该碰的地方，由正文自己长出来。
+    立此表之由（作者问「怎么保证每一轮真干活」）：**努力不可观测**，
+    可观测的只有痕迹，而痕迹能被无意地演出来（照着「一轮好轮记的样子」去凑）。
+    故不测努力，改测**覆盖**：该碰的地方有没有全碰到。
+    清单自正文抽取，正文一变清单即变，**事先凑不了**。
+    返回 (必答项列表, 说明)。空列表＝该轮无可机抽之必答项，由人裁。"""
+    src = find_chapter(n)
+    if not src:
+        return [], '无正文'
+    txt = open(src, encoding='utf-8').read()
+    body = txt.split('【本章亮点】')[0]
+    if r == 1:
+        return ['嗅', '听', '触'], '三密度须逐项报数（机器数与实计并报）'
+    if r == 2:
+        hits = set()
+        for m in re.finditer(r'[^。！？\n]{0,26}(想起|记得|那天|那一回|昨天|前几天|早上|进来的时候|前十|二十七年前)[^。！？\n]{0,26}', body):
+            hits.add(m.group(1))
+        return sorted(hits), '凡涉前章之回述词，每一种须贴原场逐字比对'
+    if r == 3:
+        # 【批124·校准】本轮之职为「核数据主张」，非「数一切量词」。
+        # 「一下／一个／一回／一样／一段／一口／一层」等为口语量词，不作主张，
+        # 逼其逐个核即是喊狼来了（会喊狼的核对器比没有更糟）。
+        # 故只收：①二以上之数 ②带天/日/年/圈/尺/寸/步/成之数 ③「前N…」「第N…」之序数主张。
+        raw = set(re.findall(r'[零〇一二两三四五六七八九十百千]+(?:天|日|年|圈|尺|寸|步|成|副|盏|人|页|口气)', body))
+        raw |= set(re.findall(r'前[十二三四五六七八九百]+[天日年章]?', body))
+        raw |= set(re.findall(r'[二两三四五六七八九十百]+(?:个|下|回|段|样|类|把|条|根|卷|分)', body))
+        raw = {x for x in raw if not re.fullmatch(r'一(个|下|回|段|样|类|口|层|把|条|根|卷|分|半)', x)}
+        return sorted(raw), '逐数对表：凡作数据主张之数，须核其值、其日、其来处（口语量词不入表）'
+    if r == 4:
+        return ['招一', '招二', '招三', '招四', '招五', '招六', '招七', '招八', '招九', '招十'], '十招须逐招标在或缺'
+    if r == 5:
+        who = [w for w in ('老头', '钱满', '刘二', '东头', '沈鸢', '陈砚') if w in body or w in ('沈鸢',)]
+        return who, '每一在场人物须报其分位分布；零处者须说明其去向'
+    if r == 6:
+        props = [w for w in ('绳', '灯', '刀', '架子', '本子', '笔', '腿上', '鞋', '水', '盐', '布包', '竹筒') ]
+        return props, '器物逐件点名：在场者报其处，零字者判该点或不该点'
+    if r == 7:
+        return ['时标', '句长方差', '段长90分位', '说破密度'], '时序须逐时标核日；节奏与留白须报数并横比'
+    if r in (8, 9):
+        return ['刀数', '减字'], '减法轮须报刀数与实减字数'
+    if r == 10:
+        return ['器物总账', '逐段生死'], '收官轮须出器物总账并逐段判生死'
+    return [], '本轮无可机抽之必答项'
+
+
+def bida(n, r):
+    """印某轮之必答表。"""
+    items, why = duty_list(n, r)
+    print('\n████ 第%d章 · 第%d轮 必答表 ████' % (n, r))
+    print('  【why】%s' % why)
+    print('  【立表之由】努力不可观测，覆盖可观测。此表自正文抽出，正文一变表即变，事先凑不了。')
+    if not items:
+        print('  本轮无可机抽之必答项，由人裁。')
+        return 0
+    print('  必答 %d 项：' % len(items))
+    for i, x in enumerate(items, 1):
+        print('   %2d. %s' % (i, x))
+    print('  【交法】本轮轮记须逐项交代（改／判合＋记因）。总核轮按覆盖率验收。')
+    return 0
+
+
+def duty_cover(n, r, logtext):
+    """算某轮之覆盖率：必答项中有几项在其轮记里被点到。"""
+    items, _ = duty_list(n, r)
+    if not items:
+        return None, 0, 0
+    hit = [x for x in items if x in logtext]
+    return (len(hit) * 100 // len(items)), len(hit), len(items)
+
+
 def zonghe(n):
     """【批123·第十一轮·总核轮】十轮跑完之后的那一轮，专核前十轮「跑满」与「跑透」。
     立此轮之由（作者令）：十条记录齐全不等于每一轮真干了活；
@@ -862,6 +946,22 @@ def zonghe(n):
         print('   第%-2d轮 引句%2d 句，现存正文 %2d 句（%d%%）%s'
               % (r, len(qs), hit, 100 * hit // len(qs),
                  '' if hit else '  ← 一句不存，须人裁：是被后轮减去，还是当初未落笔'))
+
+    # 乙3·覆盖查（批124）：该碰的地方有没有全碰到
+    print('\n  ── 乙3·覆盖查（必答表·自正文抽出，事先凑不了）──')
+    print('     【读法】此测覆盖，不测努力。覆盖不足＝该轮有该碰而没碰的地方。')
+    for r in sorted(lj):
+        pct, h, tot = duty_cover(n, r, '\n'.join(lj[r]))
+        if pct is None:
+            print('   第%-2d轮 无可机抽之必答项' % r)
+            continue
+        mark = '✓' if pct >= 80 else ('⚠' if pct >= 50 else '⛔')
+        print('   第%-2d轮 覆盖 %3d%% （%d/%d）%s' % (r, pct, h, tot, mark))
+        if pct < 50:
+            hard.append('第%d轮覆盖仅%d%%（%d/%d）——该碰而没碰者过半，不足以证其跑透'
+                        % (r, pct, h, tot))
+        elif pct < 80:
+            soft_warn.append('第%d轮覆盖%d%%（%d/%d），须于回执逐项说明未点者之由' % (r, pct, h, tot))
 
     # 丙·状态查
     print('\n  ── 丙·状态查 ──')
@@ -1485,6 +1585,10 @@ def main():
     n = int(sys.argv[2])
     if cmd == '--对表':
         return duibiao(n)
+    if cmd == '--补记':
+        return buji(n, int(sys.argv[3]), sys.stdin.read())
+    if cmd == '--必答':
+        return bida(n, int(sys.argv[3]))
     if cmd in ('--十一轮', '--总核'):
         return zonghe(n)
     if cmd == '--验轮':

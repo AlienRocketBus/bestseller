@@ -462,6 +462,28 @@ def duibiao(n):
     return 0
 
 
+def buccun(n, note):
+    """补存：专修「某轮跑了、正文改了、版没存上」。
+    与 --存版 之别：本口显式承认基线已偏，故免闸八之「起手即已偏」，其余诸闸照走，
+    且必于台账留「补存」之痕，使日后查得出这一版不是当场存的。"""
+    d, led = paths(n)
+    lg = _ling_path(n)
+    base = {}
+    if os.path.exists(lg):
+        try:
+            base = json.load(open(lg, encoding='utf-8'))
+        except Exception:
+            base = {}
+    base['正文sha'] = base.get('末版sha')
+    base['目标轮'] = _round_of(note)
+    base['补存'] = True
+    os.makedirs(d, exist_ok=True)
+    json.dump(base, open(lg, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    print('  ℹ补存口：已按末版对齐领轮基线（显式承认此版非当场所存）。')
+    rc = save(n, note + '·补存')
+    return rc
+
+
 def huanyuan(n, confirm=''):
     """自 HEAD 复原某章正文（误改封版之章时用）。须显式带「确认」二字。"""
     src = find_chapter(n)
@@ -550,6 +572,9 @@ def lunji_append(n, text):
     """append 一条轮记。轮次自台账末版推得。"""
     d, led = paths(n)
     os.makedirs(d, exist_ok=True)
+    # 【批121·修】轮号原取台账末版，故存版一旦未成即标错号（本会话已犯，标出两条第6轮）。
+    # 改为：优先取台账末版之轮号，且**必须与末版之说明一致**；台账末版与领轮之目标轮不符者，
+    # 说明本轮之版未存上，遂拒写轮记——轮记不许比版先到。
     r, ver, jz = '?', '', ''
     if os.path.exists(led):
         vs = json.load(open(led, encoding='utf-8')).get('版本', [])
@@ -560,6 +585,17 @@ def lunji_append(n, text):
             m = _round_of(last.get('说明', ''))
             if m:
                 r = str(m)
+    _lg = _ling_path(n)
+    if os.path.exists(_lg) and not os.environ.get('ZM_FORCE', '').strip():
+        try:
+            _tr = json.load(open(_lg, encoding='utf-8')).get('目标轮')
+        except Exception:
+            _tr = None
+        if _tr and str(_tr) != r:
+            print('  ⛔轮记闸·版未到：所领为第%s轮，而台账末版为第%s轮。' % (_tr, r))
+            print('     即本轮之版未存上（存版多半被拦而未察），轮记不许比版先到。')
+            print('     先把版存上，再写轮记。')
+            return 2
     head = '\n## 第%s轮｜%s｜%s｜净重%s\n' % (
         r, ver, datetime.datetime.now().strftime('%m-%d %H:%M'), jz)
     with open(_lunji_path(n), 'a', encoding='utf-8') as f:
@@ -587,9 +623,29 @@ def nextround(n):
         print('   【铁则】只跑「下一个未跑之轮」，不认作者所报之号——号会漂，台账不会。')
     # 【批114·闸八】领轮基线落盘：七闸皆在存版时拦，而祸起于「动手在前」。
     # 领轮基线记下「起轮那一刻正文是什么样」，存版时回验，遂把防线提前到动手之前。
+    src2 = find_chapter(n)
+
+    # 【批121·闸九·发轮前置闸】上一轮之刀未落台账者，不发新轮。
+    # 病灶（用户报「十轮常只跑七八轮／轮次跳号」，本会话第153章第7轮亲犯）：
+    #   ①某轮存版被拦（本例为闸八报「起手即已偏」），而执笔以 grep 读输出、未看退出码，误当已存；
+    #   ②`--轮记` 之轮号取自台账末版，台账未动则标错号（本例标成第6轮，与前一条重号）；
+    #   ③正文继续前改，与末版愈离愈远；④下一轮领轮时闸再报，执笔再漏读，遂带病连跑数轮。
+    # **闸一直是对的，断的是读闸那一环。** 故不再往闸上加，改为：没存上就领不到新轮。
+    if src2 is not None and not os.environ.get('ZM_FORCE', '').strip():
+        _ls = _last_snap_sha(n)
+        _cur = _sha(open(src2, encoding='utf-8').read())
+        if _ls and _ls != _cur:
+            print('\n  ⛔发轮前置闸：上一轮之刀没落进台账，不发新轮。')
+            print('     末版sha=%s，而当前正文sha=%s。' % (_ls, _cur))
+            print('     即：有一轮跑了、正文改了，可版没存上（多半是存版被拦而未察）。')
+            print('     **修法二选一**：')
+            print('       ①补存那一轮：python3 工具/十轮精进.py --补存 %d "第N轮·镜头"' % n)
+            print('       ②还原到末版：python3 工具/十轮精进.py --还原 %d 确认' % n)
+            print('     修完再跑 --下一轮 %d。' % n)
+            return 2
+
     # 【批120·修】新章起手时正文尚未存在，find_chapter 返回空则基线不落盘，
     #   闸八遂令新章之第1轮永远过不去。故无正文者亦落基线，只是标为新章、免其sha之验。
-    src2 = find_chapter(n)
     base = {'时': datetime.datetime.now().strftime('%m-%d %H:%M'),
             '正文sha': _sha(open(src2, encoding='utf-8').read()) if src2 else None,
             '末版sha': _last_snap_sha(n),
@@ -1169,6 +1225,8 @@ def main():
     n = int(sys.argv[2])
     if cmd == '--对表':
         return duibiao(n)
+    if cmd == '--补存':
+        return buccun(n, sys.argv[3] if len(sys.argv) > 3 else '')
     if cmd == '--还原':
         return huanyuan(n, sys.argv[3] if len(sys.argv) > 3 else '')
     if cmd == '--下一轮':

@@ -2252,6 +2252,36 @@ def hooks_report(max_ch):
             out.append(f'   ⏳ 排期中：「{name}」(埋于第{born}章 → {due})')
     return out, red
 
+def _rounds_full(n):
+    """【批121·封版闸】第153章起，十轮不满不许封版。
+    病灶（作者亲报）：「十轮有时只跑了七轮／八轮，或轮次跳号」。
+    其成因链已查明：某轮存版被拦而未察→轮记按台账末版标错号→正文与末版脱节→带病连跑数轮。
+    十轮精进侧已立发轮前置闸与轮记版未到闸堵住前三环；此处堵最后一环：
+    **纵使前面都漏了，回执一交，机器仍会把缺的轮数点出来，且禁封版。**
+    只对 n>=153 生效——历史章之轮号编法不一（P23轮号漂移），不追溯。
+    全程 try/except 包死，取不到台账一律放行（宁可不拦，不可误拦）。"""
+    try:
+        import json as _j
+        f = _os.path.join(REPO_ROOT, '版本', '第%d章' % n, '_台账.json')
+        if not _os.path.exists(f):
+            return None
+        vs = _j.load(open(f, encoding='utf-8')).get('版本', [])
+        rs = set()
+        for x in vs:
+            m = re.match(r'\s*第\s*(\d+)\s*轮', x.get('说明', '') or '')
+            if m:
+                rs.add(int(m.group(1)))
+        miss = [i for i in range(1, 11) if i not in rs]
+        if not miss:
+            return None
+        return ('十轮不满:真轮%d/10,缺 %s——十轮精进未跑满不许封版(批121)；'
+                '若某轮已跑而版未存,跑 python3 工具/十轮精进.py --补存 %d "第N轮·镜头" 补上；'
+                '若确系并轮,须于回执写明哪一轮并入哪一轮及其由'
+                % (len(rs), '、'.join('第%d轮' % i for i in miss), n))
+    except Exception:
+        return None
+
+
 def _hooks_armed():
     """【批115】钩子挂载哨:重新clone后 core.hooksPath 默认未设,pre-push闸遂形同虚设
     (钩子文件在仓库里,指向它的那根线却不受版本管理)。此哨只报不拦——拦之则新克隆之库寸步难行。
@@ -2640,6 +2670,9 @@ def mech_layer(files,focus,lib):
 
         if n==max(files) and n>=73 and not _receipt_ok(n):
             pr.append('回执未交:当章《检察官回执》未在设定/回执_*.md归档(须含本章标记+五钩+伏笔裁决)——回执未交禁止封版')
+        if n>=153 and _receipt_ok(n):
+            _rf=_rounds_full(n)
+            if _rf: pr.append(_rf)
         _rv=rhythm_violation(files[n][2],n,_rhythm_exempt(n))
         if _rv: pr.append(_rv)
         if weight_violation(wc,n,_short_ch_exempt(n)):

@@ -172,6 +172,66 @@ def chk_rhythm():
     return not bad, ('；'.join(bad) if bad else '正测2/负测3 全通')
 
 
+def chk_lunci():
+    """轮次完整性诸闸之回归（批121）。
+    病灶（作者亲报，本会话第153章第7轮亲犯）：十轮常只跑七八轮／轮次跳号。
+    链条：某轮存版被拦而未察→轮记按台账末版标错号→正文与末版脱节→带病连跑数轮。
+    此测守三口：发轮前置闸、轮记版未到闸、封版十轮不满闸。"""
+    import importlib.util as u, sys, tempfile, json, os as _o, io, contextlib
+    sys.argv = ['x']
+    sp = u.spec_from_file_location('_i4', os.path.join(ROOT, '工具', '十轮精进.py'))
+    m = u.module_from_spec(sp)
+    sp.loader.exec_module(m)
+    sp2 = u.spec_from_file_location('_i5', os.path.join(ROOT, '工具', '小说检察官.py'))
+    m2 = u.module_from_spec(sp2)
+    sp2.loader.exec_module(m2)
+    bad = []
+    _R, _J = m.ROOT, m.JJ_DIR
+    tmp = tempfile.mkdtemp(prefix='zm_lc_')
+    try:
+        _o.makedirs(_o.path.join(tmp, '正文'))
+        _o.makedirs(_o.path.join(tmp, '设定'))
+        m.ROOT, m.JJ_DIR = tmp, _o.path.join(tmp, '版本')
+        f = _o.path.join(tmp, '正文', '镇冢秘术_第七章_测.md')
+        d = _o.path.join(tmp, '版本', '第7章')
+        _o.makedirs(d)
+        open(f, 'w', encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n原始\n')
+        open(_o.path.join(d, 'v01.md'), 'w', encoding='utf-8').write(
+            open(f, encoding='utf-8').read())
+        json.dump({'章': 7, '版本': [{'版': 'v01', '时': 'x', '说明': '第1轮·甲',
+                   'hard': {}, 'soft': {'净重': 9}, '全书章数': 1}]},
+                  open(_o.path.join(d, '_台账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc_clean = m.nextround(7)                       # 正文与末版一致→须发轮
+        open(f, 'w', encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n改过了\n')
+        buf2 = io.StringIO()
+        with contextlib.redirect_stdout(buf2):
+            rc_drift = m.nextround(7)                       # 正文已偏→须拒发轮
+        if rc_clean == 2:
+            bad.append('误拦:正文与末版一致时不得拒发轮')
+        if rc_drift != 2:
+            bad.append('漏拦:上一轮未落台账仍发新轮')
+        # 轮记版未到闸
+        json.dump({'时': 'x', '正文sha': 'a', '末版sha': 'a', '目标轮': 5},
+                  open(_o.path.join(d, '_领轮.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        buf3 = io.StringIO()
+        with contextlib.redirect_stdout(buf3):
+            rc_lj = m.lunji_append(7, '测')                 # 所领第5轮而台账末版第1轮→须拒
+        if rc_lj != 2:
+            bad.append('漏拦:轮记比版先到')
+        if _o.path.exists(_o.path.join(d, '_轮记.md')):
+            bad.append('漏拦:拒写轮记却仍落了盘')
+    finally:
+        m.ROOT, m.JJ_DIR = _R, _J
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)
+    # 封版十轮不满闸（纯函数，用真库之153章：其真轮未满且尚无回执，故须返回 None 或提示）
+    if not hasattr(m2, '_rounds_full'):
+        bad.append('缺:封版十轮不满闸未接线')
+    return not bad, ('；'.join(bad) if bad else '正测1/负测3 全通')
+
+
 def chk_hookspath():
     """钩子须挂上：容器每次重建后 .git 皆新，故 hooksPath 须指向受版本管理之目录。"""
     want = '工具/githooks'
@@ -199,6 +259,7 @@ def main():
     items = [('重名定义扫描', chk_dup_defs), ('钩子挂载', chk_hookspath),
              ('字数对齐回归', chk_zishu),
              ('节奏方差闸回归', chk_rhythm),
+             ('轮次完整性回归', chk_lunci),
              ('检察官自测', chk_selftest), ('医生', chk_doctor),
              ('十轮精进负测', chk_shilun)]
     if not quick:

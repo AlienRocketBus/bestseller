@@ -2312,6 +2312,10 @@ def _kailun_duibiao(ch):
         _m = _ilu.module_from_spec(_sp)
         _sp.loader.exec_module(_m)
         print(_m.duibiao_brief(ch))
+        _fl = _m.read_flag(ch)
+        if _fl:
+            print('   ⛔⛔ 拦停旗未销（%s）：上一次存版被拦而未修，一切轮务不办。' % _fl.get('时'))
+            print('        因：%s' % str(_fl.get('因'))[:110])
     except Exception:
         pass
 

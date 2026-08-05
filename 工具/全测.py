@@ -226,10 +226,63 @@ def chk_lunci():
         m.ROOT, m.JJ_DIR = _R, _J
         import shutil
         shutil.rmtree(tmp, ignore_errors=True)
-    # 封版十轮不满闸（纯函数，用真库之153章：其真轮未满且尚无回执，故须返回 None 或提示）
     if not hasattr(m2, '_rounds_full'):
         bad.append('缺:封版十轮不满闸未接线')
-    return not bad, ('；'.join(bad) if bad else '正测1/负测3 全通')
+
+    # ── 拦停旗（批122）：漏读一次拦停不得等于走得过去 ──
+    tmp2 = tempfile.mkdtemp(prefix='zm_flag_')
+    try:
+        _o.makedirs(_o.path.join(tmp2, '正文'))
+        _o.makedirs(_o.path.join(tmp2, '设定'))
+        m.ROOT, m.JJ_DIR = tmp2, _o.path.join(tmp2, '版本')
+        f2 = _o.path.join(tmp2, '正文', '镇冢秘术_第七章_测.md')
+        d2 = _o.path.join(tmp2, '版本', '第7章')
+        _o.makedirs(d2)
+        open(f2, 'w', encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n甲\n')
+        open(_o.path.join(d2, 'v01.md'), 'w', encoding='utf-8').write(
+            open(f2, encoding='utf-8').read())
+        json.dump({'章': 7, '版本': [{'版': 'v01', '时': 'x', '说明': '第1轮·甲',
+                   'hard': {}, 'soft': {'净重': 9}, '全书章数': 1}]},
+                  open(_o.path.join(d2, '_台账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        b3 = io.StringIO()
+        with contextlib.redirect_stdout(b3):
+            no_flag = m.flag_block(7, '发轮')
+        if no_flag:
+            bad.append('误拦:无旗时不得拒办')
+        m.raise_flag(7, '测试之由', '第2轮·测')
+        b4 = io.StringIO()
+        with contextlib.redirect_stdout(b4):
+            has_flag = m.flag_block(7, '发轮')
+            rc_nr = m.nextround(7)
+            rc_lj = m.lunji_append(7, '测')
+        if not has_flag:
+            bad.append('漏拦:有旗仍放行')
+        if rc_nr != 2:
+            bad.append('漏拦:有旗仍发轮')
+        if rc_lj != 2:
+            bad.append('漏拦:有旗仍写轮记')
+        if _o.path.exists(_o.path.join(d2, '_轮记.md')):
+            bad.append('漏拦:有旗仍落了轮记')
+        # 一次成功存版须销旗
+        open(f2, 'w', encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n甲乙丙\n')
+        json.dump({'时': 'x', '正文sha': m._sha(open(_o.path.join(d2, 'v01.md'), encoding='utf-8').read()),
+                   '末版sha': m._sha(open(_o.path.join(d2, 'v01.md'), encoding='utf-8').read()),
+                   '目标轮': 2},
+                  open(_o.path.join(d2, '_领轮.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        open(_o.path.join(d2, '_轮记.md'), 'w', encoding='utf-8').write('\n## 第1轮|v01|x|净重9\n所见\n')
+        b5 = io.StringIO()
+        with contextlib.redirect_stdout(b5):
+            rc_ok = m.save(7, '第2轮·四堂会审')
+        if rc_ok != 0:
+            bad.append('误拦:清白之存版被旗拦（旗当由此次成功销去）')
+        elif m.read_flag(7) is not None:
+            bad.append('漏销:存版成功而旗未销')
+    finally:
+        m.ROOT, m.JJ_DIR = _R, _J
+        import shutil as _sh
+        _sh.rmtree(tmp2, ignore_errors=True)
+
+    return not bad, ('；'.join(bad) if bad else '正测2/负测7 全通')
 
 
 def chk_hookspath():

@@ -554,6 +554,59 @@ def _sha(t):
     return hashlib.sha256(t.strip().encode('utf-8')).hexdigest()[:16]
 
 
+def _flag_path(n):
+    return os.path.join(paths(n)[0], '_拦停.json')
+
+
+def raise_flag(n, why, note=''):
+    """【批122·拦停旗】存版一被拦即落旗，旗在则后续一切轮务皆走不动。
+    病灶（P28之残余，作者追问「彻底解决」时查出）：批121只给了一条「须看退出码」之戒律，
+    而戒律是文档，文档不是闸——本会话反复自证。执笔纵漏读一次拦停，
+    仍可若无其事继续动手；四道闸皆须待下一次调用方能再报，而那一次也可能再漏读。
+    故改为**粘性**：拦停之事实落盘为旗，`--下一轮`／`--轮记` 见旗即拒，
+    检察官逐章对表见旗即大声报。**旗只由一次成功的存版／补存销去。**
+    如此「漏读一次」不再等于「走得过去」。"""
+    d = paths(n)[0]
+    os.makedirs(d, exist_ok=True)
+    json.dump({'时': datetime.datetime.now().strftime('%m-%d %H:%M'),
+               '因': why, '本次说明': note, '流': _stream_id()},
+              open(_flag_path(n), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+
+
+def read_flag(n):
+    f = _flag_path(n)
+    if not os.path.exists(f):
+        return None
+    try:
+        return json.load(open(f, encoding='utf-8'))
+    except Exception:
+        return {'时': '?', '因': '旗文件损坏', '本次说明': ''}
+
+
+def clear_flag(n):
+    try:
+        if os.path.exists(_flag_path(n)):
+            os.remove(_flag_path(n))
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def flag_block(n, who):
+    """见旗即拒。返回 True 表示须拒。"""
+    fl = read_flag(n)
+    if not fl or os.environ.get('ZM_FORCE', '').strip():
+        return False
+    print('\n  ⛔拦停旗未销：第%d章上一次存版被拦停（%s），至今未修。' % (n, fl.get('时', '?')))
+    print('     拦停之由：%s' % str(fl.get('因', ''))[:160])
+    print('     当时所报：%s' % str(fl.get('本次说明', ''))[:60])
+    print('     **旗在，%s 一律不办。** 旗只由一次成功的存版／补存销去。' % who)
+    print('     修法：python3 工具/十轮精进.py --补存 %d "第N轮·镜头"' % n)
+    print('       或：python3 工具/十轮精进.py --还原 %d 确认' % n)
+    return True
+
+
 def _ling_path(n):
     return os.path.join(paths(n)[0], '_领轮.json')
 
@@ -570,6 +623,8 @@ def _lunji_path(n):
 
 def lunji_append(n, text):
     """append 一条轮记。轮次自台账末版推得。"""
+    if flag_block(n, '写轮记'):
+        return 2
     d, led = paths(n)
     os.makedirs(d, exist_ok=True)
     # 【批121·修】轮号原取台账末版，故存版一旦未成即标错号（本会话已犯，标出两条第6轮）。
@@ -623,6 +678,8 @@ def nextround(n):
         print('   【铁则】只跑「下一个未跑之轮」，不认作者所报之号——号会漂，台账不会。')
     # 【批114·闸八】领轮基线落盘：七闸皆在存版时拦，而祸起于「动手在前」。
     # 领轮基线记下「起轮那一刻正文是什么样」，存版时回验，遂把防线提前到动手之前。
+    if flag_block(n, '发轮'):
+        return 2
     src2 = find_chapter(n)
 
     # 【批121·闸九·发轮前置闸】上一轮之刀未落台账者，不发新轮。
@@ -698,6 +755,44 @@ def duibiao_brief(n):
         dr, dl = drift_of(n, rc, src, open(src, encoding='utf-8').read())
         out.extend(dl)
     return '\n'.join(out)
+
+
+def yanlun(n):
+    """【批122】权威轮况一屏。
+    立此口之由：批121之末，执笔曾向作者误报「第7轮跑完」而台账实无其版。
+    闸能拦住做错，拦不住报错——故须有一处**机器出的定论**，报状态时只许引它，不许凭记忆。"""
+    d, led = paths(n)
+    src = find_chapter(n)
+    fl = read_flag(n)
+    rs, miss = ([], list(range(1, 11)))
+    ver, jz = '无', '?'
+    if os.path.exists(led):
+        lg = json.load(open(led, encoding='utf-8'))
+        vs = lg.get('版本', [])
+        rs, miss = rounds_state(lg)
+        rs = sorted(rs)
+        if vs:
+            ver = vs[-1].get('版', '')
+            jz = vs[-1].get('soft', {}).get('净重', '?')
+    drift = '（无正文）'
+    if src:
+        ls = _last_snap_sha(n)
+        cur = _sha(open(src, encoding='utf-8').read())
+        drift = '一致' if (ls is None or ls == cur) else '**已偏（上一轮之刀没落台账）**'
+    rc = _receipts_of(n)
+    print('\n████ 权威轮况 · 第%d章 ████' % n)
+    print('  真轮 %d/10 %s' % (len(rs), '已跑：' + '、'.join(str(x) for x in rs) if rs else ''))
+    print('  缺轮 %s' % ('无' if not miss else '、'.join('第%d轮' % i for i in miss)))
+    print('  末版 %s（净重%s）｜正文与末版：%s' % (ver, jz, drift))
+    print('  拦停旗：%s' % ('无' if not fl else '**有**（%s｜%s）' % (fl.get('时'), str(fl.get('因'))[:60])))
+    print('  回执：%s' % ('已交' if rc else '未交'))
+    ok = (not miss) and (not fl) and drift == '一致'
+    print('  ── 一行定论 ──')
+    print('  第%d章：真轮%d/10｜缺%s｜正文与末版%s｜旗%s｜回执%s ⇒ %s'
+          % (n, len(rs), ('无' if not miss else str(len(miss)) + '轮'),
+             ('一致' if drift == '一致' else '已偏'), ('无' if not fl else '有'),
+             ('已交' if rc else '未交'), '可续' if ok else '**须先修**'))
+    return 0 if ok else 2
 
 
 def selftest():
@@ -795,15 +890,22 @@ def selftest():
             before = sorted(glob.glob(os.path.join(tmp, '版本', '**', '*'), recursive=True))
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
+                if want_rc == 0:
+                    clear_flag(7)
                 rc = save(7, note)
             after = sorted(glob.glob(os.path.join(tmp, '版本', '**', '*'), recursive=True))
             good = (rc == want_rc)
             if want_rc == 2:
-                # 拦停之轮：除自动建出的空目录外，不得多出任何文件
-                nf = [x for x in after if x not in before and os.path.isfile(x)]
+                # 拦停之轮：不得多出版本与台账；**惟拦停旗须写**（批122：旗是粘性故障标记，
+                # 漏读一次拦停不得等于走得过去，故落旗本身即拦停之一部分）。
+                nf = [x for x in after if x not in before and os.path.isfile(x)
+                      and not x.endswith('_拦停.json')]
                 good = good and not nf
                 if nf:
                     print('  ✗端到端：拦停却写入了 %s' % nf)
+                if not any(x.endswith('_拦停.json') for x in after):
+                    good = False
+                    print('  ✗端到端：拦停却未落旗（批122）')
             if good:
                 ok += 1
             else:
@@ -1060,7 +1162,11 @@ def save(n, note=''):
         print('   ℹHEAD自上次记录以来已前进（多为本路自身推送）；'
               '内容安全由闸八领轮基线把守，此处只报不拦。')
     if halt:
+        raise_flag(n, '；'.join(x.strip() for x in glines if '⛔' in x) or '存版被拦', note)
         print('  ⛔存版已拦停，未写入任何文件。')
+        print('  ══════════════════════════════════════════')
+        print('  【定论】第%d章「%s」存版失败（rc=2）。拦停旗已落，未修之前一切轮务不办。' % (n, note))
+        print('  ══════════════════════════════════════════')
         return 2
     if reopen:
         ledger['版本'].append({'版': '重开', '时': datetime.datetime.now().strftime('%m-%d %H:%M'),
@@ -1136,7 +1242,13 @@ def save(n, note=''):
             os.remove(_ling_path(n))   # 一领一存，基线用毕即销，下一轮须重领
     except Exception:
         pass
+    clear_flag(n)
     print('  台账：%s（共%d版）' % (os.path.relpath(led, ROOT), v))
+    _rs, _miss = rounds_state(ledger)
+    print('  ══════════════════════════════════════════')
+    print('  【定论】第%d章「%s」存版成功（rc=0）。台账共%d版，真轮%d/10%s'
+          % (n, note, v, len(_rs), '' if not _miss else '，缺 ' + '、'.join('第%d轮' % i for i in _miss)))
+    print('  ══════════════════════════════════════════')
     # 【批111·修】原以"版本数"充"轮数"：而 v01 为封版基线、冷轮／终版回补／定案皆在十轮之外，
     # 故"10版"实为"基线＋9轮"，机器却报十轮已满。改为只数真轮（说明以"第N轮"起者）。
     _rounds = set()
@@ -1225,6 +1337,8 @@ def main():
     n = int(sys.argv[2])
     if cmd == '--对表':
         return duibiao(n)
+    if cmd == '--验轮':
+        return yanlun(n)
     if cmd == '--补存':
         return buccun(n, sys.argv[3] if len(sys.argv) > 3 else '')
     if cmd == '--还原':

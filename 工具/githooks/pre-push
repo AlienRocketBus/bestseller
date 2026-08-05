@@ -1,17 +1,22 @@
 #!/bin/sh
-# 【批115】双绿方推之闸。此前「双绿方推」只是一句话，git push 谁也拦不住;
-# 而本会话反复自证:文档≠闸。故改为钩子强制——全测不过，推不上去。
-# 紧急绕行:ZM_SKIP_HOOK=1 git push  (绕行须于回执记因)
+# 【批115】双绿方推之闸。【批122】绕行须留痕:ZM_SKIP_HOOK 不许无痕。
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 1
 if [ "$ZM_SKIP_HOOK" = "1" ]; then
-  echo "⚠ pre-push 已被 ZM_SKIP_HOOK 绕行——须于回执记因。"
+  printf '%s | 绕行 | %s | %s\n' "$(date '+%Y-%m-%d %H:%M')" "${ZM_STREAM:-?}" "$(git log -1 --pretty=%s | cut -c1-90)" >> 设定/绕行审计.log
+  N=$(grep -c '绕行' 设定/绕行审计.log 2>/dev/null || echo 0)
+  echo "⚠ pre-push 已被 ZM_SKIP_HOOK 绕行(累计第 $N 次)——已写入 设定/绕行审计.log,须于回执记因。"
+  if [ "$N" -ge 12 ]; then
+    echo "⛔ 绕行已累计 $N 次(>=12)。绕行成了常态即闸已失效——须先把全测修绿,或由作者明令提高此限。"
+    exit 1
+  fi
   exit 0
 fi
 echo "── pre-push:全测中(批115)……"
-cd "$(git rev-parse --show-toplevel)" || exit 1
 ZM_STREAM="${ZM_STREAM:-streamA-cli}" python3 工具/全测.py
 rc=$?
 if [ $rc -ne 0 ]; then
-  echo "⛔ 全测未过,推送已拦停。修好再推,或 ZM_SKIP_HOOK=1 绕行并记因。"
+  echo "⛔ 全测未过,推送已拦停。修好再推,或 ZM_SKIP_HOOK=1 绕行并记因(绕行会留痕计数)。"
   exit 1
 fi
 echo "✓ 全测通过,放行。"

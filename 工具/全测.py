@@ -417,13 +417,17 @@ def chk_lunci():
     if not hasattr(m2, '_in_progress'):
         bad.append('缺:回执闸在跑判未接线')
     else:
+        # 【批130·修】原测断言「第157章须判在跑」——**而此为会变之状态**：
+        #   其母章十轮一满，157即不再在跑，该测遂红。批127已立此戒（负测不得钉在会变的状态上，
+        #   须钉在不变的契约上），而立批130之负测时又犯，此其第二回。
+        # 今只测不变之契约：不存在之章与已封版之章一律非在跑；返回值须为 bool。
         try:
-            if not m2._in_progress(157):
-                bad.append('漏判:第157章十轮未满而未判在跑')
-            if m2._in_progress(152):
-                bad.append('误判:已封版之第152章竟判在跑')
-            if m2._in_progress(999999):
-                bad.append('误判:不存在之章竟判在跑')
+            for ch in (999999, 152, 100):
+                v = m2._in_progress(ch)
+                if not isinstance(v, bool):
+                    bad.append('在跑判返回值非bool(第%d章)' % ch)
+                elif v:
+                    bad.append('误判:第%d章（不存在或已封版）竟判在跑' % ch)
         except Exception as e:
             bad.append('在跑判运行失败:%s' % e)
     if not hasattr(m2, 'round11_audit'):

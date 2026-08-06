@@ -413,6 +413,19 @@ def chk_lunci():
     if not hasattr(m2, '_zonghe_ok'):
         bad.append('缺:封版总核闸未接线')
     # ── 检察官侧第十一轮五检（批126）──
+    # ── 回执闸之在跑判（批130）──
+    if not hasattr(m2, '_in_progress'):
+        bad.append('缺:回执闸在跑判未接线')
+    else:
+        try:
+            if not m2._in_progress(157):
+                bad.append('漏判:第157章十轮未满而未判在跑')
+            if m2._in_progress(152):
+                bad.append('误判:已封版之第152章竟判在跑')
+            if m2._in_progress(999999):
+                bad.append('误判:不存在之章竟判在跑')
+        except Exception as e:
+            bad.append('在跑判运行失败:%s' % e)
     if not hasattr(m2, 'round11_audit'):
         bad.append('缺:检察官侧第十一轮未接线')
     elif not hasattr(m2, '_round11_main'):
@@ -433,7 +446,7 @@ def chk_lunci():
         except Exception as e:
             bad.append('检察官侧第十一轮运行失败:%s' % e)
 
-    return not bad, ('；'.join(bad) if bad else '正测3/负测20 全通')
+    return not bad, ('；'.join(bad) if bad else '正测3/负测23 全通')
 
 
 def chk_hookspath():

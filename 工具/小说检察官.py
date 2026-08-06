@@ -2380,6 +2380,41 @@ def round11_audit(n):
     return out, hard, soft
 
 
+def _in_progress(n):
+    """【批130】此章是否「在跑」（十轮未满且回执未交）。
+    病灶（P30之余脉，本会话第156章第9轮撞出）：回执闸对末章一律要回执，
+    而**一章自起草至封版要跑十轮，其间回执按例尚未交**——故末章在跑之整段时间里全书检恒红，
+    逼得每推必绕；而绕行闸（批122）计满即硬拒，於是「修不绿也推不动」。
+    **P30已立其律：当一个闸需要天天绕，错的是闸不是人。** 批127已立「未交回执之章视为在跑」，
+    然其只用於翻页三检，未接到回执闸上，此为其漏。
+    判法：取该章之十轮台账（拆出之章无自己的台账者，认母章 n-1 之台账），真轮 <10 即为在跑。
+    取不到台账者一律判「非在跑」（宁可严，不可宽）。"""
+    try:
+        import json as _j
+        for k in (n, n - 1):
+            f = _os.path.join(REPO_ROOT, '版本', '第%d章' % k, '_台账.json')
+            if not _os.path.exists(f):
+                continue
+            vs = _j.load(open(f, encoding='utf-8')).get('版本', [])
+            rs = set()
+            for x in vs:
+                m = re.match(r'\s*第\s*(\d+)\s*轮', x.get('说明', '') or '')
+                if m:
+                    rs.add(int(m.group(1)))
+            if k != n:
+                # 认母章之账者，须其轮记确记此章系由母章拆出
+                lp = _os.path.join(REPO_ROOT, '版本', '第%d章' % k, '_轮记.md')
+                if not _os.path.exists(lp):
+                    continue
+                tx = open(lp, encoding='utf-8').read()
+                if not ('拆' in tx and str(n) in tx):
+                    continue
+            return len(rs) < 10
+    except Exception:
+        pass
+    return False
+
+
 def _zonghe_ok(n):
     """【批123·封版闸】第153章起，未过第十一轮总核者不许封版。
     立此闸之由（作者令）：十条记录齐全不等于每一轮真干了活；
@@ -2818,7 +2853,11 @@ def mech_layer(files,focus,lib):
 
 
         if n==max(files) and n>=73 and not _receipt_ok(n):
-            pr.append('回执未交:当章《检察官回执》未在设定/回执_*.md归档(须含本章标记+五钩+伏笔裁决)——回执未交禁止封版')
+            if _in_progress(n):
+                print('  ℹ第%d章在跑（十轮未满、回执按例未交）：回执闸暂不计硬错（批130）；'
+                      '十轮跑毕交回执时此闸自然复位。' % n)
+            else:
+                pr.append('回执未交:当章《检察官回执》未在设定/回执_*.md归档(须含本章标记+五钩+伏笔裁决)——回执未交禁止封版')
         if n>=153 and _receipt_filed(n):
             _rf=_rounds_full(n)
             if _rf: pr.append(_rf)

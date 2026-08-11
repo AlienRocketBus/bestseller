@@ -2277,6 +2277,125 @@ def _content_len(s):
     return sum(1 for c in s if '\u4e00' <= c <= '\u9fff')
 
 
+
+# ====================================================================
+# canon保护账 · 逐章机验闸（2026-08-11 立）
+#   来源：外部复核第四轮所交之「最终 canon 保护账」十六行，经本线逐条比对后编码。
+#   立此闸之由：该表於 2026-08-11 一次即逮到本线二条真伤（176章左肩顶起、
+#   钱满三天写成十几年前），而二者皆非机器已有规则所能查——其为「事实链」之误，
+#   非「词句」之误。故须另立一闸，专管事实链。
+#   分三类：① 链闸（肩位/日序，按章号推其当值）② 禁词闸（禁止回流之旧说法）
+#           ③ 锚闸（某章必现之定文）
+# ====================================================================
+
+# ① 肩位链：入山第N章 → 主承重之肩。canon：169右｜170右转左｜171—172左｜173左转右｜174—176右
+CANON_SHOULDER = {169:'右', 170:'转', 171:'左', 172:'左', 173:'转', 174:'右', 175:'右', 176:'右'}
+
+# ② 日序/余量链：章号 → (入山第几日, 往回还剩几天)
+CANON_DAY = {172:(16,6), 173:(17,5), 174:(18,4), 175:(19,3), 176:(20,2)}
+
+# ③ 禁止回流之旧说法（正则, 说明, 豁免章）
+# (正则, 说明, 豁免章, 语境排除正则)  ——排除命中则不报，专治「回述／引述」之假阳性
+CANON_FORBID = [
+    (r'那三天是十几年前', '钱满背陈砚在本月内、肩痂未褪；不得写成十几年前', [], None),
+    (r'钱满[^。]{0,12}十几年前[^。]{0,6}背',  '同上', [], None),
+    (r'东头[^。]{0,6}(那副|一副|两副)架',      '东头只持绳，无架', [], r'(没有|不是|无)'),
+    (r'人只有三个',                            '账上三个是背人位，不是现实人数', [], r'(背人位|账上)'),
+]
+
+# ④ 必现之锚（章号 → [(正则, 说明)]）
+CANON_MUST = {
+    156: [(r'右边', '第156章末必须错报「右边」，纠错只能发生在第157章')],
+}
+
+def _canon_body(t):
+    """取正文（去亮点段），亮点为工作稿不入事实链之验。"""
+    return t.split('【本章亮点】')[0]
+
+def canon_ledger_check(files):
+    """canon保护账逐章机验：肩位链、日序链、禁回流、必现锚。返回 (errors, lines)。
+    files 兼容：{章号:(路径,章名,全文)} 字典／路径列表／章号列表。"""
+    out, err = [], 0
+    _all = None
+    def _need_all():
+        nonlocal _all
+        if _all is None:
+            _all = _chapters()
+        return _all
+    pairs = []   # (章号, 章名, 正文)
+    if isinstance(files, dict):
+        src = sorted(files.items())
+        for n, v in src:
+            if isinstance(v, tuple) and len(v) >= 3:
+                pairs.append((n, v[1], v[2]))
+    else:
+        for x in files:
+            if isinstance(x, int):
+                v = _need_all().get(x)
+                if v and len(v) >= 3:
+                    pairs.append((x, v[1], v[2]))
+            else:
+                n = _chap_num(x)
+                if n and os.path.exists(x):
+                    pairs.append((n, os.path.basename(x), open(x, encoding='utf-8').read()))
+        pairs.sort()
+
+    for n, title, raw in pairs:
+        b = raw.split('【本章亮点】')[0]
+        hits = []
+
+        want = CANON_SHOULDER.get(n)
+        if want in ('左', '右'):
+            bad = '右肩' if want == '左' else '左肩'
+            for m in re.finditer(bad, b):
+                seg = b[max(0, m.start()-16):m.start()+16].replace('\n', '')
+                hits.append('[肩位链] 本章当为「%s肩」而现「%s」：…%s…' % (want, bad, seg))
+
+        if n in CANON_DAY:
+            day, left = CANON_DAY[n]
+            dmap = {16:'第十六天', 17:'第十七天', 18:'第十八天', 19:'第十九天', 20:'第二十天'}
+            lmap = {6:'六天', 5:'五天', 4:'四天', 3:'三天', 2:'两天'}
+            # 只查「日锚句」：今天是第N天／第N天早上／第N个…；回述他日（先前／那一回／是入山第N天）不算
+            _anchor = re.findall(r'(?:今天是|今天早上是|^|。|\n)\s*(第[一二三四五六七八九十]+天)(?:早上|，|。|$)', b)
+            if _anchor:
+                for v in set(_anchor):
+                    if v != dmap[day]:
+                        _c = b.find(v)
+                        _seg = b[max(0, _c-18):_c+14].replace('\n', '')
+                        if re.search(r'(先前|那一回|是入山|上一回|昨天|前天|中间隔)', _seg):
+                            continue
+                        hits.append('[日序链] 本章日锚当为%s而现「%s」：…%s…' % (dmap[day], v, _seg))
+            for k, v in lmap.items():
+                if k != left and ('往回' + v) in b:
+                    _c = b.find('往回' + v)
+                    _seg = b[max(0, _c-18):_c+14].replace('\n', '')
+                    if re.search(r'(先前|那一回|上一回|昨天|前天)', _seg):
+                        continue
+                    hits.append('[余量链] 本章当剩%s而现「往回%s」：…%s…' % (lmap[left], v, _seg))
+
+        for pat, why, exc, drop in CANON_FORBID:
+            if n in exc:
+                continue
+            for m in re.finditer(pat, b):
+                seg = b[max(0, m.start()-24):m.start()+24].replace('\n', '')
+                if drop and re.search(drop, seg):
+                    continue
+                hits.append('[禁回流] %s：…%s…' % (why, seg))
+
+        for pat, why in CANON_MUST.get(n, []):
+            if not re.search(pat, b):
+                hits.append('[缺锚] %s' % why)
+
+        if hits:
+            err += len(hits)
+            out.append('  ✗第%d章《%s》：' % (n, title))
+            for h in hits[:6]:
+                out.append('      ' + h)
+            if len(hits) > 6:
+                out.append('      …另有 %d 处' % (len(hits) - 6))
+    return err, out
+
+
 def cross_chapter_check(files):
     """跨章体检:① 全书反复出现的≥6字短语(认母题还是认重复);② 相邻两章交界处撞词。"""
     from collections import defaultdict
@@ -4003,6 +4122,13 @@ def super_main():
                 print('  ✗ 文件不属于当前正文集，无法做跨章封版: '+path); total_error+=1; continue
             print(); print(f'════ 超级智能体·第{ch}章封版门 ════')
             e=priority_one(files,ch,lib); abs_collide(files,ch,lib); underwrite_radar(files,ch); e+=mech_layer(files,ch,lib)
+            _cerr,_clines=canon_ledger_check([f for f in files if _chap_num(f)==ch])
+            if _clines:
+                print('  ── canon保护账 ──')
+                for it in _clines: print(it)
+                print('  ⛔ 保护账违例 %d 处'%_cerr); e+=_cerr
+            else:
+                print('  ✓ canon保护账 过')
             r=legacy_review_layer(files,ch)
             total_error+=e; total_review+=r
             print(f'  封版门:ERROR={e}(须0) REVIEW={r}(人工裁定)')
@@ -4015,6 +4141,13 @@ def super_main():
             print(f'  ✗ 第{ch}章不存在；当前正文范围为'+(f'1—{max(files)}章' if files else '空')); return 2
         print(f'════ 超级智能体·第{ch}章封版门 ════')
         e=priority_one(files,ch,lib); abs_collide(files,ch,lib); underwrite_radar(files,ch); e+=mech_layer(files,ch,lib)
+        _cerr,_clines=canon_ledger_check([f for f in files if _chap_num(f)==ch])
+        if _clines:
+            print('  ── canon保护账 ──')
+            for it in _clines: print(it)
+            print('  ⛔ 保护账违例 %d 处'%_cerr); e+=_cerr
+        else:
+            print('  ✓ canon保护账 过')
         r=legacy_review_layer(files,ch)
         print(f'  封版门:ERROR={e}(须0) REVIEW={r}(人工裁定)')
         _kailun_duibiao(ch)
@@ -4027,6 +4160,14 @@ def super_main():
             return 2
         e=wiring
         e+=priority_one(files,None,lib); abs_collide(files,None,lib); underwrite_radar(files,None); e+=mech_layer(files,None,lib)
+        _cerr,_clines=canon_ledger_check(files)
+        print('  ── canon保护账（肩位链／日序链／禁回流／必现锚）──')
+        if _clines:
+            for it in _clines: print(it)
+            print('  ⛔ 保护账违例 %d 处 —— 事实链之误，须逐条改，不得判合'%_cerr)
+        else:
+            print('  ✓ 肩位链／日序链／禁回流／必现锚 全过')
+        e+=_cerr
         r=legacy_review_layer(files,None)
         mx=max(files)
         print('─'*46)

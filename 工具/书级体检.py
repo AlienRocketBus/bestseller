@@ -178,19 +178,33 @@ def check_type_chain(chs):
 
 # ── ③ 账之净额 ────────────────────────────────────────
 def check_due_net(due, cur):
+    """③ 账之净额。
+    【★而此检有二样须避（192第1轮所订）】
+      ★一·审计所立之账不计入「立」——★★其由：净额所量者为「故事开的线是否多於收的线」；
+        而审计之账（CHAR-191A沈鸢／B苏衍／C老头）并未开新线，
+        ★★★它们是把「本来就欠着而看不见的」标出来而已。
+        ★★★★若把它们计入，一次审计就会把当章之净额顶上去——而那是记账的动静，不是故事的动静。
+      ★二·其窗须自 NET_DUE_FROM 起算，不倒扣立法以前之章——
+        ★★其由：律曰「自192章起须净减」，而非「近十章（含未立律之章）须净减」。
+    """
     made = collections.Counter()
     clr = collections.Counter()
     for x in due:
-        if isinstance(x.get('立账章'), int):
+        if x.get('来源') == '审计':
+            pass  # ★审计所立不计入「立」（见上）
+        elif isinstance(x.get('立账章'), int):
             made[x['立账章']] += 1
         if isinstance(x.get('清偿章'), int):
             clr[x['清偿章']] += 1
     lo = max(1, cur - 9)
     rows = [(c, made[c], clr[c], made[c] - clr[c]) for c in range(lo, cur + 1)]
+    # ★闸只看自 NET_DUE_FROM 起之章
+    gated = [r for r in rows if r[0] >= NET_DUE_FROM]
+    net_g = sum(r[3] for r in gated)
     net = sum(r[3] for r in rows)
     bad = []
-    if cur >= NET_DUE_FROM and net > 0:
-        bad.append('近十章账之净额 %+d（自第%d章起须 ≤0）' % (net, NET_DUE_FROM))
+    if gated and net_g > 0:
+        bad.append('自第%d章起账之净额 %+d（须 ≤0）' % (NET_DUE_FROM, net_g))
     return rows, net, bad
 
 
@@ -341,7 +355,8 @@ def main():
         print()
         print('③ 账之净额（自第%d章起须 ≤0）' % NET_DUE_FROM)
         print('   ' + ' '.join('%d:%+d' % (c, n) for c, m, k, n in rows_d))
-        print('   ★近十章净 %+d %s' % (net_d, '⛔' if bad_d else '✓'))
+        print('   ★近十章净 %+d（★★而闸只看自第%d章起者）%s'
+              % (net_d, NET_DUE_FROM, '⛔' if bad_d else '✓'))
         print()
         if pace:
             (c0, d0), (c1, d1), dc, dd, r = pace

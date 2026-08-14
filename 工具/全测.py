@@ -70,6 +70,18 @@ def chk_book():
     return m.group(1) == '0', 'ERROR=%s' % m.group(1)
 
 
+def chk_bookwide():
+    """书级体检（191章末立）：补十轮系统之唯一盲区——章级之闸看不见跨章之漂。
+    六检：人物在场衰减／章型连锁／账之净额／日数速率／距终点与账之余额／轮记开销比。"""
+    out = run('书级体检', ['工具/书级体检.py', '--静'])
+    if out is None:
+        return False, '运行失败'
+    if '书级体检通过' in out:
+        return True, '六检皆过'
+    bad = [ln.strip().lstrip('⛔ ') for ln in out.splitlines() if '⛔' in ln]
+    return False, '；'.join(bad[:3]) if bad else '未通过'
+
+
 def chk_dup_defs():
     """重名定义扫描。
     病灶实证：批113所加之 s_withlog／s_nolog／s_reopen 落在批114替换区之外而与新写者重名，
@@ -485,6 +497,7 @@ def main():
              ('十轮精进负测', chk_shilun)]
     if not quick:
         items.append(('全书检', chk_book))
+        items.append(('书级体检', chk_bookwide))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
     for name, fn in items:

@@ -242,6 +242,63 @@ def check_overhead(chs):
     return a, b, a / b
 
 
+# ── ⑦ 得与失（191章末立·★而其只报不闸）────────────────
+# 【立此检之由】191章末读数所见：坏事之词与得手之词已然倒挂——
+#   168—181：坏事词 8—26／得手词 2—14（险>得）
+#   187—191：坏事词 1—11／得手词 18—27（得>>险）；第191章为 1 : 21
+# 而近九章之章魂无一例外皆为「认识论」之句，近九章之章名无一例外皆为「摸着了什么」。
+# **即：自183章起已九章未出过一件坏事。**
+# 而系统之所以看不见，是因为五钩之「危机升档」凭「往后会有事」即可拿满分——
+# 九章之内那些险一件也没兑，而分章章是二。
+#
+# 【★而此检之尺特意分二层，其由要紧】
+#   甲层「本章之失」——源为回执之一行，由执笔逐章判定并写下（可写「无」）。
+#        ★这一层量的是判断。
+#   乙层「坏事之词／得手之词」——词频，只作参考。
+#        ★★这一层量的是词，不是失：一章里东头静静地没了，坏事之词可能只两三个。
+# 【★★★故此检报而不闸】——一个会误报的闸，只会往一个已 6.1 倍开销的系统里再加噪音。
+BAD_W = ['血', '伤', '摔', '塌', '裂', '断了', '没了', '丢', '疼', '烧',
+         '冷得', '喊', '叫', '抓住', '拽', '掉下去', '来不及', '出事', '死']
+GOOD_W = ['摸着了', '对上了', '能喝', '够着', '记下来', '写了一行', '立一条']
+
+
+def check_loss(chs):
+    """⑦ 得与失。甲层取回执之「本章之失」，乙层取词频。报而不闸。"""
+    cur = max(chs) if chs else 0
+    rows = []
+    import glob as _g
+    for c in range(max(1, cur - 11), cur + 1):
+        rec = '未记'
+        for f in _g.glob(os.path.join(ROOT, '设定', '回执_*第%d章*' % c)):
+            with open(f, encoding='utf-8', errors='replace') as fh:
+                m = re.search(r'\*\*本章之失\*\*[：:]\s*(.+)', fh.read())
+            if m:
+                rec = m.group(1).strip().strip('*').strip()
+            break
+        b = chs.get(c, '')
+        bad = sum(b.count(w) for w in BAD_W)
+        good = sum(b.count(w) for w in GOOD_W)
+        rows.append((c, rec, bad, good))
+    # 连续「无」之数（只数已记者；未记者不计入亦不中断）
+    run = 0
+    for c, rec, bad, good in reversed(rows):
+        if rec.startswith('无'):
+            run += 1
+        elif rec == '未记':
+            continue
+        else:
+            break
+    # ★窗口内最长连无（★★其由：只看「当前连续」会漏掉刚被一失打断的那一长串）
+    best = cur_run = 0
+    for c, rec, bad, good in rows:
+        if rec.startswith('无'):
+            cur_run += 1
+            best = max(best, cur_run)
+        elif rec != '未记':
+            cur_run = 0
+    return rows, run, best
+
+
 def main():
     quiet = '--静' in sys.argv
     save = '--存基线' in sys.argv
@@ -263,6 +320,7 @@ def main():
     op, left, bad_e = check_endgame(due, cur)
     allbad += bad_e
     ovh = check_overhead(chs)
+    rows_l, loss_run, loss_best = check_loss(chs)
 
     if not quiet:
         total = sum(net_len(v) for v in chs.values())
@@ -302,6 +360,15 @@ def main():
             print('   轮记 %.0f 字/章｜正文 %.0f 字/章｜★比 %.1f 倍'
                   % (ovh[0], ovh[1], ovh[2]))
         print()
+        print('⑦ 得与失（报而不闸·★甲层量判断，乙层量词频）')
+        print('   章   本章之失                      ｜坏事词 得手词')
+        for c, rec, bad, good in rows_l:
+            print('   %d  %-28s｜ %3d   %3d' % (c, rec[:28], bad, good))
+        print('   ★当前连无 %d 章｜★★窗口内最长连无 %d 章%s'
+              % (loss_run, loss_best,
+                 '　⚠须留意：五钩之危机升档凭「往后会有事」即可满分'
+                 if max(loss_run, loss_best) >= 7 else ''))
+        print()
         print('════════════════════════════════')
 
     if allbad:
@@ -325,6 +392,7 @@ def main():
             '账': {'未清': len(op), '近十章净': net_d, '距终点': left},
             '日数速率': round(pace[4], 3) if pace else None,
             '轮记开销比': round(ovh[2], 2) if ovh else None,
+            '连续无失': loss_run,
         }
         with open(BOOK_JSON, 'w', encoding='utf-8') as f:
             json.dump(base, f, ensure_ascii=False, indent=1)

@@ -39,17 +39,67 @@ def lunji(c):
     return open(p, encoding='utf-8').read() if os.path.exists(p) else ''
 
 # ───────── 闸① 一章一事 ─────────
+def is_dark(c):
+    """★暗线章之判（2026-08-16立）：「我」之密度<3/千字者，即为第三人称之暗线章。
+    ★★其据为圣经原文「暗线章用第三人称」；★★★而主线近十章之密度为22—31/千字。"""
+    b = body(c); w = net(b)
+    return (b.count('我') / w * 1000) < 3 if w else False
+
+
 def gate1(c):
-    """★防「一章塞多事」。其测有三：①轮记须有「本章之一事」一行；②净重须≥5500；③一章之日词须唯一。"""
+    """★防「一章塞多事」。其测三：①轮记有「本章之一事」；②净重≥5500；③一章之日词唯一。
+    ★★而2026-08-16订其c项：先前只认「第N天头一件事」——★★★而暗线章在洞外，其日词非此形，
+    ★★★★故会误伤；★★★★★遂改为「主线之章测日词，暗线之章测其场景不逾一处」。"""
     b = body(c); lj = lunji(c); out = []
+    dark = is_dark(c)
     has = ('本章之一事' in lj)
     out.append(('①之a·轮记有「本章之一事」', has, '✓' if has else '⛔须於轮记之首写明'))
     w = net(b)
-    out.append(('①之b·净重≥5500', w >= 5500, '%d 字' % w))
-    # ★一章一日：章首之日词须唯一（第N天）
-    days = set(re.findall(r'第([一二三四五六七八九十百]+)天头一件事', b))
-    ok = (len(days) == 1)
-    out.append(('①之c·一章一日（章首日词唯一）', ok, '%d 处' % len(days)))
+    out.append(('①之b·净重≥5500', w >= 5500, '%d 字%s' % (w, '（暗线章）' if dark else '')))
+    if dark:
+        cut = len(re.findall(r'那一边|另一头|与此同时|同一时候', b))
+        out.append(('①之c·暗线章：场景不逾一处', cut <= 1, '切换词 %d 处' % cut))
+    else:
+        days = set(re.findall(r'第([一二三四五六七八九十百]+)天头一件事', b))
+        out.append(('①之c·一章一日（章首日词唯一）', len(days) == 1, '%d 处' % len(days)))
+    return out
+
+
+# ───────── 闸⑤ 暗线配额 ─────────
+# ★★★★★2026-08-16立·其据为圣经原文：「副线（好几条线同时走）：沿用十三的暗线章铁律，
+# ★逐卷插2—4篇霍钧/黎东来/赵阙视角，卷七转为人物主战场。」
+# ★★而实测：全书200章，第三人称暗线章零篇——★★★三卷欠账6—12篇。
+# ★★★★而其配额：今日一章只装一日，卷长远逾蓝图，故折合每10章至少1篇。
+DARK_EVERY = 10
+GATE5_FROM = 200  # ★闸⑤立於2026-08-16·第200章；其前之欠账（约20篇）记而不拦
+# ★可切镜者（圣经之令·2026-08-16逐条取毕）
+DARK_WHO = {
+    '沈鸢':   '★无禁令｜CHAR-191A限210',
+    '黎东来': '★★卷四起每卷至少1篇其流程视角（明令）｜恐怖不在凶相，在流程',
+    '霍钧':   '★★★须分层揭露，不得一篇交尽｜卷六末前只以「人间的手」存在',
+    '老头':   '★★★★未禁｜然其瞒苏衍二十年，一开即收不回，宜留至出洞后且只开一次',
+    '钱满':   '未禁',
+    '刘二':   '未禁',
+    '赵阙':   '⚠受限：只在已连接者之意识、梦与节点异象中现，不得有全知视角',
+}
+
+def gate5(chs):
+    """★防「只走一条线」。其测二：①近N章之内至少一篇暗线章；②全书之欠账。"""
+    mx = max(chs)
+    win = [c for c in range(max(GATE5_FROM + 1, mx - DARK_EVERY + 1), mx + 1) if c in F]
+    dk = [c for c in win if is_dark(c)]
+    ok = (len(dk) >= 1) or (len(win) < DARK_EVERY)
+    out = [('⑤·近%d章之暗线章' % DARK_EVERY, ok,
+            '%d 篇／窗内%d章%s' % (len(dk), len(win), '' if ok else '⛔零篇：须插一篇第三人称暗线'))]
+    # ★★★★★而欠账只自立闸之日起算（2026-08-16·第200章）
+    # ★其由：前200章已封版，不可能回补；★★而一个永远修不好的红灯等于没有闸——
+    # ★★★因为往后每回全测都被它拦，而人就会习惯绕行。
+    # ★★★★而此正是本书自己的法：192—199八章之闸①皆记「补执」，其由为闸立於其后。
+    allc = [c for c in sorted(F) if c > GATE5_FROM]
+    tot = sum(1 for c in allc if is_dark(c))
+    need = len(allc) // DARK_EVERY
+    out.append(('⑤之b·自第%d章起之暗线章' % (GATE5_FROM + 1), tot >= need,
+                '%d 篇／应有 %d 篇（前%d章为立闸前，记欠账不拦停）' % (tot, need, GATE5_FROM)))
     return out
 
 # ───────── 闸② 脉象不相犯 ─────────
@@ -134,7 +184,7 @@ def gate4(c):
 
 def run(chs):
     print('=' * 62)
-    print('  质量四闸 · 见 设定/02_全书之约_逐站事数表.md')
+    print('  质量五闸 · 见 设定/02_全书之约_逐站事数表.md')
     print('=' * 62)
     bad = 0
     for c in chs:
@@ -144,8 +194,8 @@ def run(chs):
         for name, ok, msg in gate1(c) + gate3(c) + gate4(c):
             print('   %s %-28s %s' % ('✓' if ok else '⛔', name, msg))
             if not ok: bad += 1
-    print('\n【全书·闸②】')
-    for name, ok, msg in gate2():
+    print('\n【全书·闸②⑤】')
+    for name, ok, msg in gate2() + gate5(chs):
         print('   %s %-28s %s' % ('✓' if ok else '⛔', name, msg))
         if not ok: bad += 1
     # ★段之回测（每站写满十章后）
@@ -164,7 +214,7 @@ def run(chs):
             bad += 1
             print('   ★★★★★而任一掉了 → 当场压章，且记其因於轮记')
     print('\n' + '=' * 62)
-    print('  %s' % ('✓ 三闸皆过。' if bad == 0 else '⛔ 四闸报 %d 处，须修。' % bad))
+    print('  %s' % ('✓ 三闸皆过。' if bad == 0 else '⛔ 五闸报 %d 处，须修。' % bad))
     print('=' * 62)
     return 0 if bad == 0 else 2
 

@@ -108,6 +108,26 @@ def chk_open_six():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+def chk_round_zero():
+    """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
+    ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
+    ★★★★而其立之由：十轮治这一章，十一轮查十轮跑透没有；
+    ★★★★★而无一轮问「这一章该不该是这一章、该不该先插一章」——而沈鸢漂八十五章正从此缝漏掉。"""
+    import glob as _g, os as _o, re as _r
+    cs = []
+    for _p in _g.glob(_o.path.join(_o.path.dirname(_o.path.dirname(_o.path.abspath(__file__))), '正文', '*.md')):
+        _m = _r.search(r'第([零〇一二三四五六七八九十百]+)章', _o.path.basename(_p))
+        if _m:
+            cs.append(_p)
+    out = run('第零轮', ['工具/第零轮开镜庭.py', '--静'])
+    if out is None:
+        return False, '运行失败'
+    if '第零轮通过' in out:
+        return True, '开镜庭过'
+    bad = [ln.strip() for ln in out.splitlines() if ln.strip()]
+    return False, '；'.join(bad[:2]) if bad else '未通过'
+
+
 def chk_dup_defs():
     """重名定义扫描。
     病灶实证：批113所加之 s_withlog／s_nolog／s_reopen 落在批114替换区之外而与新写者重名，
@@ -526,6 +546,7 @@ def main():
         items.append(('书级体检', chk_bookwide))
         items.append(('质量三闸', chk_quality_gates))
         items.append(('开轮六检', chk_open_six))
+        items.append(('第零轮', chk_round_zero))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
     for name, fn in items:

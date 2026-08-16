@@ -734,12 +734,14 @@ def nextround(n):
     # ★★★★而其报而不拦——★★★★★拦停之权仍在存版闸与全测，此处只报，免其挡道。
     if src2 is not None:
         import subprocess as _sp
-        for _nm, _f in (('质量五闸', '工具/质量三闸.py'), ('开轮六检', '工具/开轮六检.py')):
+        for _nm, _f in (('质量五闸', '工具/质量三闸.py'), ('开轮六检', '工具/开轮六检.py'),
+                        ('第零轮·下一章之开镜', '工具/第零轮开镜庭.py')):
             _fp = os.path.join(REPO_ROOT, _f) if 'REPO_ROOT' in dir() else _f
             if not os.path.exists(_fp):
                 continue
             try:
-                _r = _sp.run(['python3', _fp, str(n)], capture_output=True, text=True, timeout=120)
+                _arg = str(n + 1) if '第零轮' in _nm else str(n)
+                _r = _sp.run(['python3', _fp, _arg], capture_output=True, text=True, timeout=120)
                 _bad = [x.strip() for x in _r.stdout.splitlines() if '⛔' in x]
                 if _bad:
                     print('   ⚠%s 报 %d 处（报而不拦，须治）：' % (_nm, len(_bad)))

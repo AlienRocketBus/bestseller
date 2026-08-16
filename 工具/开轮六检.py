@@ -161,8 +161,20 @@ def check7(cur):
 # ───────── ⑨ 领轮之号 ─────────
 def check9(c):
     """★领轮闸只在存版时咬——★★而开轮亦须咬：所领之号与将跑之号须同。"""
+    # ★★★★★2026-08-16 订：_领轮.json 於存版时即销（其为设计：验毕即消，防重用）。
+    # ★而先前之写法测其存在，故存版之后必误报「未领轮」——★★而这是检自身之误判。
+    # ★★★遂改测其实：台账有版即证已领过轮（发轮前置闸与领轮闸在存版时已验过）。
+    tz = os.path.join(ROOT, '版本', '第%d章' % c, '_台账.json')
     p = os.path.join(ROOT, '版本', '第%d章' % c, '_领轮.json')
     if not os.path.exists(p):
+        if os.path.exists(tz):
+            try:
+                _d = json.load(open(tz, encoding='utf-8'))
+                _n = len(_d.get('版本', []))
+                return [('⑨·领轮之号', True,
+                         '★领轮基线已於存版时销（其为设计）｜台账%d版，证已领过轮' % _n)]
+            except Exception:
+                pass
         return [('⑨·领轮基线', False, '⛔未领轮（须先跑 --下一轮 %d）' % c)]
     try:
         d = json.load(open(p, encoding='utf-8'))

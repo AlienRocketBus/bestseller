@@ -128,6 +128,19 @@ def chk_round_zero():
     return False, '；'.join(bad[:2]) if bad else '未通过'
 
 
+def chk_unfinished():
+    """核轮（2026-08-16立·见 工具/核轮.py）：查有无「跑到一半就去写下一章」之章。
+    ★而其立之由：漏跑之实已见二回——200跑到第5轮停（章界闸偶然逮住）、
+    ★★201跑到第1轮停（★★★而其时章数未变，无一闸响）。"""
+    out = run('核轮', ['工具/核轮.py', '--全', '--静'])
+    if out is None:
+        return False, '运行失败'
+    if '核轮通过' in out:
+        return True, '无未竟之章'
+    bad = [ln.strip() for ln in out.splitlines() if ln.strip()]
+    return False, '；'.join(bad[:2]) if bad else '未通过'
+
+
 def chk_dup_defs():
     """重名定义扫描。
     病灶实证：批113所加之 s_withlog／s_nolog／s_reopen 落在批114替换区之外而与新写者重名，
@@ -547,6 +560,7 @@ def main():
         items.append(('质量三闸', chk_quality_gates))
         items.append(('开轮七检', chk_open_six))
         items.append(('第零轮', chk_round_zero))
+        items.append(('核轮', chk_unfinished))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
     for name, fn in items:

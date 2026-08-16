@@ -133,8 +133,20 @@ def check_presence(chs, due):
         note = ''
         if not ok:
             if who in watched:
-                note = '已挂账·限%s章' % watched[who]
-                ok = True
+                # ★★★★★2026-08-16 订：其先前只要挂了账便判过（ok=True）——
+                # ★而沈鸢挂账（CHAR-191A·限210），遂缺席八十五章、三十七万八千字，此闸回回开绿灯。
+                # ★★而其立法之意本为「缺席不是罪，缺席而无账才是罪」；
+                # ★★★然它把「有账」当成了「无罪」，没问「这账要等到第几章」。
+                # ★★★★故加一层：挂账只免其「无账之罪」，不免其「太久之罪」。
+                # ★★★★★而其界为限之二倍——逾之则虽有账亦须补一处回切或插一篇暗线章。
+                due_ch = watched[who]
+                if gap <= lim * 2:
+                    note = '已挂账·限%s章' % due_ch
+                    ok = True
+                else:
+                    note = '⛔已挂账（限%s）而缺席逾%d章：须补回切或插暗线章' % (due_ch, lim * 2)
+                    bad.append('%s缺席%d章（挂账限%s，然逾二倍之界%d）——★须补一处回切或插一篇暗线章'
+                               % (who, gap, due_ch, lim * 2))
             else:
                 note = '⛔逾限而无账'
                 bad.append('%s缺席%d章（限%d）且未挂账' % (who, gap, lim))

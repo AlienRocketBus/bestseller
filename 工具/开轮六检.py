@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-开轮六检（2026-08-16 立）
+开轮七检（2026-08-16 立）
 
 ★而其立之由：2026-08-15至08-16 逐条逮出十bug，其四已治（书级体检①／闸⑤／第六律／人工），
 ★★而六条无一处闸测之——此即本检之的。
@@ -12,10 +12,11 @@
   ⑦ 锚之长        —— 逾医生正则上限160字即报「锚未备」，而其长无处可查
   ⑨ 领轮之号       —— 领轮闸只在存版时咬，开轮不咬
   ⑩ 招五之第二形    —— 前章之物本章正在其中，而未点其名
+  ⑪ 新人之卡       —— 正文里长出来之人，两册皆无其档（刘二首见105章而其时圣经无他）
 
 用法：
-    python3 工具/开轮六检.py 201        # 单章之查（开轮即跑）
-    python3 工具/开轮六检.py --静       # 只报成败（供全测调用）
+    python3 工具/开轮七检.py 201        # 单章之查（开轮即跑）
+    python3 工具/开轮七检.py --静       # 只报成败（供全测调用）
 """
 import sys, re, os, glob, json
 
@@ -201,6 +202,37 @@ def check10(c):
              '★前章之一事「%s」｜本章点中 %s' % (key[:16], '、'.join(hit) if hit else '⛔零处：须查本章是否正在其中而未点其名'))]
 
 
+# ───────── ⑪ 新人之卡（2026-08-16 立）─────────
+# ★★★★★其由：作者令「后续角色不止一个……就像刘二，之前完全不在圣经里面，可他现在也都出现了」。
+# ★而核之为实：刘二首见第105章而其时圣经无他；★★钱满正文1216处而圣经594处（正文多一倍）。
+# ★★★即：圣经不是「先有然后写」，是「写出来然后补」；
+# ★★★★而若无一处收着，新人就会散在正文里，写到后头没人记得他是谁、他为什么在。
+# ★★★★★故立此检：凡正文出现三章以上而两册（圣经／人物新册）皆无其档者，即报。
+KNOWN = ('老头', '钱满', '刘二', '东头', '沈鸢', '苏衍', '黎东来', '霍钧', '赵阙',
+         '苏玄微', '陈砚', '寨老', '管粮的')
+
+def check11(cur):
+    """★新人之卡：凡三章以上出现之人名，须在圣经或人物新册有档。"""
+    import collections
+    sj = ''
+    for fn in ('00_镇冢秘术_唯一总圣经.md', '03_人物新册.md'):
+        fp = os.path.join(ROOT, '设定', fn)
+        if os.path.exists(fp):
+            sj += open(fp, encoding='utf-8', errors='replace').read()
+    # ★取正文中之三字人名候选（以「叫X」「X说」「X把」等式取之，从简：只查已知之外者）
+    cnt = collections.Counter()
+    for c in sorted(F):
+        b = body(c)
+        for m in re.finditer(r'([一-龥]{2,3})(?:说|问|答|摇头|点头)[：:「"]', b):
+            w = m.group(1)
+            if w not in KNOWN and not re.search(r'[的了着过他她我们那这个一二三四五六七八九十]', w):
+                cnt[w] += 1
+    new = [w for w, n in cnt.items() if n >= 3 and w not in sj]
+    return [('⑪·新人之卡（三章以上须有档）', not new,
+             '零' if not new else '⛔%d人无档：%s（★须立卡入 设定/03_人物新册.md）'
+             % (len(new), '、'.join(new[:4])))]
+
+
 def run(chs, quiet=False):
     bad = 0
     rows = []
@@ -214,21 +246,21 @@ def run(chs, quiet=False):
             rows.append((name, ok, msg))
             if not ok:
                 bad += 1
-    for name, ok, msg in check5() + check6(cur) + check7(cur):
+    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur):
         rows.append((name, ok, msg))
         if not ok:
             bad += 1
     if not quiet:
         print('=' * 64)
-        print('  开轮六检 · 2026-08-16 立 · 治近日所逮之六条未治之bug')
+        print('  开轮七检 · 2026-08-16 立 · 治近日所逮之六条未治之bug')
         print('=' * 64)
         for name, ok, msg in rows:
             print('  %s %-38s %s' % ('✓' if ok else '⛔', name, msg))
         print('=' * 64)
-        print('  %s' % ('✓ 六检皆过。' if bad == 0 else '⛔ 六检报 %d 处，须修。' % bad))
+        print('  %s' % ('✓ 七检皆过。' if bad == 0 else '⛔ 七检报 %d 处，须修。' % bad))
         print('=' * 64)
     else:
-        print('开轮六检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
+        print('开轮七检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
     return 0 if bad == 0 else 2
 
 

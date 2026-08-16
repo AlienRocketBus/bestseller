@@ -727,6 +727,29 @@ def nextround(n):
     print('   ✓领轮基线已落盘（%s）。存版时回验。'
           % ('新章起手，尚无正文' if src2 is None else '起轮时正文 ' + base['正文sha']))
 
+    # ★★★★★2026-08-16 立·领轮即自动跑二检（其为「主动调动核查」之实）
+    # ★其由：近日所逮之十bug里，六条无一处闸测之；★★而它们皆在开轮时最易治。
+    # ★★★而二检为：质量五闸（一章一事／脉象／谜底之距／主线之距／暗线配额）
+    #                ＋开轮六检（人名计数／撞号merged／冷轮／锚之长／领轮之号／招五第二形）。
+    # ★★★★而其报而不拦——★★★★★拦停之权仍在存版闸与全测，此处只报，免其挡道。
+    if src2 is not None:
+        import subprocess as _sp
+        for _nm, _f in (('质量五闸', '工具/质量三闸.py'), ('开轮六检', '工具/开轮六检.py')):
+            _fp = os.path.join(REPO_ROOT, _f) if 'REPO_ROOT' in dir() else _f
+            if not os.path.exists(_fp):
+                continue
+            try:
+                _r = _sp.run(['python3', _fp, str(n)], capture_output=True, text=True, timeout=120)
+                _bad = [x.strip() for x in _r.stdout.splitlines() if '⛔' in x]
+                if _bad:
+                    print('   ⚠%s 报 %d 处（报而不拦，须治）：' % (_nm, len(_bad)))
+                    for _x in _bad[:4]:
+                        print('      %s' % _x[:96])
+                else:
+                    print('   ✓%s 皆过' % _nm)
+            except Exception as _e:
+                print('   ⚠%s 未能跑：%s' % (_nm, _e))
+
     lp = _lunji_path(n)
     if os.path.exists(lp):
         t = open(lp, encoding='utf-8').read()

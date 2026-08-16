@@ -95,6 +95,19 @@ def chk_quality_gates():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+def chk_open_six():
+    """开轮六检（2026-08-16立·见 工具/开轮六检.py）：治近日所逮之六条未治之bug——
+    ★③人名计数之误／★★⑤撞号与merged／★★★⑥冷轮逾期／
+    ★★★★⑦锚之长／★⑨领轮之号／★★⑩招五之第二形。"""
+    out = run('开轮六检', ['工具/开轮六检.py', '--静'])
+    if out is None:
+        return False, '运行失败'
+    if '开轮六检通过' in out:
+        return True, '六检皆过'
+    bad = [ln.strip() for ln in out.splitlines() if ln.strip()]
+    return False, '；'.join(bad[:3]) if bad else '未通过'
+
+
 def chk_dup_defs():
     """重名定义扫描。
     病灶实证：批113所加之 s_withlog／s_nolog／s_reopen 落在批114替换区之外而与新写者重名，
@@ -512,6 +525,7 @@ def main():
         items.append(('全书检', chk_book))
         items.append(('书级体检', chk_bookwide))
         items.append(('质量三闸', chk_quality_gates))
+        items.append(('开轮六检', chk_open_six))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
     for name, fn in items:

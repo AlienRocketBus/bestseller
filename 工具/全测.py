@@ -82,6 +82,19 @@ def chk_bookwide():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+def chk_quality_gates():
+    """质量三闸（2026-08-15立·见 设定/02_全书之约_逐站事数表.md）：
+    ★闸①一章一事（防一章塞多事）／★★闸②脉象不相犯（防站与站重复）／★★★闸③谜底之距（防吊太久）。
+    ★★★★而其立之由：全书重排为约450章之后，章级十轮之闸仍看不见「质量之三敌」。"""
+    out = run('质量三闸', ['工具/质量三闸.py'])
+    if out is None:
+        return False, '运行失败'
+    if '三闸皆过' in out:
+        return True, '三闸皆过'
+    bad = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+    return False, '；'.join(bad[:3]) if bad else '未通过'
+
+
 def chk_dup_defs():
     """重名定义扫描。
     病灶实证：批113所加之 s_withlog／s_nolog／s_reopen 落在批114替换区之外而与新写者重名，
@@ -498,6 +511,7 @@ def main():
     if not quick:
         items.append(('全书检', chk_book))
         items.append(('书级体检', chk_bookwide))
+        items.append(('质量三闸', chk_quality_gates))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
     for name, fn in items:

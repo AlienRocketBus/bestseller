@@ -3371,6 +3371,11 @@ def mech_layer(files,focus,lib):
         for m in re.finditer(r'[A-Za-z]+',t): pr.append(f'英文"{m.group()}"行{_ln(t,m.start())}')
         for s in re.split(r'(?<=[。！？…])',t):
             if s.count('，')>=5 and not any(x in s for x in M5X): pr.append('5+逗:'+s.strip()[:24]+'…')
+        # ★★★★★第十九条机械铁律（第193章第10轮所立）：一句之内二冒号
+        # ★其由：本书之破折已全改为冒号（——→：），而原本已有冒号之句，改完即成二冒号
+        # ★★而一句两冒号，读来无从分其主从——前一个说的是「下头要摆什么」，后一个又说一遍，其势即塌
+        for s in re.split(r'(?<=[。！？…])',t):
+            if s.count('：')>=2: pr.append('二冒号:'+s.strip()[:24]+'…')
         for m in re.finditer('爷',t):
             a=t[max(0,m.start()-2):m.end()+2]
             if not any(w in a for w in ['爷爷','老爷子','阎王爷','爷俩','爷孙','爷们','大爷','太爷','天爷']): pr.append(f'单字爷 行{_ln(t,m.start())}')

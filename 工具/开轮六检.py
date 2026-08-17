@@ -13,6 +13,7 @@
   ⑨ 领轮之号       —— 领轮闸只在存版时咬，开轮不咬
   ⑩ 招五之第二形    —— 前章之物本章正在其中，而未点其名
   ⑪ 新人之卡       —— 正文里长出来之人，两册皆无其档（刘二首见105章而其时圣经无他）
+  ⑫ 治过之句式      —— 一句式在某章被治过，其后诸章又长回来（202治过，204复犯）
 
 用法：
     python3 工具/开轮七检.py 201        # 单章之查（开轮即跑）
@@ -243,6 +244,33 @@ def check11(cur):
              % (len(new), '、'.join(new[:4])))]
 
 
+# ───────── ⑫ 治过之句式（2026-08-17 立）─────────
+# ★★★★★其由：202第8轮治过「我把这一层摆完，心里那一下不是X」七现；
+# ★而204开轮之两两比又逮出同一式之变体七现——即第二次照办之复犯。
+# ★★而其由：那一式之所以在那一章重，是因为它顺手；★★★而顺手这件事，
+# 不会因为治过一次就不顺手了。
+# ★★★★故立此检：凡治过之句式，入册逐章照扫，三现即报。
+TREATED = (
+    '我把这一层摆完',      # 202第8轮、204第8轮
+    '心里那一下',          # 同上（套式）
+    '摆完心里那一下',
+    '我把这一层摆了',
+    '我把这一样摆完',
+)
+
+
+def check12(cur):
+    """★治过之句式：逐章照扫已治之式，三现即报。"""
+    bad = []
+    b = body(cur)
+    for k in TREATED:
+        n = b.count(k)
+        if n >= 3:
+            bad.append('%s %d现' % (k, n))
+    return [('⑫·治过之句式（三现即报）', not bad,
+             '零' if not bad else '⛔%s（★而其为治过之式之复犯，须换名目）' % '、'.join(bad))]
+
+
 def run(chs, quiet=False):
     bad = 0
     rows = []
@@ -256,7 +284,7 @@ def run(chs, quiet=False):
             rows.append((name, ok, msg))
             if not ok:
                 bad += 1
-    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur):
+    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check12(cur):
         rows.append((name, ok, msg))
         if not ok:
             bad += 1
@@ -267,10 +295,10 @@ def run(chs, quiet=False):
         for name, ok, msg in rows:
             print('  %s %-38s %s' % ('✓' if ok else '⛔', name, msg))
         print('=' * 64)
-        print('  %s' % ('✓ 七检皆过。' if bad == 0 else '⛔ 七检报 %d 处，须修。' % bad))
+        print('  %s' % ('✓ 八检皆过。' if bad == 0 else '⛔ 八检报 %d 处，须修。' % bad))
         print('=' * 64)
     else:
-        print('开轮七检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
+        print('开轮八检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
     return 0 if bad == 0 else 2
 
 

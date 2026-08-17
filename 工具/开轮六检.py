@@ -12,6 +12,7 @@
   ⑦ 锚之长        —— 逾医生正则上限160字即报「锚未备」，而其长无处可查
   ⑨ 领轮之号       —— 领轮闸只在存版时咬，开轮不咬
   ⑩ 招五之第二形    —— 前章之物本章正在其中，而未点其名
+  ⑭ 已封版之章      —— 凡领轮之章已封版者当场拦（再跑会覆盖其回执与轮记）
   ⑪ 新人之卡       —— 正文里长出来之人，两册皆无其档（刘二首见105章而其时圣经无他）
   ⑬ 亮点段        —— 正文有无【本章亮点】（★而此病已犯九次，故焊之）
   ⑫ 治过之句式      —— 一句式在某章被治过，其后诸章又长回来（202治过，204复犯）
@@ -295,10 +296,42 @@ def check13(cur):
              '⛔全缺（★而此病已犯九次；★★凡起草毕即须落亮点段，不得留到后轮）')]
 
 
+# ───────── ⑫ 已封版之章（2026-08-17 立）─────────
+# ★★★★★其由：2026-08-17 我拿第202章去跑十轮，而202早已封版（203—207亦然）。
+# ★而机器报「真轮10/10」时，我把它当成「本轮该跑第十一轮」——
+# ★★可它其实是在说：这一章早跑完了。
+# ★★★而我竟又交了一份202回执，覆盖了原有的那一份（已 git checkout 复原）。
+# ★★★★而其形正与⑨之「未竟之章」相反：一为该跑而没跑完，一为跑完了还去跑；
+# ★★★★★而后者更险——因为它会覆盖已封版的回执与轮记。
+def check14(cur):
+    """★已封版之章：凡领轮之章已封版者，当场报。
+    ★★而其判之据有三：十一轮之凭据、回执、且其后已有新章。"""
+    if not cur:
+        return [('⑭·已封版之章', True, '★未指章')]
+    d = os.path.join(ROOT, '版本', '第%d章' % cur)
+    e11 = os.path.exists(os.path.join(d, '_十一轮.json'))
+    try:
+        hz = [f for f in os.listdir(os.path.join(ROOT, '设定'))
+              if '第%d章' % cur in f and '回执' in f]
+    except Exception:
+        hz = []
+    mx = max(F) if F else 0
+    if e11 and hz and cur < mx:
+        return [('⑭·已封版之章', False,
+                 '⛔第%d章已封版（十一轮✓／回执✓／其后已有第%d章）'
+                 '：★而封版之章不得再跑十轮——★★再跑会覆盖其回执与轮记。'
+                 '★★★而今之末章为第%d章。' % (cur, mx, mx))]
+    return [('⑭·已封版之章', True,
+             '★第%d章未封版（十一轮%s／回执%s），可跑'
+             % (cur, '✓' if e11 else '✗', '✓' if hz else '✗'))]
+
+
 def run(chs, quiet=False):
     bad = 0
     rows = []
-    cur = max(F) if F else 0
+    # ★2026-08-17 订：cur 先前恒取末章，故命令行所指之章不入⑨⑩⑫三检。
+    # ★★而⑫（已封版之章）正须认所指之章——★★★不认，则其永不报。
+    cur = (chs[0] if chs else (max(F) if F else 0))
     for c in chs:
         if c not in F:
             rows.append(('第%d章' % c, False, '⛔未见'))
@@ -308,7 +341,7 @@ def run(chs, quiet=False):
             rows.append((name, ok, msg))
             if not ok:
                 bad += 1
-    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur):
+    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur) + check14(cur):
         rows.append((name, ok, msg))
         if not ok:
             bad += 1
@@ -322,7 +355,7 @@ def run(chs, quiet=False):
         print('  %s' % ('✓ 九检皆过。' if bad == 0 else '⛔ 九检报 %d 处，须修。' % bad))
         print('=' * 64)
     else:
-        print('开轮八检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
+        print('开轮九检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
     return 0 if bad == 0 else 2
 
 

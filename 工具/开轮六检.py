@@ -13,6 +13,7 @@
   ⑨ 领轮之号       —— 领轮闸只在存版时咬，开轮不咬
   ⑩ 招五之第二形    —— 前章之物本章正在其中，而未点其名
   ⑪ 新人之卡       —— 正文里长出来之人，两册皆无其档（刘二首见105章而其时圣经无他）
+  ⑬ 亮点段        —— 正文有无【本章亮点】（★而此病已犯九次，故焊之）
   ⑫ 治过之句式      —— 一句式在某章被治过，其后诸章又长回来（202治过，204复犯）
 
 用法：
@@ -271,6 +272,25 @@ def check12(cur):
              '零' if not bad else '⛔%s（★而其为治过之式之复犯，须换名目）' % '、'.join(bad))]
 
 
+# ───────── ⑬ 亮点段在不在（2026-08-17 立）─────────
+# ★★★★★其由：亮点段全缺已犯九次（201第2轮、205第10轮、206第10轮…）。
+# ★而201立「凡起草毕即须落亮点段」、205补「凡第1轮起草净重低於5000者，第2轮开轮须先查」——
+# ★★然二者皆只写进施工表与状态卡，未焊成机器之检；★★★故此病屡犯。
+# ★★★★而其测极易：正文有无「【本章亮点】」四字；若无即报。
+def check13(cur):
+    """★亮点段在不在：凡在跑之章，正文须有【本章亮点】段。"""
+    if cur not in F:
+        return [('⑬·亮点段', True, '★本章无正文，免测')]
+    s = open(F[cur], encoding='utf-8').read()
+    ok = '【本章亮点】' in s
+    if ok:
+        h = s.split('【本章亮点】')[1]
+        n = len(re.sub(r'\s', '', h))
+        return [('⑬·亮点段', True, '★在｜%d 字' % n)]
+    return [('⑬·亮点段', False,
+             '⛔全缺（★而此病已犯九次；★★凡起草毕即须落亮点段，不得留到后轮）')]
+
+
 def run(chs, quiet=False):
     bad = 0
     rows = []
@@ -284,7 +304,7 @@ def run(chs, quiet=False):
             rows.append((name, ok, msg))
             if not ok:
                 bad += 1
-    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check12(cur):
+    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur):
         rows.append((name, ok, msg))
         if not ok:
             bad += 1
@@ -295,7 +315,7 @@ def run(chs, quiet=False):
         for name, ok, msg in rows:
             print('  %s %-38s %s' % ('✓' if ok else '⛔', name, msg))
         print('=' * 64)
-        print('  %s' % ('✓ 八检皆过。' if bad == 0 else '⛔ 八检报 %d 处，须修。' % bad))
+        print('  %s' % ('✓ 九检皆过。' if bad == 0 else '⛔ 九检报 %d 处，须修。' % bad))
         print('=' * 64)
     else:
         print('开轮八检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))

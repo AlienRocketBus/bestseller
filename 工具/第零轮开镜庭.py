@@ -187,8 +187,23 @@ def make_card(c):
     return p
 
 
+# ───────── 〇·本章之正文在不在（2026-08-17 立）─────────
+# ★★★★★其由：2026-08-17 起草205时，其正文先前已起草过（且第1轮已跑毕，台账v01—v08）；
+# ★而我未察，又写了一篇，遂在其上跑了三版，覆盖了先立者之台账。
+# ★★而逮出之处为全测之「章节编号不连续」（其报 …204, 205, 205）。
+# ★★★故立此问：起草之前，先查其正文在不在。
+def check0(c):
+    """★本章之正文在不在（起草之前须为零）。"""
+    import glob as _g
+    hit = [x for x in _g.glob(os.path.join(ROOT, '正文', '*.md')) if cn(x) == c]
+    return [('〇·本章之正文在不在（起草前须为零）', len(hit) <= 1,
+             ('★%d 篇' % len(hit)) if len(hit) <= 1
+             else '⛔%d 篇同章号：%s（★★★★★须先撤其一，否则台账互相覆盖）'
+                  % (len(hit), '、'.join(os.path.basename(x) for x in hit)))]
+
 def run(c, quiet=False):
     rows = []
+    rows += check0(c)
     r1, need = q1_wei(c)
     rows += r1
     rows += q2_jing(c)

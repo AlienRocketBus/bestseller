@@ -143,7 +143,11 @@ def check7(cur):
         done = False
         if os.path.exists(lj):
             tx = open(lj, encoding='utf-8').read()
-            done = len(set(re.findall(r'第(\d+)轮', tx))) >= 10
+            # ★★★★★2026-08-17 订：先前以文中任一「第N轮」计，遂误判。
+            # ★其由：轮记之正文常引先例（依二百章第6轮所立、而一百九十九章第8轮…），
+            # ★★而那些引文里的轮号被一并计入——★★★遂207真轮5/10而判「十轮已满」。
+            # ★★★★而其正法：只计「## 第N轮」之标题，因为那才是一轮之实。
+            done = len(set(re.findall(r'^## 第(\d+)轮', tx, re.M))) >= 10
         if not done:
             return [('⑦·第%d章锚' % nx, True, '★未备（而第%d章十轮未满，封版时方须备）' % cur)]
         return [('⑦·第%d章锚' % nx, False, '⛔未备（★而第%d章十轮已满，封版即断链）' % cur)]

@@ -1627,9 +1627,10 @@ def print_console():
     """启动总控台：每次启动必现。到期账／病历／在役机制名录一次摊开，无需另行调用。"""
     print('◆灵魂三问(每启必答):这一章最神的一句在哪?读者会在哪一段合不上书?删掉此章,全书断什么?')
     print('◆循环令:九轮必走;ERROR或自检未满格=修了再跑,循环至双绿,方许交付作者(推送闸即此令之铁)。')
+        # ★2026-08-18补：冷藏之笔不入催办——冷藏本为「明记读者已不在等」，若仍按到期章催，二制相犯（祖案PLOT-111B已cold却判逾期2章）
     try:
         files=sorted(_chapters().keys()); cur=max(files) if files else 0
-        items=[x for x in _load_due() if x.get('状态') not in ('done','废弃')]
+        items=[x for x in _load_due() if x.get('状态') not in ('done','废弃','cold','冷藏','已清')]
         items=[x for x in items if not x['id'].startswith('COLD-')]+_auto_cold(files)
         due=[x for x in items if x.get('到期章',10**9)<=cur]
         od=[x for x in due if cur-x['到期章']>=2]
@@ -1854,7 +1855,7 @@ def work_order(n):
     print('\n' + '█'*3 + ' 作业令 · 第%d章（检察官签发·逐条执行·缺一不放行） '%n + '█'*3)
     i=0
     print('【写前】')
-    items=[x for x in _load_due() if x.get('状态') not in ('done','废弃')]
+    items=[x for x in _load_due() if x.get('状态') not in ('done','废弃','cold','冷藏','已清')]
     items=[x for x in items if not x['id'].startswith('COLD-')]+_auto_cold(files)
     due=[x for x in items if x.get('到期章',10**9)<=cur or x.get('到期章')==n]
     for x in due:
@@ -1919,7 +1920,7 @@ def _load_due():
 
 def due_report(cur, as_gate=False):
     """统一欠账催办：逾期1章WARN，逾期>=2章ERROR。cur=当前最新章号。"""
-    items=[x for x in _load_due() if x.get('状态') not in ('done','废弃')]
+    items=[x for x in _load_due() if x.get('状态') not in ('done','废弃','cold','冷藏','已清')]
     items=[x for x in items if not x['id'].startswith('COLD-')]
     items+=_auto_cold(sorted(_chapters().keys()))
     due=[x for x in items if x.get('到期章',10**9)<=cur]

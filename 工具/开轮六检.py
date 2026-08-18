@@ -12,6 +12,9 @@
   ⑦ 锚之长        —— 逾医生正则上限160字即报「锚未备」，而其长无处可查
   ⑨ 领轮之号       —— 领轮闸只在存版时咬，开轮不咬
   ⑩ 招五之第二形    —— 前章之物本章正在其中，而未点其名
+  ⑮ 承前之判       —— 前章收句之骨,本章回指了没有
+  ⑯ 悬账之量       —— 同时未清逾12笔即报(读者记不住)
+  ⑰ 近五章之形      —— 同形逾三章即报(形一样久了会腻)
   ⑭ 已封版之章      —— 凡领轮之章已封版者当场拦（再跑会覆盖其回执与轮记）
   ⑪ 新人之卡       —— 正文里长出来之人，两册皆无其档（刘二首见105章而其时圣经无他）
   ⑬ 亮点段        —— 正文有无【本章亮点】（★而此病已犯九次，故焊之）
@@ -49,6 +52,10 @@ F = {cn(p): p for p in glob.glob(os.path.join(ROOT, '正文', '*.md')) if cn(p) 
 
 
 def body(c):
+    # ★2026-08-17 订：未起草之章无正文——★★先前於此崩（KeyError），故未起草之章无法跑检；
+    # ★★★而其时正该跑⑭⑯⑰以定其可否起草。遂改：无正文者返空串。
+    if c not in F:
+        return ''
     return open(F[c], encoding='utf-8').read().split('【本章亮点')[0]
 
 
@@ -316,14 +323,108 @@ def check14(cur):
     except Exception:
         hz = []
     mx = max(F) if F else 0
-    if e11 and hz and cur < mx:
+    # ★2026-08-17 订：先前之条件为 cur < mx，故末章若已封版亦放行；
+    # ★★而实况：208已封版（十一轮✓／回执✓）而检报「未封版，可跑」——其为误判。
+    # ★★★遂改：凡十一轮之凭据与回执俱在者，即为已封版，不论其是否末章。
+    if e11 and hz:
         return [('⑭·已封版之章', False,
-                 '⛔第%d章已封版（十一轮✓／回执✓／其后已有第%d章）'
+                 '⛔第%d章已封版（十一轮✓／回执✓｜末章第%d章）'
                  '：★而封版之章不得再跑十轮——★★再跑会覆盖其回执与轮记。'
-                 '★★★而今之末章为第%d章。' % (cur, mx, mx))]
+                 '★★★而今之末章为第%d章；★★★★下一章为第%d章。'
+                 % (cur, mx, mx, mx + 1))]
     return [('⑭·已封版之章', True,
              '★第%d章未封版（十一轮%s／回执%s），可跑'
              % (cur, '✓' if e11 else '✗', '✓' if hz else '✗'))]
+
+
+# ───────── ⑮ 承前之判（2026-08-17 立）─────────
+# ★★★★★其由：十轮里没有一轮问「这一章跟前一章接不接得上」。
+# ★第2轮只查回述词（想起/昨天/那一回），★★第3轮只查数；
+# ★★★而「昨天他立了一个判，今天本章认它、翻它、还是没提它」——无一轮问。
+# ★★★★而其证：208之「老头照着一个已经不在的数使力气」是我写时想到的，不是闸逼出来的。
+# ★★★★★故立此检：取前章收句之骨词，查本章有无回指。
+def check15(cur):
+    """★承前之判：前章之末所立之判，本章认它、翻它、还是没提它。"""
+    if not cur or (cur - 1) not in F:
+        return [('⑮·承前之判', True, '★无前章，免测')]
+    pb = body(cur - 1)
+    b = body(cur)
+    if not pb or not b:
+        return [('⑮·承前之判', True, '★正文缺，免测')]
+    # ★取前章之末五段（其为收句之所在）
+    tail = [x.strip() for x in pb.split('\n') if x.strip() and x.strip() != '＊'][-5:]
+    txt = ''.join(tail)
+    # ★★取其中之实词（二字以上、非虚字）
+    cand = [w for w in re.findall(r'[\u4e00-\u9fa5]{2,4}', txt)
+            if not re.search(r'^(而|是|不|的|了|着|这|那|我|他|她|你|们|就|也|都|还|要|说|有|没|一|个|上|下|里|头|来|去|又|把|跟|得|在|从|到|它|们)', w)]
+    seen = []
+    for w in cand:
+        if w not in seen:
+            seen.append(w)
+    key = seen[:8]
+    hit = [w for w in key if w in b]
+    ok = len(hit) >= 2
+    return [('⑮·承前之判（前章收句之骨，本章回指了没有）', ok,
+             ('★命中 %d 样：%s' % (len(hit), '、'.join(hit[:4]))) if ok
+             else ('⛔前章收句之骨 %s，本章一样也没回指'
+                   '：★而这不一定是错——★★然须在轮记里明写一句：'
+                   '本章认它、翻它、还是有意搁下' % '、'.join(key[:4])))]
+
+
+# ───────── ⑯ 悬账之量（2026-08-17 立）─────────
+# ★★★★★其由：到期账管的是「几时清」，而不管「同时悬着几笔」。
+# ★而实测：今未清16笔——★★而读者记不住16笔。
+def check16(cur):
+    """★悬账之量：同时未清逾12笔即报（报而不拦）。"""
+    fp = os.path.join(ROOT, '设定', '到期账.json')
+    if not os.path.exists(fp):
+        return [('⑯·悬账之量（≤12笔）', True, '★账册未见，免测')]
+    try:
+        d = json.load(open(fp, encoding='utf-8'))
+        its = d if isinstance(d, list) else d.get('items', d.get('账', []))
+        op = [x for x in its if x.get('状态') == 'open']
+    except Exception as e:
+        return [('⑯·悬账之量（≤12笔）', True, '★读账册失败：%s' % e)]
+    n = len(op)
+    ok = (n <= 12)
+    near = sorted(op, key=lambda y: (y.get('到期章') or 999))[:3]
+    s = '、'.join('%s(限%s)' % (x.get('id'), x.get('到期章')) for x in near)
+    return [('⑯·悬账之量（≤12笔）', ok,
+             ('★未清 %d 笔｜最近三笔：%s' % (n, s)) if ok
+             else ('⛔未清 %d 笔，逾12：★而读者记不住这么多'
+                   '——★★其治有二：或清一笔，或在正文里明说「这一笔先搁着」。'
+                   '★★★最近三笔：%s' % (n, s)))]
+
+
+# ───────── ⑰ 近五章之形（2026-08-17 立）─────────
+# ★★★★★其由：近十章之骨皆为「翻一个判断」（手不准了/她那本账/算错的那个数/不是停是住）；
+# ★而形一样，久了会腻——★★而无一轮回头读「近五章连起来，是不是在原地打转」。
+FORM = {
+    '翻判': ('先前当', '今天知道不是', '而其错', '翻', '不是…是', '我先前以为', '先前我当'),
+    '做事': ('抠开', '挖', '绑', '背', '走到', '拆', '推开', '爬'),
+    '问人': ('我问', '他说', '答不上', '不肯说'),
+    '记账': ('本子', '第十', '记号', '划', '账'),
+}
+
+def check17(cur):
+    """★近五章之形：若同形逾三章，即报（报而不拦）。"""
+    cs = [c for c in range(max(1, cur - 4), cur + 1) if c in F]
+    if len(cs) < 3:
+        return [('⑰·近五章之形', True, '★章数不足，免测')]
+    forms = []
+    for c in cs:
+        b = body(c)
+        sc = {k: sum(b.count(w) for w in ws) for k, ws in FORM.items()}
+        forms.append((c, max(sc, key=sc.get)))
+    from collections import Counter
+    cnt = Counter(f for _, f in forms)
+    top, n = cnt.most_common(1)[0]
+    ok = (n <= 3)
+    seq = '→'.join('%d:%s' % (c, f) for c, f in forms)
+    return [('⑰·近五章之形（同形≤3章）', ok,
+             ('★%s' % seq) if ok
+             else ('⛔近五章有 %d 章同为「%s」：★而形一样久了会腻'
+                   '——★★其治：下一章换一种形。★★★%s' % (n, top, seq)))]
 
 
 def run(chs, quiet=False):
@@ -334,14 +435,18 @@ def run(chs, quiet=False):
     cur = (chs[0] if chs else (max(F) if F else 0))
     for c in chs:
         if c not in F:
-            rows.append(('第%d章' % c, False, '⛔未见'))
-            bad += 1
+            # ★2026-08-17 订：未起草之章亦须可跑检——★★而其时正该跑⑭⑯⑰以定其可否起草。
+            for name, ok, msg in check14(c) + check16(c) + check17(c):
+                rows.append((name, ok, msg))
+                if not ok:
+                    bad += 1
+            rows.append(('第%d章·正文' % c, True, '★尚未起草（★★而⑭⑯⑰已跑，可据以起草）'))
             continue
         for name, ok, msg in check3(c) + check9(c) + check10(c):
             rows.append((name, ok, msg))
             if not ok:
                 bad += 1
-    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur) + check14(cur):
+    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur) + check14(cur) + check15(cur) + check16(cur) + check17(cur):
         rows.append((name, ok, msg))
         if not ok:
             bad += 1
@@ -352,10 +457,10 @@ def run(chs, quiet=False):
         for name, ok, msg in rows:
             print('  %s %-38s %s' % ('✓' if ok else '⛔', name, msg))
         print('=' * 64)
-        print('  %s' % ('✓ 九检皆过。' if bad == 0 else '⛔ 九检报 %d 处，须修。' % bad))
+        print('  %s' % ('✓ 十二检皆过。' if bad == 0 else '⛔ 十二检报 %d 处，须修。' % bad))
         print('=' * 64)
     else:
-        print('开轮九检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
+        print('开轮十二检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
     return 0 if bad == 0 else 2
 
 

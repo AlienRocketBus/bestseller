@@ -125,10 +125,10 @@ def chk_open_six():
     _cs = [_cn(x) for x in _g.glob('正文/*.md')]
     _cs = [x for x in _cs if x > 0]
     _nx = (max(_cs) + 1) if _cs else 1
-    out = run('开轮十二检', ['工具/开轮六检.py', str(_nx), '--静'])
+    out = run('开轮十五检', ['工具/开轮六检.py', str(_nx), '--静'])
     if out is None:
         return False, '运行失败'
-    if '开轮十二检通过' in out:
+    if '开轮十五检通过' in out:
         return True, '六检皆过'
     bad = [ln.strip() for ln in out.splitlines() if ln.strip()]
     return False, '；'.join(bad[:3]) if bad else '未通过'
@@ -584,7 +584,7 @@ def main():
         items.append(('全书检', chk_book))
         items.append(('书级体检', chk_bookwide))
         items.append(('质量三闸', chk_quality_gates))
-        items.append(('开轮十二检', chk_open_six))
+        items.append(('开轮十五检', chk_open_six))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
     print('\n████ 全测 · %d 项 ████' % len(items))

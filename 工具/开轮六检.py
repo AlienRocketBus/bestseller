@@ -12,6 +12,9 @@
   ⑦ 锚之长        —— 逾医生正则上限160字即报「锚未备」，而其长无处可查
   ⑨ 领轮之号       —— 领轮闸只在存版时咬，开轮不咬
   ⑩ 招五之第二形    —— 前章之物本章正在其中，而未点其名
+  ⑱ 生死线之期      —— 要命之线还能吊几章(水尽已第十日,限十二日)
+  ⑲ 骨之方向       —— 近三章之骨皆朝同一向即报(207/208/209皆为他那本账)
+  ⑳ 未答之问       —— 本章摆出之问,当章答了几个
   ⑮ 承前之判       —— 前章收句之骨,本章回指了没有
   ⑯ 悬账之量       —— 同时未清逾12笔即报(读者记不住)
   ⑰ 近五章之形      —— 同形逾三章即报(形一样久了会腻)
@@ -49,6 +52,23 @@ def cn(p):
 
 
 F = {cn(p): p for p in glob.glob(os.path.join(ROOT, '正文', '*.md')) if cn(p) > 0}
+
+
+def cn2int(s):
+    """★中文数字转整（2026-08-18 补·⑱所需）。"""
+    CN2 = {'零': 0, '〇': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
+           '六': 6, '七': 7, '八': 8, '九': 9}
+    t = n = 0
+    for ch in str(s):
+        if ch in CN2:
+            n = CN2[ch]
+        elif ch == '十':
+            t += (n or 1) * 10
+            n = 0
+        elif ch == '百':
+            t += (n or 1) * 100
+            n = 0
+    return t + n
 
 
 def body(c):
@@ -427,6 +447,132 @@ def check17(cur):
                    '——★★其治：下一章换一种形。★★★%s' % (n, top, seq)))]
 
 
+# ───────── ⑱ 生死线之期（2026-08-18 立）─────────
+# ★★★★★其由：2026-08-18 逐章核之，水尽已第十日（199为第一日，209为第十日）；
+# ★而一个人无水十日已到极限之边——★★而正文自己在算：昨天三天，今天两天；
+# ★★★即：这条线最多还能走两三章，必须给它一个了断（或找到水，或死人）。
+# ★★★★而十轮里没有一轮问「这条要命的线还能吊几章」；
+# ★★★★★故立此检：凡文内之「无X第N日」逾其限者，即报。
+LIFELINE = {
+    '水': {'词': ('水尽', '没水', '无水'), '限': 12,
+           '据': '★人无水十日已到极限之边；★★而十二日为其硬限——逾此即须了断（找到水，或死人）'},
+    '气': {'词': ('气不够', '喘不上'), '限': 20, '据': '★气之线较缓，然亦不可久吊'},
+}
+
+def check18(cur):
+    """★生死线之期：查文内之要命之线还能吊几章。"""
+    b = body(cur)
+    if not b:
+        return [('⑱·生死线之期', True, '★正文缺，免测')]
+    out = []
+    for nm, g in LIFELINE.items():
+        if not any(w in b for w in g['词']):
+            continue
+        # ★取其日：先搜「第N日/天」之数
+        m = re.findall(r'(?:水尽|没水|无水)第([零〇一二三四五六七八九十百]+)[日天]', b)
+        if not m:
+            m2 = re.search(r'第([零〇一二三四五六七八九十百]+)[日天]', b)
+            out.append(('⑱·%s之线' % nm, True,
+                        '★在场而未标其日（%s）：★★须自核其期' % (m2.group(0) if m2 else '—')))
+            continue
+        d = cn2int(m[-1])
+        lim = g['限']
+        ok = (d < lim)
+        out.append(('⑱·%s之线（限%d日）' % (nm, lim), ok,
+                    ('★第%d日｜余 %d 日' % (d, lim - d)) if ok
+                    else ('⛔第%d日，逾限%d：★而这条线不能再吊了'
+                          '——★★其治只有二：或了断（找到水，或死人），'
+                          '或明写一句「为什么还没死」。★★★而其据：%s' % (d, lim, g['据']))))
+    if not out:
+        out.append(('⑱·生死线之期', True, '★本章无生死线之词'))
+    return out
+
+
+# ───────── ⑲ 骨之方向（2026-08-18 立）─────────
+# ★★★★★其由：⑰只测「近五章之形」（翻判/做事/问人/记账），而不测「骨往哪个方向走」。
+# ★而2026-08-18 逐章核之：207先还债、208算错的那个数、209说出来那一下——
+# ★★三章连着皆为「他那本账」；★★★而三章皆好，可它们是同一个方向的三步；
+# ★★★★而读者跟着走，会觉得「这队人不往前走了，光在算」。
+# ★★★★★故立此检：凡近三章之骨皆朝同一「向」者，即报。
+DIRECTION = {
+    '往内（查自己）': ('我这本账', '我算的', '我错', '我记的', '我这只手', '我不敢', '账上'),
+    '往外（查那个人）': ('那个人', '他先走', '他留', '他不塞', '他记着', '二十七年'),
+    '往前（走路做事）': ('抠开', '挖', '爬', '走到', '下去', '绑', '背', '过去'),
+    '往侧（问人）': ('我问', '他说', '答不上', '不肯说', '报数'),
+}
+
+def check19(cur):
+    """★骨之方向：近三章之骨若皆朝同一向，即报。"""
+    # ★2026-08-18 订：本章若未起草（无正文），则取其前三章——
+    # ★★而其正该在起草之前告诉我：前三章之向是什么，本章该换哪个向。
+    cs = [c for c in range(max(1, cur - 2), cur + 1) if c in F]
+    if len(cs) < 3:
+        cs = [c for c in range(max(1, cur - 3), cur) if c in F]
+    if len(cs) < 3:
+        return [('⑲·骨之方向', True, '★章数不足，免测')]
+    dirs = []
+    for c in cs:
+        b = body(c)
+        sc = {k: sum(b.count(w) for w in ws) for k, ws in DIRECTION.items()}
+        dirs.append((c, max(sc, key=sc.get)))
+    from collections import Counter
+    cnt = Counter(d for _, d in dirs)
+    top, n = cnt.most_common(1)[0]
+    ok = (n < 3)
+    seq = '→'.join('%d:%s' % (c, d) for c, d in dirs)
+    # ★★★★★2026-08-18 订：⑲报的是「已成之事实」（前三章确实同向），非本章之误；
+    # ★而若本章未起草，其治正在本章——★★故若开镜卡已明写「本章须换向」，即判过。
+    # ★★★而其由：闸之职是逼人换向，不是永拦；★★★★而已换向者，闸当放行。
+    if not ok and cur not in F:
+        kj = os.path.join(ROOT, '版本', '第%d章' % cur, '_开镜卡.md')
+        if os.path.exists(kj):
+            try:
+                _k = open(kj, encoding='utf-8', errors='replace').read()
+                if ('换向' in _k) or ('本章之向' in _k):
+                    return [('⑲·骨之方向（近三章不同向）', True,
+                             '★前三章皆朝「%s」，而本章之开镜卡已明写换向 ✓：★★%s'
+                             % (top, seq))]
+            except Exception:
+                pass
+    return [('⑲·骨之方向（近三章不同向）', ok,
+             ('★%s' % seq) if ok
+             else ('⛔近三章之骨皆朝「%s」：★而三章皆好，可它们是同一个方向的三步；'
+                   '★★而读者跟着走，会觉得这队人不往前走了。'
+                   '★★★而其治：下一章换一个向（★★★★而换毕须在开镜卡里明写「本章之向」）。'
+                   '★★★★★%s' % (top, seq)))]
+
+
+# ───────── ⑳ 未答之问（2026-08-18 立）─────────
+# ★★★★★其由：本书之法有「必问之答」——凡正文摆出一问而当章不答者，须记其欠。
+# ★而十轮里第10轮虽查生死检，然无一轮专查「本章摆出之问，答了几个」；
+# ★★而一章摆三问而一个不答，读者会觉得「作者忘了」。
+# ★★★故立此检：搜本章之问句（以「什么／哪儿／几／怎么／为什么」结於「。」者），
+# ★★★★而后查其后二十段内有无「答之形」。
+def check20(cur):
+    """★未答之问：本章摆出之问，当章答了几个。"""
+    b = body(cur)
+    if not b:
+        return [('⑳·未答之问', True, '★正文缺，免测')]
+    ps = [x.strip() for x in b.split('\n') if x.strip() and x.strip() != '＊']
+    qs = []
+    for i, x in enumerate(ps):
+        if re.search(r'(是什么|在哪儿|几时|怎么办|为什么|多少|哪一样|哪一条)[。？]', x):
+            qs.append((i, x[:34]))
+    if not qs:
+        return [('⑳·未答之问', True, '★本章未摆明问')]
+    unans = []
+    for i, q in qs:
+        tail = ''.join(ps[i + 1:i + 21])
+        if not re.search(r'(是因为|其由|答|知道了|明白|原来|后来我|遂|所以)', tail):
+            unans.append('段%d「%s」' % (i, q))
+    ok = (len(unans) <= 1)
+    return [('⑳·未答之问（≤1）', ok,
+             ('★摆问 %d 处｜未答 %d 处' % (len(qs), len(unans))) if ok
+             else ('⛔摆问 %d 处而未答 %d 处：★而一章摆三问而一个不答，'
+                   '读者会觉得作者忘了。★★其治有二：或当章答，或明写「这一问我没有问出口」。'
+                   '★★★%s' % (len(qs), len(unans), '；'.join(unans[:3]))))]
+
+
 def run(chs, quiet=False):
     bad = 0
     rows = []
@@ -436,7 +582,7 @@ def run(chs, quiet=False):
     for c in chs:
         if c not in F:
             # ★2026-08-17 订：未起草之章亦须可跑检——★★而其时正该跑⑭⑯⑰以定其可否起草。
-            for name, ok, msg in check14(c) + check16(c) + check17(c):
+            for name, ok, msg in check14(c) + check16(c) + check17(c) + check18(c) + check19(c) + check20(c):
                 rows.append((name, ok, msg))
                 if not ok:
                     bad += 1
@@ -446,7 +592,10 @@ def run(chs, quiet=False):
             rows.append((name, ok, msg))
             if not ok:
                 bad += 1
-    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur) + check14(cur) + check15(cur) + check16(cur) + check17(cur):
+    # ★2026-08-18 订：⑱⑲⑳於「未起草之支」已跑一遍，而主支亦跑——遂重出二遍。
+    # ★★故主支之三测只在本章有正文时跑（未起草者已由上支办毕）。
+    _tail = (check18(cur) + check19(cur) + check20(cur)) if (cur in F) else []
+    for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur) + check14(cur) + check15(cur) + check16(cur) + check17(cur) + _tail:
         rows.append((name, ok, msg))
         if not ok:
             bad += 1
@@ -457,10 +606,10 @@ def run(chs, quiet=False):
         for name, ok, msg in rows:
             print('  %s %-38s %s' % ('✓' if ok else '⛔', name, msg))
         print('=' * 64)
-        print('  %s' % ('✓ 十二检皆过。' if bad == 0 else '⛔ 十二检报 %d 处，须修。' % bad))
+        print('  %s' % ('✓ 十五检皆过。' if bad == 0 else '⛔ 十五检报 %d 处，须修。' % bad))
         print('=' * 64)
     else:
-        print('开轮十二检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
+        print('开轮十五检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
     return 0 if bad == 0 else 2
 
 

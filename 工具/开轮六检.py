@@ -12,6 +12,7 @@
   ⑦ 锚之长        —— 逾医生正则上限160字即报「锚未备」，而其长无处可查
   ⑨ 领轮之号       —— 领轮闸只在存版时咬，开轮不咬
   ⑩ 招五之第二形    —— 前章之物本章正在其中，而未点其名
+  ㉑ 已起草之章      —— 本章正文已在即报(勿再另写一篇)
   ⑱ 生死线之期      —— 要命之线还能吊几章(水尽已第十日,限十二日)
   ⑲ 骨之方向       —— 近三章之骨皆朝同一向即报(207/208/209皆为他那本账)
   ⑳ 未答之问       —— 本章摆出之问,当章答了几个
@@ -459,6 +460,33 @@ LIFELINE = {
     '气': {'词': ('气不够', '喘不上'), '限': 20, '据': '★气之线较缓，然亦不可久吊'},
 }
 
+def check21(cur):
+    """★★★★★已起草之章（2026-08-18 立）。
+    ★其由：本日我拿已起草且已跑第1轮之第211章，又另写了一篇；
+    ★★而领轮时机器已报「真轮1/10，该跑第2轮」——而我未核其实。
+    ★★★而⑭只拦「已封版之章」，不拦「已起草而未封版之章」；
+    ★★★★而后者更险：封版之章有回执可认，而已起草之章只在磁盘上。
+    ★★★★★故立此检：凡本章之正文已在，即报其名与净重，令人先核再动笔。"""
+    if cur not in F:
+        return [('㉑·已起草之章', True, '★第%d章尚未起草，可起草' % cur)]
+    b = body(cur)
+    nm = os.path.basename(F[cur]).replace('.md', '')
+    w = net(b)
+    tz = os.path.join(ROOT, '版本', '第%d章' % cur, '_台账.json')
+    rn = 0
+    if os.path.exists(tz):
+        try:
+            _d = json.load(open(tz, encoding='utf-8'))
+            rn = len({int(_m.group(1)) for _v in _d.get('版本', [])
+                      for _m in [re.search(r'第(\d+)轮', str(_v.get('说明', '')))] if _m})
+        except Exception:
+            pass
+    return [('㉑·已起草之章', True,
+             '⚠第%d章之正文已在（%s｜净重%d｜真轮%d/10）：'
+             '★而其非伤——★★是提醒：本章已起草，勿再另写一篇；'
+             '★★★须接着跑下一轮。' % (cur, nm, w, rn))]
+
+
 def check18(cur):
     """★生死线之期：查文内之要命之线还能吊几章。"""
     b = body(cur)
@@ -582,7 +610,7 @@ def run(chs, quiet=False):
     for c in chs:
         if c not in F:
             # ★2026-08-17 订：未起草之章亦须可跑检——★★而其时正该跑⑭⑯⑰以定其可否起草。
-            for name, ok, msg in check14(c) + check16(c) + check17(c) + check18(c) + check19(c) + check20(c):
+            for name, ok, msg in check14(c) + check16(c) + check17(c) + check18(c) + check19(c) + check20(c) + check21(c):
                 rows.append((name, ok, msg))
                 if not ok:
                     bad += 1
@@ -594,7 +622,7 @@ def run(chs, quiet=False):
                 bad += 1
     # ★2026-08-18 订：⑱⑲⑳於「未起草之支」已跑一遍，而主支亦跑——遂重出二遍。
     # ★★故主支之三测只在本章有正文时跑（未起草者已由上支办毕）。
-    _tail = (check18(cur) + check19(cur) + check20(cur)) if (cur in F) else []
+    _tail = (check18(cur) + check19(cur) + check20(cur) + check21(cur)) if (cur in F) else []
     for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur) + check14(cur) + check15(cur) + check16(cur) + check17(cur) + _tail:
         rows.append((name, ok, msg))
         if not ok:
@@ -606,10 +634,10 @@ def run(chs, quiet=False):
         for name, ok, msg in rows:
             print('  %s %-38s %s' % ('✓' if ok else '⛔', name, msg))
         print('=' * 64)
-        print('  %s' % ('✓ 十五检皆过。' if bad == 0 else '⛔ 十五检报 %d 处，须修。' % bad))
+        print('  %s' % ('✓ 十六检皆过。' if bad == 0 else '⛔ 十六检报 %d 处，须修。' % bad))
         print('=' * 64)
     else:
-        print('开轮十五检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
+        print('开轮十六检通过' if bad == 0 else '；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok))
     return 0 if bad == 0 else 2
 
 

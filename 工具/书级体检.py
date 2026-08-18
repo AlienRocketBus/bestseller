@@ -238,8 +238,15 @@ def check_due_net(due, cur):
     net = sum(r[3] for r in rows)
     bad = []
     if gated and net_g > 0:
-        bad.append('自第%d章起账之净额 %+d（须 ≤0）' % (NET_DUE_FROM, net_g))
-    return rows, net, bad
+        # ★2026-08-18 订：先前以 %+d 印之，遂 +0.5 印作「+0」——
+        # ★★而闸依 net_g>0 而拦，人看报文却是「+0」，遂不知其由。
+        # ★★★故改以 %+.1f 印，令小数现形。
+        bad.append('自第%d章起账之净额 %+.1f（须 ≤0）' % (NET_DUE_FROM, net_g))
+    # ★2026-08-18 订：先前返 net（全末十章之和），而闸判用 net_g（自192起）；
+    # ★★遂令报文印 net 而闸依 net_g——★★★而二者不同时，报文与拦停之由不符。
+    # ★★★★而其实：2026-08-18 净额报「+0」而闸仍拦，核之 net_g 实为 +1。
+    # ★★★★★故改返 net_g，令报文与闸判同源。
+    return rows, net_g, bad
 
 
 # ── ④ 日数速率 ────────────────────────────────────────
@@ -389,7 +396,7 @@ def main():
         print()
         print('③ 账之净额（自第%d章起须 ≤0）' % NET_DUE_FROM)
         print('   ' + ' '.join('%d:%+d' % (c, n) for c, m, k, n in rows_d))
-        print('   ★近十章净 %+d（★★而闸只看自第%d章起者）%s'
+        print('   ★近十章净 %+.1f（★★而闸只看自第%d章起者）%s'
               % (net_d, NET_DUE_FROM, '⛔' if bad_d else '✓'))
         print()
         if pace:

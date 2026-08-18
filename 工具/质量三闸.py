@@ -162,6 +162,27 @@ def gate5(chs):
                 '%d 篇／应有 %d 篇（前%d章为立闸前，记欠账不拦停）' % (tot, need, GATE5_FROM)))
     return out
 
+def gate1e(c):
+    """★★★★★六问之闸（2026-08-17 立·作者令「一切为质量」）。
+    ★而其由：净重之硬限已降为2000，然「事说完了」不可为一句随口之话；
+    ★★故凡净重低於5000者，轮记之首须逐条答毕六问，方可判「事已说尽」。
+    ★★★而六问之要害在第四问：还有哪一层是我知道、却没写进去的。"""
+    b = body(c)
+    w = net(b)
+    if w >= 5000:
+        return [('①之e·六问（净重<5000时须答）', True, '★净重%d≥5000，免答' % w)]
+    lj = os.path.join(ROOT, '版本', '第%d章' % c, '_轮记.md')
+    txt = open(lj, encoding='utf-8', errors='replace').read() if os.path.exists(lj) else ''
+    Q = ['本章之一事', '翻掉', '摆完了没有', '别处来的', '没写进去', '只留一样']
+    hit = [q for q in Q if q in txt]
+    ok = len(hit) >= 4
+    return [('①之e·六问（净重<5000时须答）', ok,
+             ('★净重%d<5000｜六问答毕 %d/6 ✓' % (w, len(hit))) if ok
+             else ('⛔净重%d<5000，而轮记之首六问只答 %d/6'
+                   '：★而「事说完了」不是一句可以随口说的话，须逐条举证'
+                   '——★★尤其第四问：还有哪一层是我知道、却没写进去的' % (w, len(hit))))]
+
+
 def gate1c(c):
     """★★★★★密度之尺（2026-08-17 立·作者令「一切以质量为主」）。
     ★而其由：厚度本身不是质量，密度才是——
@@ -271,7 +292,7 @@ def run(chs):
         if c not in F:
             print('  ⛔ 第%d章未见' % c); bad += 1; continue
         print('\n【第%d章】' % c)
-        for name, ok, msg in gate1(c) + gate1c(c) + gate3(c) + gate4(c) + gate4b(c):
+        for name, ok, msg in gate1(c) + gate1c(c) + gate1e(c) + gate3(c) + gate4(c) + gate4b(c):
             print('   %s %-28s %s' % ('✓' if ok else '⛔', name, msg))
             if not ok: bad += 1
     print('\n【全书·闸②⑤】')

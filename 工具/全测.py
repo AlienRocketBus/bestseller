@@ -99,7 +99,33 @@ def chk_open_six():
     """开轮六检（2026-08-16立·见 工具/开轮六检.py）：治近日所逮之六条未治之bug——
     ★③人名计数之误／★★⑤撞号与merged／★★★⑥冷轮逾期／
     ★★★★⑦锚之长／★⑨领轮之号／★★⑩招五之第二形。"""
-    out = run('开轮十二检', ['工具/开轮六检.py', '--静'])
+    # ★2026-08-17 订：全测无参调用，开轮检遂取末章；
+    # ★★而末章已封版时，⑭必报——★★★而那不是伤，是全测取错了章。
+    # ★★★★遂改：取「下一章」（末章＋1）——★而其正是开轮检该测之章。
+    import glob as _g, os as _o, re as _r
+    _CN = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
+           '六': 6, '七': 7, '八': 8, '九': 9, '十': 10}
+
+    def _cn(_p):
+        _m = _r.search(r'第([零〇一二三四五六七八九十百]+)章', _o.path.basename(_p))
+        if not _m:
+            return -1
+        _s = _m.group(1)
+        _t = _n = 0
+        for _ch in _s:
+            if _ch in _CN and _ch != '十':
+                _n = _CN[_ch]
+            elif _ch == '十':
+                _t += (_n or 1) * 10
+                _n = 0
+            elif _ch == '百':
+                _t += (_n or 1) * 100
+                _n = 0
+        return _t + _n
+    _cs = [_cn(x) for x in _g.glob('正文/*.md')]
+    _cs = [x for x in _cs if x > 0]
+    _nx = (max(_cs) + 1) if _cs else 1
+    out = run('开轮十二检', ['工具/开轮六检.py', str(_nx), '--静'])
     if out is None:
         return False, '运行失败'
     if '开轮十二检通过' in out:

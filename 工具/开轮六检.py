@@ -438,9 +438,26 @@ def check17(cur):
         return [('⑰·近五章之形', True, '★章数不足，免测')]
     forms = []
     for c in cs:
-        b = body(c)
-        sc = {k: sum(b.count(w) for w in ws) for k, ws in FORM.items()}
-        forms.append((c, max(sc, key=sc.get)))
+        # 【批123·订·与⑲同法】词频判形，其病与向判同：不问那些词服务於谁。
+        #   ★221全章五句问话是它的脊，而五十三段记账全是那五句问出来之后的落账；
+        #   ★★即记是果，问是因——而词频只数果，遂把一篇问人之章判成记账。
+        #   ★★★而本书之主角凡做事必带本子，故「写／账／记」之数在任何一章都恒高。
+        # 治：某章之开镜卡若已明写「本章之形：X」，即以卡为准；★词频只在无卡时用。
+        _f = None
+        _kj = os.path.join(ROOT, '版本', '第%d章' % c, '_开镜卡.md')
+        if os.path.exists(_kj):
+            try:
+                _kt = open(_kj, encoding='utf-8', errors='replace').read()
+                _m = re.search(r'本章之形[：:）\)\*★]*[^\n]{0,12}?(问人|记账|做事|翻判)', _kt)
+                if _m and _m.group(1) in FORM:
+                    _f = _m.group(1)
+            except Exception:
+                pass
+        if _f is None:
+            b = body(c)
+            sc = {k: sum(b.count(w) for w in ws) for k, ws in FORM.items()}
+            _f = max(sc, key=sc.get)
+        forms.append((c, _f))
     from collections import Counter
     cnt = Counter(f for _, f in forms)
     top, n = cnt.most_common(1)[0]

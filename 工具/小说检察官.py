@@ -1705,7 +1705,7 @@ def print_console():
         # ★2026-08-18补：冷藏之笔不入催办——冷藏本为「明记读者已不在等」，若仍按到期章催，二制相犯（祖案PLOT-111B已cold却判逾期2章）
     try:
         files=sorted(_chapters().keys()); cur=max(files) if files else 0
-        items=[x for x in _load_due() if x.get('状态') not in ('done','废弃','cold','冷藏','已清')]
+        items=[x for x in _load_due() if x.get('状态') not in _CLEARED_STATES]
         items=[x for x in items if not x['id'].startswith('COLD-')]+_auto_cold(files)
         due=[x for x in items if x.get('到期章',10**9)<=cur]
         od=[x for x in due if cur-x['到期章']>=2]
@@ -1937,7 +1937,7 @@ def work_order(n):
     print('\n' + '█'*3 + ' 作业令 · 第%d章（检察官签发·逐条执行·缺一不放行） '%n + '█'*3)
     i=0
     print('【写前】')
-    items=[x for x in _load_due() if x.get('状态') not in ('done','废弃','cold','冷藏','已清')]
+    items=[x for x in _load_due() if x.get('状态') not in _CLEARED_STATES]
     items=[x for x in items if not x['id'].startswith('COLD-')]+_auto_cold(files)
     due=[x for x in items if x.get('到期章',10**9)<=cur or x.get('到期章')==n]
     for x in due:
@@ -2000,9 +2000,18 @@ def _load_due():
     except Exception: return []
 
 
+# 【批123·订】原词表只认 done／废弃／cold／冷藏／已清，而不认 closed：
+#   ★220判账时 PLOT-207A 记为 closed（清账章220、清账记已落），而此闸仍判它逾期2章未清；
+#   ★★遂於222起草毕报 ERROR——其为词表之漏，非账之欠。
+#   ★★★而 closed 是通用词且220已用，改账则日后再犯；故补机器之词表，不改账。
+#   ★★★★而 half（清其半）亦当免催：其余半已另记到期章（如CHAR-191A改期228），
+#     由那一章的到期账去催；此处再催一遍，催的是已经改过期的同一笔。
+_CLEARED_STATES = ('done', 'closed', 'half', '废弃', 'cold', '冷藏', '已清')
+
+
 def due_report(cur, as_gate=False):
     """统一欠账催办：逾期1章WARN，逾期>=2章ERROR。cur=当前最新章号。"""
-    items=[x for x in _load_due() if x.get('状态') not in ('done','废弃','cold','冷藏','已清')]
+    items=[x for x in _load_due() if x.get('状态') not in _CLEARED_STATES]
     items=[x for x in items if not x['id'].startswith('COLD-')]
     items+=_auto_cold(sorted(_chapters().keys()))
     due=[x for x in items if x.get('到期章',10**9)<=cur]

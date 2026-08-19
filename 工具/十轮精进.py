@@ -852,17 +852,30 @@ LENS_KEY = {1: ['嗅', '听', '触', '密度', '感官'], 2: ['canon', '原场',
 
 
 def _lunji_blocks(n):
-    """轮记按轮号归拢。同一轮可有多条（补记），一并归之。"""
+    """轮记按轮号归拢。同一轮可有多条（补记），一并归之。
+
+    ★2026-08-19 补一漏（217第4轮补裁时实见）：
+      原码以 '\n## ' 切块，凡块内另有 '## 某某' 之小标题者，其后半即被切成新块；
+      而新块不匹配「第N轮」，遂被整个丢弃——★★而丢掉的正是那一轮真干的活。
+      其祸之隐在此：轮记落盘时报「✓已落盘」，覆盖率却仍报 0%，
+      而人只会以为是自己没写够，不会想到是块被切碎了。
+    ★★★故改：切块之后，凡不匹配「第N轮」之块，一律并入其前一块（而非丢弃）。
+    """
     f = _lunji_path(n)
     if not os.path.exists(f):
         return {}
     out = {}
+    last = None
     for b in open(f, encoding='utf-8').read().split('\n## '):
         if not b.strip():
             continue
         m = re.match(r'第(\d+)轮', b)
         if m:
-            out.setdefault(int(m.group(1)), []).append('## ' + b)
+            last = int(m.group(1))
+            out.setdefault(last, []).append('## ' + b)
+        elif last is not None:
+            # 块内之小标题所切出者，归其前一轮（不丢）
+            out[last].append('## ' + b)
     return out
 
 

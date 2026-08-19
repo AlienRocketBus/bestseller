@@ -360,7 +360,7 @@ def rounds_state(ledger):
         r = _round_of(x.get('说明', ''))
         if r:
             rs.add(r)
-    return rs, [i for i in range(1, 11) if i not in rs]
+    return rs, [i for i in range(1, ROUNDS + 1) if i not in rs]
 
 
 def rounds_verdict(ledger):
@@ -521,10 +521,33 @@ def huanyuan(n, confirm=''):
 #   下一轮遂无从承前，而执笔尚不自知（P22断层续手）。
 # 故立轮记：一轮一录，落盘即不怕忘。轮记在，则「一次跑几轮」这个问题自然消解——
 #   任何一轮之边界皆成安全重启点，压缩至多损一轮。
+# ★★★★★2026-08-19 改·作者令：「你的目的不是为了跑完，是为了把质量达到最高。」
+# ★病灶（作者问「字数是不是失衡了」而查出）：181—208均5770、标准差仅68；
+#   而209起（下限由5500改2000之日）掉到均3428——两头都是惯性，不是事定的长短。
+# ★★而更深一层：十庭之中八庭查错、一庭减字，只有升华庭算求好，
+#   而升华庭我跑成了「查十招在不在」——那还是查，不是推。
+# ★★★故十轮之中，从来没有一轮是专门用来「把每一层往下再推一层」的。
+# ★★★★遂改第4轮为**深掘轮**：逐层问「这一层底下还有没有一层」，
+#   答得出即当场写下去，答不出即明记「此层已到底」及其由。
+# ★★★★★而招式比对不废，降为深掘轮之附检（其本为查，不该占一整轮）。
+# ★★★★★2026-08-19 扩轮·作者令：
+#   「跑轮可以加到13、14、15、16甚至更多，只要能让质量达到最高；
+#    但前提是每一轮都要按照绝对最大的功率去跑。」
+#   「有一轮就是从各个角度刁钻地看，这一章有没有达到质量最上乘、中国第一的小说。」
+# ★而十轮之制立於批102，其时之职为「查错」；★★而查错十轮已足，求好则不足。
+# ★★★故扩为十三轮：十轮如旧（第4轮已改深掘），另立三轮专司「求好」：
+#   ★第11轮·四方庭：读者／作家／编辑／作者，四个角度逐一审
+#   ★★第12轮·极限轮：把前十一轮凡判「合／已到底／不补」之处，再问一遍「真到底了吗」
+#   ★★★第13轮·定稿轮：通读一遍，只问一句「这一章配不配放进中国第一的小说里」
+# ★★★★而总轮数由 ROUNDS 定，一改全改；日后再扩不必翻遍全码。
+ROUNDS = 13
+
 LENS_FALLBACK = {
-    1: '感官庭', 2: '四堂会审', 3: '挑刺王终读（逐数对表）', 4: '升华庭（招式比对）',
+    1: '感官庭', 2: '四堂会审', 3: '挑刺王终读（逐数对表）', 4: '深掘轮（逐层下探·附招式比对）',
     5: '在场庭＋内面庭', 6: '内心庭', 7: '时序＋节奏＋留白', 8: '跨章复审',
-    9: '收官减法轮', 10: '收官轮（器物总账＋逐段生死）'}
+    9: '收官减法轮', 10: '收官轮（器物总账＋逐段生死）',
+    11: '四方庭（读者／作家／编辑／作者）', 12: '极限轮（复问一切判合之处）',
+    13: '定稿轮（配不配放进中国第一的小说里）'}
 
 
 def lens_table():
@@ -544,7 +567,7 @@ def lens_table():
             if nm:
                 tab[int(m.group(1))][nm] += 1
     out = {}
-    for r in range(1, 11):
+    for r in range(1, ROUNDS + 1):
         out[r] = tab[r].most_common(1)[0][0] if tab[r] else LENS_FALLBACK[r]
     return out
 
@@ -682,7 +705,7 @@ def nextround(n):
     tab = lens_table()
     print('  ── 下一轮 ──')
     if not miss:
-        print('   ✓十轮已满，请跑 --横评 %d 定案。' % n)
+        print('   ✓%d轮已满，请跑 --横评 %d 定案。' % (ROUNDS, n))
     else:
         nx = miss[0]
         print('   **该跑第%d轮：%s**' % (nx, tab[nx]))
@@ -734,6 +757,20 @@ def nextround(n):
     # ★★★★而其报而不拦——★★★★★拦停之权仍在存版闸与全测，此处只报，免其挡道。
     if src2 is not None:
         import subprocess as _sp
+        # ★★★★★2026-08-19 补：领轮即报「本章之厚薄」，令执笔每一轮都看得见它。
+        # ★其由：先前之数只在封版时才见，而那时已无从深掘。
+        try:
+            _lj0 = _lunji_blocks(n)
+            _at = '\n'.join('\n'.join(v) for v in _lj0.values())
+            _cg = max(len(set(re.findall(r'第([一二三四五六七八九十])层', _at))),
+                      len(re.findall(r'★+\s*[一二三四五六七八九十]层', _at)))
+            _bd = open(src2, encoding='utf-8').read().split('【本章亮点】')[0]
+            _nw = len(re.sub(r'\s', '', _bd))
+            print('   ── 本章之厚薄（尽力查·报而不拦）──')
+            print('      层 %d %s｜净重 %d｜跑 --尽力 %d 可见其全'
+                  % (_cg, '⛔<3，须深掘' if _cg < 3 else ('⚠<5' if _cg < 5 else '✓'), _nw, n))
+        except Exception:
+            pass
         for _nm, _f in (('质量五闸', '工具/质量三闸.py'), ('开轮六检', '工具/开轮六检.py'),
                         ('第零轮·下一章之开镜', '工具/第零轮开镜庭.py')):
             _fp = os.path.join(REPO_ROOT, _f) if 'REPO_ROOT' in dir() else _f
@@ -783,7 +820,7 @@ def duibiao_brief(n):
         last = vs[-1] if vs else {}
         out.append('   台账：共%d版，末版 %s「%s」%s'
                    % (len(vs), last.get('版', ''), last.get('说明', ''), last.get('时', '')))
-        out.append('   真轮：%d/10%s' % (len(rs), '' if not miss else
+        out.append('   真轮：%d/%d%s' % (len(rs), ROUNDS, '' if not miss else
                    '｜缺 ' + '、'.join('第%d轮' % i for i in miss)))
         if rc:
             out.extend(rounds_verdict(lg)[2])
@@ -796,9 +833,13 @@ def duibiao_brief(n):
 
 
 LENS_KEY = {1: ['嗅', '听', '触', '密度', '感官'], 2: ['canon', '原场', '逻辑', '器物', '时序', '四堂'],
-            3: ['数', '对表', '日', '逐数'], 4: ['招'], 5: ['在场', '内面', '分位', '人物'],
+            3: ['数', '对表', '日', '逐数'], 4: ['层', '深掘', '到底', '招'], 5: ['在场', '内面', '分位', '人物'],
             6: ['器物', '耗材', '资源'], 7: ['节奏', '留白', '方差', '时序'],
-            8: ['减', '刀', '删'], 9: ['减', '刀', '拆'], 10: ['器物总账', '逐段', '收官', '生死']}
+            8: ['减', '刀', '删'], 9: ['减', '刀', '拆'],
+            10: ['器物总账', '逐段', '收官', '生死'],
+            11: ['读者', '作家', '编辑', '四方', '刁钻'],
+            12: ['复问', '翻案', '功率', '极限'],
+            13: ['通读', '配不配', '最神', '定稿']}
 
 
 def _lunji_blocks(n):
@@ -846,7 +887,16 @@ def duty_list(n, r):
         raw = {x for x in raw if not re.fullmatch(r'一(个|下|回|段|样|类|口|层|把|条|根|卷|分|半)', x)}
         return sorted(raw), '逐数对表：凡作数据主张之数，须核其值、其日、其来处（口语量词不入表）'
     if r == 4:
-        return ['招一', '招二', '招三', '招四', '招五', '招六', '招七', '招八', '招九', '招十'], '十招须逐招标在或缺'
+        # ★★★★★2026-08-19 改·深掘轮之必答表。
+        # ★而其前身为「十招逐招标在或缺」——那是查，查完字数一分不长。
+        # ★★而本表逼的是「推」：一事之下须列层，逐层问其底下还有没有一层。
+        # ★★★而「层」自开镜卡之五层取来；机器只验其数与其裁，不代人想。
+        return (['第一层', '第二层', '第三层', '第四层', '第五层', '已到底', '深掘所得', '招式附检'],
+                ('★深掘轮：一事之下逐层下探。'
+                 '★★每一层须答一句「这一层底下还有没有一层」——'
+                 '答得出即当场写进正文并复量四数；答不出即明记「已到底」及其由。'
+                 '★★★而「深掘所得」一项须报本轮新写了几层、净重增了多少；'
+                 '★★★★而「招式附检」为旧升华庭之遗，十招只作附检，一行带过即可。'))
     if r == 5:
         who = [w for w in ('老头', '钱满', '刘二', '东头', '沈鸢', '陈砚') if w in body or w in ('沈鸢',)]
         # ★★★★★2026-08-16 补：其先前只逼「说明其去向」——
@@ -866,6 +916,35 @@ def duty_list(n, r):
         return ['刀数', '减字'], '减法轮须报刀数与实减字数'
     if r == 10:
         return ['器物总账', '逐段生死'], '收官轮须出器物总账并逐段判生死'
+    if r == 11:
+        # 2026-08-19 立·作者令：编辑、广大读者、专业作家、读者本人，四个角度去读。
+        # 前十轮皆自作者之内眼看（查错、对数、逐层）；而一章之好坏末了不由作者定，
+        # 由读它的人定。故立四方庭：四席各有其问，其问互不可代。
+        return (['读者之眼', '作家之眼', '编辑之眼', '作者之眼', '四席之判', '刁钻一问'],
+                ('四方庭：一章须过四席。'
+                 '①读者之眼：读得下去吗？哪一段会走神？看完记住了哪一样？'
+                 '②作家之眼：有没有一处是别人写不出来的？其手法可有偷懒？'
+                 '③编辑之眼：这一章能不能删？删了全书断什么？读者凭什么翻下一页？'
+                 '④作者之眼：这一章离我心里那个样子还差多远？'
+                 '而四席之判须逐席给一句定论（过／不过＋其由）；'
+                 '而刁钻一问须自问一句最难堪的——一个存心挑刺的人读完，'
+                 '他会拿哪一句来打这一章。'))
+    if r == 12:
+        # 2026-08-19 立·作者令：500%的功率去跑，不能只用10%。
+        # 功率不可直测；可测者为：前十一轮凡判合／已到底／不补之处，回头再问一遍——
+        # 而应付之轮，其判合处必经不起第二问。
+        return (['判合复问', '已到底复问', '不补复问', '翻案几处', '功率自评'],
+                ('极限轮：把前十一轮凡判「合／已到底／判不补」之处逐一复问。'
+                 '其法：不看当初之裁语，只看正文那一处本身，重判一次。'
+                 '而翻案几处须报实数——零翻案者，须明写何以前十一轮无一处判错；'
+                 '而功率自评须逐轮报：这一轮我用了几成力，其凭据为何。'))
+    if r == 13:
+        # 2026-08-19 立·作者令：我要写中国第一的小说。
+        return (['通读', '配不配', '最神一句', '合不上书之处', '删掉此章全书断什么'],
+                ('定稿轮：通读一遍，只问一句——这一章配不配放进中国第一的小说里。'
+                 '而其四问皆须实答：本章最神的一句在哪？读者会在哪一段合不上书？'
+                 '删掉此章，全书断什么？'
+                 '而配不配须给一句定论；而答「配」者，须说出它凭什么配——说不出，就是不配。'))
     return [], '本轮无可机抽之必答项'
 
 
@@ -935,6 +1014,118 @@ def metric_reconcile(n, r, logtext):
     return None, []
 
 
+def jinli(n):
+    """【2026-08-19·尽力查】作者令：「你的目的不是为了跑完，是为了把质量达到最高。
+    这个闸需要做这么一个事情叫质量检测：这一轮有没有尽全力去跑，把质量已经跑到最高了。」
+
+    ★立此查之由（全书最要之一处补漏）：
+      先前九道闸（六闸＋覆盖查＋对数查＋产出基线查）**测的全是「有没有错」，
+      没有一道测「够不够好」**。故一章可以十四检全绿而事小、层薄、字少——
+      而机器一路报✓，因为它只管2000之下限。
+    ★★而其证：181—208均5770（标准差68），209起均3428——掉四成而无一闸出声。
+
+    ★★★而本查之难处在「尽力不可观测」。故不测尽力，改测**尽力必留之三样痕迹**：
+      甲·**层数**：一事之下推了几层（深掘轮之实）——层薄者，事必小。
+      乙·**产出**：全章十轮之净重曲线，是往上长还是原地打转。
+      丙·**到底**：有几层明记「已到底」及其由——一层不记者，多半是没问到底。
+    ★★★★三者皆自磁盘取，事先凑不了；而三者俱低即判「跑完了，没跑透」。
+    """
+    d, led = paths(n)
+    if not os.path.exists(led):
+        print('  ✗第%d章尚无台账' % n)
+        return 2
+    lg = json.load(open(led, encoding='utf-8'))
+    vs = lg.get('版本', [])
+    lj = _lunji_blocks(n)
+    allt = '\n'.join('\n'.join(v) for v in lj.values())
+    src = find_chapter(n)
+    body = open(src, encoding='utf-8').read().split('【本章亮点】')[0] if src else ''
+    net_now = len(re.sub(r'\s', '', body))
+    hard, warn = [], []
+
+    print('\n████ 尽力查 · 第%d章 ████' % n)
+    print('  【why】不测「跑完了没有」，测「跑透了没有」。')
+
+    # 甲·层数
+    print('\n  ── 甲·层数（一事之下推了几层）──')
+    ceng = len(set(re.findall(r'第([一二三四五六七八九十])层', allt)))
+    ceng2 = len(re.findall(r'★+\s*[一二三四五六七八九十]层', allt))
+    n_ceng = max(ceng, ceng2)
+    print('   轮记所见之层：%d 层' % n_ceng)
+    if n_ceng < 3:
+        hard.append('一事之下只推得出%d层——层薄即事小，本章须回第4轮深掘' % n_ceng)
+    elif n_ceng < 5:
+        warn.append('层数%d（<5），须于轮记明记何以不足五层' % n_ceng)
+    else:
+        print('   ✓五层以上，事之厚薄合格。')
+
+    # 乙·产出曲线
+    print('\n  ── 乙·产出（十轮之净重曲线）──')
+    ws = [x.get('soft', {}).get('净重') for x in vs if x.get('soft', {}).get('净重')]
+    if len(ws) >= 3:
+        w0, wmax, wend = ws[0], max(ws), ws[-1]
+        gain = wend - w0
+        print('   起 %d ｜ 峰 %d ｜ 终 %d ｜ 净增 %+d（%+.0f%%）'
+              % (w0, wmax, wend, gain, 100.0 * gain / w0))
+        # ★2026-08-19 订：原判「净增≤0 即硬拦」——而此判过硬，有二不当：
+        #   ①减法轮本就该减；一章若前段深掘充分、后段减得狠，其净增可为负而质量更高。
+        #   ②回归之桩净重恒定，必被误拦（本会话实见）。
+        # ★★故改：只看「峰」与「起」之差——即这十几轮里，有没有哪一轮真让它长过。
+        #   长过而后减，是好刀；从头到尾没长过，才是十轮只在修补。
+        grew = wmax - w0
+        if grew <= 0:
+            hard.append('自起版至峰值一字未长（%+d）——十几轮只在删和改，'
+                        '没有一轮在长；其治是回深掘轮，不是补字' % grew)
+        elif gain < 0 and abs(gain) > grew:
+            warn.append('峰值曾长%+d，而终版反低於起版%+d——减得比长得多，须核减法轮是否削了层'
+                        % (grew, gain))
+        elif gain < w0 * 0.10:
+            warn.append('净增仅%+d（%.0f%%），十轮之功多在修补，少在深掘' % (gain, 100.0 * gain / w0))
+        else:
+            print('   ✓十轮之中确有所长。')
+    else:
+        print('   （版数不足，暂不评）')
+
+    # 丙·到底
+    print('\n  ── 丙·到底（有几层明记「已到底」及其由）──')
+    daodi = len(re.findall(r'已到底|到底了|不必再推|无可再推', allt))
+    print('   明记「已到底」之处：%d' % daodi)
+    if daodi == 0 and n_ceng:
+        warn.append('无一层明记「已到底」——没问到底者，多半是没往下问')
+
+    # 丁·横比（与全书之势）
+    print('\n  ── 丁·横比（本章之厚薄在全书何处）──')
+    import glob as _g
+    allw = []
+    for f in _g.glob(os.path.join(ROOT, '正文', '*章*.md')):
+        tt = open(f, encoding='utf-8').read().split('【本章亮点】')[0]
+        allw.append(len(re.sub(r'\s', '', tt)))
+    if allw:
+        allw.sort()
+        rank = sum(1 for x in allw if x < net_now)
+        pct = 100 * rank // len(allw)
+        med = allw[len(allw) // 2]
+        print('   本章 %d 字｜全书中位 %d｜本章位於第 %d 百分位' % (net_now, med, pct))
+        if pct < 25:
+            warn.append('本章厚薄在全书末四分之一（第%d百分位）——须自问这一事是不是切得太小' % pct)
+
+    print('\n  ══════════════════════════════════════════')
+    if hard:
+        print('  【尽力查·不过】硬项 %d 条：' % len(hard))
+        for h in hard:
+            print('     ⛔ %s' % h)
+        for w in warn:
+            print('     ⚠ %s' % w)
+        print('  ★而其治不是补字，是回第4轮把没推的那一层推下去。')
+        print('  ══════════════════════════════════════════')
+        return 2
+    for w in warn:
+        print('     ⚠ %s' % w)
+    print('  【尽力查·通过】层够厚、有所长、问到底。')
+    print('  ══════════════════════════════════════════')
+    return 0
+
+
 def duty_cover(n, r, logtext):
     """算某轮之覆盖率：必答项中有几项在其轮记里被点到。"""
     items, _ = duty_list(n, r)
@@ -982,8 +1173,8 @@ def zonghe(n):
         r = _round_of(x.get('说明', ''))
         if r:
             byr.setdefault(r, []).append(x)
-    miss_v = [i for i in range(1, 11) if i not in byr]
-    miss_l = [i for i in range(1, 11) if i not in lj]
+    miss_v = [i for i in range(1, ROUNDS + 1) if i not in byr]
+    miss_l = [i for i in range(1, ROUNDS + 1) if i not in lj]
     print('   有版之轮：%s' % ('、'.join(str(i) for i in sorted(byr)) or '无'))
     print('   有记之轮：%s' % ('、'.join(str(i) for i in sorted(lj)) or '无'))
     if miss_v:
@@ -1095,6 +1286,18 @@ def zonghe(n):
           % ('无' if not fl else '**有**', '已偏' if drift else '一致',
              sum(1 for x in vs if '补存' in x.get('说明', ''))))
 
+    # ★★★★★丙2·尽力查（2026-08-19 接入·作者令「目的不是跑完，是把质量跑到最高」）
+    # ★其为本闸链中唯一测「够不够好」者；先前九道皆只测「有没有错」。
+    # ★★而其硬项计入总核之硬项——即：跑透不了，封不了版。
+    print('\n  ── 丙2·尽力查（测跑透，非测跑完）──')
+    try:
+        _jl = jinli(n)
+        if _jl != 0:
+            hard.append('尽力查未过——层薄／十轮无所长／未问到底，'
+                        '其治不是补字，是回第4轮深掘')
+    except Exception as _e:
+        soft_warn.append('尽力查未能跑：%s' % _e)
+
     # 丁·横评择优
     print('\n  ── 丁·横评择优 ──')
     compare(n)
@@ -1130,7 +1333,7 @@ def yanlun(n):
     d, led = paths(n)
     src = find_chapter(n)
     fl = read_flag(n)
-    rs, miss = ([], list(range(1, 11)))
+    rs, miss = ([], list(range(1, ROUNDS + 1)))
     ver, jz = '无', '?'
     if os.path.exists(led):
         lg = json.load(open(led, encoding='utf-8'))
@@ -1147,15 +1350,15 @@ def yanlun(n):
         drift = '一致' if (ls is None or ls == cur) else '**已偏（上一轮之刀没落台账）**'
     rc = _receipts_of(n)
     print('\n████ 权威轮况 · 第%d章 ████' % n)
-    print('  真轮 %d/10 %s' % (len(rs), '已跑：' + '、'.join(str(x) for x in rs) if rs else ''))
+    print('  真轮 %d/%d %s' % (len(rs), ROUNDS, '已跑：' + '、'.join(str(x) for x in rs) if rs else ''))
     print('  缺轮 %s' % ('无' if not miss else '、'.join('第%d轮' % i for i in miss)))
     print('  末版 %s（净重%s）｜正文与末版：%s' % (ver, jz, drift))
     print('  拦停旗：%s' % ('无' if not fl else '**有**（%s｜%s）' % (fl.get('时'), str(fl.get('因'))[:60])))
     print('  回执：%s' % ('已交' if rc else '未交'))
     ok = (not miss) and (not fl) and drift == '一致'
     print('  ── 一行定论 ──')
-    print('  第%d章：真轮%d/10｜缺%s｜正文与末版%s｜旗%s｜回执%s ⇒ %s'
-          % (n, len(rs), ('无' if not miss else str(len(miss)) + '轮'),
+    print('  第%d章：真轮%d/%d｜缺%s｜正文与末版%s｜旗%s｜回执%s ⇒ %s'
+          % (n, len(rs), ROUNDS, ('无' if not miss else str(len(miss)) + '轮'),
              ('一致' if drift == '一致' else '已偏'), ('无' if not fl else '有'),
              ('已交' if rc else '未交'), '可续' if ok else '**须先修**'))
     return 0 if ok else 2
@@ -1223,11 +1426,11 @@ def selftest():
               ['设定/回执_20260804_第151章作业单.md'])[0])
 
     # 闸四·验轮
-    chk('验轮须认满十轮', rounds_state(L([v('第%d轮·x' % i) for i in range(1, 11)]))[1] == [])
-    chk('验轮须报缺第10轮', rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == [10])
+    chk('验轮须认满%d轮'%ROUNDS, rounds_state(L([v('第%d轮·x' % i) for i in range(1, ROUNDS+1)]))[1] == [])
+    chk('验轮须报缺末诸轮', rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == list(range(10,ROUNDS+1)))
     chk('验轮不得把回补当真轮', rounds_state(L([v('终版回补')]))[0] == set())
-    chk('151实录回放·验轮须报缺第10轮',
-        rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == [10])
+    chk('151实录回放·验轮须报缺末诸轮',
+        rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == list(range(10,ROUNDS+1)))
 
     # 闸六·空轮闸
     chk('空轮闸须拦零改动之轮',
@@ -1417,7 +1620,7 @@ def selftest():
     # 闸四·验轮两级判（批113修·防误报）
     R = lambda ls: L([v('第%d轮·x' % i) for i in ls])
     chk('验轮·洞：中间缺号须判硬伤', rounds_verdict(R([1, 2, 3, 5, 6]))[0] == [4])
-    chk('验轮·洞：满十轮不得报洞', rounds_verdict(R(range(1, 11)))[0] == [])
+    chk('验轮·洞：满%d轮不得报洞'%ROUNDS, rounds_verdict(R(range(1, ROUNDS+1)))[0] == [])
     chk('验轮·短：止于第9轮须判存疑而非硬伤',
         rounds_verdict(R(range(1, 10)))[0] == [] and rounds_verdict(R(range(1, 10)))[1] == [10])
     _txt = lambda ls: '\n'.join(rounds_verdict(ls)[2])
@@ -1430,7 +1633,7 @@ def selftest():
     chk('验轮·151实录：第9轮为跨章复审且其后无版，须判存疑',
         '存疑' in _txt(L([v('第%d轮·x' % i) for i in range(1, 9)] +
                          [v('第9轮·跨章复审')])))
-    chk('验轮·满十轮不得报短', rounds_verdict(R(range(1, 11)))[1] == [])
+    chk('验轮·满%d轮不得报短'%ROUNDS, rounds_verdict(R(range(1, ROUNDS+1)))[1] == [])
     chk('验轮·空台账不得报', rounds_verdict(L([])) == ([], [], []))
 
     # 闸六·空轮闸与验轮闸不得相犯（批113修）
@@ -1623,12 +1826,13 @@ def save(n, note=''):
         if _m:
             _rounds.add(int(_m.group(1)))
     _done = len(_rounds)
-    _miss = [i for i in range(1, 11) if i not in _rounds]
-    if _done < 10:
-        print('  ⏳十轮精进：真轮已跑 %d/10（版本%d）；**未跑之轮：%s**'
-              % (_done, v, '、'.join('第%d轮' % i for i in _miss)))
+    _miss = [i for i in range(1, ROUNDS + 1) if i not in _rounds]
+    if _done < ROUNDS:
+        print('  ⏳精进：真轮已跑 %d/%d（版本%d）；**未跑之轮：%s**'
+              % (_done, ROUNDS, v, '、'.join('第%d轮' % i for i in _miss)))
     else:
-        print('  ✓十轮已满（真轮10/10，版本%d），请跑 --横评 %d' % (v, n))
+        print('  ✓%d轮已满（真轮%d/%d，版本%d），请跑 --横评 %d'
+              % (ROUNDS, ROUNDS, ROUNDS, v, n))
     return 0
 
 
@@ -1709,6 +1913,8 @@ def main():
         return bida(n, int(sys.argv[3]))
     if cmd in ('--十一轮', '--总核'):
         return zonghe(n)
+    if cmd == '--尽力':
+        return jinli(n)
     if cmd == '--验轮':
         return yanlun(n)
     if cmd == '--补存':

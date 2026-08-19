@@ -396,7 +396,11 @@ def chk_lunci():
                 vn = 'v%02d' % k
                 body = '《镇冢秘术》\n\n第七章　测\n\n' + ('同一段' if (same and k in same) else '第%d段内容' % k) + '\n'
                 open(_o.path.join(d3, vn + '.md'), 'w', encoding='utf-8').write(body)
-                vs.append({'版': vn, '时': 'x', '说明': r, 'hard': {}, 'soft': dict(SOFT), '全书章数': 1})
+                # 2026-08-19：尽力查测「起→峰有没有长过」，故桩之净重须随轮递增，
+                # 否则正测必被误拦（真章之深掘本就该让它长）。
+                _sf = dict(SOFT)
+                _sf['净重'] = SOFT['净重'] + 10 * len(vs)
+                vs.append({'版': vn, '时': 'x', '说明': r, 'hard': {}, 'soft': _sf, '全书章数': 1})
             json.dump({'章': 7, '版本': vs}, open(_o.path.join(d3, '_台账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
             open(f3, 'w', encoding='utf-8').write(
                 open(_o.path.join(d3, 'v%02d.md' % len(rounds)), encoding='utf-8').read())
@@ -412,41 +416,47 @@ def chk_lunci():
                 duties = m.duty_list(7, i)[0]
             except Exception:
                 duties = []
+            # 2026-08-19：尽力查已接入总核，其测层数／产出／到底。
+            # 回归之桩为假章，须自带五层与「已到底」之记，否则正测必被尽力查误拦。
+            _ceng = ('第一层：甲。第二层：乙。第三层：丙。第四层：丁。第五层：戊。'
+                     '而第五层底下已到底，其由为此为回归之桩，非真章。')
             return ('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**必答逐项**：%s\n'
-                    '**真伤**：一根，已改。%s\n'
+                    '%s\n**真伤**：一根，已改。%s\n'
                     % (i, i, '｜'.join(m.LENS_KEY[i]),
                        '；'.join(duties) if duties else '本轮无可机抽之必答项',
+                       _ceng if i == 4 else '',
                        '补白之句' * 40))
-        full_log = ''.join(_log(i) for i in range(1, 11))
+        _RT = int(getattr(m, 'ROUNDS', 10))   # 2026-08-19：轮数以 ROUNDS 为准，勿写死
+        full_log = ''.join(_log(i) for i in range(1, _RT + 1))
         # 正测：十轮齐、记齐、无空轮 → 须过
-        build(['第%d轮·甲' % i for i in range(1, 11)], full_log)
+        build(['第%d轮·甲' % i for i in range(1, _RT + 1)], full_log)
         b6 = io.StringIO()
         with contextlib.redirect_stdout(b6):
             rc_full = m.zonghe(7)
         if rc_full != 0:
-            bad.append('误拦:十轮齐备之章总核应过（%s）' % b6.getvalue()[-160:].replace('\n', ' '))
+            bad.append('误拦:%d轮齐备之章总核应过（%%s）'%_RT % b6.getvalue()[-160:].replace('\n', ' '))
         elif not _o.path.exists(_o.path.join(d3, '_总核.json')):
             bad.append('漏写:总核过而未出凭据')
         # 负测一：缺第10轮
-        build(['第%d轮·甲' % i for i in range(1, 10)],
-''.join(_log(i) for i in range(1, 10)))
+        build(['第%d轮·甲' % i for i in range(1, _RT)],
+''.join(_log(i) for i in range(1, _RT)))
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:缺第10轮仍判总核过')
         # 负测二：版齐而轮记缺一轮
-        build(['第%d轮·甲' % i for i in range(1, 11)],
-''.join(_log(i) for i in range(1, 11) if i != 4))
+        build(['第%d轮·甲' % i for i in range(1, _RT + 1)],
+''.join(_log(i) for i in range(1, _RT + 1) if i != 4))
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:缺一轮之轮记仍判总核过')
         # 负测三：空轮而未记判不补
-        build(['第%d轮·甲' % i for i in range(1, 11)], full_log, same={5, 6})
+        build(['第%d轮·甲' % i for i in range(1, _RT + 1)], full_log, same={5, 6})
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:空轮未记判不补仍判总核过')
         # 负测四：轮记过简
-        build(['第%d轮·甲' % i for i in range(1, 11)],
-              ''.join('\n## 第%d轮|v%02d|x|净重100\n真伤：无\n' % (i, i) for i in range(1, 11)))
+        build(['第%d轮·甲' % i for i in range(1, _RT + 1)],
+              ''.join('\n## 第%d轮|v%02d|x|净重100\n真伤：无\n' % (i, i) for i in range(1, _RT + 1)))
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:轮记过简仍判总核过')
@@ -460,8 +470,8 @@ def chk_lunci():
                     '本轮所涉：%s\n段数9 长段1\n%s\n'
                     % (i, i, '｜'.join(m.LENS_KEY[i]),
                        '、'.join(du) if du else '无', '补白之句' * 40))
-        build(['第%d轮·甲' % i for i in range(1, 11)],
-              ''.join(_naked_log(i) for i in range(1, 11)))
+        build(['第%d轮·甲' % i for i in range(1, _RT + 1)],
+              ''.join(_naked_log(i) for i in range(1, _RT + 1)))
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:抄清单而不逐项裁定仍判总核过（批125之核心）')
@@ -476,8 +486,8 @@ def chk_lunci():
                     % (i, i, '｜'.join(m.LENS_KEY[i]),
                        '；'.join('%s：已核判合' % x for x in du) if du else '无',
                        '补白之句' * 40))
-        build(['第%d轮·甲' % i for i in range(1, 11)],
-              ''.join(_nonum_log(i) for i in range(1, 11)))
+        build(['第%d轮·甲' % i for i in range(1, _RT + 1)],
+              ''.join(_nonum_log(i) for i in range(1, _RT + 1)))
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:轮记之数对不上台账仍判总核过')
@@ -492,13 +502,13 @@ def chk_lunci():
                     % (i, i, '｜'.join(m.LENS_KEY[i]),
                        '；'.join('%s：已核判合' % x for x in du) if du else '无',
                        '补白之句' * 40))
-        build(['第%d轮·甲·判不补' % i for i in range(1, 11)],
-              ''.join(_nohurt_log(i) for i in range(1, 11)))
+        build(['第%d轮·甲·判不补' % i for i in range(1, _RT + 1)],
+              ''.join(_nohurt_log(i) for i in range(1, _RT + 1)))
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:
                 bad.append('漏拦:全章十轮皆无真伤仍判总核过（产出基线）')
         # 负测五：拦停旗未销
-        build(['第%d轮·甲' % i for i in range(1, 11)], full_log)
+        build(['第%d轮·甲' % i for i in range(1, _RT + 1)], full_log)
         m.raise_flag(7, '测', '第9轮')
         with contextlib.redirect_stdout(io.StringIO()):
             if m.zonghe(7) != 2:

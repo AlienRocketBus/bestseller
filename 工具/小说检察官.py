@@ -3153,7 +3153,7 @@ def _in_progress(n):
                 tx = open(lp, encoding='utf-8').read()
                 if not ('拆' in tx and str(n) in tx):
                     continue
-            return len(rs) < 10
+            return len(rs) < _rounds_total()
     except Exception:
         pass
     return False
@@ -3174,6 +3174,19 @@ def _zonghe_ok(n):
                 '不过不许封版(批123/126)' % (n, n))
     except Exception:
         return None
+
+
+def _rounds_total():
+    """总轮数以 工具/十轮精进.py 之 ROUNDS 为准（2026-08-19 由10扩为13）。
+    立此函之由：轮数原写死在两个文件里，改一处必漏一处。"""
+    try:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_jj', os.path.join(REPO_ROOT, '工具', '十轮精进.py'))
+        _m = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_m)
+        return int(getattr(_m, 'ROUNDS', 10))
+    except Exception:
+        return 10
 
 
 def _rounds_full(n):
@@ -4382,8 +4395,9 @@ def jj_hook(n, note=''):
             _tab = ['封版轮', '冷轮补执', '四堂会审', '挑刺王终读', '升华庭',
                     '十庭①(资源/感官)', '十庭②(在场/内面)', '十庭③(时序/节奏/留白)',
                     '跨章复审', '减法轮']
-            _nx = _tab[len(_v)] if len(_v) < 10 else '横评'
-            print('  ▶下一轮该开：**%s**（第%d轮／共10轮）' % (_nx, len(_v) + 1))
+            _RT = _rounds_total()
+            _nx = _tab[len(_v)] if len(_v) < len(_tab) else ('横评' if len(_v) >= _RT else '第%d轮' % (len(_v)+1))
+            print('  ▶下一轮该开：**%s**（第%d轮／共%d轮）' % (_nx, len(_v) + 1))
     except Exception:
         pass
 

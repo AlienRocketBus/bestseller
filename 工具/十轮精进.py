@@ -90,7 +90,9 @@ def score(txt):
         '章号入正文': len(re.findall(r'[一二三四五六七八九十百]+章', body)),
         '禁抖': body.count('抖'),
         '永禁词': sum(body.count(w) for w in ['哆嗦', '骊山', '僵尸', '点亮']),
-        '段间空行病': len(re.findall(r'。\n(?!\n)[^\n]', txt)),
+        # 【修】原取 txt（全文），致亮点块「一行一条、条间不空行」之体例被误判为正文段落黏连。
+        # 邻项凡查正文者皆用 body、查亮点者皆用 hl；此处独用 txt 与自身体例不一致。段落空行系正文体例，故改 body。
+        '段间空行病': len(re.findall(r'。\n(?!\n)[^\n]', body)),
         '亮点段破折': hl.count('—'),
         '亮点段五逗': sum(1 for s in re.split(r'(?<=[。！？…])', hl) if s.count('，') >= 5),
         '亮点段半角': hl.count(',') + hl.count('"'),

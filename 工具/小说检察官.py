@@ -1825,6 +1825,24 @@ def diff_gate(n, base="HEAD"):
     nb=[x.strip() for x in new.split('【本章亮点】')[0].split('\n') if x.strip()]
     oset=set(ob)
     changed=[(i,x) for i,x in enumerate(nb) if x not in oset]
+    # 【批123·订】原此闸只认「新增之段」为变动：纯删段时 changed 为空，遂报「无文本变动」而放行。
+    #   ★而删段之缝口正是新伤最爱长的地方（上下二段本不相邻，删掉中间那一段，它们就直接接上了）；
+    #   ★★而220、222第10轮连着两回皆为「处死三段」，此闸连着两回报「无文本变动」。
+    #   ★★★而我两回都把它记成「删段之前未先存版」之序错——★★★★其实序不序都一样，此闸看不见删。
+    # 治：并算「删掉之段」，以其在新文中的接缝处为变动位，照样查缝口。
+    nset = set(nb)
+    deleted = [x for x in ob if x not in nset]
+    if deleted and not changed:
+        # 纯删段：找出每一处删口在新文中的位置（删掉那一段的前一段之后）
+        seams = []
+        for i, x in enumerate(ob):
+            if x in nset:
+                continue
+            prev = next((ob[j] for j in range(i - 1, -1, -1) if ob[j] in nset), None)
+            if prev is not None and prev in nb:
+                seams.append((nb.index(prev), prev))
+        changed = seams
+        print('\n  ℹ本轮为纯删段（删 %d 段）：以删口为变动位查缝口。' % len(deleted))
     print('\n'+'█'*3+' 改动闸 · 第%d章（只查缝口·新伤只长在这里） '%n+'█'*3)
     print('  段数 %d → %d ；变动段 %d'%(len(ob),len(nb),len(changed)))
     if not changed:

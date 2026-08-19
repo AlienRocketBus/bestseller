@@ -1167,10 +1167,15 @@ def jinli(n):
         _zs = len(re.findall(r'真伤[一二三四五六七八九十\\d]+根', _b))
         _zhi = len(re.findall(r'其治|已治|当场治|补於|改作|削|斩', _b))
         _fl = len(re.findall(r'复量|复扫|复跑|复核', _b))
-        _mark = '✓' if (_zhi >= 2 or _fl >= 2) else '⚠'
+        # 【2026-08-19·修】原判只数「治／复量」之字面词频，而 _zs（真伤N根）算了却没用；
+        #   ★其果：一轮明写「真伤三根，三处俱治」者，字面只有一个「治」，遂被判为走过场。
+        #   ★★而真伤之数才是动手之实凭——一根真伤必有一处落刀，否则它不叫真伤。
+        #   ★★★故加一路：凡轮记明记真伤（或翻案）者，即为有动手之痕。
+        _fan = len(re.findall(r'翻案[一二三四五六七八九十\d]+处', _b))
+        _mark = '✓' if (_zhi >= 2 or _fl >= 2 or _zs >= 1 or _fan >= 1) else '⚠'
         if _mark == '⚠':
             _idle.append(_r)
-        print('   第%-2d轮 治%2d 复量%2d %s' % (_r, _zhi, _fl, _mark))
+        print('   第%-2d轮 真伤%d 治%2d 复量%2d %s' % (_r, _zs + _fan, _zhi, _fl, _mark))
     if _idle:
         warn.append('第%s轮无动手之痕（治与复量俱不足二处）——须自问那几轮是不是走了过场'
                     % '、'.join(str(x) for x in _idle))

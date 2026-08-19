@@ -572,6 +572,30 @@ def lens_table():
     return out
 
 
+
+def _is_old_era(n):
+    """【第102批·回修令】此章是不是「旧制封版」之章。
+    ★判据二条并立：①已交回执（即已封版）②其台账所记之轮，最大值≤10。
+    ★★而其用：凡今日方立之闸（十三轮制、深掘轮、尽力查），
+       不得拿去量它立法之前就已封版的章——★★★那不是伤，是制度换代。"""
+    try:
+        sd = os.path.join(ROOT, '设定')
+        sealed = any(('第%d章' % n) in f and '回执' in f for f in os.listdir(sd))
+        if not sealed:
+            return False
+        led = os.path.join(JJ_DIR, '第%d章' % n, '_台账.json')
+        if not os.path.exists(led):
+            return False
+        rs = set()
+        for x in json.load(open(led, encoding='utf-8')).get('版本', []):
+            m = re.match(r'第\s*(\d+)\s*轮', x.get('说明', ''))
+            if m:
+                rs.add(int(m.group(1)))
+        return bool(rs) and max(rs) <= 10
+    except Exception:
+        return False
+
+
 def _sha(t):
     import hashlib
     return hashlib.sha256(t.strip().encode('utf-8')).hexdigest()[:16]
@@ -1084,8 +1108,16 @@ def jinli(n):
     ceng2 = len(re.findall(r'★+\s*[一二三四五六七八九十]层', allt))
     n_ceng = max(ceng, ceng2)
     print('   轮记所见之层：%d 层' % n_ceng)
+    # 【第102批·回修令】旧制封版之章只报不拦：★深掘轮（第4轮）系217章方立；
+    #   ★★而其前之章，第4轮跑的是旧制别的镜头，轮记里自然没有「第N层」之语。
+    #   ★★★拿今日之尺去量，则每一章回修都必然红在层数——那不是这一刀之伤。
+    #   ★★★★而「只报不拦」不是放过：报仍在，作者见得着；拦的是不该拦的那一下。
     if n_ceng < 3:
-        hard.append('一事之下只推得出%d层——层薄即事小，本章须回第4轮深掘' % n_ceng)
+        if _is_old_era(n):
+            print('   ⚠只推得出%d层（★而本章系旧制封版，深掘轮尚未立；'
+                  '此项只报不拦）' % n_ceng)
+        else:
+            hard.append('一事之下只推得出%d层——层薄即事小，本章须回第4轮深掘' % n_ceng)
     elif n_ceng < 5:
         warn.append('层数%d（<5），须于轮记明记何以不足五层' % n_ceng)
     else:
@@ -1226,8 +1258,18 @@ def zonghe(n):
         r = _round_of(x.get('说明', ''))
         if r:
             byr.setdefault(r, []).append(x)
-    miss_v = [i for i in range(1, ROUNDS + 1) if i not in byr]
-    miss_l = [i for i in range(1, ROUNDS + 1) if i not in lj]
+    # 【第102批·回修令】旧制封版之章，须按其封版时之轮制量，不按今日之 ROUNDS。
+    #   ★其由：十三轮制立於217章；而217之前104章皆十轮制所封。
+    #   ★★若拿今日之尺去量昨日封的章，则每一章回修都必然红在「缺11/12/13轮」——
+    #      而那不是这一刀之伤，是制度换代之常态。
+    #   ★★★故：取本章「有版之轮」之最大值为其制；十轮制之章按10轮量。
+    #   ★★★★而新章（未封版者）一律按 ROUNDS 量，此路不放行。
+    _era = 10 if _is_old_era(n) else ROUNDS
+    if _era != ROUNDS:
+        print('   ℹ本章系旧制（%d轮制）封版，按其自身之制量；今制为%d轮。'
+              % (_era, ROUNDS))
+    miss_v = [i for i in range(1, _era + 1) if i not in byr]
+    miss_l = [i for i in range(1, _era + 1) if i not in lj]
     print('   有版之轮：%s' % ('、'.join(str(i) for i in sorted(byr)) or '无'))
     print('   有记之轮：%s' % ('、'.join(str(i) for i in sorted(lj)) or '无'))
     if miss_v:
@@ -1299,8 +1341,15 @@ def zonghe(n):
             if naked:
                 print('        只提未裁：%s' % '、'.join(naked[:8]))
             if jp < 50:
-                hard.append('第%d轮裁定率仅%d%%（%d/%d）——提了而未裁者过半，'
-                            '抄清单不算干活' % (r, jp, jc, tot))
+                # 【第102批·回修令】旧制封版之章只报不拦：★必答表随镜头而定，
+                #   而第4轮之必答表系「深掘轮」之八项（217章方立）；
+                #   ★★旧制之章第4轮跑的是别的镜头，其轮记自然对不上今日之表。
+                if _is_old_era(n):
+                    print('        ⚠裁定率低（★而本章系旧制封版，'
+                          '此轮之镜头与今制不同；此项只报不拦）')
+                else:
+                    hard.append('第%d轮裁定率仅%d%%（%d/%d）——提了而未裁者过半，'
+                                '抄清单不算干活' % (r, jp, jc, tot))
             elif jp < 80:
                 soft_warn.append('第%d轮裁定率%d%%（%d/%d），只提未裁者须于回执补裁'
                                  % (r, jp, jc, tot))

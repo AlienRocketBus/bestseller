@@ -167,6 +167,32 @@ def chk_unfinished():
     return False, '；'.join(bad[:2]) if bad else '未通过'
 
 
+def chk_huixiu():
+    """回修案（2026-08-19立·见 设定/10_回修令.md 与 工具/回修.py）：
+    ★作者亲令「封版之后一样也可以改，只要能让整本书质量最高」。
+    ★★而第六十六批早已立此法，却躺了一个月无人跑——其由：只有字，无闸。
+    ★★★依批100之融入标准（能拦住交付方算融入），故立此检：
+    凡已开之回修案，其连带同步与复验须办毕，四问须答毕；未毕者禁封版。"""
+    import glob as _g
+    d = os.path.join(ROOT, '设定', '回修案')
+    if not os.path.isdir(d):
+        return True, '无在办之回修案'
+    fs = _g.glob(os.path.join(d, '回修案_第*章_*.md'))
+    if not fs:
+        return True, '无在办之回修案'
+    bad = []
+    for f in fs:
+        n = re.search(r'第(\d+)章', os.path.basename(f))
+        if not n:
+            continue
+        out = run('回修', ['工具/回修.py', '--验案', n.group(1)])
+        if out is None or '禁封版' in (out or '') or '未办毕' in (out or ''):
+            bad.append('第%s章' % n.group(1))
+    if bad:
+        return False, '回修案未办毕：%s（见 设定/10_回修令.md 第四节）' % '、'.join(bad)
+    return True, '回修案 %d 件俱办毕' % len(fs)
+
+
 def chk_dup_defs():
     """重名定义扫描。
     病灶实证：批113所加之 s_withlog／s_nolog／s_reopen 落在批114替换区之外而与新写者重名，
@@ -597,6 +623,7 @@ def main():
         items.append(('开轮十六检', chk_open_six))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
+        items.append(('回修案', chk_huixiu))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
     for name, fn in items:

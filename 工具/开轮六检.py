@@ -561,9 +561,30 @@ def check19(cur):
         return [('⑲·骨之方向', True, '★章数不足，免测')]
     dirs = []
     for c in cs:
-        b = body(c)
-        sc = {k: sum(b.count(w) for w in ws) for k, ws in DIRECTION.items()}
-        dirs.append((c, max(sc, key=sc.get)))
+        # 【批123·订】词频判向，其病在「不问所对之物」：
+        #   ★221通篇是问人、记账、对着一个躺着的人摸床底下的缝（走路实判仅4段），
+        #   ★★而「摸／蹲／插／伸手」尽归「往前」，遂把一篇往侧之章判成往前；
+        #   ★★★而同一个动作，其向由「所对之物」定，不由动作本身定（221开镜卡问五所立）。
+        # 治：某章之开镜卡若已明写「本章之向：X」，即以卡为准——
+        #   ★而卡是人判的、且须给实判之据（数其动，非数其词）；★★词频只在无卡时用。
+        _d = None
+        _kj = os.path.join(ROOT, '版本', '第%d章' % c, '_开镜卡.md')
+        if os.path.exists(_kj):
+            try:
+                _kt = open(_kj, encoding='utf-8', errors='replace').read()
+                _m = re.search(r'本章之向[：:）\)\*★]*[^\n]{0,12}?(往内|往外|往前|往侧)', _kt)
+                if _m:
+                    for _k in DIRECTION:
+                        if _k.startswith(_m.group(1)):
+                            _d = _k
+                            break
+            except Exception:
+                pass
+        if _d is None:
+            b = body(c)
+            sc = {k: sum(b.count(w) for w in ws) for k, ws in DIRECTION.items()}
+            _d = max(sc, key=sc.get)
+        dirs.append((c, _d))
     from collections import Counter
     cnt = Counter(d for _, d in dirs)
     top, n = cnt.most_common(1)[0]

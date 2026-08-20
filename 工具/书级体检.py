@@ -176,8 +176,11 @@ def sig_of(body):
     if not ps2:
         return None, 0, 0
     n = len(ps2)
-    total = sum(net_len(x) for x in ps)
-    avg = total / max(1, len(ps))
+    # ★2026-08-20 订：先前分母用 len(ps)，而 ps 含「＊」分隔行；
+    # ★★而分子 total 只算实字，故均段被虚增之分母腰斩，全书尽判「短」。
+    # ★★★今分子分母同源：皆只算实段（ps2）。
+    total = sum(ps2)
+    avg = total / max(1, n)
     # 章型以均段分档：短（<15）／中（15-21）／长（>21）
     kind = '短' if avg < 15 else ('中' if avg <= 21 else '长')
     return kind, avg, total

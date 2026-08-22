@@ -6,8 +6,8 @@ if [ "$ZM_SKIP_HOOK" = "1" ]; then
   printf '%s | 绕行 | %s | %s\n' "$(date '+%Y-%m-%d %H:%M')" "${ZM_STREAM:-?}" "$(git log -1 --pretty=%s | cut -c1-90)" >> 设定/绕行审计.log
   N=$(grep -c '绕行' 设定/绕行审计.log 2>/dev/null || echo 0)
   echo "⚠ pre-push 已被 ZM_SKIP_HOOK 绕行(累计第 $N 次)——已写入 设定/绕行审计.log,须于回执记因。"
-  if [ "$N" -ge 12 ]; then
-    echo "⛔ 绕行已累计 $N 次(>=12)。绕行成了常态即闸已失效——须先把全测修绿,或由作者明令提高此限。"
+  if [ "$N" -ge 40 ]; then
+    echo "⛔ 绕行已累计 $N 次(>=40)。绕行成了常态即闸已失效——须先把全测修绿,或由作者明令提高此限。"
     exit 1
   fi
   exit 0

@@ -664,6 +664,17 @@ def check20(cur):
                    '★★★%s' % (len(qs), len(unans), '；'.join(unans[:3]))))]
 
 
+# ★2026-08-22 订（257第1轮所逮）：⑯与⑰二检之docstring自注「报而不拦」，
+#   ★★而 run 一律计入 bad，遂使「报」变成「拦」——全测只认「开轮十六检通过」六字，
+#   ★★★故一条本该只报的警，实际拦住了全测，且其治不在本章之文（⑰读的是已写各章之形，
+#       须待下一章落笔才解），遂逼人绕闸。
+#   ★★★★今照其自注办：此二条只报不计 bad；其余一律照旧计入，闸之松紧未动。
+_软报 = ('⑯·悬账之量', '⑰·近五章之形')
+
+def _是软报(name):
+    return any(name.startswith(k) for k in _软报)
+
+
 def run(chs, quiet=False):
     bad = 0
     rows = []
@@ -675,7 +686,7 @@ def run(chs, quiet=False):
             # ★2026-08-17 订：未起草之章亦须可跑检——★★而其时正该跑⑭⑯⑰以定其可否起草。
             for name, ok, msg in check14(c) + check16(c) + check17(c) + check18(c) + check19(c) + check20(c) + check21(c):
                 rows.append((name, ok, msg))
-                if not ok:
+                if not ok and not _是软报(name):
                     bad += 1
             rows.append(('第%d章·正文' % c, True, '★尚未起草（★★而⑭⑯⑰已跑，可据以起草）'))
             continue
@@ -688,7 +699,7 @@ def run(chs, quiet=False):
     _tail = (check18(cur) + check19(cur) + check20(cur) + check21(cur)) if (cur in F) else []
     for name, ok, msg in check5() + check6(cur) + check7(cur) + check11(cur) + check13(cur) + check12(cur) + check14(cur) + check15(cur) + check16(cur) + check17(cur) + _tail:
         rows.append((name, ok, msg))
-        if not ok:
+        if not ok and not _是软报(name):
             bad += 1
     if not quiet:
         print('=' * 64)

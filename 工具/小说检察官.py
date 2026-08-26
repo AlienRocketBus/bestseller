@@ -5172,7 +5172,7 @@ def super_main():
                 print('  ✗ 文件不属于当前正文集，无法做跨章封版: '+path); total_error+=1; continue
             print(); print(f'════ 超级智能体·第{ch}章封版门 ════')
             e=priority_one(files,ch,lib); abs_collide(files,ch,lib); underwrite_radar(files,ch); e+=mech_layer(files,ch,lib)
-            _cerr,_clines=canon_ledger_check([f for f in files if _chap_num(f)==ch])
+            _v=files[max(files)]; _cerr,_clines=canon_ledger_check(list(_v) if isinstance(_v,(list,tuple)) else [_v])
             if _clines:
                 print('  ── canon保护账 ──')
                 for it in _clines: print(it)
@@ -5191,7 +5191,7 @@ def super_main():
             print(f'  ✗ 第{ch}章不存在；当前正文范围为'+(f'1—{max(files)}章' if files else '空')); return 2
         print(f'════ 超级智能体·第{ch}章封版门 ════')
         e=priority_one(files,ch,lib); abs_collide(files,ch,lib); underwrite_radar(files,ch); e+=mech_layer(files,ch,lib)
-        _cerr,_clines=canon_ledger_check([f for f in files if _chap_num(f)==ch])
+        _v=files[ch]; _cerr,_clines=canon_ledger_check(list(_v) if isinstance(_v,(list,tuple)) else [_v])
         if _clines:
             print('  ── canon保护账 ──')
             for it in _clines: print(it)

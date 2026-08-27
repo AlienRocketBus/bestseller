@@ -78,7 +78,12 @@ def main():
         except Exception:
             print('⛔ 取不到 open_brief.for_ch，请以 python3 工具/一坐.py N 指定章号')
             return
+    # ★2026-08-27 补：上一坐器起手报第280章而实为286（彼器顺着找第一个无台账之章即停）。
+    #   ★★故章号须带其来处：印哪一章就是哪一章，交接／记忆所报之号不作数。
+    src = ('命令行所指' if (len(sys.argv) > 1 and sys.argv[1].isdigit())
+           else 'canon事实库·open_brief.for_ch')
     out.append('════ 一坐 · 第%d章 ════' % n)
+    out.append('（此号出於 %s。★交接所报之号不作数；不符者先查缺件，不许绕过。）' % src)
 
     # ── 一·台账与正文 ──
     lp = os.path.join(ROOT, '版本', '第%d章' % n, '_台账.json')
@@ -96,11 +101,42 @@ def main():
         out.append('净重：台账 %d ｜ 正文 %d ｜ %s'
                    % (lw, tw, '相符' if lw == tw else '★相违（差%d）' % (tw - lw)))
         out.append('真轮：%d/13　已跑 %s' % (len(rounds), rounds if rounds else '无'))
+        # ★2026-08-27 补·不许漏轮（作者原话）。此器旧只数轮之多少，不问二事：
+        #   ★★一·断号（跑了一轮而未存版，或存版而未记轮——P28轮次蒸发病之形）；
+        #   ★★二·空轮（台账有其号而轮记无其条——286第5轮即是：全部痕迹只一次自动对账）。
+        缺号 = [r for r in range(1, max(rounds) + 1) if r not in rounds] if rounds else []
+        if 缺号:
+            out.append('★断号：第%s轮在台账里没有' % '、'.join(str(r) for r in 缺号))
+            fix.append('轮号断於第%s轮 → 那一轮或跑了而未存版，或根本没跑；'
+                       '查 版本/第%d章/_轮记.md 定其一，补跑或补存，不许径直往下走'
+                       % ('、'.join(str(r) for r in 缺号), n))
+        jp = os.path.join(ROOT, '版本', '第%d章' % n, '_轮记.md')
+        if rounds and os.path.exists(jp):
+            j = io.open(jp, encoding='utf-8').read()
+            空 = [r for r in rounds if not re.search(r'##\s*第\s*%d\s*轮' % r, j)]
+            if 空:
+                out.append('★空轮：第%s轮台账有其号，而轮记无其条'
+                           % '、'.join(str(r) for r in 空))
+                fix.append('第%s轮跑了等於没跑（轮记无其条）→ 补其条：'
+                           '真伤几根·捕几治几·一疑一句；'
+                           '答不出即当作未跑，须补跑该轮'
+                           % '、'.join(str(r) for r in 空))
         if lw != tw:
             fix.append('台账与正文相违 → 跑 python3 工具/跑轮.py --补存 %d "说明"，'
                        '再以独立调用复核' % n)
         if hard:
             fix.append('硬项 %d 未清 → 扫破折／说破／五逗／半角／英文，清零后补存' % hard)
+        # ★2026-08-27 补：286第6轮存版报「四字串三现15→23（升）」。
+        #   直接认则改回，直接驳则是自我安慰；逐版复算方知它随净重长，本轮零增。
+        #   ★★故此处自比，不待存版报；报即连其复算之命一并给。
+        for k, 优 in (('四字串三现', min), ('顿悟起手', min), ('嗅', max), ('沈鸢', max)):
+            xs = [v.get('soft', {}).get(k) for v in vs]
+            xs = [x for x in xs if isinstance(x, int)]
+            if len(xs) >= 2 and xs[-1] != 优(xs):
+                out.append('★棘轮·%s：末版 %d ｜历来最优 %d' % (k, xs[-1], 优(xs)))
+                fix.append('棘轮回退（%s）→ 跑 python3 工具/预检.py --棘轮 %d --项 %s；'
+                           '以其逐版之表裁之，不许直接认亦不许直接驳；'
+                           '裁毕写进轮记（认／驳／留后轮，三者必居其一）' % (k, n, k))
         nxt = (max(rounds) + 1) if rounds else 1
         if len(rounds) >= 13:
             out.append('▶ 十三轮已满 → 该跑封版之序')
@@ -189,15 +225,29 @@ def main():
         out.append('  查不成：%s' % str(e)[:40])
 
     # ── 六·git ──
+    # ★2026-08-27 补：280—286之正文、四器、全部台账曾只存於一机，一次未推——几乎丢七章。
+    #   ★★圣经第五十五批《仓库即时同步铁律》立了一个月，从未跑过：此为「写下来的法不生效」之极。
+    #   ★★★故此处不问本地缓存（git status -sb 之 ahead 只信上回 fetch），直问远端。
     st = R('git', 'status', '--short')
     lg = R('git', 'log', '--oneline', '-1')
-    ah = R('git', 'status', '-sb')
-    m = re.search(r'ahead (\d+)', ah)
+    dirty = len([x for x in st.split('\n') if x.strip()])
+    br = R('git', 'rev-parse', '--abbrev-ref', 'HEAD').strip()
+    head = R('git', 'rev-parse', 'HEAD').strip()
+    rem = R('git', 'ls-remote', 'origin', br)
+    rhead = rem.split('\t')[0].strip() if rem.strip() else ''
     out.append('── git ──')
-    out.append('  未提交 %d 件｜本地领先 %s 笔｜末笔 %s'
-               % (len([x for x in st.split('\n') if x.strip()]),
-                  m.group(1) if m else '0', lg.strip()[:44]))
-    if len([x for x in st.split('\n') if x.strip()]) > 20:
+    out.append('  未提交 %d 件｜枝 %s｜末笔 %s' % (dirty, br, lg.strip()[:44]))
+    if not rhead:
+        out.append('  ★远端答不出（网断或无此枝）')
+        fix.append('远端未验 → 跑 git ls-remote origin %s；'
+                   '答不出即当作未推，不许以「我方才推过」为凭' % br)
+    elif rhead == head:
+        out.append('  远端 %s ＝ 本地 ✓ 已推' % rhead[:8])
+    else:
+        out.append('  ★远端 %s ≠ 本地 %s ⛔ 未推' % (rhead[:8], head[:8]))
+        fix.append('本地未推 → git push；推毕再跑 git ls-remote origin %s 验其等於本地。'
+                   '★全令之中，唯此一险不可逆' % br)
+    if dirty > 20:
         fix.append('未提交逾二十件 → 先提交，免其失於一处')
 
     # ── 修法 ──

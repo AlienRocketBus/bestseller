@@ -16,6 +16,9 @@
     # 二·模拟代换（最有用：改了之后全章之数会怎样）
     python3 工具/预检.py --代 286 --旧 "原文原样" --新 "拟改之文"
     python3 工具/预检.py --代 286 --旧档 /tmp/旧.txt --新档 /tmp/新.txt
+
+    # 三·棘轮复算（存版报回退时跑它，不许凭印象认或驳）
+    python3 工具/预检.py --棘轮 286 --项 四字串三现
 """
 import argparse
 import io
@@ -127,6 +130,58 @@ def 代换(n, 旧, 新):
     return 0
 
 
+def 棘轮(n, 项):
+    """存版报某软项回退时，逐版复算，以数裁之。
+
+    ★其立法之由（286第6轮）：存版报「四字串三现 15→23（升）」。
+      直接认则改回，直接驳则是自我安慰。
+      逐版复算方知：它随净重长，而本轮净重+90 而零增。
+    """
+    import glob
+    m = _跑轮()
+    d = os.path.join(ROOT, '版本', '第%d章' % n)
+    档 = sorted(glob.glob(os.path.join(d, 'v*.md')))
+    if not 档:
+        print('⛔ 第%d章无版本档' % n)
+        return 2
+    print('══ 棘轮复算 · 第%d章 · 「%s」══' % (n, 项))
+    print()
+    print('  %-6s %10s %10s %8s' % ('版', 项, '净重', '每千字'))
+    行 = []
+    for f in 档:
+        h, s = m.score(_读(f))
+        v = s.get(项, h.get(项))
+        净 = s.get('净重', 0)
+        if v is None:
+            print('⛔ 无此项：%s。可选：%s' % (项, '／'.join(list(s) + list(h))))
+            return 2
+        行.append((os.path.basename(f)[:-3], v, 净))
+        print('  %-6s %10s %10s %8.1f'
+              % (行[-1][0], v, 净, (v * 1000.0 / 净) if 净 else 0))
+    print()
+    最优 = min(x[1] for x in 行)
+    首, 末 = 行[0], 行[-1]
+    print('  ── 裁 ──')
+    print('     历史最优 %s（出於 %s，彼时净重 %d）'
+          % (最优, [x[0] for x in 行 if x[1] == 最优][0],
+             [x[2] for x in 行 if x[1] == 最优][0]))
+    print('     末版 %s（净重 %d）' % (末[1], 末[2]))
+    if len(行) >= 2:
+        前 = 行[-2]
+        d项, d净 = 末[1] - 前[1], 末[2] - 前[2]
+        print('     本轮 %s%d ｜ 净重 %s%d' % ('+' if d项 >= 0 else '', d项,
+                                              '+' if d净 >= 0 else '', d净))
+        if d项 <= 0 < d净:
+            print('     ✓ 本轮净重涨而此项未涨——判「长而不复」，回退非本轮所致。')
+        elif d项 > 0 and d净 > 0 and (d项 * 1000.0 / d净) < (末[1] * 1000.0 / 末[2]):
+            print('     ⚠ 本轮此项涨得比全章密度慢——多半随净重长，须看其条目再裁。')
+        elif d项 > 0:
+            print('     ⛔ 本轮此项涨而净重未涨（或涨得更快）——回退恐为本轮所致，须逐条查。')
+    print()
+    print('  ★裁毕须写进轮记：认它／驳它／留后轮复核，三者必居其一，并附此表。')
+    return 0
+
+
 def main():
     p = argparse.ArgumentParser(add_help=True)
     p.add_argument('--文')
@@ -136,7 +191,11 @@ def main():
     p.add_argument('--新')
     p.add_argument('--旧档')
     p.add_argument('--新档')
+    p.add_argument('--棘轮', type=int)
+    p.add_argument('--项', default='四字串三现')
     a = p.parse_args()
+    if a.棘轮:
+        return 棘轮(a.棘轮, a.项)
     if a.代:
         旧 = a.旧 if a.旧 is not None else (_读(a.旧档) if a.旧档 else None)
         新 = a.新 if a.新 is not None else (_读(a.新档) if a.新档 else None)

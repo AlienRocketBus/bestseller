@@ -52,6 +52,26 @@ def R(*a):
         return ''
 
 
+def R2(*a):
+    """跑一个命令，返回 (stdout, 跑成了没有)。
+
+    ★2026-08-27 立。其由：旧只有 R()，凡命令崩／超时一律返空串；
+      而空串到了 `bad = [l for l in six... if '⛔' in l]` 那里成了 bad==[]，
+      屏上照印「六检全绿」。**实测：蓄意令 开轮六检.py 崩，一坐印「六检全绿」。**
+    ★★一道不会响的闸，比没有闸更坏——它还发虚假的安心。
+    ★★★故凡以此函之输出下「全绿」之判者，须先看 ok。
+    """
+    try:
+        p = subprocess.run(list(a), cwd=ROOT, capture_output=True,
+                           text=True, timeout=600)
+        # ★不以返回码判生死：查出问题者本就返非零（开轮六检查出即返2）。
+        #   ★★判据取「活体标记」：器正常必印 ✓ 或 ⛔ 之一；而 traceback 一个也没有。
+        o = p.stdout
+        return o, bool(o.strip()) and ('✓' in o or '⛔' in o)
+    except Exception:
+        return '', False
+
+
 def body(n):
     """取第n章白文（去章题与亮点段）。"""
     for f in glob.glob(os.path.join(ROOT, '正文', '*.md')):
@@ -152,10 +172,14 @@ def main():
         out.append('▶ 该跑第1轮（起草）')
 
     # ── 二·闸 ──
-    six = R('python3', '工具/开轮六检.py', str(n))
+    six, six_ok = R2('python3', '工具/开轮六检.py', str(n))
     bad = [l.strip() for l in six.split('\n') if '⛔' in l]
     out.append('── 闸 ──')
-    if bad:
+    if not six_ok:
+        out.append('  ⛔ 六检跑不成（器崩／超时／无输出）——★不作全绿论')
+        fix.append('六检跑不成 → 单独跑 python3 工具/开轮六检.py %d 看它报什么错；'
+                   '★修好再往下走。器崩之输出不许当作「查过了」' % n)
+    elif bad:
         for l in bad[:6]:
             out.append('  ' + re.sub(r'\s+', ' ', l)[:100])
     else:

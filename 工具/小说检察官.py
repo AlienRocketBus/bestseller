@@ -1551,6 +1551,49 @@ OPEN_BRIEF_CARD_SCHEMA = {
         '床上那个人·第232章即时状态',
         'E3·有意识校准进度',
     ),
+    286: (
+        '她·伤情',
+        '苏衍·第285章水边即时状态',
+        '沈鸢·第283章屋内即时状态',
+        '全书·三样无人读之记号',
+        'E4·巴蜀水下开站三数',
+    ),
+    285: (
+        '她·伤情',
+        '沈鸢·第283章屋内即时状态',
+        '苏衍·第284章水边即时状态',
+        '全书·三样无人读之记号',
+        'E4·巴蜀水下开站三数',
+    ),
+    284: (
+        '她·伤情',
+        '苏衍·第282章水边即时状态',
+        '沈鸢·第283章屋内即时状态',
+        '全书·三样无人读之记号',
+        'E4·巴蜀水下开站三数',
+    ),
+    283: (
+        '她·伤情',
+        '沈鸢·第281章屋内即时状态',
+        '苏衍·第282章水边即时状态',
+        '全书·三样无人读之记号',
+        'E4·巴蜀水下开站三数',
+    ),
+    282: (
+        '她·伤情',
+        '苏衍·第280章坑边即时状态',
+        '沈鸢·第281章屋内即时状态',
+        '全书·三样无人读之记号',
+        'E4·巴蜀水下开站三数',
+    ),
+    281: (
+        '她·伤情',
+        '沈鸢·第279章屋内即时状态',
+        '苏衍·第280章坑边即时状态',
+        '全书·三样无人读之记号',
+        'E4·巴蜀水下开站三数',
+        'E4·第276章往水边',
+    ),
     280: (
         '她·伤情',
         '苏衍·第278章水边即时状态',
@@ -3671,7 +3714,7 @@ def round11_audit(n):
     """【批126·检察官侧第十一轮】作者令：第十一轮须启动小说检察官，查这十轮到底有没有认真干、有没有尽全力。
 
     分工（不合并，各守其长；合并即是给三千行之工具再添险，P25）：
-      · 十轮精进 `--十一轮` 查「**轮**跑透没有」：跑满／空轮／轮记实质／覆盖／裁定／对数／产出基线／横评择优。
+      · 跑轮 `--十一轮` 查「**轮**跑透没有」：跑满／空轮／轮记实质／覆盖／裁定／对数／产出基线／横评择优。
       · 检察官此口查「这一章对**全书**交代清楚没有」——用其独有之料：
         canon事实库、圣经、到期账、回述实证哨兵、病历本前三大病号、翻页备料。
     二者皆过，方为第十一轮通过。
@@ -3829,18 +3872,18 @@ def _zonghe_ok(n):
                 return None
         return ('第十一轮未过:未见 版本/第%d章/_十一轮.json——'
                 '十轮跑完须跑 python3 工具/小说检察官.py --十一轮 %d '
-                '(两眼齐审:左眼十轮精进查轮跑透没有,右眼检察官查这一章对全书交代清楚没有),'
+                '(两眼齐审:左眼跑轮查轮跑透没有,右眼检察官查这一章对全书交代清楚没有),'
                 '不过不许封版(批123/126)' % (n, n))
     except Exception:
         return None
 
 
 def _rounds_total():
-    """总轮数以 工具/十轮精进.py 之 ROUNDS 为准（2026-08-19 由10扩为13）。
+    """总轮数以 工具/跑轮.py 之 ROUNDS 为准（2026-08-19 由10扩为13）。
     立此函之由：轮数原写死在两个文件里，改一处必漏一处。"""
     try:
         import importlib.util as _u
-        _sp = _u.spec_from_file_location('_jj', os.path.join(REPO_ROOT, '工具', '十轮精进.py'))
+        _sp = _u.spec_from_file_location('_jj', os.path.join(REPO_ROOT, '工具', '跑轮.py'))
         _m = _u.module_from_spec(_sp)
         _sp.loader.exec_module(_m)
         return int(getattr(_m, 'ROUNDS', 10))
@@ -3852,7 +3895,7 @@ def _rounds_full(n):
     """【批121·封版闸】第153章起，十轮不满不许封版。
     病灶（作者亲报）：「十轮有时只跑了七轮／八轮，或轮次跳号」。
     其成因链已查明：某轮存版被拦而未察→轮记按台账末版标错号→正文与末版脱节→带病连跑数轮。
-    十轮精进侧已立发轮前置闸与轮记版未到闸堵住前三环；此处堵最后一环：
+    跑轮侧已立发轮前置闸与轮记版未到闸堵住前三环；此处堵最后一环：
     **纵使前面都漏了，回执一交，机器仍会把缺的轮数点出来，且禁封版。**
     只对 n>=153 生效——历史章之轮号编法不一（P23轮号漂移），不追溯。
     全程 try/except 包死，取不到台账一律放行（宁可不拦，不可误拦）。"""
@@ -3870,8 +3913,8 @@ def _rounds_full(n):
         miss = [i for i in range(1, 11) if i not in rs]
         if not miss:
             return None
-        return ('十轮不满:真轮%d/10,缺 %s——十轮精进未跑满不许封版(批121)；'
-                '若某轮已跑而版未存,跑 python3 工具/十轮精进.py --补存 %d "第N轮·镜头" 补上；'
+        return ('十轮不满:真轮%d/10,缺 %s——跑轮未跑满不许封版(批121)；'
+                '若某轮已跑而版未存,跑 python3 工具/跑轮.py --补存 %d "第N轮·镜头" 补上；'
                 '若确系并轮,须于回执写明哪一轮并入哪一轮及其由'
                 % (len(rs), '、'.join('第%d轮' % i for i in miss), n))
     except Exception:
@@ -3901,7 +3944,7 @@ def _kailun_duibiao(ch):
     全程 try/except 包死——本块任何异常一律静默降级，绝不得拖累检察官。"""
     try:
         import importlib.util as _ilu
-        _f = os.path.join(os.path.dirname(os.path.abspath(__file__)), '十轮精进.py')
+        _f = os.path.join(os.path.dirname(os.path.abspath(__file__)), '跑轮.py')
         if not os.path.exists(_f):
             return
         _sp = _ilu.spec_from_file_location('_zm_shilun', _f)
@@ -5026,21 +5069,21 @@ def _usage():
 
 
 def jj_hook(n, note=''):
-    """【批103】十轮精进挂钩：--验收 跑完自动存版＋棘轮闸；满十轮自动横评。
+    """【批103】跑轮挂钩：--验收 跑完自动存版＋棘轮闸；满十轮自动横评。
     立法：机制不设平行命令，一律走检察官单一入口；作者只说"续"与"挑刺"。"""
     try:
         import importlib.util as _ilu
-        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '十轮精进.py')
+        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '跑轮.py')
         if not os.path.exists(_p):
             return
         _s = _ilu.spec_from_file_location('_jj', _p)
         _m = _ilu.module_from_spec(_s)
         _s.loader.exec_module(_m)
     except Exception as e:
-        print('  ⚠十轮精进模块未能加载：%s' % e)
+        print('  ⚠跑轮模块未能加载：%s' % e)
         return
     print('\n' + '=' * 64)
-    print('   【十轮精进 · 批103自动挂钩】本轮挑刺完毕，自动存版')
+    print('   【跑轮 · 批103自动挂钩】本轮挑刺完毕，自动存版')
     print('=' * 64)
     _m.save(n, note or '（本轮说明未填，须在回执补记开庭与真伤级别）')
     _d, _led = _m.paths(n)
@@ -5088,23 +5131,23 @@ def rel_day_check(n, body):
 
 def _round11_main(n):
     """【批126】第十一轮总入口：两只眼一起睁。
-    左眼＝十轮精进（轮跑透没有）：跑满／空轮／轮记实质／覆盖／裁定／对数／产出基线／横评择优。
+    左眼＝跑轮（轮跑透没有）：跑满／空轮／轮记实质／覆盖／裁定／对数／产出基线／横评择优。
     右眼＝检察官（这一章对全书交代清楚没有）：圣经入册／到期账／回述实证／前三大病号／翻页备料。
     **二者皆过方算第十一轮通过**，并由本口写出合并凭据 _十一轮.json；
     封版闸认此凭据（旧 _总核.json 亦认，向下兼容）。"""
     print('\n████████ 第十一轮 · 两眼齐审 · 第%d章 ████████' % n)
     lhard = []
-    print('\n■■ 左眼：十轮精进（轮跑透没有）■■')
+    print('\n■■ 左眼：跑轮（轮跑透没有）■■')
     try:
         import importlib.util as _i3
-        _p3 = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '十轮精进.py')
+        _p3 = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '跑轮.py')
         _s3 = _i3.spec_from_file_location('_jj3', _p3)
         _m3 = _i3.module_from_spec(_s3); _s3.loader.exec_module(_m3)
         rc_left = _m3.zonghe(n)
         if rc_left != 0:
-            lhard.append('十轮精进侧总核未过（见上）')
+            lhard.append('跑轮侧总核未过（见上）')
     except Exception as e:
-        lhard.append('十轮精进侧总核未能运行：%s' % e)
+        lhard.append('跑轮侧总核未能运行：%s' % e)
         print('  ⚠%s' % e)
 
     print('\n■■ 右眼：检察官（这一章对全书交代清楚没有）■■')
@@ -5129,7 +5172,7 @@ def _round11_main(n):
     d = _os.path.join(REPO_ROOT, '版本', '第%d章' % n)
     _os.makedirs(d, exist_ok=True)
     _j3.dump({'时': _dt.datetime.now().strftime('%m-%d %H:%M'),
-              '左眼': '十轮精进总核·过', '右眼': '检察官五检·过', '软项': rsoft},
+              '左眼': '跑轮总核·过', '右眼': '检察官五检·过', '软项': rsoft},
              open(_os.path.join(d, '_十一轮.json'), 'w', encoding='utf-8'),
              ensure_ascii=False, indent=1)
     print('  【第十一轮·通过】两眼皆过。已出凭据：版本/第%d章/_十一轮.json' % n)
@@ -5142,7 +5185,7 @@ def super_main():
     if len(sys.argv) > 1 and sys.argv[1] in ('--开拍', '--验收'):
         try:
             import importlib.util as _i2
-            _p2 = os.path.join(os.path.dirname(os.path.abspath(__file__)), '十轮精进.py')
+            _p2 = os.path.join(os.path.dirname(os.path.abspath(__file__)), '跑轮.py')
             if os.path.exists(_p2):
                 _s2 = _i2.spec_from_file_location('_jj2', _p2)
                 _m2 = _i2.module_from_spec(_s2); _s2.loader.exec_module(_m2)

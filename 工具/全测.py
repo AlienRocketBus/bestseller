@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """全测——一条命令跑完全部回归，一个结论定去留。
 
-【批115·立】病灶：此前验证须分四次调用（检察官 --selftest／--doctor／全书检、十轮精进 --自测），
+【批115·立】病灶：此前验证须分四次调用（检察官 --selftest／--doctor／全书检、跑轮 --自测），
   四段输出各看各的，遂有「改一处而不知碰坏他处」之隙；本会话已两度自证——
   ZM_REOPEN 所写空 soft 记录令存版必崩、同名夹具后者覆盖前者令二测名义在跑而实测旧局，
   皆是「改bug时造bug」而当时四段输出俱绿。
@@ -53,7 +53,7 @@ def chk_doctor():
 
 
 def chk_shilun():
-    out = run('十轮精进负测', ['工具/十轮精进.py', '--自测'])
+    out = run('跑轮负测', ['工具/跑轮.py', '--自测'])
     m = re.search(r'负测（含端到端真跑）：(\d+)/(\d+)', out)
     if not m:
         m = re.search(r'负测：(\d+)/(\d+)', out)
@@ -302,7 +302,7 @@ def chk_lunci():
     此测守三口：发轮前置闸、轮记版未到闸、封版十轮不满闸。"""
     import importlib.util as u, sys, tempfile, json, os as _o, io, contextlib
     sys.argv = ['x']
-    sp = u.spec_from_file_location('_i4', os.path.join(ROOT, '工具', '十轮精进.py'))
+    sp = u.spec_from_file_location('_i4', os.path.join(ROOT, '工具', '跑轮.py'))
     m = u.module_from_spec(sp)
     sp.loader.exec_module(m)
     sp2 = u.spec_from_file_location('_i5', os.path.join(ROOT, '工具', '小说检察官.py'))
@@ -615,7 +615,7 @@ def main():
              ('节奏方差闸回归', chk_rhythm),
              ('轮次完整性回归', chk_lunci),
              ('检察官自测', chk_selftest), ('医生', chk_doctor),
-             ('十轮精进负测', chk_shilun)]
+             ('跑轮负测', chk_shilun)]
     if not quick:
         items.append(('全书检', chk_book))
         items.append(('书级体检', chk_bookwide))

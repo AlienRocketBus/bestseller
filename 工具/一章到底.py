@@ -139,7 +139,7 @@ def diagnose(n):
 
     # 1 跑闸
     print('\n── 一·并发闸 ──')
-    out = sh("python3 -c \"import importlib.util;s=importlib.util.spec_from_file_location('j','工具/十轮精进.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m);print(m.concurrency_check(quiet=True)[1].split(chr(10))[2])\"")
+    out = sh("python3 -c \"import importlib.util;s=importlib.util.spec_from_file_location('j','工具/跑轮.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m);print(m.concurrency_check(quiet=True)[1].split(chr(10))[2])\"")
     print('  ' + out.strip()[:120])
 
     # 2 台账 → 本轮
@@ -255,7 +255,7 @@ def close_round(n, note):
     sh('python3 工具/同步全本阅读器.py')
     print('  ✓')
     print('\n── 存版（新律：先于push） ──')
-    o = sh('python3 工具/十轮精进.py --存版 %d "%s"' % (n, note))
+    o = sh('python3 工具/跑轮.py --存版 %d "%s"' % (n, note))
     for ln in o.splitlines()[-4:]:
         print('  ' + ln.strip())
     print('\n── 自测 ──')

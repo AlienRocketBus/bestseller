@@ -126,12 +126,32 @@ def chk_open_six():
     _cs = [x for x in _cs if x > 0]
     _nx = (max(_cs) + 1) if _cs else 1
     out = run('开轮十六检', ['工具/开轮六检.py', str(_nx), '--静'])
+    _RAW['开轮十六检'] = out or ''
     if out is None:
         return False, '运行失败'
     if '开轮十六检通过' in out:
         return True, '六检皆过'
     bad = [ln.strip() for ln in out.splitlines() if ln.strip()]
     return False, '；'.join(bad[:3]) if bad else '未通过'
+
+
+def chk_push_gate():
+    """推闸负测（2026-08-28立·随「改钩子之策」同日·见 工具/负测_推闸.py）。
+    ★其立之由：推闸一开，闸即从「全绿才许推」放宽为「跑轮期间可推」；
+    ★★而放宽之闸若窗划得不准，等於把闸拆了——故须有测逐一证其窄。
+    ★★★十六项之中，放行者只三（跑轮中·只那二项），其余十三项一律须拦。"""
+    out = run('负测·推闸', ['工具/负测_推闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
 
 
 def chk_day_gate():
@@ -184,6 +204,7 @@ def chk_round_zero():
         if _m:
             cs.append(_p)
     out = run('第零轮', ['工具/第零轮开镜庭.py', '--静'])
+    _RAW['第零轮'] = out or ''
     if out is None:
         return False, '运行失败'
     if '第零轮通过' in out:
@@ -646,6 +667,81 @@ def chk_hookspath():
     return True, '已挂 %s' % want
 
 
+
+# ═══ 推闸（2026-08-28 立·作者令「改钩子之策」）═══
+# ★其由（器印之实证，非印象）：⑥·冷轮之欠之销，只能由本章回执里那六个字「N章冷眼轮」落，
+#   ★★而回执是封版时才交的；故全测在任一章的十三轮期间必红，
+#   ★★★只在「刚封版且下一章已立卡」那个窄窗里绿。
+# ★★★★而跑轮令§八要求每轮报「远端＝本地」，即每轮该推一次——二者直抵，遂有绕行45次。
+# ★而其正法：分二档。本章回执未交（正在跑轮）时，只放行那两项结构性之红；
+#   ★★其余任一项红，照旧拦；★★★本章回执一交，即恢复「全绿才许推」。
+# ★★★★而窗划得极窄，一分不弱：
+#   ·⑥只放行「不带逾期二字」者——逾期即是真漏，照旧拦；
+#   ·⑥之外，开轮十六检里任一别的检报红，照旧拦；
+#   ·第零轮只放行「索下一章之卡」者——若它索的是本章之卡，照旧拦。
+_RAW = {}
+_放行标 = '✓推闸·跑轮档：放行'
+
+
+def _末章():
+    """★末一有正文之章（无正文者不算）。"""
+    import glob as _g, os as _o, re as _r
+    CN = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
+          '六': 6, '七': 7, '八': 8, '九': 9, '十': 10}
+    best = 0
+    for _p in _g.glob(os.path.join(ROOT, '正文', '*.md')):
+        m = _r.search(r'第([零〇一二三四五六七八九十百]+)章', _o.path.basename(_p))
+        if not m:
+            continue
+        t = n = 0
+        for ch in m.group(1):
+            if ch in CN and ch != '十':
+                n = CN[ch]
+            elif ch == '十':
+                t += (n or 1) * 10
+                n = 0
+            elif ch == '百':
+                t += (n or 1) * 100
+                n = 0
+        best = max(best, t + n)
+    return best
+
+
+def _已封版(n):
+    """★回执已交即视为已封版（与检察官、跑轮同法）。"""
+    import glob as _g
+    return bool(_g.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
+
+
+def 推闸(fails):
+    """★返回 (放行否, 语)。★★只在「本章回执未交」时才许放行，且只放行那两项。"""
+    cur = _末章()
+    if not cur:
+        return False, '⛔推闸：正文一篇也无，不放行。'
+    if _已封版(cur):
+        return False, ('⛔推闸：第%d章回执已交（已封版），此时须全绿方许推。' % cur)
+    准 = []
+    for name in fails:
+        raw = _RAW.get(name, '')
+        if name == '开轮十六检':
+            条 = [x.strip() for x in raw.split('；') if x.strip()]
+            if not 条 or any(not x.startswith('⑥·冷轮之欠') for x in 条):
+                return False, ('⛔推闸：开轮十六检所报不止⑥一条（%s），照旧拦。'
+                               % '／'.join(x[:12] for x in 条 if not x.startswith('⑥·冷轮之欠'))[:60])
+            if '逾期' in raw:
+                return False, '⛔推闸：⑥所报含「逾期」，那是真漏，照旧拦。'
+            准.append('⑥·冷轮之欠（其销须待第%d章回执）' % cur)
+        elif name == '第零轮':
+            if ('--立 %d' % (cur + 1)) not in raw:
+                return False, '⛔推闸：第零轮所索非下一章之卡，照旧拦。'
+            准.append('第零轮（索第%d章之卡，而其卡须待第%d章封版方立）' % (cur + 1, cur))
+        else:
+            return False, '⛔推闸：「%s」不在结构性之列，照旧拦。' % name
+    return True, ('%s\n  【跑轮档】第%d章回执未交，正在跑轮；所放行者只此 %d 项：%s。\n'
+                  '  【其限】此二项俱於本章回执一交即自销；其余任一项红，照旧拦。'
+                  % (_放行标, cur, len(准), '；'.join(准)))
+
+
 def main():
     quick = '--快' in sys.argv
     items = [('重名定义扫描', chk_dup_defs), ('钩子挂载', chk_hookspath),
@@ -661,6 +757,7 @@ def main():
         items.append(('开轮十六检', chk_open_six))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
+        items.append(('负测·推闸', chk_push_gate))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))
@@ -673,7 +770,10 @@ def main():
             fails.append(name)
     if fails:
         print('\n  ⛔全测未过：%s' % '、'.join(fails))
-        print('  【批115】不过不许推——pre-push 钩子据此拦停。')
+        ok, 语 = 推闸(fails)
+        print('  %s' % 语)
+        if not ok:
+            print('  【批115】不过不许推——pre-push 钩子据此拦停。')
         return 1
     print('\n  ✓全测通过%s。' % ('（快测，未含全书检）' if quick else ''))
     return 0

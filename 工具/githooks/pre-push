@@ -1,5 +1,11 @@
 #!/bin/sh
 # 【批115】双绿方推之闸。【批122】绕行须留痕:ZM_SKIP_HOOK 不许无痕。
+# 【2026-08-28·作者令「改钩子之策」】分二档:
+#   ★病灶(器印之实证):⑥·冷轮之欠之销只能由本章回执里那六个字落,而回执是封版时才交的;
+#     ★★故全测在任一章的十三轮期间必红,只在「刚封版且下一章已立卡」那个窄窗里绿;
+#     ★★★而跑轮令§八要求每轮报「远端＝本地」,即每轮该推一次——二者直抵,遂有绕行45次。
+#   ★★★★其正法:本章回执未交(正在跑轮)时,只放行那两项结构性之红(见 工具/全测.py 之「推闸」);
+#     ★其余任一项红照旧拦;★★本章回执一交,即恢复「全绿才许推」。
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 if [ "$ZM_SKIP_HOOK" = "1" ]; then
@@ -13,11 +19,17 @@ if [ "$ZM_SKIP_HOOK" = "1" ]; then
   exit 0
 fi
 echo "── pre-push:全测中(批115)……"
-ZM_STREAM="${ZM_STREAM:-streamA-cli}" python3 工具/全测.py
+OUT=$(ZM_STREAM="${ZM_STREAM:-streamA-cli}" python3 工具/全测.py 2>&1)
 rc=$?
-if [ $rc -ne 0 ]; then
-  echo "⛔ 全测未过,推送已拦停。修好再推,或 ZM_SKIP_HOOK=1 绕行并记因(绕行会留痕计数)。"
-  exit 1
+echo "$OUT"
+if [ $rc -eq 0 ]; then
+  echo "✓ 全测通过,放行。"
+  exit 0
 fi
-echo "✓ 全测通过,放行。"
-exit 0
+if echo "$OUT" | grep -q '✓推闸·跑轮档：放行'; then
+  echo "✓ 跑轮档放行(非全绿;所放行者只结构性之二项,详见上「推闸」之语)。"
+  echo "  ★而本章回执一交,此二项自销,届时须全绿方许推。"
+  exit 0
+fi
+echo "⛔ 全测未过,推送已拦停。修好再推,或 ZM_SKIP_HOOK=1 绕行并记因(绕行会留痕计数)。"
+exit 1

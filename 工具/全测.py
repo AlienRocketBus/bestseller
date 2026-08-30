@@ -135,6 +135,38 @@ def chk_open_six():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+def chk_reversible():
+    """可逆库之验（2026-08-30立·作者令「我给你授权，但要留下记录，随时可以复原」）。
+    ★逐件核 sha256：库若损，「随时可复原」即是空话，而那条授权也就白给了。
+    ★★故此验一红即拦推——库不完好之时，任何不可逆之事都不许再办。"""
+    out = run('可逆库之验', ['工具/可逆.py', '--验', '--静'])
+    if out is None:
+        return False, '运行失败'
+    if '可逆库完好' in out:
+        import glob as _g
+        n = len([x for x in _g.glob(os.path.join(ROOT, '版本', '_可逆库', 'R*')) if os.path.isdir(x)])
+        return True, '%d 笔·逐件 sha256 相符' % n
+    return False, out.strip()[:120]
+
+
+def chk_reversible_neg():
+    """可逆册负测（2026-08-30立·见 工具/负测_可逆册.py）。
+    ★二十三项：存了真能复原（含删章之形）／库损了认得出／认不出时敢不敢拦／
+    ★★号须递增不许覆盖／册须逐笔留痕（号、由、复原之法三样俱在）。"""
+    out = run('负测·可逆册', ['工具/负测_可逆册.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_push_gate():
     """推闸负测（2026-08-28立·随「改钩子之策」同日·见 工具/负测_推闸.py）。
     ★其立之由：推闸一开，闸即从「全绿才许推」放宽为「跑轮期间可推」；
@@ -758,6 +790,8 @@ def main():
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))
+        items.append(('可逆库之验', chk_reversible))
+        items.append(('负测·可逆册', chk_reversible_neg))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

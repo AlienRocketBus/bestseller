@@ -134,6 +134,25 @@ def chk_open_six():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+def chk_day_gate():
+    """①之c·一章一日 负测（2026-08-28立·随「补零〇」同日·见 工具/负测_日词闸.py）。
+    ★其立之由：旧式不含零／〇，凡带零之日号一律漏认，且报「0 处」而非报错；
+    ★★其最险之一形：「第一百天」与「第一百零一天」同章，旧闸报「1 处」——二日同章整个放过去。
+    ★★★而此测已以旧式回灌验过：旧式之下十一项坏五项，新式之下全通。"""
+    out = run('负测·日词闸', ['工具/负测_日词闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_cold_gate():
     """⑥·冷轮之欠 负测（2026-08-28立·随「改⑥之闸」同日·见 工具/负测_冷轮闸.py）。
     ★其立之由：改闸之後⑥当场转绿，而一个只会说「零」的闸没有价值；
@@ -641,6 +660,7 @@ def main():
         items.append(('质量三闸', chk_quality_gates))
         items.append(('开轮十六检', chk_open_six))
         items.append(('负测·冷轮闸', chk_cold_gate))
+        items.append(('负测·日词闸', chk_day_gate))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

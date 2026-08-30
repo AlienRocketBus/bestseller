@@ -224,11 +224,25 @@ def _全单():
     return out
 
 
+def _未入库者(路径们):
+    """★2026-08-30 补·作者令「所有的内容一定都要完好无损地存在 GitHub」：
+    ★★sha256 只证库没烂，不证库上了 GitHub——一个没被 git 认下的库，
+    ★★★下一个容器一起来就没了，而那时 sha256 照样报「完好」。
+    ★★★★故加此一格：逐件问 git 认不认。返回未入库者之列。"""
+    未 = []
+    for r in 路径们:
+        if _git('ls-files', '--error-unmatch', '--', r) is None:
+            未.append(r)
+    return 未
+
+
 def 验(quiet=False):
-    """★逐件核 sha256：库若损，「随时可复原」即是空话。★★此验接进全测。"""
+    """★逐件核 sha256（库没烂）＋逐件核 git 认不认（库存得住）。
+    ★★二者缺一，「随时可复原」即是空话。★★★此验接进全测。"""
     单们 = _全单()
     坏 = []
     件数 = 0
+    库件 = []
     for 单 in 单们:
         if 单['类'] == '⛔单坏':
             坏.append('%s：单读不出' % 单['号'])
@@ -245,17 +259,35 @@ def 验(quiet=False):
                 坏.append('%s：%s 库中缺' % (单['号'], x['路']))
             elif sha(src) != x['sha256']:
                 坏.append('%s：%s 库中已损' % (单['号'], x['路']))
+            else:
+                库件.append(_rel(src))
+        库件.append(_rel(os.path.join(d, '_单.json')))
+    未 = _未入库者(库件)
+    for r in 未:
+        坏.append('未入 git：%s（★而未入 git 者，换个容器就没了）' % r)
+    远 = _git('rev-parse', 'HEAD')
+    未推 = None
+    if 远 and not 未:
+        枝 = _git('rev-parse', '--abbrev-ref', 'HEAD') or ''
+        r = _git('ls-remote', 'origin', 枝)
+        远头 = r.split()[0] if r else None
+        if 远头 and 远头 != 远:
+            未推 = '本地 %s ≠ 远端 %s' % (远[:12], 远头[:12])
     if quiet:
         print('可逆库完好' if not 坏 else '；'.join(坏[:3]))
+        if not 坏 and 未推:
+            print('  ⚠库已入 git 而尚未推：%s（推上去才算存在 GitHub）' % 未推)
     else:
         print('███ 可逆库之验 ███')
-        print('  %d 笔｜%d 件' % (len(单们), 件数))
+        print('  %d 笔｜%d 件｜入 git %d 件' % (len(单们), 件数, len(库件) - len(未)))
+        if 未推:
+            print('  ⚠尚未推：%s——★入了 git 只是存得住，推上去才算存在 GitHub。' % 未推)
         if 坏:
             for x in 坏:
                 print('  ⛔ %s' % x)
             print('  ⛔ 库不完好——「随时可复原」不成立，推送须拦。')
         else:
-            print('  ✓ 逐件 sha256 相符，库完好。')
+            print('  ✓ 逐件 sha256 相符，且逐件皆已入 git——库完好且存得住。')
     return 0 if not 坏 else 2
 
 

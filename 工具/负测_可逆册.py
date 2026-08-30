@@ -123,6 +123,37 @@ with tempfile.TemporaryDirectory() as t:
     chk('⑪之b 册上须见其由', '其由甲乙丙' in txt, True)
     chk('⑪之c 册上须见复原之法', '--复原 R0001' in txt, True)
 
+
+# ⑫ 库中之件未入 git → 验须报坏（sha256 只证库没烂，不证库存得住）
+with tempfile.TemporaryDirectory() as t:
+    造场(t)
+    m.存('试', ['正文/甲.md'])
+    def _假git(*a):
+        if a and a[0] == 'ls-files':
+            return None          # ★一件也没入 git
+        return 'deadbeef' if a and a[0] == 'rev-parse' else 'zhi'
+    m._git = _假git
+    chk('⑫库中之件未入git·验须报坏', m.验(True), 2)
+
+# ⑬ 逐件皆入 git → 验须过
+with tempfile.TemporaryDirectory() as t:
+    造场(t)
+    m.存('试', ['正文/甲.md'])
+    m._git = lambda *a: (None if a and a[0] == 'ls-remote' else
+                         ('deadbeef' if a and a[0] == 'rev-parse' else 'zhi'))
+    chk('⑬逐件皆入git·验须过', m.验(True), 0)
+
+# ⑭ 只单.json 未入 git（原物入了）→ 验仍须报坏
+with tempfile.TemporaryDirectory() as t:
+    造场(t)
+    m.存('试', ['正文/甲.md'])
+    def _半git(*a):
+        if a and a[0] == 'ls-files':
+            return None if str(a[-1]).endswith('_单.json') else 'zhi'
+        return 'deadbeef' if a and a[0] == 'rev-parse' else 'zhi'
+    m._git = _半git
+    chk('⑭只单.json未入git·验仍须报坏', m.验(True), 2)
+
 os.chdir(_旧cwd)
 
 坏 = [x for x in 案 if not x[1]]

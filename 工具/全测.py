@@ -134,6 +134,25 @@ def chk_open_six():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+def chk_cold_gate():
+    """⑥·冷轮之欠 负测（2026-08-28立·随「改⑥之闸」同日·见 工具/负测_冷轮闸.py）。
+    ★其立之由：改闸之後⑥当场转绿，而一个只会说「零」的闸没有价值；
+    ★★故此测专问它还逮不逮得住真欠——十项之中六项为「须报而报」，四项为「不须报而不报」。
+    ★★★令九·③：写下来的法不生效，只有变成闸才生效。"""
+    out = run('负测·冷轮闸', ['工具/负测_冷轮闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -621,6 +640,7 @@ def main():
         items.append(('书级体检', chk_bookwide))
         items.append(('质量三闸', chk_quality_gates))
         items.append(('开轮十六检', chk_open_six))
+        items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

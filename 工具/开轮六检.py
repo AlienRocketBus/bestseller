@@ -143,10 +143,41 @@ def _cold_done(n):
     return False
 
 
+# ★★★★★2026-08-28 改·作者令「改⑥之闸」（令九·③：一道天天要绕的闸，错的是闸不是人）。
+# ★病灶（器印之实证，非印象）：⑥之通则为「第N章之冷眼轮於第N+2章到期」，
+#   ★★而270以来诸档自书之限皆为 N+3（270→限273／283→限286／284→限287），
+#   ★★★遂使每一笔冷轮在其真限之前一章即被报作「未执」；
+#   ★★★★而执笔为推送只得绕闸——绕行累计45次，闸遂自封（≥40即拒绕）。
+# ★而其正法二：①档自书之「限」压倒通则，档里没写的才退回 N+2；
+#   ★★②cur 须收到「末一有正文之章」——未起草之章不该被当作当章来查
+#      （其实证：以287为cur时287正文0字，而⑥仍据之报 COLD-285 未执）。
+# ★★★而防其反用（一个写着「限999」的档即可废掉此闸）：限逾 N+5 者不认，退回通则。
+COLD_LIMIT_SPAN = 5
+
+
+def _cold_limit(n):
+    """★某冷轮自书之限（其档首行之「限N」）；取不到或逾 N+5 者，退回通则 N+2。"""
+    for fp in sorted(glob.glob(os.path.join(ROOT, '设定', '冷轮_COLD%d_*.md' % n))):
+        try:
+            with open(fp, encoding='utf-8', errors='replace') as fh:
+                head = fh.readline()
+        except OSError:
+            continue
+        m = re.search(r'限\s*(\d+)', head)
+        if m:
+            lim = int(m.group(1))
+            if n < lim <= n + COLD_LIMIT_SPAN:
+                return lim
+    return n + 2
+
+
 def check6(cur):
-    """★冷轮於第N+2章到期；★★而全书检虽报，十轮之开轮不报——故此检为开轮之用。"""
-    late = [n for n in sorted(F) if n >= 73 and n + 2 <= cur and not _cold_done(n)]
-    ov = [n for n in late if n + 2 <= cur - 1]  # ★逾期一章以上
+    """★冷轮之期取其档自书之「限」，无档者用通则 N+2；
+    ★★而全书检虽报，十轮之开轮不报——故此检为开轮之用。"""
+    if F:
+        cur = min(cur, max(F))  # ★未起草之章不作当章
+    late = [n for n in sorted(F) if n >= 73 and _cold_limit(n) <= cur and not _cold_done(n)]
+    ov = [n for n in late if _cold_limit(n) <= cur - 1]  # ★逾期一章以上
     return [('⑥·冷轮之欠', not late,
              '零' if not late else '★%d笔未执：%s%s' % (
                  len(late), '、'.join('COLD-%d' % n for n in late[:4]),

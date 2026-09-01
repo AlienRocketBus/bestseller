@@ -286,7 +286,7 @@ def main():
         if _m3 or _m4:
             out.append('── 旧账（立闸於287·其前不回头判红，而一笔不许躺着）──')
             if _m3:
-                out.append('  数闸：「N个字」之标签不符 %s 处（第288章起再犯一处即硬拦）' % _m3.group(1))
+                out.append('  数闸：「N个字」之标签不符 %s 处 ⛔硬拦（旧账已於2026-09-01还清）' % _m3.group(1))
             if _m4:
                 out.append('  FS：逾期之伏笔未回话 %s 根（自288之回执起硬拦）' % _m4.group(1))
     except Exception:

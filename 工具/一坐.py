@@ -204,8 +204,21 @@ def main():
         src, due = int(m.group(1)), int(m.group(2))
         if abs(due - n) > 3:
             continue
-        s = io.open(f, encoding='utf-8').read()
-        done = ('已执' in s and '销档' in s)
+        # ★★★★★2026-09-01 治·二器对同一笔给相反之判（全书审计第二层 2-8）：
+        #   ★同一 HEAD 上，一坐印「COLD-284／285 未执」，而开轮六检印「⑥·冷轮之欠 零」⛔。
+        #   ★★其由：一坐读档内之「已执＋销档」二词，而六检读回执之「N章冷眼轮」六字——**两处判据**。
+        #   ★★★数其群（令§六②）：冷轮档 134 份，**含「已执＋销档」者仅 37 份，97 份没有**——
+        #     ★★★★那个标记从来没成为惯例；而回执那一路是封版之序强制的（令§十①），也是⑥所读。
+        #   ★故判：**判据错在一坐，改闸不改档**；此後与六检同用一处 `_cold_done`，二器不许再各记各的。
+        try:
+            import importlib.util as _u
+            _sp = _u.spec_from_file_location('_六检', os.path.join(ROOT, '工具', '开轮六检.py'))
+            _m6 = _u.module_from_spec(_sp)
+            _sp.loader.exec_module(_m6)
+            done = _m6._cold_done(src)
+        except Exception:
+            s = io.open(f, encoding='utf-8').read()
+            done = ('已执' in s and '销档' in s)
         ck.append('  COLD-%d 限%d %s' % (src, due, '已执' if done else '★待执'))
         if not done and due <= n:
             fix.append('COLD-%d 限%d 未执 → 於第%d章补执，'

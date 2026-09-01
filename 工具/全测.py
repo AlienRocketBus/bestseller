@@ -292,6 +292,18 @@ def chk_big_questions():
     return True, ('⚠逾四十章者 %d 样（只报不拦）：%s' % (n, '、'.join('%s缺%s章' % (a, c) for a, b, c in 首)))
 
 
+def chk_cold_agree():
+    """一坐与开轮六检对冷轮须同判 负测（2026-09-01立·见 工具/负测_冷轮同判.py）。
+    ★其立之由：同一 HEAD 上一坐印「COLD-284／285 未执」而六检印「⑥ 零」——二器相反 ⛔。
+    ★★数其群：冷轮档134份，含「已执＋销档」者仅37份、以回执判者131份——那个标记从未成为惯例。"""
+    out = run('负测·冷轮同判', ['工具/负测_冷轮同判.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    return True, '3/3 全通（二器同用一处 _cold_done）'
+
+
 def chk_reader_nag():
     """存版·阅读器过期即报 负测（2026-09-01立·见 工具/负测_阅读器催.py）。
     ★其立之由：每轮改文之后阅读器即过期，而医生／检察官自测／全书检三项俱据之报红，
@@ -978,6 +990,7 @@ def main():
         items.append(('FS沉默闸', chk_fs_silence))
         items.append(('外声闸', chk_outside_voice))
         items.append(('大问表', chk_big_questions))
+        items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

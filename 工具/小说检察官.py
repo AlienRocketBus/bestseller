@@ -4267,7 +4267,14 @@ def mech_layer(files,focus,lib):
         f,nm,t=files[n]; pr=[]
         if '——' in t: pr.append(f'破折号×{t.count("——")}')
         for m in re.finditer(r'[,\?!;:]',t): pr.append(f'半角"{m.group()}"行{_ln(t,m.start())}')
-        for m in re.finditer(r'(那包|那个|那块|那道|那把|那面|这个|这块|一个)\\1',t): pr.append(f'叠词粘连"{m.group()}"行{_ln(t,m.start())}')
+        # ★★★★★2026-09-01 治·此闸自立起之日即不存在（全书审计所逮）：
+        #   ★r-string 里的 `\\1` 是「反斜杠＋1」两个字面字符，不是反向引用；
+        #   ★★实测 re.findall(r'(那个)\\1','那个那个记号') → []，而 r'(那个)\1' → ['那个']
+        #   ★★★故这道闸从第一天起一次也没红过，而它红不红没人查过。
+        # ★而同日另治一处：其词表含「一个」，改对之後全书命中 34 处，
+        #   ★★三十四处尽是「一个一个」（他把五个罐子一个一个提起来／一个一个点过去），
+        #   ★★★那是好话不是粘连 ⛔ → 去「一个」，去後全书命中 0 处（今日回灌所验）。
+        for m in re.finditer(r'(那包|那个|那块|那道|那把|那面|这个|这块)\1',t): pr.append(f'叠词粘连"{m.group()}"行{_ln(t,m.start())}')
         for m in re.finditer(r'[A-Za-z]+',t): pr.append(f'英文"{m.group()}"行{_ln(t,m.start())}')
         for s in re.split(r'(?<=[。！？…])',t):
             if s.count('，')>=5 and not any(x in s for x in M5X): pr.append('5+逗:'+s.strip()[:24]+'…')

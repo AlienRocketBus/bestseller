@@ -127,8 +127,15 @@ def render_section(chapter: dict[str, object]) -> str:
         f'<h2 class="cname">{title}</h2>'
         f'<div class="cmeta">本章 {count} 字</div></div>'
         f'{paragraphs}'
-        + (f'<div class="hl-note"><b>本章亮点</b>｜'
-           f'{html.escape(str(chapter["highlight"]), quote=False)}</div>'
+        # ★★★★★2026-09-01 改·亮点段默认折叠（全书审计第二层 2-2）。
+        #   ★其病：181/287 个正文文件在正文之後接一整块【本章亮点】，
+        #     ★★而此处把它渲染成加粗高亮之可见块，推给了读者 ⛔；
+        #     ★★★286那一块直书「暗线·沈鸢」，而286正文「沈鸢」0 处——
+        #        ★★★★读者於是在正文末尾读到一份作业单，还读到一个正文里没有的人名。
+        #   ★而此改只动阅读器一处，181 个正文文件一字不动，诸闸照跑（零风险之第一步）；
+        #     ★★其第二步（把亮点拆入 版本/第N章/_亮点.md）须另立一次迁移，二步之间不许混。
+        + (f'<details class="hl-note"><summary>本章亮点（作者手记·非正文）</summary>'
+           f'{html.escape(str(chapter["highlight"]), quote=False)}</details>'
            if chapter.get("highlight") else "")
         + f'<div class="cfoot">本章 {count} 字</div>'
         f'<div class="cend">◇</div></section>'
@@ -136,9 +143,11 @@ def render_section(chapter: dict[str, object]) -> str:
 
 
 def ensure_css(reader: str) -> str:
-    if ".hl-note{" in reader:
+    if ".hl-note>summary{" in reader:
         return reader
-    return reader.replace("</style>", ".cfoot{opacity:.6;font-size:.85em;text-align:right;margin:14px 0 2px}.hl-note{background:rgba(217,160,30,.16);border-left:4px solid #d9a01e;padding:10px 14px;margin:20px 0 6px;line-height:1.95;border-radius:0 8px 8px 0}</style>", 1)
+    import re as _re
+    reader = _re.sub(r"\.hl-note\{[^}]*\}", "", reader)   # ★去旧式，换新式（默认折叠）
+    return reader.replace("</style>", ".cfoot{opacity:.6;font-size:.85em;text-align:right;margin:14px 0 2px}.hl-note{background:rgba(217,160,30,.10);border-left:3px solid rgba(217,160,30,.55);padding:8px 14px;margin:20px 0 6px;line-height:1.95;border-radius:0 8px 8px 0;opacity:.75}.hl-note>summary{cursor:pointer;font-weight:600;opacity:.8;font-size:.9em;list-style:none}.hl-note>summary::-webkit-details-marker{display:none}.hl-note>summary::before{content:'\\25B8  ';opacity:.7}.hl-note[open]>summary::before{content:'\\25BE  '}</style>", 1)
 
 
 def render_toc_item(chapter: dict[str, object]) -> str:

@@ -1,0 +1,98 @@
+# -*- coding: utf-8 -*-
+"""负测·硬闸单一真源（2026-09-01 立·全书审计第二层 2-5）
+
+★立此测之由：硬项之集先前散在跑轮／预检／检察官三处，各记各的，遂成两本账。
+　★★实测：一段含 `? ! ;`、九鼎、赵阙、「那个那个」之稿跑预检，只报「英文」与「段间空行」⛔。
+★★★而令§六③曰：改闸必同日立负测，且须以旧式回灌验。
+　★★★★故本测之要害有二：①新格该认的认；②**旧有之十三格一格不许走样**——
+　　★一个把老账改坏了的新账，比两本账更坏。
+"""
+import io, os, re, sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, '工具'))
+from 硬闸 import 硬项, 永禁词   # noqa: E402
+
+# ★旧式（改之前跑轮那一份，逐字抄下作回灌之据）
+def 旧式(txt):
+    prose = txt.split('【本章亮点】')[0]
+    body = re.sub(r'^.*?第.+?章[^\n]*\n', '', prose, count=1, flags=re.S)
+    hl = txt[txt.find('【本章亮点】'):] if '【本章亮点】' in txt else ''
+    sents = re.split(r'(?<=[。！？…])', txt)
+    return {
+        '破折': txt.count('—'), '半角逗': txt.count(','), '半角冒': txt.count(':'),
+        '半角引号': txt.count('"'),
+        '五逗句': sum(1 for s in sents if s.count('，') >= 5),
+        '英文': len(re.findall(r'[A-Za-z]', txt)),
+        '章号入正文': len(re.findall(r'[一二三四五六七八九十百]+章', body)),
+        '禁抖': body.count('抖'),
+        '永禁词': sum(body.count(w) for w in ['哆嗦', '骊山', '僵尸', '点亮']),
+        '段间空行病': len(re.findall(r'。\n(?!\n)[^\n]', body)),
+        '亮点段破折': hl.count('—'),
+        '亮点段五逗': sum(1 for s in re.split(r'(?<=[。！？…])', hl) if s.count('，') >= 5),
+        '亮点段半角': hl.count(',') + hl.count('"'),
+    }
+
+
+# ①新格该认者（旧式一格也认不出）
+新格须认 = [
+    ('半角问', '他问：你去哪儿?\n'),
+    ('半角叹', '真的!\n'),
+    ('半角分', '又一句;还有下文。\n'),
+    ('半角撇', "他说的是'那一样'。\n"),
+    ('叠词粘连', '他把那个那个记号又描了一遍。\n'),
+    ('永禁词', '九鼎在底下。赵阙没来。\n'),   # ★旧表只四词，认不出这二词
+]
+
+# ②不许认者（皆取自正文原场，是好话）
+不许认 = [
+    ('叠词粘连', '他把五个罐子一个一个提起来掂了掂。\n'),
+    ('叠词粘连', '七个减到两个，中间那五个是一个一个少下去的。\n'),
+]
+
+# ③旧有之格一格不许走样（拿全书回灌）
+def _旧格不走样():
+    import glob
+    坏 = []
+    for f in sorted(glob.glob(os.path.join(ROOT, '正文', '*.md'))):
+        t = io.open(f, encoding='utf-8').read()
+        a, b = 旧式(t), 硬项(t)
+        for k in a:
+            if k == '永禁词':
+                # ★此格有意扩表（4→25词），只许增不许减
+                if b[k] < a[k]:
+                    坏.append('%s·%s 由 %d 减到 %d' % (os.path.basename(f)[:20], k, a[k], b[k]))
+            elif a[k] != b[k]:
+                坏.append('%s·%s 旧%d 新%d' % (os.path.basename(f)[:20], k, a[k], b[k]))
+    return 坏
+
+
+def 跑():
+    坏, 回灌漏 = [], 0
+    for 格, s in 新格须认:
+        if not 硬项(s).get(格):
+            坏.append('新式漏认 %s：%s' % (格, s.strip()))
+        o = 旧式(s)
+        if not o.get(格, 0):
+            回灌漏 += 1
+    for 格, s in 不许认:
+        if 硬项(s).get(格):
+            坏.append('新式误认 %s（是好话，不是病）：%s' % (格, s.strip()))
+    走样 = _旧格不走样()
+    if 走样:
+        坏.append('★旧格走样 %d 处（新账把老账改坏了）：%s' % (len(走样), 走样[0]))
+    if 回灌漏 == 0:
+        坏.append('★此测在旧式下亦全过——陪跑之测，不算数。')
+    n = len(新格须认) + len(不许认) + 1
+    if 坏:
+        print('✗ 负测·硬闸 %d/%d' % (n - len(坏), n))
+        for x in 坏:
+            print('   ⛔ ' + x)
+        return 1
+    print('✓ 负测·硬闸 %d/%d 全通｜永禁词 %d 词｜旧十三格全书回灌一格未走样｜旧式漏认 %d 项，故非陪跑'
+          % (n, n, len(永禁词()), 回灌漏))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(跑())

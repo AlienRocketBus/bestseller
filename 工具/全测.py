@@ -153,6 +153,98 @@ def chk_kanguan_hand():
     return True, ('%s/%s 全通' % (m.group(1), m.group(2))) if m else '全通'
 
 
+def chk_hard_gate():
+    """硬闸·单一真源 负测（2026-09-01立·见 工具/负测_硬闸.py）。
+    ★其立之由：硬项之集先前散在跑轮／预检／检察官三处，遂成两本账——
+    ★★实测一段含 `? ! ;`、九鼎、赵阙、「那个那个」之稿跑预检，只报「英文」与「段间空行」。
+    ★★★而此测除验新格外，另有一路要紧：**旧十三格拿全书回灌，一格不许走样**。"""
+    out = run('负测·硬闸', ['工具/负测_硬闸.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    if '非陪跑' not in out:
+        return False, '★此测在旧式下亦全过，是陪跑之测'
+    return True, out.strip().split('｜', 1)[0].replace('✓ 负测·硬闸 ', '')
+
+
+def chk_dup_gate():
+    """叠词粘连闸 负测（2026-09-01立·见 工具/负测_叠词闸.py）。
+    ★其立之由：检察官那道叠词闸写作 r'(那个|…)\\1'——r-string 里是「反斜杠＋1」两个字面字符，
+    ★★故此闸自立起之日一次也没红过；★★★而改对之後其词表之「一个」又误咬「一个一个」34 处。"""
+    out = run('负测·叠词闸', ['工具/负测_叠词闸.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    if '非陪跑' not in out:
+        return False, '★陪跑之测'
+    return True, '9/9 全通'
+
+
+def chk_num_gate():
+    """数闸（2026-09-01立·见 工具/数闸.py）。
+    ★其立之由：这本书跟读者只签了一份合同——我只报我数过的（其法自书於 287:241）；
+    ★★而十三轮之十二格硬项一格也不看数 ⛔。★★★今日一扫：全书138处「N个字」之标签，
+    ★★★★本闸判得动132处，其中不符者若干——**一本以数为骨的书，机器不看数**。"""
+    out = run('数闸', ['工具/数闸.py'])
+    if out is None:
+        return False, '运行失败'
+    if '零处不符' in out:
+        return True, '全书「N个字」之标签，零处不符'
+    import re as _r
+    m = _r.search(r'不符 (\d+) 处', out or '')
+    return False, ('全书「N个字」标签不符 %s 处（其单在 数闸.py --全书）' % (m.group(1) if m else '?'))
+
+
+def chk_receipt_recon():
+    """回执对账闸 负测（2026-09-01立·见 工具/负测_回执对账.py）。
+    ★其立之由：287回执自书「净重2,951（起草）→2,796…共减155字」，而台账明印
+    ★★v01=2,529→峰v08=2,951→v15=2,796，**是净增267**——把峰当成了起草 ⛔。
+    ★★★令§十一：留底之档里的错因，会被下一坐当成场。"""
+    out = run('负测·回执对账', ['工具/负测_回执对账.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    return True, '3/3 全通（含灌回旧错之验）'
+
+
+def chk_fs_silence():
+    """FS 沉默闸（2026-09-01立·见 工具/FS闸.py）。
+    ★其立之由：canon 18 根伏笔，未销 13 根，逾期 137—212 章；
+    ★★检察官每章印一遍，而**含 FS 编号之回执共 32 份，最末一份是第 99 章**——
+    ★★★188 章问了 188 遍，一次没人答。★★★★它逼的是回话，不是逼数相等。"""
+    out = run('FS沉默闸', ['工具/FS闸.py'])
+    if out is None:
+        return False, '运行失败'
+    if '逐根俱已回话' in out:
+        return True, '逾期之伏笔，本章回执逐根俱已回话'
+    import re as _r
+    m = _r.search(r'未答 (\d+) 根', out or '')
+    return False, ('本章回执未回话之逾期伏笔 %s 根（其单在 FS闸.py）' % (m.group(1) if m else '?'))
+
+
+def chk_outside_voice():
+    """外声闸（2026-09-01立·见 工具/外声闸.py）——**只报不拦**。
+    ★其立之由：全角引号 1—99章2,876 → 100—199章2,461 → 200—239章572 → 240—287章 **0**；
+    ★★280—287 八章 34,563 字，当场说出口的话四句十一个字，十七个问号全在心里。
+    ★★★而此闸不设配额：279／283／286 是一人对一个不能说话的人，那三章的静是戏不是病。"""
+    out = run('外声闸', ['工具/外声闸.py', '8'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'末尾连续出声为零：(\d+) 章', out or '')
+    z = int(m.group(1)) if m else 0
+    q = _r.search(r'240—\d+章 (\d+)', out or '')
+    尾 = ('｜240章以来全角引号 %s 处' % q.group(1)) if q else ''
+    if z >= 8:
+        return True, ('⚠连续 %d 章无人出声（≥8，只报不拦）%s' % (z, 尾))
+    if z >= 5:
+        return True, ('⚠连续 %d 章无人出声（≥5，只报不拦）%s' % (z, 尾))
+    return True, ('末尾连续无声 %d 章（限5）%s' % (z, 尾))
+
+
 def chk_reader_nag():
     """存版·阅读器过期即报 负测（2026-09-01立·见 工具/负测_阅读器催.py）。
     ★其立之由：每轮改文之后阅读器即过期，而医生／检察官自测／全书检三项俱据之报红，
@@ -832,6 +924,12 @@ def main():
         items.append(('负测·可逆册', chk_reversible_neg))
         items.append(('负测·阅读器催', chk_reader_nag))
         items.append(('负测·看官手闸', chk_kanguan_hand))
+        items.append(('负测·硬闸', chk_hard_gate))
+        items.append(('负测·叠词闸', chk_dup_gate))
+        items.append(('数闸', chk_num_gate))
+        items.append(('负测·回执对账', chk_receipt_recon))
+        items.append(('FS沉默闸', chk_fs_silence))
+        items.append(('外声闸', chk_outside_voice))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

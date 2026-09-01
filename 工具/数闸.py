@@ -1,0 +1,161 @@
+# -*- coding: utf-8 -*-
+"""数闸（2026-09-01 立·全书审计第一层第一条）
+
+★立此闸之由：这本书跟读者只签了一份合同——**我只报我数过的**；
+　★★其法自书於 287:241「没有昨天那三回，一回就不是数，是没数」。
+★★★而十三轮之十二格硬项（破折／半角三格／五逗／英文／章号入正文／禁抖／永禁词／
+　　段间空行／亮点三格）**一格也不看数**——一本以数为骨的书，机器不看数 ⛔。
+★★★★其果：全书凡「N个字」之标签，无一台器核过；今日一扫即见错。
+
+【其式】凡正文中独立成行之「N个字。」，取其上数行内之引文（「…：短句。」或「「短句」」），
+　　剥去标点只数汉字，与 N 比。不等即红。
+【不认者】引文含省略号／引文逾三十字／其上无引文者——一律不判，宁可漏，不可诬。
+"""
+import io, os, re, sys, glob
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CN = {'零': 0, '〇': 0, '一': 1, '二': 2, '三': 3, '四': 4,
+      '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+
+
+def cn2i(s):
+    """★中文数字转整（只管百以内，「N个字」之数不会更大）。"""
+    if not s:
+        return -1
+    tot, cur = 0, 0
+    for ch in s:
+        if ch in CN:
+            cur = CN[ch]
+        elif ch == '十':
+            tot += (cur or 1) * 10
+            cur = 0
+        elif ch == '百':
+            tot += (cur or 1) * 100
+            cur = 0
+        else:
+            return -1
+    return tot + cur
+
+
+def _han(s):
+    """★只数汉字：标点不计。其据在本书自己的记法——
+    ★★271:585「写：一天，没薄。四个字」（四）／285:645「过水，四个人抬，我在前头。头比脚重。」「十四个字」（十四）
+    ★★★二处皆不计逗号句号，故此式与全书之例相符。"""
+    return re.sub(r'[^一-鿿]', '', s)
+
+
+# ★取引文之式（按其可信之序）：
+#   ①「说／问／答／写的是／写：…：短句。」——冒号之后至行末
+#   ②「短句」——全角引号之内
+_引冒 = re.compile(r'[：:]\s*([^：:]+?)\s*$')
+_引号 = re.compile(r'[「“]([^」”]{1,30})[」”]')
+
+
+def _取引(前几行):
+    """★自近而远取一处引文；取不到即返 None（宁可漏，不可诬）。
+
+    ★★2026-09-01 治二处误抓（其伤在闸不在文）：
+      ①151:291「他跟刘二说了三个字：你在后。」／293「刘二应了一个字：成。」——
+        ★此式抓了上一行之「你在后」，而「一个字」所指是「成」⛔
+        → ★★治：凡该行自带「说了N个字」之数者，其引文归它自己，不许越行去认。
+      ②196:61「老头『嗯』了一声，说：『那他手上有准头。』」——
+        ★一行之内二引，此式抓了头一个「嗯」⛔ → ★★治：取该行最末一引。
+    """
+    for l in 前几行[::-1]:
+        t = l.strip()
+        if not t:
+            continue
+        # ★该行自带其数者，其引归它自己——不许越行
+        自带 = re.search(r'[一二三四五六七八九十百]+个字', t)
+        ms = list(_引号.finditer(t))
+        if ms:
+            引 = ms[-1].group(1)          # ★一行二引者取其末
+            return (None, t) if 自带 else (引, t)
+        if re.search(r'(说|问|答|喊|叫|写的是|写|念)', t):
+            m = _引冒.search(t)
+            if m:
+                return (None, t) if 自带 else (m.group(1), t)
+    return None
+
+
+# ★★2026-09-01 再治（首版之误报三形，皆由「冒号之后一路吃到行末」而来）：
+#   ①206:43「而昨天老头那三个字：手不够，今天四个人的手一双也没多。」——
+#     ★「三个字」所指只是「手不够」，其后是执笔之释 ⛔；
+#   ②17:43「牌子上写着四个字：此地有主。有主的场子，闲人自己绕道走。」——同形；
+#   ③8:139「却一个字是一个字：『是你。』」——「一个字是一个字」是成语，不是数 ⛔。
+#   ★★故：有引号者只取引号之内；无引号者只吃到头一个句号为止；
+#     ★★★且「一个字是一个字」一形径直不认。
+_行内 = re.compile(
+    r'(?<!一个字是)([零〇一二三四五六七八九十百]+)个字[：:]\s*'
+    r'(?:[「“]([^」”\n]{1,30})[」”]|([^。！？\n]{1,30})[。！？])')
+
+
+def 扫行内(ls):
+    """★一行之内自带其数者：「他说了三个字：『他下得来。』」——
+    ★★此形旧式抓不着（其数与其引同行），而 224:859 正是此形，且它错了：
+       「他下得来」四字而标三，且下一行又标一遍三。"""
+    bad = []
+    for i, l in enumerate(ls):
+        t = l.strip()
+        m = _行内.search(t)
+        if not m:
+            continue
+        n = cn2i(m.group(1))
+        h = _han(m.group(2) or m.group(3) or '')
+        if n > 0 and h and len(h) <= 30 and len(h) != n:
+            bad.append((i + 1, m.group(2) or m.group(3), n, len(h)))
+    return bad
+
+
+def 扫(path, win=4):
+    """★扫一份正文，返回不符者之列 [(行号, 引文, 标, 实)]。"""
+    t = io.open(path, encoding='utf-8').read().split('【本章亮点】')[0]
+    ls = t.split('\n')
+    bad = []
+    for i, l in enumerate(ls):
+        m = re.match(r'^([零〇一二三四五六七八九十百]+)个字[。．]?$', l.strip())
+        if not m:
+            continue
+        n = cn2i(m.group(1))
+        if n <= 0:
+            continue
+        got = _取引(ls[max(0, i - win):i])
+        if not got or got[0] is None:
+            continue
+        引, 原行 = got
+        if '…' in 引 or '⋯' in 引:
+            continue          # ★省略号者不判
+        h = _han(引)
+        if not h or len(h) > 30:
+            continue
+        if len(h) != n:
+            bad.append((i + 1, 引, n, len(h)))
+    seen = {x[0] for x in bad}
+    for x in 扫行内(ls):
+        if x[0] not in seen:
+            bad.append(x)
+    return sorted(bad)
+
+
+def 全书(quiet=False):
+    out = []
+    for f in sorted(glob.glob(os.path.join(ROOT, '正文', '*.md'))):
+        for 行, 引, 标, 实 in 扫(f):
+            out.append((os.path.basename(f), 行, 引, 标, 实))
+    if not quiet:
+        print('════ 数闸 · 全书 ════')
+        print('  【其式】独立成行之「N个字。」，取其上四行内之引文，剥标点数汉字，与N比。')
+        if not out:
+            print('  ✓ 零处不符。')
+        else:
+            print('  ⛔ 不符 %d 处：' % len(out))
+            for x in out:
+                print('     %-34s 行%-5d 标%-3d 实%-3d ｜%s' % (x[0][:34], x[1], x[3], x[4], x[2]))
+    return out
+
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1] == '--自测':
+        sys.exit(0)
+    bad = 全书()
+    sys.exit(1 if bad else 0)

@@ -274,6 +274,23 @@ def main():
                     out.append('  ' + _l.strip())
     except Exception:
         pass
+    # ★而旧账须逐坐印在眼前，否则「不回头判红」就成了「不了了之」。
+    try:
+        import subprocess as _sp3
+        _r3 = _sp3.run(['python3', os.path.join(ROOT, '工具', '数闸.py')],
+                       capture_output=True, text=True, timeout=90)
+        _m3 = re.search(r'不符 (\d+) 处', _r3.stdout or '')
+        _r4 = _sp3.run(['python3', os.path.join(ROOT, '工具', 'FS闸.py')],
+                       capture_output=True, text=True, timeout=90)
+        _m4 = re.search(r'未答 (\d+) 根', _r4.stdout or '')
+        if _m3 or _m4:
+            out.append('── 旧账（立闸於287·其前不回头判红，而一笔不许躺着）──')
+            if _m3:
+                out.append('  数闸：「N个字」之标签不符 %s 处（第288章起再犯一处即硬拦）' % _m3.group(1))
+            if _m4:
+                out.append('  FS：逾期之伏笔未回话 %s 根（自288之回执起硬拦）' % _m4.group(1))
+    except Exception:
+        pass
     try:
         import subprocess as _sp2
         _r2 = _sp2.run(['python3', os.path.join(ROOT, '工具', '外声闸.py'), '6'],

@@ -135,6 +135,24 @@ def chk_open_six():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+def chk_kanguan_hand():
+    """看官·「手上之事」闸 负测（2026-09-01立·见 工具/负测_看官手闸.py）。
+    ★其立之由：生客问一报第287章「拍25—49连25拍无一手上之事」，
+    ★★而那一段里 抬×5、托×2 皆是手上之事；数其群，旧式全书287章报红202章（70%）——
+    ★★★一道七成篇幅都喊的闸，喊的不是文，是它自己。
+    ★★★★而此测须在旧式下漏认方算数（令§六③·回灌验），否则它是陪跑。"""
+    out = run('负测·看官手闸', ['工具/负测_看官手闸.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    if '非陪跑' not in out:
+        return False, '★此测在旧式下亦全过，是陪跑之测'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) 全通', out)
+    return True, ('%s/%s 全通' % (m.group(1), m.group(2))) if m else '全通'
+
+
 def chk_reader_nag():
     """存版·阅读器过期即报 负测（2026-09-01立·见 工具/负测_阅读器催.py）。
     ★其立之由：每轮改文之后阅读器即过期，而医生／检察官自测／全书检三项俱据之报红，
@@ -813,6 +831,7 @@ def main():
         items.append(('可逆库之验', chk_reversible))
         items.append(('负测·可逆册', chk_reversible_neg))
         items.append(('负测·阅读器催', chk_reader_nag))
+        items.append(('负测·看官手闸', chk_kanguan_hand))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

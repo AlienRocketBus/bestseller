@@ -394,6 +394,25 @@ def chk_day_gate():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_ratchet_pre():
+    """★棘轮预检负测（LAW-289C·2026-09-01 立）：
+    ★★其要害不在「会不会报红」，在「它报的红与 --存版 之棘轮闸是不是同一个红」——
+      ★★★故①②③验其 import 跑轮之 score 与 RATCHET_MIN/MAX（不许另造一把尺），
+      ★★★★⑤⑥拿本坐真撞过棘轮的 v14（是哪一样）、v16（馊压过甜）二版回灌，须逐版报红且所指之串正确。"""
+    out = run('负测·棘轮预检', ['工具/负测_棘轮预检.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（与跑轮同源｜v14/v16 回灌逐版报红）' % (ok, tot)
+
+
 def chk_unans_gate():
     """★未答闸（⑳）负测：其答词集补了其②之诸形（说不上／数不出／指不出…），须验其防未动。
     ★★其要害三项：④新红须为旧红之子集｜⑤所松之章逐章正文皆见其限之明写｜
@@ -1042,6 +1061,7 @@ def main():
         items.append(('开轮十六检', chk_open_six))
         items.append(('负测·承前闸', chk_carry_gate))
         items.append(('负测·未答闸', chk_unans_gate))
+        items.append(('负测·棘轮预检', chk_ratchet_pre))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))

@@ -394,6 +394,25 @@ def chk_day_gate():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_hl_table():
+    """★亮点对表负测（289第10轮立·第9轮所逮）：亮点段与正文相犯，全书原无一道闸看得见。
+    ★★而三路之中只一路作闸——③约数路（红3章/289，1%）；
+      ★★★①引文路（红57章，20%）与②数路（红51章，18%）经数其群，其红大半是着重号与概括，
+      ★★★★故降为「报而不拦」，且其数写进器里，免得下一坐把它们当闸。"""
+    out = run('负测·亮点对表', ['工具/负测_亮点对表.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（v20回灌逮出「二十来口气」｜旧式当场漏掉，非陪跑）' % (ok, tot)
+
+
 def chk_ratchet_pre():
     """★棘轮预检负测（LAW-289C·2026-09-01 立）：
     ★★其要害不在「会不会报红」，在「它报的红与 --存版 之棘轮闸是不是同一个红」——
@@ -1062,6 +1081,7 @@ def main():
         items.append(('负测·承前闸', chk_carry_gate))
         items.append(('负测·未答闸', chk_unans_gate))
         items.append(('负测·棘轮预检', chk_ratchet_pre))
+        items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))

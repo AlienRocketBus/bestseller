@@ -27,7 +27,15 @@ def 未销():
     for x in d.get('foreshadows', []):
         if str(x.get('status', '')).lower() in 清:
             continue
-        out.append({'id': x.get('id'), 'due': x.get('due'), 'desc': x.get('desc', '')})
+        # ★★★★★2026-09-01 补·并记「改过几回期」。
+        #   ★其由：今日十三根裁毕，六根判已兑补销、七根判改期——**而闸随即转绿，是靠改期绿的**；
+        #   ★★一根钩子若靠反复改期永不兑现，这道闸就成了一张会自己签字的欠条 ⛔；
+        #   ★★★故凡改期者其 reschedule_note 逐次累加，此处数之并印：
+        #     ★★★★**改期逾二回者，无论逾没逾期，一律入报**——由人当场裁它还算不算一根活钩子。
+        # ★数其回数只认一个记号「（原限」——立此闸之日以二词并数，一回改期数成了二回 ⛔
+        n = str(x.get('reschedule_note', '')).count('（原限')
+        out.append({'id': x.get('id'), 'due': x.get('due'),
+                    'desc': x.get('desc', ''), '改期': max(n, 1 if x.get('reschedule_note') else 0)})
     return out
 
 
@@ -83,6 +91,15 @@ def 报(quiet=False):
             print('  ⛔ %-6s 限%-4s 逾 %3d 章 ｜%s' % (x['id'], x['due'], n - x['due'], x['desc'][:52]))
         if not 未答:
             print('  ✓ 逐根俱已回话。')
+        # ★并印改期之数——一根钩子若靠反复改期永不兑现，那笔账在这儿看得见
+        多 = [x for x in 未销() if x.get('改期', 0) >= 2]
+        改 = [x for x in 未销() if x.get('改期', 0) >= 1]
+        if 改:
+            print('  ── 改期之账 ──')
+            print('     改过期者 %d 根：%s' % (len(改), '、'.join('%s(限%s·%d回)' % (x['id'], x['due'], x['改期']) for x in 改)))
+        if 多:
+            print('  ⚠ 改期逾二回者 %d 根——须由人当场裁它还算不算一根活钩子：%s'
+                  % (len(多), '、'.join(x['id'] for x in 多)))
     return 未答
 
 

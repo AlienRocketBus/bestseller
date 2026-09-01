@@ -394,6 +394,24 @@ def chk_day_gate():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_carry_gate():
+    """★承前闸（⑮）负测：其比由「前一章」改为「同线最近之章」，须验其防未动。
+    ★★其要害二项：③同线相接之章新旧两式逐章同判（防未动）；
+      ★★★⑥换线之章新式之红率须显著低於旧式而不为零（改而不挖空）。"""
+    out = run('负测·承前闸', ['工具/负测_承前闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（同线新旧同判｜换线红率 51→31，非挖空）' % (ok, tot)
+
+
 def chk_cold_gate():
     """⑥·冷轮之欠 负测（2026-08-28立·随「改⑥之闸」同日·见 工具/负测_冷轮闸.py）。
     ★其立之由：改闸之後⑥当场转绿，而一个只会说「零」的闸没有价值；
@@ -1004,6 +1022,7 @@ def main():
         items.append(('书级体检', chk_bookwide))
         items.append(('质量三闸', chk_quality_gates))
         items.append(('开轮十六检', chk_open_six))
+        items.append(('负测·承前闸', chk_carry_gate))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))

@@ -394,6 +394,24 @@ def chk_day_gate():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_unans_gate():
+    """★未答闸（⑳）负测：其答词集补了其②之诸形（说不上／数不出／指不出…），须验其防未动。
+    ★★其要害三项：④新红须为旧红之子集｜⑤所松之章逐章正文皆见其限之明写｜
+      ★★★⑥假章（摆问而二十拍内一字不交代）新式仍逮得住。"""
+    out = run('负测·未答闸', ['工具/负测_未答闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（新红係旧红之子集｜所松者皆见其限之明写）' % (ok, tot)
+
+
 def chk_carry_gate():
     """★承前闸（⑮）负测：其比由「前一章」改为「同线最近之章」，须验其防未动。
     ★★其要害二项：③同线相接之章新旧两式逐章同判（防未动）；
@@ -1023,6 +1041,7 @@ def main():
         items.append(('质量三闸', chk_quality_gates))
         items.append(('开轮十六检', chk_open_six))
         items.append(('负测·承前闸', chk_carry_gate))
+        items.append(('负测·未答闸', chk_unans_gate))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))

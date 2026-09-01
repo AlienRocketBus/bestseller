@@ -18,6 +18,7 @@ import sys
 import json
 import glob
 import datetime
+import io
 from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -84,6 +85,14 @@ def score(txt):
     hard = {
         '破折': txt.count('—'),
         '半角逗': txt.count(','),
+        # ★★★★★2026-09-01 补（287第3轮所逮·令§六③「一道天天要绕的闸，错的是闸不是人」）：
+        # ★病灶：预检印「硬项全零，可落盘」，而检察官随即拒之，其由为半角冒号；
+        #   ★★即二器之硬项集不同——预检有半角逗、半角引号，而无半角冒号 ⛔。
+        # ★★★而其犯二回：286封版前三处（261:125／283:189／283:291），287第3轮一处（285:529）；
+        #   ★★★★二回皆是我在亮点段引原场行号时带进来的，且二回预检都放了行。
+        # ★而其害不在冒号本身，在「预检说可落盘而它不可落盘」——那使预检之定论不作数。
+        '半角冒': txt.count(':'),
+
         '半角引号': txt.count('"'),
         '五逗句': sum(1 for s in sents if s.count('，') >= 5),
         '英文': len(re.findall(r'[A-Za-z]', txt)),
@@ -1527,6 +1536,27 @@ def selftest():
         else:
             fail += 1
             print('  ✗负测失败：' + name)
+
+    # ★★★★★2026-09-01 补·半角冒之闸（287第3轮所立）：
+    # ★一个新加的硬项，须当场证三样：①它逮得住 ②它不误伤全角 ③它没把已封版之章打红。
+    # ★★而第三样最要紧：新硬项若把二百八十七章打红一片，那不是修闸，是拆书。
+    chk('半角冒·逮得住', score('他说:好。')[0].get('半角冒') == 1)
+    chk('半角冒·不误伤全角', score('他说：好。')[0].get('半角冒') == 0)
+    chk('半角冒·空文为零', score('')[0].get('半角冒') == 0)
+    chk('半角冒·多处须逐个数', score('a:b:c')[0].get('半角冒') == 2)
+    try:
+        import glob as _g
+        _bad = 0
+        _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for _f in _g.glob(os.path.join(_root, '正文', '*.md')):
+            with open(_f, encoding='utf-8') as _fh:
+                _t = _fh.read()
+            if score(_t)[0].get('半角冒'):
+                _bad += 1
+        chk('半角冒·不打红已封版之章（全书须零）', _bad == 0)
+    except Exception as _e:
+        print('  ✗负测失败：半角冒·全书之验跑不起来（%s）' % _e)
+        chk('半角冒·全书之验跑得起来', False)
 
     L = lambda vs: {'章': 1, '版本': vs}
     _SOFT = {'净重': 100, '段数': 9, '均段': 11, '长段数': 0, '嗅': 3, '听': 4,

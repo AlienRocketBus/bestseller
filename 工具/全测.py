@@ -245,6 +245,24 @@ def chk_outside_voice():
     return True, ('末尾连续无声 %d 章（限5）%s' % (z, 尾))
 
 
+def chk_big_questions():
+    """大问表（2026-09-01立·见 工具/大问表.py）——**只报不拦**。
+    ★其立之由：机器一处也没在问「读者还在等什么」——到期账258笔 open 0，
+    ★★书级体检遂每章印「未清0笔｜距终点163章｜须净减0.00笔/章 ✓」。
+    ★★★而器印：玉末见第80章缺207章／血图末60缺227／悬赏末71缺216／寨老末108／地窖末72缺215。
+    ★★★★更要命者：E4指定要用的两样旧物（玉、听针）分别缺席207章与85章。"""
+    out = run('大问表', ['工具/大问表.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'逾上限者 (\d+) 样', out or '')
+    n = int(m.group(1)) if m else 0
+    if n == 0:
+        return True, '八样俱在四十章之内'
+    首 = _r.findall(r'^  (\S+)\s+\d+\s+第(\d+)章\s+(\d+)章\s+⛔', out or '', _r.M)[:3]
+    return True, ('⚠逾四十章者 %d 样（只报不拦）：%s' % (n, '、'.join('%s缺%s章' % (a, c) for a, b, c in 首)))
+
+
 def chk_reader_nag():
     """存版·阅读器过期即报 负测（2026-09-01立·见 工具/负测_阅读器催.py）。
     ★其立之由：每轮改文之后阅读器即过期，而医生／检察官自测／全书检三项俱据之报红，
@@ -930,6 +948,7 @@ def main():
         items.append(('负测·回执对账', chk_receipt_recon))
         items.append(('FS沉默闸', chk_fs_silence))
         items.append(('外声闸', chk_outside_voice))
+        items.append(('大问表', chk_big_questions))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

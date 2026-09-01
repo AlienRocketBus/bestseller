@@ -259,6 +259,33 @@ def main():
     head = R('git', 'rev-parse', 'HEAD').strip()
     rem = R('git', 'ls-remote', 'origin', br)
     rhead = rem.split('\t')[0].strip() if rem.strip() else ''
+    # ★★★★★2026-09-01 补·大问表与外声（全书审计第一层第二、三条）。
+    #   ★其由：一坐印的是「本章之欠」，而这两样是「全书之欠」——
+    #     ★★而全书之欠一处也没摆在眼前，於是玉缺席了 207 章没人报过一声。
+    try:
+        import subprocess as _sp
+        _r = _sp.run(['python3', os.path.join(ROOT, '工具', '大问表.py')],
+                     capture_output=True, text=True, timeout=90)
+        _m = re.search(r'逾上限者 (\d+) 样', _r.stdout or '')
+        if _m and int(_m.group(1)):
+            out.append('── 大问（读者还挂着的·只报不拦）──')
+            for _l in (_r.stdout or '').split('\n'):
+                if '⛔' in _l and '章' in _l:
+                    out.append('  ' + _l.strip())
+    except Exception:
+        pass
+    try:
+        import subprocess as _sp2
+        _r2 = _sp2.run(['python3', os.path.join(ROOT, '工具', '外声闸.py'), '6'],
+                       capture_output=True, text=True, timeout=90)
+        _q = re.search(r'(240—\d+章 \d+)', _r2.stdout or '')
+        _z = re.search(r'末尾连续出声为零：(\d+) 章', _r2.stdout or '')
+        if _q:
+            out.append('── 外声 ──')
+            out.append('  全角引号 %s 处｜末尾连续无声 %s 章'
+                       % (_q.group(1), _z.group(1) if _z else '?'))
+    except Exception:
+        pass
     out.append('── git ──')
     out.append('  未提交 %d 件｜枝 %s｜末笔 %s' % (dirty, br, lg.strip()[:44]))
     if not rhead:

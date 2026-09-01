@@ -135,6 +135,26 @@ def chk_open_six():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+def chk_reader_nag():
+    """存版·阅读器过期即报 负测（2026-09-01立·见 工具/负测_阅读器催.py）。
+    ★其立之由：每轮改文之后阅读器即过期，而医生／检察官自测／全书检三项俱据之报红，
+    ★★遂使每一轮之推送皆被拦一回；其治只一条命令，难只在「想不起来」。
+    ★★★七项之中，末二项最要紧：器崩与看不懂之时须仍催——
+    ★★★★一个「看不懂就当没事」的催，比没有更坏。"""
+    out = run('负测·阅读器催', ['工具/负测_阅读器催.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_reversible():
     """可逆库之验（2026-08-30立·作者令「我给你授权，但要留下记录，随时可以复原」）。
     ★逐件核 sha256：库若损，「随时可复原」即是空话，而那条授权也就白给了。
@@ -792,6 +812,7 @@ def main():
         items.append(('负测·推闸', chk_push_gate))
         items.append(('可逆库之验', chk_reversible))
         items.append(('负测·可逆册', chk_reversible_neg))
+        items.append(('负测·阅读器催', chk_reader_nag))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

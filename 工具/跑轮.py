@@ -1801,6 +1801,29 @@ def selftest():
     return 0 if fail == 0 else 1
 
 
+def _reader_check():
+    """★跑器之验，返其全部输出。★★另立此函，是为负测可替（本文件不在模块层 import subprocess）。"""
+    import subprocess
+    r = subprocess.run([sys.executable, os.path.join(ROOT, '工具', '同步全本阅读器.py'),
+                        '--check'], cwd=ROOT, capture_output=True, text=True, timeout=300)
+    return (r.stdout or '') + (r.stderr or '')
+
+
+def _reader_stale(_check=None):
+    """★阅读器与正文合不合：合则返空，不合则返一行催语（只报不改）。
+    ★★取器之函，不自写比对：跑 同步全本阅读器.py --check，认其「同步检查通过」六字。
+    ★★★而认不出即催——一个「看不懂就当没事」的催，比没有更坏。"""
+    try:
+        out = (_check or _reader_check)()
+    except Exception as e:
+        return ['  ⚠阅读器之验跑不起来（%s）——须人自跑一回。' % e]
+    if '同步检查通过' in out:
+        return []
+    return ['  ⛔阅读器已过期（正文改了而 HTML 未改）：'
+            '★医生／检察官自测／全书检三项皆据之报红，推送必被拦。',
+            '     处方：python3 工具/同步全本阅读器.py（改毕再推）']
+
+
 def save(n, note=''):
     d, led = paths(n)
     os.makedirs(d, exist_ok=True)
@@ -1981,6 +2004,14 @@ def save(n, note=''):
         pass
     clear_flag(n)
     print('  台账：%s（共%d版）' % (os.path.relpath(led, ROOT), v))
+    # ★★★★★2026-09-01 补（287第2轮所逮·令§十一「法须变成闸方生效」）：
+    # ★病灶：每轮改文之后阅读器即过期，而医生、检察官自测、全书检三项俱据之报红，
+    #   ★★遂使每一轮之推送皆被拦一回——而推闸判它「不在结构性之列」，拦得对。
+    # ★★★而其治只一条命令，难只在「想不起来」；故不靠记性，靠此处每存一版即报一句。
+    # ★★★★而此处只报不改 HTML：改 HTML 之权在人（检察官明书「检察官未改 HTML」），
+    #   ★此闸不夺其权，只把「该去改了」这一句摆到眼前。
+    for _l in _reader_stale():
+        print(_l)
     _rs, _miss = rounds_state(ledger)
     print('  ══════════════════════════════════════════')
     print('  【定论】第%d章「%s」存版成功（rc=0）。台账共%d版，真轮%d/10%s'

@@ -354,7 +354,8 @@ def _book_chapters():
     return len([p for p in glob.glob(os.path.join(ROOT, '正文', '*.md')) if chap_num(p)])
 
 
-def gates(n, note, ledger, chapters_now, receipts, reopen='', force='', same_as_last=False):
+def gates(n, note, ledger, chapters_now, receipts, reopen='', force='', same_as_last=False,
+          txt=''):
     """闸一至闸三之纯函数（可负测）。闸四·验轮在 duibiao。返回 (halt, lines)。"""
     lines, halt = [], False
     vs = ledger.get('版本', [])
@@ -396,7 +397,23 @@ def gates(n, note, ledger, chapters_now, receipts, reopen='', force='', same_as_
     # 闸六·空轮闸（防假跑第1条）：正文与末版逐字相同＝本轮零改动，却要记一版。
     # 【批113·修】初版与验轮闸相犯：零刀之轮若被迫改用非「第N轮」之说明，验轮闸即判其未跑，
     #   遂令「审毕判不补」这一合法结局无从表述。故凡说明中明记判不补者放行，仍挂其轮号。
+    # ═══ 闸十一·亮点闸（2026-09-02·293第2轮立·九犯而未机化，今机化）═══
+    #   ★其法早已写在纸上（一坐⑬：「凡起草毕即须落亮点段，不得留到后轮」），
+    #     ★★而它只报不拦——**病历本记「亮点段必犯病」8次，一坐今日印「此病已犯九次」。**
+    #   ★★★数其群（令§六①②）：**有版可查之章174，亮点段落在 v01 或 v02 者125章，
+    #     落在 v03 之後者 49 章（28%）**——★**群成，非孤例。**
+    #   ★★★★而其位非在报，在存版之路上：**第1轮之存版若无亮点段，当场拦停**；
+    #     ★**其向只朝前**（旧章不再重存，故全书106篇无亮点段之旧章零假红）；
+    #     ★★**而不报轮号之存版不受此拦**（与领轮闸同律：说明一空即不认轮，此闸亦不认）。
+    _liang = (_round_of(note) == 1) and ('【本章亮点' not in txt)
     _nocut = bool(re.search(r'判不补|零刀|不补|无真伤', note or ''))
+    if _liang and not force:
+        halt = True
+        lines.append('   ⛔亮点闸：本版报第1轮，而正文无【本章亮点】。')
+        lines.append('     一坐⑬之法：**凡起草毕即须落亮点段，不得留到后轮**；')
+        lines.append('     而其群已成：有版可查之章174，落在v03之後者49章（28%）——**留到后轮就是留不住**。')
+        lines.append('     处方：补齐亮点段（骨N层＋其数＋其底＋本章之位），再存。')
+        lines.append('     ★而其尺与正文同：破折0／五逗0／半角0／拉丁字母0（全书亮点段无一处用拉丁字母）。')
     if same_as_last and not force and not _nocut:
         halt = True
         lines.append('   ⛔空轮闸：正文与末版逐字相同，本轮零改动。')
@@ -1684,7 +1701,14 @@ def selftest():
     chk('轮次闸须拦倒退', gates(1, '第4轮·甲', L([v('第9轮·乙')]), 5, [])[0])
     chk('轮次闸不得误拦持平', not gates(1, '第9轮·甲', L([v('第9轮·乙')]), 5, [])[0])
     chk('轮次闸不得误拦前进', not gates(1, '第10轮·甲', L([v('第9轮·乙')]), 5, [])[0])
-    chk('轮次闸不得误拦首版', not gates(1, '第1轮·甲', L([]), 5, [])[0])
+    chk('轮次闸不得误拦首版',
+        not gates(1, '第1轮·甲', L([]), 5, [], txt='甲。\n【本章亮点】\n①甲。')[0])
+    # ★亮点闸自身之二测（其详在 工具/负测_亮点闸.py）
+    chk('亮点闸·第1轮无亮点段须拦',
+        gates(1, '第1轮·甲', L([]), 5, [], txt='甲。\n')[0])
+    chk('亮点闸·第2轮无亮点段不问（其位只在第1轮）',
+        not any('亮点闸' in x for x in
+                gates(1, '第2轮·乙', L([v('第1轮·甲')]), 5, [], txt='甲。\n')[1]))
 
     # 闸三·章界闸
     chk('章界闸须拦章数增（别路拆章）',
@@ -1772,9 +1796,15 @@ def selftest():
             ROOT, JJ_DIR = _R, _J
             shutil.rmtree(tmp, ignore_errors=True)
 
-    def _ch(tmp, body='一二三四五六七八九十'):
+    def _ch(tmp, body='一二三四五六七八九十', 亮=True):
+        # ★2026-09-02·亮点闸立後补：**样章须带亮点段**——
+        #   ★亮点闸拦的是「第1轮之存版而正文无亮点段」，而旧样章正是那个样子，
+        #     遂使「干净首版须放行」与「新章起手第1轮须放行」二测由绿转红；
+        #   ★★**而红得对**：那两测所设之「干净首版」，照今日之法本就不干净。
+        #   ★★★故改样章，不改闸——**样章是拿来代表合法之版的，它自己先得合法。**
+        h = '\n\n【本章亮点】\n\n**★而其骨一层**：\n①甲。\n' if 亮 else ''
         open(os.path.join(tmp, '正文', '镇冢秘术_第七章_测.md'), 'w',
-             encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n' + body + '\n')
+             encoding='utf-8').write('《镇冢秘术》\n\n第七章　测\n\n' + body + '\n' + h)
 
     def _led(tmp, vs):
         d = os.path.join(tmp, '版本', '第7章')
@@ -1984,7 +2014,7 @@ def save(n, note=''):
     same_as_last = bool(_last) and os.path.exists(_last) and \
         open(_last, encoding='utf-8').read().strip() == txt.strip()
     halt, glines = gates(n, note, ledger, chapters_now, receipts,
-                         reopen, force, same_as_last)
+                         reopen, force, same_as_last, txt)
     # 闸十·法典闸（283封版后立）：把「立过而屡犯之法」搬进这条已经卡在路上的闸里。
     #   ★其由：写在轮记散文里的法，一条也没被调起来过（掘层须有身连犯五章）；
     #     而写进闸里的（感官三密度·280第13轮立），立了就没再犯过。

@@ -637,6 +637,32 @@ def chk_fs_ack():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_highlight_gate():
+    """★亮点闸负测（2026-09-02·293第2轮所立·**九犯而未机化，今机化**）：
+    ★一坐⑬之法早已写在纸上——**「凡起草毕即须落亮点段，不得留到后轮」**；★★**而它只报不拦。**
+    ★★★病历本记「亮点段必犯病」8次，一坐今日印「此病已犯九次」——**而第九次正是我自己**：
+      293起草毕未落，留到第2轮才补。
+    ★★★★数其群（令§六①②）：**有版可查之章 174，亮点段落在 v01 或 v02 者 125 章，
+      而落在 v03 之後者 49 章（28%）**——**群成，非孤例。**
+    ★其位非在报，在存版之路上：**第1轮之存版若无亮点段，当场拦停**；
+      ★★而其向只朝前（旧章不再重存，全书106篇无亮点段之旧章零假红），
+      ★★★不报轮号之存版亦不受此拦（与领轮闸同律：说明一空即不认轮）。
+    ★★★★其回灌（令§六③）：⑥摘掉 `_liang` 一路，第1轮无亮点段者即放行——**证非陪跑**；
+      ★②③④三项各验其不越界（有者不拦／第2轮不问／不报轮号者不问）——**证未扩成「凡存版皆拦」。**"""
+    out = run('负测·亮点闸', ['工具/负测_亮点闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1598,6 +1624,7 @@ def main():
         items.append(('负测·销立门', chk_seal_new_cold))
         items.append(('负测·孤版闸', chk_orphan_snapshot))
         items.append(('负测·FS认账', chk_fs_ack))
+        items.append(('负测·亮点闸', chk_highlight_gate))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

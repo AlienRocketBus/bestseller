@@ -438,6 +438,24 @@ def chk_band():
     return True, '%d/%d 全通（旧表带外74章25%%→新表0章｜中位3691正落旧缝｜序②在册）' % (ok, tot)
 
 
+def chk_swallowed_note_gate():
+    """★吞记闸负测（2026-09-02·291第13轮开轮时所立）：
+    ★★其形：**器收下了一样它本该拒收的东西，而它一声没出。**
+      `--存版 291 --记 "…"` 里，「--记」当了说明（说明是位置参数 argv[3]），其後真文被静静丢弃；
+      ★★★於是 v15、v16 两版之说明尽失，**真轮数不着第12轮——一轮真跑过了，而账上说它没跑。**
+    ★其族同第二十三犯（数句闸）：**判据里少了一样，它不报错，而在别处稳稳地绿。**
+    ★★其回灌（令§六③）：**旧式（argv[3]照收）原样搬进负测第⑨项，以同一入参真跑一遍**——
+      须一声不出、且把说明取成「--记」；**二者对同一入参判得不一样，此闸方才不是陪跑。**"""
+    out = run('负测·吞记闸', ['工具/负测_吞记闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    return m.group(3) == '全通', '吞记闸负测 %s/%s' % (m.group(1), m.group(2))
+
+
 def chk_count_sentence_gate():
     """★数句闸负测（2026-09-02·291第12轮·极限轮所立）：
     ★★其形：**一个数与另一个数比着，而两边都没被数过**——
@@ -1234,6 +1252,7 @@ def main():
         items.append(('负测·缺报格', chk_missing_slot))
         items.append(('负测·趋阈闸', chk_threshold_gate))
         items.append(('负测·数句闸', chk_count_sentence_gate))
+        items.append(('负测·吞记闸', chk_swallowed_note_gate))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

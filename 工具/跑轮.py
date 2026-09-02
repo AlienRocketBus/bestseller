@@ -2239,8 +2239,25 @@ def main():
         return jinli(n)
     if cmd == '--验轮':
         return yanlun(n)
+    # ★★★★★吞记闸（2026-09-02·291第13轮开轮时自逮）：说明是位置参数（argv[3]），
+    #   ★而我写成 `--存版 291 --记 "…"`，於是「--记」当了说明，我那一行真文被静静丢弃；
+    #   ★★两版之说明尽失（v15「--记」、v16「--记·补存」），真轮遂数不着第12轮——
+    #      **一轮真跑过了，而账上说它没跑。**
+    #   ★★★其族同第二十三犯：**器收下了一样它本该拒收的东西，而它一声没出。**
+    #   ★★★★故凡说明以「--」起手者，当场拦停并印出正确写法；不许猜、不许拼。
+    def _记(argv):
+        t = argv[3] if len(argv) > 3 else ''
+        if t.startswith('--'):
+            print('⛔吞记闸：说明写成了「%s」——说明是位置参数，不是选项。' % t)
+            print('   ★你多写的那一行真文已被丢弃（argv[4] 起本器一概不读）。')
+            print('   正确：python3 工具/跑轮.py %s %s "第N轮·某庭：所改何事"' % (argv[1], argv[2]))
+            if len(argv) > 4:
+                print('   ★★你本来要写的是：%s' % ' '.join(argv[4:]))
+            raise SystemExit(2)
+        return t
+
     if cmd == '--补存':
-        return buccun(n, sys.argv[3] if len(sys.argv) > 3 else '')
+        return buccun(n, _记(sys.argv))
     if cmd == '--还原':
         return huanyuan(n, sys.argv[3] if len(sys.argv) > 3 else '')
     if cmd == '--下一轮':
@@ -2248,7 +2265,7 @@ def main():
     if cmd == '--轮记':
         return lunji_append(n, sys.stdin.read())
     if cmd == '--存版':
-        return save(n, sys.argv[3] if len(sys.argv) > 3 else '')
+        return save(n, _记(sys.argv))
     if cmd == '--横评':
         return compare(n)
     print(__doc__)

@@ -1,0 +1,61 @@
+# -*- coding: utf-8 -*-
+"""负测·层census与立价查（批131·292第13轮所立）
+所治之伤：造出来的器不称职，而它的数看着像答案。
+  层census 造出来是要答「每层在白文里占几拍」；拿她自己四章回灌，
+  同一把尺从 284 之 6% 摆到 288 之 45%——**摆的是我写亮点段的手，不是章的厚薄**；
+  而 284 係已封版之章，其五层无人判过薄，本器判它四层皆「占一拍」。
+本测所验者为不变量，非快照：
+  ①层census 不许再以「层薄」之名出判，且其不称职之凭据须与器同存；
+  ②立价查 须逮得着 292 拍10 那一根（第12轮逐层读出来者，器独立复得）；
+  ③而立价查非遍地皆红：她自己数章之数须相异，且须有「收了」之例（291）。
+"""
+import io, os, re, sys, subprocess
+_D = os.path.dirname(os.path.abspath(__file__))
+_R = os.path.dirname(_D)
+案 = []
+def chk(名, 得, 期):
+    案.append((名, 得 == 期, '得%r 期%r' % (得, 期)))
+
+def 跑(器, *a):
+    p = subprocess.run([sys.executable, os.path.join(_D, 器)] + list(a),
+                       cwd=_R, capture_output=True, text=True)
+    return (p.stdout or '') + (p.stderr or '')
+
+# ── 一·层census 之诚实 ──
+_c = io.open(os.path.join(_D, '层census.py'), encoding='utf-8').read()
+chk('①不称职之凭据须与器同存（校准之数写在器上）',
+    all(x in _c for x in ('284', '6%', '45%', '不许删')), True)
+chk('①之b 且明写「此数不许读作层薄」', '不许读作' in _c or '不许用作' in _c, True)
+o = 跑('层census.py', '292')
+chk('①之c 器印之判须名为「引实率」，不许名为「占拍」之判', '引实率' in o, True)
+chk('①之d 且不许再对某层出「须复问·层薄」之判',
+    '占三拍以下·须复问' in o, False)
+chk('①之e 而其料仍在（逐层之抄实拍数照印，人自去看）', '抄实之拍' in o, True)
+o284 = 跑('层census.py', '284')
+m1 = re.search(r'引实率 (\d+)%', o); m2 = re.search(r'引实率 (\d+)%', o284)
+chk('①之f 两章之引实率须相异（证此数量的是引实，非厚薄）',
+    bool(m1 and m2) and m1.group(1) != m2.group(1), True)
+
+# ── 二·立价查 逮得着那一根 ──
+o292 = 跑('立价查.py', '292')
+chk('②292 须逮着拍10「写上去这一行就得往里挪」，且判其未收',
+    '往里挪' in o292 and '⛔未收' in o292, True)
+chk('②之b 并须把「它在骨记里占没占一层」这一料摆出来（判归人）',
+    '未入骨记' in o292 or '骨记' in o292, True)
+def 数(ch):
+    oo = 跑('立价查.py', str(ch))
+    mm = re.search(r'立价 (\d+) 处，其中未收 (\d+) 处', oo)
+    return (int(mm.group(1)), int(mm.group(2))) if mm else (0, 0)
+d284, d286, d288, d290, d291, d292 = (数(x) for x in (284, 286, 288, 290, 291, 292))
+chk('③非遍地皆红：284、286 须为零', (d284[0], d286[0]), (0, 0))
+chk('③之b 而须有「收了」之例（291：立价而收）', d291[0] >= 1 and d291[1] == 0, True)
+chk('③之c 数章之数须相异（证非一把只会响的铃）',
+    len({d284[0], d288[0], d290[0], d292[0]}) >= 2, True)
+chk('③之d 288、290、292 三章连着皆有未收者（此係其手法，非其伤）',
+    (d288[1] >= 1, d290[1] >= 1, d292[1] >= 1), (True, True, True))
+
+坏 = [x for x in 案 if not x[1]]
+for 名, 过, 详 in 案:
+    print(('  ✓ ' if 过 else '  ⛔ ') + 名 + ('' if 过 else '　' + 详))
+print('\n★负测 %d 项，过 %d，坏 %d' % (len(案), len(案) - len(坏), len(坏)))
+sys.exit(1 if 坏 else 0)

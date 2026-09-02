@@ -958,7 +958,14 @@ def _lunji_blocks(n):
         return {}
     out = {}
     last = None
-    for b in open(f, encoding='utf-8').read().split('\n## '):
+    # ★2026-09-02·292第13轮甲实见：切块只认「\n## 」，而我把第11、12轮之标题写作「\n# 」；
+    #   ★其果不是漏掉那两轮——**是把那两轮的活并进了第10轮**（第10轮之数由 真伤0治5复量5
+    #     变成 真伤1治6复量5，而它一个字也没多干）；★★而丁2照旧只列十轮，一声不出。
+    #   ★★★此与本函上一修同祸：**器报的不是活没干，是器把活记到了别人头上**——
+    #     而记错头比漏记更险：漏记看得出少了一行，记错看着一切正常。
+    #   ★★★★故今改为一、二级标题皆认；且丁2另印一行「轮记见N轮／台账见M轮」，两数不符即出声。
+    _raw = open(f, encoding='utf-8').read()
+    for b in re.split(r'\n#{1,2} ', _raw):
         if not b.strip():
             continue
         m = re.match(r'第(\d+)轮', b)
@@ -1311,6 +1318,21 @@ def jinli(n):
             _idle.append(_r)
         print('   第%-2d轮 真伤%d 治%2d 复量%2d 产出%d %s %s'
               % (_r, _zs + _fan, _zhi, _fl, _chan, _mark, '｜凭：' + '、'.join(_by) if _by else ''))
+    # 两数并印（292第13轮甲立）：轮记见几轮、台账见几轮。不符即出声——
+    # 一份只列十轮而台账说跑了十二轮的回检，它漏的那两轮不会自己举手。
+    _账轮 = sorted(_末.keys()) if _末 else []
+    _记轮 = sorted(lj.keys())
+    print('   ── 轮记见 %d 轮（%s）｜台账见 %d 轮（%s）──'
+          % (len(_记轮), '、'.join(str(x) for x in _记轮) or '无',
+             len(_账轮), '、'.join(str(x) for x in _账轮) or '无'))
+    _缺记 = [x for x in _账轮 if x not in lj]
+    _缺账 = [x for x in _记轮 if x not in _末]
+    if _缺记:
+        warn.append('台账有而轮记无者第%s轮——那一轮存了版而没留话，回检看不见它'
+                    % '、'.join(str(x) for x in _缺记))
+    if _缺账:
+        warn.append('轮记有而台账无者第%s轮——那一轮写了话而没存版（或其版之说明未报轮号）'
+                    % '、'.join(str(x) for x in _缺账))
     if _idle:
         warn.append('第%s轮无动手之痕（治、复量、真伤、翻案、带数之产出，五路俱无）——须自问那几轮是不是走了过场'
                     % '、'.join(str(x) for x in _idle))

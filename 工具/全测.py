@@ -530,6 +530,35 @@ def chk_effort_recheck():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_layer_census_honest():
+    """★层census与立价查负测（2026-09-02·292第13轮所立）：
+    ★**造出来的器不称职，须与器同存，不许删。**
+    ★★层census 本是为答「每层在白文里占几拍」而造；拿她自己四章回灌：
+      **284 覆盖 6%（四层皆判「占一拍」，而284係已封版之章，其五层无人判过薄）｜
+      286 17%｜292 31%｜288 45%**——★★★**同一把尺在五章之间从6%摆到45%**，
+      **摆的是我写亮点段的手，不是章的厚薄**。★★★★故其名与其判俱改：
+      **它量的是「亮点段引实率」**，且校准之数印在器上，**不许再读作层薄**。
+    ★而那一问另造一器答之：**立价查**——价之形係条件句，其收是那个果在其後真发生一回。
+      ★★292得「立价1处·未收1处」（拍10「写上去这一行就得往里挪」），
+      **正是第12轮逐层读出来的那一根，器独立复得**；
+      ★★★回灌她自己四章：284/286 零｜288 一处未收｜290 二处未收｜**291 一处而收了**
+      ——**非遍地皆红，亦非陪跑。**
+    ★★★★而其所现者非伤：**立而不收是她三章连着的一个手法**（288「改了这一行就成了两个日子的」／
+      290、292「往里挪」）——**她一再立一个价，然後不付。** 器把它由「疑似之伤」变成「认得出的形」。"""
+    out = run('负测·层census与立价查', ['工具/负测_层census.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1436,6 +1465,7 @@ def main():
         items.append(('负测·段间空行闸', chk_blankline_gate))
         items.append(('负测·填记口', chk_fill_note_gate))
         items.append(('负测·功力回检', chk_effort_recheck))
+        items.append(('负测·层census与立价查', chk_layer_census_honest))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

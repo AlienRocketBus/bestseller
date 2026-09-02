@@ -76,6 +76,43 @@ try:
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
+# ── 三·轮记切块：一、二级标题皆须认（292第13轮甲实见） ──
+# 其形：切块只认「\n## 」，而第11、12轮之标题写作「\n# 」；
+#      其果不是漏掉那两轮，**是把那两轮的活并进了第10轮**——记错头比漏记更险：
+#      漏记看得出少了一行，记错看着一切正常。
+tmp2 = tempfile.mkdtemp()
+try:
+    os.makedirs(os.path.join(tmp2, '工具')); os.makedirs(os.path.join(tmp2, '正文'))
+    shutil.copy(os.path.join(_D, '跑轮.py'), os.path.join(tmp2, '工具', '跑轮.py'))
+    vd2 = os.path.join(tmp2, '版本', '第998章'); os.makedirs(vd2)
+    io.open(os.path.join(vd2, '_台账.json'), 'w', encoding='utf-8').write(json.dumps({'章': 998, '版本': [
+        {'版': 'v01', '说明': '第1轮·起草', 'hard': {}, 'soft': {'净重': 2000}},
+        {'版': 'v02', '说明': '第2轮·四堂会审', 'hard': {}, 'soft': {'净重': 2100}},
+    ]}, ensure_ascii=False, indent=1))
+    io.open(os.path.join(vd2, '_轮记.md'), 'w', encoding='utf-8').write(
+        '# 第998章 · 轮记\n\n'
+        '## 第1轮·起草\n本轮真伤1根，其治已落。\n\n'
+        '# 第2轮·四堂会审\n本轮真伤2根，其治二处，复量复量。\n')   # 一级标题
+    io.open(os.path.join(tmp2, '正文', '镇冢秘术_第九百九十八章_试.md'), 'w', encoding='utf-8').write(
+        '《镇冢秘术》\n\n第九百九十八章　试\n\n第一日。\n\n＊\n\n她把册子抽出来。\n')
+    p3 = subprocess.run([sys.executable, os.path.join(tmp2, '工具', '跑轮.py'), '--尽力', '998'],
+                        cwd=tmp2, capture_output=True, text=True)
+    o3 = (p3.stdout or '') + (p3.stderr or '')
+    chk('⑦一级标题之轮须认得出（不许并进前一轮）',
+        bool(re.search(r'第2 ?轮 真伤', o3)), True)
+    chk('⑦之b 而前一轮不许因此长出别人的数（第1轮真伤须仍为1）',
+        bool(re.search(r'第1 ?轮 真伤1 ', o3)), True)
+    chk('⑧须并印「轮记见N轮｜台账见M轮」两数', '轮记见' in o3 and '台账见' in o3, True)
+    # 轮记有而台账无：加第3轮之话而不加其版
+    io.open(os.path.join(vd2, '_轮记.md'), 'a', encoding='utf-8').write(
+        '\n## 第3轮·挑刺王\n本轮真伤1根，其治已落。\n')
+    p4 = subprocess.run([sys.executable, os.path.join(tmp2, '工具', '跑轮.py'), '--尽力', '998'],
+                        cwd=tmp2, capture_output=True, text=True)
+    o4 = (p4.stdout or '') + (p4.stderr or '')
+    chk('⑧之b 轮记有而台账无者·须出声', '轮记有而台账无' in o4, True)
+finally:
+    shutil.rmtree(tmp2, ignore_errors=True)
+
 坏 = [x for x in 案 if not x[1]]
 for 名, 过, 详 in 案:
     print(('  ✓ ' if 过 else '  ⛔ ') + 名 + ('' if 过 else '　' + 详))

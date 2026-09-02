@@ -63,6 +63,28 @@ def 剥(s):
     return re.sub(r'[\s*★·【】，。、；：？！…—「」『』（）()／/]', '', s)
 
 
+def 骨层数(txt):
+    """★2026-09-02 立（290第6轮所逮）：亮点段自书「其骨N层」，而其下所列之层不足N。
+    ★★其形是一次静默的 replace 未命中——**改亮点段之骨而只改了那个数**；
+    ★★★而此形本坐已犯二回（289之开镜卡写死 %s／290之骨六层只列五条），依令§十一当机化。
+    ★★★★其判极窄：只比「其骨N层」之N与其下 ①②③④⑤⑥⑦⑧⑨⑩ 之个数（含①之二、③之三一类之附层）。
+    返回 (报之N, 实数M)；无「其骨N层」者返 (None, None)。"""
+    if '【本章亮点】' not in txt:
+        return None, None
+    hl = txt.split('【本章亮点】', 1)[1]
+    m = re.search(r'其骨([一二三四五六七八九十]+)层', hl)
+    if not m:
+        return None, None
+    CNN = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10}
+    s = m.group(1)
+    N = 10 if s == '十' else (10 + CNN.get(s[1], 0) if s.startswith('十') else CNN.get(s, 0))
+    # 层之目：行首之 ①—⑩，或 ①之二／④之三 一类
+    层 = set()
+    for mm in re.finditer(r'^([①②③④⑤⑥⑦⑧⑨⑩])(之[一二三四五六七八九十])?', hl, re.M):
+        层.add(mm.group(0))
+    return N, len(层)
+
+
 def 三路(txt, n=None, 全书=None):
     """返回 (约数红, 引文报, 数报)；★只有头一样作闸。"""
     if '【本章亮点】' not in txt:
@@ -90,7 +112,12 @@ def 三路(txt, n=None, 全书=None):
 def 查(n, 路, 全书=None, 报=True, 详=False):
     txt = io.open(路, encoding='utf-8').read()
     约红, 引报, 数报 = 三路(txt, n, 全书 if 详 else None)
+    N, M = 骨层数(txt)
+    骨红 = (N is not None and M is not None and N != M)
     if 报:
+        if 骨红:
+            print('  ⛔ 第%d章 亮点段自书「其骨%d层」，而其下所列之层只有 %d 条。' % (n, N, M))
+            print('     ★改亮点段之骨而只改了那个数——多半是一次静默的 replace 未命中。')
         if 约红:
             print('  ⛔ 第%d章 约数相犯 %d 处：%s' % (n, len(约红), '、'.join(约红)))
             print('     ★亮点段不许把正文给准了的数抹成约数。')
@@ -104,7 +131,7 @@ def 查(n, 路, 全书=None, 报=True, 详=False):
             if 数报:
                 print('     ℹ数可疑 %d 处（报而不拦·此路全书红18%%，多为概括之数）：%s'
                       % (len(数报), '、'.join(数报[:8])))
-    return 1 if 约红 else 0
+    return 1 if (约红 or 骨红) else 0
 
 
 if __name__ == '__main__':
@@ -112,8 +139,11 @@ if __name__ == '__main__':
     全 = 诸章()
     print('════ 亮点对表 ════')
     if '--全' in sys.argv:
-        bad = [n for n in sorted(全)
-               if 三路(io.open(全[n], encoding='utf-8').read())[0]]
+        def _红(n):
+            _t = io.open(全[n], encoding='utf-8').read()
+            _N, _M = 骨层数(_t)
+            return bool(三路(_t)[0]) or (_N is not None and _M is not None and _N != _M)
+        bad = [n for n in sorted(全) if _红(n)]
         for n in bad:
             查(n, 全[n])
         print('  约数相犯之章 %d／%d' % (len(bad), len(全)))

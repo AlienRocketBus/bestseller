@@ -65,6 +65,18 @@ def _最长(b):
     return max(L) if L else 0
 
 
+def _句方差(b):
+    """★与 看官.py::评论员 同源之量法（st.pvariance 於以。！？切出之句长）——
+    ★★同一个数只许有一把尺；两处各造一把，日後两处判不同即无从对账。"""
+    ss = [y for y in re.split(r'[。！？]', re.sub(r'\s', '', b)) if y]
+    return st.pvariance([len(y) for y in ss]) if len(ss) > 1 else 0.0
+
+
+def _段方差(b):
+    L = [len(p) for p in _拍(b)]
+    return st.pvariance(L) if len(L) > 1 else 0.0
+
+
 项表 = {
     '因为': _千字(r'因为'),
     '像': _千字(r'像[^，。；]{2,20}'),
@@ -74,6 +86,8 @@ def _最长(b):
     '她把': _千字(r'她把'),
     '90分位': _p90,
     '最长段': _最长,
+    '句方差': _句方差,
+    '段方差': _段方差,
 }
 
 

@@ -413,6 +413,27 @@ def chk_ratchet_v01():
     return True, '%d/%d 全通（v26回灌报「听15→13低於起草」｜删无感官之判则放行）' % (ok, tot)
 
 
+def chk_cold_veto():
+    """★冷轮否决记负测（2026-09-02·290封版当日立）：
+    ★★令§十①逼回执写足「N章冷眼轮」六字，**而那六个字正是⑥所读之签核**——
+      ★★★於是一份明写「本章未执」的回执，把账当场销了（实证：290之回执，一坐当场印「COLD-288 已执」⛔）。
+    ★取二组数：回执中出现那六字者 216 笔，其近旁含「未执／顺延／挂红」者 11 笔（5%）；
+      ★★数其群：无一份旧回执含「COLD-N·本章未执」此式——故立此式作否决记，**回灌全书零红**。
+    ★★★而其非陪跑之凭在④⑤：以旧式回灌，COLD-288 判「已执」；二式相异者全书只此一笔。"""
+    out = run('负测·冷轮否决记', ['工具/负测_冷轮否决记.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（旧式於COLD-288判已执｜二式相异者全书只此一笔）' % (ok, tot)
+
+
 def chk_hl_table():
     """★亮点对表负测（289第10轮立·第9轮所逮）：亮点段与正文相犯，全书原无一道闸看得见。
     ★★而三路之中只一路作闸——③约数路（红3章/289，1%）；
@@ -1102,6 +1123,7 @@ def main():
         items.append(('负测·棘轮预检', chk_ratchet_pre))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·棘轮v01', chk_ratchet_v01))
+        items.append(('负测·冷轮否决记', chk_cold_veto))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))

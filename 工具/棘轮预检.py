@@ -12,7 +12,7 @@ import io, os, re, sys, json, glob
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(根, '工具'))
-from 跑轮 import score, body_of, RATCHET_MIN, RATCHET_MAX  # noqa: E402
+from 跑轮 import score, body_of, RATCHET_MIN, RATCHET_MAX, RATCHET_V01  # noqa: E402
 
 CN = {'零':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9}
 
@@ -40,6 +40,18 @@ def 正文路径(n):
         if _号(os.path.basename(p)) == n:
             return p
     return None
+
+
+def 起草版(n):
+    """台账首个有 soft 之版——RATCHET_V01 之底（2026-09-02立）。"""
+    f = os.path.join(根, '版本', '第%d章' % n, '_台账.json')
+    if not os.path.exists(f):
+        return {}
+    for r in json.load(io.open(f, encoding='utf-8')).get('版本', []):
+        sf = r.get('soft') or {}
+        if sf:
+            return sf
+    return {}
 
 
 def 最优(n):
@@ -88,6 +100,10 @@ def 跑(n, 报=True):
     for k in RATCHET_MAX:
         if k in best and soft[k] < best[k]:
             worse.append((k, best[k], soft[k], '降'))
+    v01 = 起草版(n)
+    for k in RATCHET_V01:
+        if k in v01 and k in soft and soft[k] < v01[k]:
+            worse.append((k, v01[k], soft[k], '低於起草'))
     if 报:
         print('════ 棘轮预检 · 第%d章 ════' % n)
         if not best:

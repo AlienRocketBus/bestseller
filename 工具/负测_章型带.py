@@ -1,0 +1,110 @@
+# -*- coding: utf-8 -*-
+"""负测·令四之带（2026-09-02·291第7轮改齐）
+
+★所改者一句话：**转章带下沿由 4,000 降到 3,501，上沿由 5,500 抬到 5,999；常章带与爆章不动。**
+★★而一份在旧式下也全过的测，它就是陪跑（令§六③）——**故其要害在③④：以旧式回灌，全书三成四在带外。**
+★★★而其最险处在误伤：**不许把「事」判为「数」**——故⑨⑩验上位之序②（品由事定，带为其验）仍在册。
+"""
+import glob
+import importlib.util as _u
+import io
+import os
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_sp = _u.spec_from_file_location('_跑轮', os.path.join(ROOT, '工具', '跑轮.py'))
+_m = _u.module_from_spec(_sp)
+_sp.loader.exec_module(_m)
+
+新 = {'常': (2500, 3500), '转': (3501, 5999), '爆': (6000, 10 ** 9)}
+# ★旧表逐字为「常章 2,500—3,500｜转章 4,000—5,500｜爆章 ~6,000 以上」——
+#   ★★故 3,501—3,999 与 5,501—5,999 二段**字面上没有名字**；
+#   ★★★此处按其字面记，不按「~」那一字宽放（宽放正是这道缝三个月没人看见的由头）。
+旧 = {'常': (2500, 3500), '转': (4000, 5500), '爆': (6000, 10 ** 9)}
+
+
+def _nets():
+    out = []
+    for f in glob.glob(os.path.join(ROOT, '正文', '镇冢秘术_第*章_*.md')):
+        t = io.open(f, encoding='utf-8').read()
+        b = _m.body_of(t) if hasattr(_m, 'body_of') else t
+        out.append(len(re.sub(r'\s', '', b)))
+    return out
+
+
+def _无带(ws, tbl):
+    return sum(1 for w in ws
+               if not any(lo <= w <= hi for lo, hi in tbl.values()) and w >= 2500)
+
+
+def run():
+    R = []
+    ws = _nets()
+    n = len(ws)
+
+    # ①器在·全书章目取得到
+    R.append(('①器在·全书%d章之净重俱取得到' % n, n > 280))
+
+    # ②旧式之害·以旧表量，缝一（3501—3999）非空
+    缝一 = sum(1 for w in ws if 3501 <= w <= 3999)
+    R.append(('②旧式之害·缝一 3,501—3,999 押 %d 章' % 缝一, 缝一 >= 30))
+
+    # ③旧式之害·缝二（5501—5999）比缝一还多
+    缝二 = sum(1 for w in ws if 5501 <= w <= 5999)
+    R.append(('③旧式之害·缝二 5,501—5,999 押 %d 章（比缝一还多）' % 缝二, 缝二 >= 缝一))
+
+    # ④旧式之害·合前後二缝，带外者逾三成（故此改非陪跑）
+    旧外 = _无带(ws, 旧)
+    R.append(('④旧式之害·旧表之下（不计不足2500者）带外 %d 章＝%.0f%%（缝一%d＋缝二%d）'
+              % (旧外, 100.0 * 旧外 / n, 缝一, 缝二), 旧外 >= 60))
+
+    # ⑤新式之效·带外归零（2500以上者）
+    新外 = _无带(ws, 新)
+    R.append(('⑤新式之效·新表之下带外 %d 章（2,500以上者）' % 新外, 新外 == 0))
+
+    # ⑥未挖空·不足2,500者仍在带外（那是另一道题，不许顺手一并收了）
+    低 = sum(1 for w in ws if w < 2500)
+    R.append(('⑥未挖空·不足2,500者 %d 章仍在带外' % 低, 低 > 0))
+
+    # ⑦其位之据·全书净重中位落在旧缝之内（即旧表把最常见那一档划在带外）
+    md = sorted(ws)[n // 2]
+    R.append(('⑦其位之据·全书净重中位 %d 落在旧缝(3,501—3,999)之内' % md,
+              3501 <= md <= 3999))
+
+    # ⑧三处文档俱已改齐（施工表／完全版／开镜庭卡样）
+    ok = True
+    for f in ('设定/01_镇冢秘术_逐章施工与伏笔回收表.md',
+              '设定/09_跑轮令_完全版.md', '工具/第零轮开镜庭.py'):
+        t = io.open(os.path.join(ROOT, f), encoding='utf-8').read()
+        if '4,000—5,500' in t or '4000—5500' in t:
+            ok = False
+    R.append(('⑧三处文档俱已改齐（无一处仍写 4,000—5,500）', ok))
+
+    # ⑨码中之线亦改齐·趋阈闸之表不再认「转章带下沿4000」
+    names = set(nm for _, _, nm in _m.THRESHOLDS)
+    R.append(('⑨码中之线改齐·趋阈闸不再认「转章带下沿」，改认「爆章下沿」',
+              '转章带下沿' not in names and '爆章下沿' in names))
+
+    # ⑩上位之序②仍在册（品由事定，带为其验）——不许把「事」判成「数」
+    t = io.open(os.path.join(ROOT, '工具', '第零轮开镜庭.py'), encoding='utf-8').read()
+    R.append(('⑩上位之序②在卡样内：品由事定，带为其验；品带相犯者留档',
+              '品由事定，带为其验' in t and '品带相犯' in t))
+
+    # ⑪开镜庭「逾常章带」之判在新带下仍为真（>3500 即非常章）
+    R.append(('⑪开镜庭 `> 3500 即非常章` 於新带下仍为真（一字未改而须记其为承重）',
+              '非常 = [x for x in ws if x[1] > 3500]' in t and '日後改带，必回来核它' in t))
+
+    # ⑫爆章之界·6,000 起（旧式之5,500已废）
+    R.append(('⑫爆章之界 6,000 起',
+              sum(1 for w in ws if w >= 6000) > 0 and 新['爆'][0] == 6000))
+
+    bad = [x for x, o in R if not o]
+    for x, o in R:
+        print('   %s %s' % ('✓' if o else '✗', x))
+    print('  负测·章型带 %d/%d %s' % (len(R) - len(bad), len(R), '全通' if not bad else '⛔未通'))
+    return 0 if not bad else 1
+
+
+if __name__ == '__main__':
+    sys.exit(run())

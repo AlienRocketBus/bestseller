@@ -413,6 +413,26 @@ def chk_ratchet_v01():
     return True, '%d/%d 全通（v26回灌报「听15→13低於起草」｜删无感官之判则放行）' % (ok, tot)
 
 
+def chk_turnpage_obj():
+    """★翻页备料查（检五）之对象负测（2026-09-02·291第1轮所逮）：
+    ★★原码取「全书最大章号＋1」，是全局之数，不随所查之章而动；
+      ★★★其果：291一起草，以290为cur索292之锚，**以289为cur也索292之锚**——
+        判据里根本没有「所查之章」这一项，故它不是在查这一章的翻页，是在查全书的进度。
+    ★★★★今改作 n+1；而状态卡批次係全书一个指针，只问前沿（n+1 未写出者）。"""
+    out = run('负测·翻页备料查', ['工具/负测_翻页备料查.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（旧式令289与290所索者同为一章｜新式各索其下一章）' % (ok, tot)
+
+
 def chk_cold_veto():
     """★冷轮否决记负测（2026-09-02·290封版当日立）：
     ★★令§十①逼回执写足「N章冷眼轮」六字，**而那六个字正是⑥所读之签核**——
@@ -1124,6 +1144,7 @@ def main():
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·棘轮v01', chk_ratchet_v01))
         items.append(('负测·冷轮否决记', chk_cold_veto))
+        items.append(('负测·翻页备料查', chk_turnpage_obj))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))

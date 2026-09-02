@@ -559,6 +559,31 @@ def chk_layer_census_honest():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_seal_new_cold():
+    """★销立门负测（2026-09-02·293起轮时所立·第二十四犯之第四形）：
+    ★**立之序明书「销旧须当场立新」**，而**291之回执销了两笔却一笔也没立新**；
+      ★★遂使 `_cold_limit(291)` 退回通则 N+2＝293，而其面无档——
+      **账上一笔红，红的是一个不存在的东西。**
+    ★★★**与前三形之别**：前三形是「写下来的东西被吞了」，**本形是「该写的那一样从来没写」**——
+      ★★★★**吞了的还看得出说明是空的，没写的连个空位也没有。**
+    ★数其群（令§六②）：**自 COLD-153 立档以降之回执 140 份，销过旧冷轮者 134 份，
+      而销而未立新者 4 份（155、198、200、291）**——**群成，非孤例，故机化。**
+    ★★其向只朝前（只查正在封版的那一章），**故於已封之史零假红**；
+      ★★★其回灌（令§六③）：④之b 291今已补立，须不在其中——**它若还在，说明补立那一档没落盘。**"""
+    out = run('负测·销立门', ['工具/负测_销立门.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1466,6 +1491,7 @@ def main():
         items.append(('负测·填记口', chk_fill_note_gate))
         items.append(('负测·功力回检', chk_effort_recheck))
         items.append(('负测·层census与立价查', chk_layer_census_honest))
+        items.append(('负测·销立门', chk_seal_new_cold))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

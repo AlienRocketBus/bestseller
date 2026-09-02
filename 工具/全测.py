@@ -413,6 +413,27 @@ def chk_ratchet_v01():
     return True, '%d/%d 全通（v26回灌报「听15→13低於起草」｜删无感官之判则放行）' % (ok, tot)
 
 
+def chk_threshold_gate():
+    """★趋阈闸负测（2026-09-02·291第7轮所立·每次存版必跑）：
+    ★★其形：**一个数差一点就够到一条有名之限，而最省的一步是补几个字把它顶过去**；
+      ★★★而那几个字过得了每一道硬闸、抬得起净重、看起来跟正常落笔一模一样。
+    ★取二组数（令§六①）：**逐章回灌台账，版际之比3147次，趋阈之红68次＝2.16%**——非陪跑亦非拆书；
+      ★★**而其中195、273、275、276、283、284 数章落在3500线上，余量0至2字**，各自封了版，无一道闸出过声。
+    ★★★其过法不是签一个字（LAW-290B）：须写「非凑数：<其由>」，**而那一行连同其数一并落进台账**，日後可逐条回读。"""
+    out = run('负测·趋阈闸', ['工具/负测_趋阈闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（全书回灌红率2.16%%｜275/276/283/284四章落线俱逮着｜289之真掘报而不判落线）' % (ok, tot)
+
+
 def chk_missing_slot():
     """★缺报格闸负测（2026-09-02·六造§八所立）：
     ★★令§〇之二逼我每轮写一行「本可问而未问」，**而从前没有任何器数它在不在**；
@@ -1168,6 +1189,7 @@ def main():
         items.append(('负测·冷轮否决记', chk_cold_veto))
         items.append(('负测·翻页备料查', chk_turnpage_obj))
         items.append(('负测·缺报格', chk_missing_slot))
+        items.append(('负测·趋阈闸', chk_threshold_gate))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))

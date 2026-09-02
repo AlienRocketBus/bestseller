@@ -34,6 +34,47 @@ def _old(n, rcs):
     return any('%d章冷眼轮' % n in t for t in rcs)
 
 
+def _rcs_ch():
+    """回执逐份带其章号（否决之效只及於写它那一份，故须知孰先孰後）。"""
+    import glob as _g, os as _o, re as _r, io as _io
+    out = []
+    for fp in sorted(_g.glob(_o.path.join(ROOT, '设定', '回执_*.md'))):
+        m = _r.search(r'第(\d+)章', _o.path.basename(fp))
+        out.append((int(m.group(1)) if m else 0,
+                    _io.open(fp, encoding='utf-8', errors='replace').read()))
+    return out
+
+
+_末份缓 = {}
+
+
+def _末份(n, rcsc):
+    """提及此笔之回执中，章号最大的那一份；返回 (章, 有否决, 有六字)。无者 None。
+
+    ★缓其果：头一版每问一笔即把全部回执重扫一遍，而外头三处列表推导各问三百笔，
+      遂跑成分钟级（本测原是秒级）。**一个跑不完的负测等於没有负测**，故记此。
+    """
+    if n in _末份缓:
+        return _末份缓[n]
+    veto, sign = 'COLD-%d·本章未执' % n, '%d章冷眼轮' % n
+    c = [(ch, veto in tx, sign in tx) for ch, tx in rcsc if veto in tx or sign in tx]
+    _末份缓[n] = sorted(c)[-1] if c else None
+    return _末份缓[n]
+
+
+_先否缓 = {}
+
+
+def _先有否决(n, rcsc):
+    """此笔在其末份之前，有没有别的回执挂过否决记。"""
+    if n in _先否缓:
+        return _先否缓[n]
+    m = _末份(n, rcsc)
+    _先否缓[n] = bool(m) and any(('COLD-%d·本章未执' % n) in tx
+                                for ch, tx in rcsc if ch < m[0])
+    return _先否缓[n]
+
+
 def run():
     rcs = _rcs()
     R = []
@@ -44,8 +85,25 @@ def run():
     # ②正测：一笔真办过的（回执有六字、无否决记）须判已执
     R.append(('②正测·COLD-286（286之轮於288办毕）判已执', _m6._cold_done(286) is True))
 
-    # ③真红：今日之实（290之回执明写 COLD-288·本章未执）须判待执
-    R.append(('③真红·COLD-288 判待执（290回执有六字而有否决记）', _m6._cold_done(288) is False))
+    # ③真红
+    #   ★★★★★2026-09-02·292封版之序改：**原本写死 COLD-288**，
+    #     ★而288今已由292之回执真办毕（其执在骨⑤「不落手」）——**它由红转绿是对的，
+    #       而此项因此而坏，坏的不是闸，是这一条断言**；★★同一坐之内我已两回栽在
+    #       「把快照当不变量」上（负测_冷轮否决记⑤⑦⑩、负测_棘轮裁⑦⑧⑨），此为第三回。
+    #   ★★★故改为验其理本身：**凡「末一份提及之回执挂否决记」者，一律须判待执；
+    #     凡「末一份只签核」者，一律须判已执**——不点某一笔之名，只验这条理在全书上成不成立。
+    rcsc = _rcs_ch()
+    _有号 = [n for n in range(1, 301) if _末份(n, rcsc)]
+    _该红 = [n for n in _有号 if _末份(n, rcsc)[1]]
+    _该绿 = [n for n in _有号 if (not _末份(n, rcsc)[1]) and _末份(n, rcsc)[2]]
+    R.append(('③真红·末份挂否决记者一律判待执（%d 笔逐一验）' % len(_该红),
+              len(_该红) >= 1 and all(_m6._cold_done(n) is False for n in _该红)))
+    R.append(('③之b 末份只签核者一律判已执（%d 笔逐一验）' % len(_该绿),
+              len(_该绿) >= 1 and all(_m6._cold_done(n) is True for n in _该绿)))
+    _接者 = [n for n in _有号
+             if _先有否决(n, rcsc) and (not _末份(n, rcsc)[1]) and _末份(n, rcsc)[2]]
+    R.append(('③之c 顺延不再等於死刑：曾被否决而後由在後之回执签核者，须判已执（%s）' % (_接者 or '无'),
+              len(_接者) >= 1 and all(_m6._cold_done(n) is True for n in _接者)))
 
     # ④回灌·旧式须坏：同一笔，旧式判已执
     R.append(('④回灌·旧式於 COLD-288 判已执（故此闸非陪跑）', _old(288, rcs) is True))
@@ -56,11 +114,20 @@ def run():
     #     ★★291补 COLD-289 之否决记（其面限292而一处未办，卡上已判顺延293）之後，此项即败，
     #       **而它败的不是闸，是这一条断言**；★★★故改断言为其所护之理本身：
     #       **新式与旧式之别，只出在带否决记那几笔上**——多一笔即是误伤，少一笔即是漏。
+    # ★★★★★2026-09-02·292封版之序再改：**二式相异者今有两类，非一类**——
+    #   ①末份挂否决记者（新式判红，旧式判绿）；②曾被否决而後由在後之回执签核者（新式判绿，旧式判红）。
+    #   ★原断言只认第①类，遂於292签核COLD-288之後即败；**而它败的仍不是闸，是这一条断言。**
     diff = sorted(n for n in range(1, 301) if _old(n, rcs) != _m6._cold_done(n))
     vetoed = sorted(n for n in range(1, 301)
                     if any(('COLD-%d·本章未执' % n) in t for t in rcs))
-    R.append(('⑤回灌·二式相异者恰是带否决记之 %s（非拆书·非漏）' % (vetoed or '无'),
-              diff == vetoed and len(diff) >= 1))
+    # ★而「二式相异」只出於一处：**末份挂否决记，而全书某处又写过那六个字**
+    #   （旧式一见六字即绿，新式只认末份）。
+    #   ★★「先否决而後签核」那一类（今为288）**两式同判绿**——旧式因别处有六字而绿，
+    #     新式因末份签核而绿；★★★**同判不等於同理**，故那一类另立一项验（见③之c），
+    #     不许把它塞进这里凑数——**凑进来，此项就再也说不出自己在验什么。**
+    _应异 = sorted(n for n in _有号 if _末份(n, rcsc)[1] and _old(n, rcs))
+    R.append(('⑤回灌·二式相异者恰是「末份否决而别处写过六字」之 %s（多一笔即误伤，少一笔即漏）'
+              % (_应异 or '无'), diff == _应异 and len(diff) >= 1))
 
     # ⑥不许挖空：一笔既无六字亦无否决记者，照旧判待执
     R.append(('⑥未挖空·无凭无据者判待执', _m6._cold_done(999999) is False))
@@ -75,9 +142,16 @@ def run():
     R.append(('⑦之b·真式须逮得着（288之否决记在册）',
               any('COLD-288·本章未执' in t for t in rcs)))
 
-    # ⑧否决在先：一份回执既有六字又有否决记，以否决为准（288即此形）
-    both = any(('288章冷眼轮' in t) and ('COLD-288·本章未执' in t) for t in rcs)
-    R.append(('⑧序·同一回执六字与否决记并存，判待执', both and _m6._cold_done(288) is False))
+    # ⑧否决在先：**同一份回执**既有六字又有否决记，以否决为准。
+    #   ★同日改：原以288为例，而288之六字与否决记今分处两份回执（291否决、292签核），
+    #     **那正是「顺延而後有人接」之常态，不是本项所验之形**；★★故改为验其形本身：
+    #     凡有一份回执二者并存者，若它同时是末份，则须判待执。
+    _并存 = [n for n in _有号
+             if any((('%d章冷眼轮' % n) in tx) and (('COLD-%d·本章未执' % n) in tx)
+                    for ch, tx in rcsc)]
+    _并存末 = [n for n in _并存 if _末份(n, rcsc)[1]]
+    R.append(('⑧序·同一回执六字与否决记并存且为末份者判待执（%d 笔）' % len(_并存末),
+              len(_并存) >= 1 and all(_m6._cold_done(n) is False for n in _并存末)))
 
     # ⑨一坐与六检同判（二器不许各记各的）
     _sp2 = _u.spec_from_file_location('_一坐', os.path.join(ROOT, '工具', '一坐.py'))

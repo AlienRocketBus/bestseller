@@ -144,20 +144,33 @@ def _cold_done(n):
         **故立此式作否决记，回灌全书零红：不是挖空闸，是给它补一个「说不」的口。**
     ★而其判序：**否决在先，签核在後**——**一份回执既写了六字又写了否决记，以否决为准。**
     """
+    # ★★★★★2026-09-02 再治·**否决记原是一份回执的「不」，而它被写成了全书的「永不」**
+    #   （292封版之序自逮）：★上一修立否决记，是为治「明写未执而六字照旧销账」；
+    #   ★★而其码「凡任一回执含否决记即 return False」——**於是一笔冷轮只要被顺延过一回，
+    #     此後任何一章执了它、签了那六个字，账也再销不掉**；★★★即：**顺延等於死刑。**
+    #   ★而这不是设计：291之回执明书 COLD-288「於291之後头一个暗线章补执」，
+    #     顺延本就是要有人接的。★★其所以两日未觉，是因为否决记立於09-02，
+    #     **COLD-288 是它头一笔，而292正是头一个来接的章。**
+    #   ★★★取二组数（令§六①②）：**以新式回灌全书73—292，两式相异者 0 笔**——
+    #     **旧史一笔不动**；★★★★所改者只有一种局面：**一份在後的回执，签核一笔在前被否决过的冷轮。**
+    #   ★故其正法：**否决之效只及於写它那一份回执**；判以「提过此笔之回执中，章号最大的那一份」为准，
+    #     ★★而那一份若既否决又签核，仍以否决为准（上一修之本意，於此保全）。
     rcs = []
     for fp in glob.glob(os.path.join(ROOT, '设定', '回执_*.md')):
         try:
-            rcs.append(open(fp, encoding='utf-8').read())
+            _m = re.search(r'第(\d+)章', os.path.basename(fp))
+            rcs.append((int(_m.group(1)) if _m else 0,
+                        open(fp, encoding='utf-8').read()))
         except OSError:
             continue
     veto = 'COLD-%d·本章未执' % n
-    for tx in rcs:
-        if veto in tx:
-            return False
-    for tx in rcs:
-        if '%d章冷眼轮' % n in tx:
-            return True
-    return False
+    sign = '%d章冷眼轮' % n
+    cand = [(ch, veto in tx, sign in tx) for ch, tx in rcs if veto in tx or sign in tx]
+    if not cand:
+        return False
+    cand.sort(key=lambda x: x[0])
+    _ch, _v, _s = cand[-1]
+    return _s and not _v
 
 
 # ★★★★★2026-08-28 改·作者令「改⑥之闸」（令九·③：一道天天要绕的闸，错的是闸不是人）。

@@ -340,6 +340,22 @@ def main():
                        % (_q.group(1), _z.group(1) if _z else '?'))
     except Exception:
         pass
+    # ★★★★★2026-09-02 补·站账（作者令「一切服务於质量，不管张数」之机化）
+    #   ★其位在此，不在末：**一站还剩一章时问，还来得及改次序；走满了再问，只改得动章数。**
+    try:
+        import subprocess as _sp3
+        _r3 = _sp3.run(['python3', os.path.join(ROOT, '工具', '站账.py'), '--闸'],
+                       capture_output=True, text=True, timeout=90)
+        _zz = [x.strip() for x in (_r3.stdout or '').splitlines()
+               if x.strip().startswith(('⛔', '⚠'))]
+        if _zz:
+            out.append('── 站账（约之令：每写完一站回来对一次）──')
+            for _x in _zz[:4]:
+                out.append('  ' + _x[:150])
+            fix.append('站账未对 → 跑 python3 工具/站账.py，'
+                       '并逐件点名本站之事摸完几件；★而它不催字数，只逼你回头看一眼')
+    except Exception:
+        pass
     out.append('── git ──')
     out.append('  未提交 %d 件｜枝 %s｜末笔 %s' % (dirty, br, lg.strip()[:44]))
     if not rhead:

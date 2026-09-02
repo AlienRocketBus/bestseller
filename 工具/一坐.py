@@ -356,6 +356,37 @@ def main():
                        '并逐件点名本站之事摸完几件；★而它不催字数，只逼你回头看一眼')
     except Exception:
         pass
+    # ★★★★★2026-09-02 补·约到期（九席审读所逮：291立约「要分出来得有第三天」，
+    #   而293正是那第三天，全章一步没去看，而无一处出声）
+    try:
+        import subprocess as _sp4
+        _r4 = _sp4.run(['python3', os.path.join(ROOT, '工具', '约到期.py'), '--闸'],
+                       capture_output=True, text=True, timeout=90)
+        _yy = [x.strip() for x in (_r4.stdout or '').splitlines()
+               if x.strip().startswith('⛔欠约')]
+        if _yy:
+            out.append('── 约到期（正文里自陈之约，到期那一章须回话）──')
+            for _x in _yy[:3]:
+                out.append('  ' + _x[:150])
+            fix.append('欠约 → 跑 python3 工具/约到期.py；'
+                       '★其治不是补一段回忆，是在到期那一章让它在手上再出现一回')
+    except Exception:
+        pass
+    # ★★★★★2026-09-02 补·大审（作者令：平均十章一回，从头到尾，逐席真读）
+    try:
+        import subprocess as _sp5
+        _r5 = _sp5.run(['python3', os.path.join(ROOT, '工具', '大审.py'), '--闸'],
+                       capture_output=True, text=True, timeout=90)
+        _da = [x.strip() for x in (_r5.stdout or '').splitlines() if x.strip().startswith('⛔')]
+        if _da:
+            out.append('── 大审（十章一回·逐席真读）──')
+            for _x in _da[:2]:
+                out.append('  ' + _x[:150])
+            fix.append('大审 → 跑 python3 工具/大审.py；'
+                       '★其席须各说得出「它看得见而别席看不见的那一样」，'
+                       '★★不强制出负，强制留痕；★★★挂须带限')
+    except Exception:
+        pass
     out.append('── git ──')
     out.append('  未提交 %d 件｜枝 %s｜末笔 %s' % (dirty, br, lg.strip()[:44]))
     if not rhead:

@@ -124,15 +124,40 @@ def chk_open_six():
         return _t + _n
     _cs = [_cn(x) for x in _g.glob('正文/*.md')]
     _cs = [x for x in _cs if x > 0]
-    _nx = (max(_cs) + 1) if _cs else 1
-    out = run('开轮十六检', ['工具/开轮六检.py', str(_nx), '--静'])
-    _RAW['开轮十六检'] = out or ''
-    if out is None:
+    _last = max(_cs) if _cs else 1
+    _nx = _last + 1
+    # ★★★★★2026-09-02·九席审读所逮·当日治：
+    #   ★**旧式只跑「末章＋1」，而那一章尚未起草**——十六检里 ⑬⑮⑱⑳ 一律自赦
+    #     （「正文缺，免测」），③⑩ 连印都没印，**当真读了文字的只有 ⑰⑲ 两条**；
+    #   ★★**即：57项里这一个绿勾，覆盖的是一个不存在的章**，且它掩护着底下六道
+    #     本来能报红的检。★★★这正是令§一⑤：**不是查过了判无罪，是压根没查。**
+    #   ★★★★故今两头都跑：**末章（有正文，真读得着）＋末章＋1（该起草之章）**；
+    #     ★而末章那一趟须摘掉 ⑭——**⑭之职正是「拿已封版之章重跑即报」**，
+    #     它在审计之下必红，而那一红不是伤，是它认得出我在审计。
+    _o1 = run('开轮十六检·末章', ['工具/开轮六检.py', str(_last), '--静'])
+    _o2 = run('开轮十六检·下章', ['工具/开轮六检.py', str(_nx), '--静'])
+    _RAW['开轮十六检'] = (_o1 or '') + '\n' + (_o2 or '')
+    if _o1 is None or _o2 is None:
         return False, '运行失败'
-    if '开轮十六检通过' in out:
-        return True, '六检皆过'
-    bad = [ln.strip() for ln in out.splitlines() if ln.strip()]
-    return False, '；'.join(bad[:3]) if bad else '未通过'
+    def _bad(_t, _skip14):
+        _b = []
+        for _ln in (_t or '').splitlines():
+            _x = _ln.strip()
+            if not _x or '开轮十六检通过' in _x:
+                continue
+            if _skip14 and ('⑭' in _x or '已封版' in _x):
+                continue
+            _b.append(_x)
+        return _b
+    _b1, _b2 = _bad(_o1, True), _bad(_o2, False)
+    if not _b1 and not _b2:
+        return True, '两头俱过（末章第%d章·下章第%d章）' % (_last, _nx)
+    _m = []
+    if _b1:
+        _m.append('末章第%d章：%s' % (_last, '；'.join(_b1[:2])))
+    if _b2:
+        _m.append('下章第%d章：%s' % (_nx, '；'.join(_b2[:2])))
+    return False, '｜'.join(_m)
 
 
 def chk_kanguan_hand():
@@ -706,6 +731,40 @@ def _简测(名, 脚本):
         _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
         return False, '%d/%d｜%s' % (ok, tot, '；'.join(_b[:3]))
     return True, '%d/%d 全通' % (ok, tot)
+
+
+def chk_grand_audit():
+    """大审闸（2026-09-02·作者令所立）
+    ★**作者令**：「平均10章就应该从头到尾进行一个剧情和质量各个方面严格把控」，
+      且须「站在普通读者／最顶尖小说家／评委／编辑／小说爱好者的视角」，「不要说只有一个小说家」。
+    ★★而立此闸之前先答一问（审器所逼）：**光加席够不够？不够。**
+      ★**五席之输入是同一样东西**（`白文(n)` 之字符流＋一张手写动词表＋对它的计数）——
+        **四席吃同一份输入，是同一次测量的四个样本，不是四只眼**；
+      ★★**唯一产出过真发现的是连读客，而它正是唯一输入不同的那一席（多章）**；
+      ★★★**故甲律**：**一席要占位，须说得出「它看得见而现有各席都看不见的那一样是什么」。**
+    ★★★**乙律·不强制出负，强制留痕**（必然要响的器，响的时候不携带信息）；
+      **丙律·每笔须落拍号，且须逐笔落治／驳／挂，挂须带限。**
+    ★★★★而此器不读小说也不判小说——**它只管到十章了没有、席够不够、判有没有人收**；
+      **真读的那一步只有人（或替人真读的第三方）做得了，器不许替它签字。**"""
+    out = run('大审闸', ['工具/大审.py', '--闸'])
+    if out is None:
+        return False, '运行失败'
+    bad = [x.strip() for x in out.splitlines() if x.strip().startswith('⛔')]
+    if bad:
+        return False, '；'.join(x[:110] for x in bad[:2])
+    return True, '不到期，或上册之判已逐笔落裁'
+
+
+def chk_promise_due():
+    """约到期闸（2026-09-02·九席审读所逮·立於同日）
+    ★所治之伤：**第291章拍139明写「要分出来得有第三天」，而第一百零四天（第293章）
+      正是那第三天**；★★**而293全章：东头0｜担架0｜毡子0｜甜0｜馊0｜刘二0｜玉0**——
+      **它一步也没去看**；★★★**而十三轮＋封版之序＋五十八项全测＋看官五席，一处也没出声。**
+    ★★★★何以没出声：`书级体检①` 印「东头 缺席2章（限5）✓」——
+      **它量的是缺席多久，而291立的是「到第三天就得去看」**：**一个到期的约，缺席计数器看不见。**
+    ★而其式与 FS闸 同：**放行之价是一行写下来的字**——到期之章的轮记／回执须见「约-NNN」。
+    ★★其回灌之要害在③：以291拍139回灌须报欠（负测_约到期 13项）。"""
+    return _简测('负测·约到期闸', '工具/负测_约到期.py')
 
 
 def chk_station_ledger():
@@ -1729,6 +1788,8 @@ def main():
         items.append(('负测·比带', chk_band_by_form))
         items.append(('负测·裁毕闸', chk_caibi_gate))
         items.append(('负测·站账闸', chk_station_ledger))
+        items.append(('负测·约到期闸', chk_promise_due))
+        items.append(('大审闸', chk_grand_audit))
         items.append(('负测·一事几陈', chk_yishi_jichen))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))

@@ -413,6 +413,28 @@ def chk_ratchet_v01():
     return True, '%d/%d 全通（v26回灌报「听15→13低於起草」｜删无感官之判则放行）' % (ok, tot)
 
 
+def chk_missing_slot():
+    """★缺报格闸负测（2026-09-02·六造§八所立）：
+    ★★令§〇之二逼我每轮写一行「本可问而未问」，**而从前没有任何器数它在不在**；
+      ★★★漏写既不报红也不留痕，下一坐无从知道那一轮到底选了什么、办了什么。
+    ★取二组数（令§六①）：**全书137章1594轮，缺此格者98%**——而其大半立於此法之前；
+      ★★**而五造之後四章（288—291）之数是 288缺2/13、289缺2/13、290缺4/13、291缺0/6**，
+      ★★★即：**法已在而人漏 18%**，非拆书。且此闸只查当章，历史之红不入 fix。
+    ★★★★而其最险处不在逮不逮得住，在误伤：**289一轮拆二十三节**，按节数则其缺由2涨至12。"""
+    out = run('负测·缺报格', ['工具/负测_缺报格.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（290回灌报缺四轮｜289按节数则由2涨至12，故合数一步非可有可无）' % (ok, tot)
+
+
 def chk_turnpage_obj():
     """★翻页备料查（检五）之对象负测（2026-09-02·291第1轮所逮）：
     ★★原码取「全书最大章号＋1」，是全局之数，不随所查之章而动；
@@ -1145,6 +1167,7 @@ def main():
         items.append(('负测·棘轮v01', chk_ratchet_v01))
         items.append(('负测·冷轮否决记', chk_cold_veto))
         items.append(('负测·翻页备料查', chk_turnpage_obj))
+        items.append(('负测·缺报格', chk_missing_slot))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))
         items.append(('负测·推闸', chk_push_gate))

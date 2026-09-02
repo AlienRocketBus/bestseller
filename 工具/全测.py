@@ -690,6 +690,41 @@ def chk_review_no_note():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def _简测(名, 脚本):
+    """★共用之壳：跑一份「N/N 全通」式负测，取其末行之数。"""
+    out = run(名, [脚本])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = None
+    for _m in _r.finditer(r'(\d+)/(\d+)\s*(全通|⛔未过)', out):
+        m = _m
+    if not m:
+        return False, '未见其数'
+    ok, tot = int(m.group(1)), int(m.group(2))
+    if ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '%d/%d｜%s' % (ok, tot, '；'.join(_b[:3]))
+    return True, '%d/%d 全通' % (ok, tot)
+
+
+def chk_caibi_gate():
+    """裁毕闸（2026-09-02·293第12轮立·第二十四犯第五形之治）
+    ★其由：293第9轮之轮记称「21对，逐对裁毕」，而同节之内写明其由者只八条；
+      ★★那四个字，是我替其余十三对签的字——**而没人报。**
+    ★★★其回灌之要害在③：**以293第9轮之原轮记回灌，须报红。**"""
+    return _简测('负测·裁毕闸', '工具/负测_裁毕闸.py')
+
+
+def chk_yishi_jichen():
+    """一事几陈（2026-09-02·293第12轮立·第二十七犯之治）
+    ★其由：「浅是我手上停了，不是那天有事」这一判，293全章说了三回，
+      而三处两两之字面近似 0.24—0.32，俱低於查重之0.60槛——**尺认字，不认命题。**
+    ★★其回灌之要害在③④：**改前（v22）拍36中四词，改後只中二词**——
+      **一份在改前改後都印同一个数的测就是陪跑。**"""
+    return _简测('负测·一事几陈', '工具/负测_一事几陈.py')
+
+
 def chk_band_by_form():
     """★比带负测（2026-09-02·293第8轮所立）：**一把带，取错了比的人，就把三处好文判成了伤。**
     ★本坐之实（非设想）：293第5、7、8三轮各逮一「逾带」，**而三处用的是同一把手挑之带**
@@ -1682,6 +1717,8 @@ def main():
         items.append(('负测·亮点闸', chk_highlight_gate))
         items.append(('负测·验收空说明', chk_review_no_note))
         items.append(('负测·比带', chk_band_by_form))
+        items.append(('负测·裁毕闸', chk_caibi_gate))
+        items.append(('负测·一事几陈', chk_yishi_jichen))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

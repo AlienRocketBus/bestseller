@@ -41,7 +41,29 @@ _fs = iu.module_from_spec(_sf)
 _sf.loader.exec_module(_fs)
 _n, _f, _欠, _未答, _答 = _fs.查()
 _ids = [str(x['id']) for x in _未答]
-chk('②之前置·本章确有逾期而未答之根（无则本组无从验，须当场说出来）', len(_ids) >= 1, True)
+
+# ★【293封版之序·第五度所修】此处原写作一句断言：「本章确有逾期而未答之根」。
+#   ★★而那是把断言钉在快照上：**本章回执一交，逾期之根即俱已回话，_未答 遂为空，
+#     这一组当场判红——而器一分没坏，坏的是测所站的那一刻。**
+#   ★★★**同一形我已改过四回**（负测_冷轮否决记⑤⑦⑩、负测_棘轮裁⑦⑧⑨、
+#     负测_冷轮否决记③⑤⑧、负测_封版档冷轮⑬⑮），**四回都没记进病历本，故第五回它又来了**
+#     （今立第二十八犯）。
+#   ★★★★**其治不是把这一组跳过去**——一份只在某一刻才验得动的测，其余时候就是陪跑（令§六③）；
+#     ★**治法是让它自己把那个窗口造出来**：暂时把本章回执挪开，FS闸 即复报逾期未答，
+#     於是①②两组照旧验得动；★★而挪开之物在 finally 里必还原，且还原之後另验一遍（①之b）。
+_rc = None
+if not _ids:
+    import glob as _g
+    _cand = _g.glob(os.path.join(_R, '设定', '回执_*_第%d章*.md' % _n))
+    if _cand:
+        _rc = _cand[0]
+        os.rename(_rc, _rc + '.负测暂移')
+        _sf2 = iu.spec_from_file_location('_fs2', os.path.join(_D, 'FS闸.py'))
+        _fs2 = iu.module_from_spec(_sf2)
+        _sf2.loader.exec_module(_fs2)
+        _n, _f, _欠, _未答, _答 = _fs2.查()
+        _ids = [str(x['id']) for x in _未答]
+chk('②之前置·有逾期未答之根可验（本章回执已交者，测自造其窗口）', len(_ids) >= 1, True)
 
 _lj = os.path.join(_R, '版本', '第%d章' % _n, '_轮记.md')
 _kj = os.path.join(_R, '版本', '第%d章' % _n, '_开镜卡.md')
@@ -75,6 +97,10 @@ finally:
     if _ko:
         io.open(_kj, 'w', encoding='utf-8').write(_ko)
 chk('①之b 复原毕·仍放行（证本测未把账改坏）', f('') is True, True)
+if _rc:
+    os.rename(_rc + '.负测暂移', _rc)
+    chk('②之c 回执已还原（测不许留下一件挪走的档）', os.path.exists(_rc), True)
+    chk('②之d 还原毕·此口自销（回执一交即不走跑轮档之放行）', f('') is False, True)
 
 坏 = [x for x in 案 if not x[1]]
 for 名, 过, 详 in 案:

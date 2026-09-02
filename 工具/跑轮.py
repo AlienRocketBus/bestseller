@@ -1238,6 +1238,22 @@ def jinli(n):
 #      器报的不是活没干，是器看不见活。
 #   ★★★★今改为 [一二三四五六七八九十\d]（真数字类），并广治痕之词表以纳本册实用之动手词
 #      （补毕／今正／俱正／后移／缩为／落一短段）。
+    # 第五路之料：自台账取「第N轮」之末版与其前一版之净重差（读账，不读轮记之词）
+    _轮版动否 = {}
+    try:
+        _vs = json.load(io.open(led, encoding='utf-8'))['版本']
+        _末 = {}
+        for _i, _x in enumerate(_vs):
+            _m2 = re.match(r'第(\d+)轮', _x.get('说明', ''))
+            if _m2:
+                _末[int(_m2.group(1))] = _i
+        for _rr, _i in _末.items():
+            _cur = (_vs[_i].get('soft') or {}).get('净重')
+            _pre = (_vs[_i - 1].get('soft') or {}).get('净重') if _i > 0 else None
+            if _cur is not None and _pre is not None and _cur != _pre:
+                _轮版动否[_rr] = _cur - _pre
+    except Exception:
+        pass
     _idle = []
     for _r in sorted(lj):
         _b = '\n'.join(lj[_r])
@@ -1273,10 +1289,28 @@ def jinli(n):
             if _a != _c:
                 _chan += 1
                 break
-        _mark = '✓' if (_zhi >= 2 or _fl >= 2 or _zs >= 1 or _fan >= 1 or _chan >= 1) else '⚠'
+        # 【2026-09-02·292第12轮·极限轮所修·第五路】
+        #   ★此闸至今五修，前四修皆是「再加几个词」（08-19加真伤路／08-21修数字类并广词表／
+        #     08-22加带数之产出／08-22再修加净重A→B）——★★而一道靠加词修的闸，
+        #     每加一个词就多一个「写这个词即可蒙混」的口，且它照旧看不见没写那个词的活。
+        #   ★★★今日之实：292第7轮之轮记里有十一版回灌表、一个相关系数、一处「42→27」，
+        #     **是全十轮里量得最细的一轮**，而器判它「五路俱无·走了过场」——
+        #     **器报的不是活没干，是器看不见活**（此语係08-21那一修自己写下的，今日又应验一回）。
+        #   ★★★★故第五路不认词，只认账：**从台账取该轮之版，与其前一版逐字比**；
+        #     文动了即是动手之实凭——**这一路写什么词也蒙混不了，因为它读的是正文本身。**
+        #   ★而其绿不许含糊：下印一行「凭何而绿」，见得出哪一轮是靠轮记之实、哪一轮只靠正文动过。
+        _tz = _轮版动否.get(_r)
+        _by = []
+        if _zs >= 1 or _fan >= 1: _by.append('真伤/翻案')
+        if _zhi >= 2: _by.append('治')
+        if _fl >= 2: _by.append('复量')
+        if _chan >= 1: _by.append('带数之产出')
+        if _tz: _by.append('正文实动%+d字' % _tz)
+        _mark = '✓' if _by else '⚠'
         if _mark == '⚠':
             _idle.append(_r)
-        print('   第%-2d轮 真伤%d 治%2d 复量%2d 产出%d %s' % (_r, _zs + _fan, _zhi, _fl, _chan, _mark))
+        print('   第%-2d轮 真伤%d 治%2d 复量%2d 产出%d %s %s'
+              % (_r, _zs + _fan, _zhi, _fl, _chan, _mark, '｜凭：' + '、'.join(_by) if _by else ''))
     if _idle:
         warn.append('第%s轮无动手之痕（治、复量、真伤、翻案、带数之产出，五路俱无）——须自问那几轮是不是走了过场'
                     % '、'.join(str(x) for x in _idle))

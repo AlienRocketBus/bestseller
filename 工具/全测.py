@@ -504,6 +504,32 @@ def chk_fill_note_gate():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_effort_recheck():
+    """★功力回检第五路负测（2026-09-02·292第12轮·极限轮所立）：
+    ★**一道靠加词修的闸，修了五回。** 前四修皆是「再加几个词」（08-19加真伤路／08-21修数字类
+      并广词表／08-22加带数之产出／08-22再修加净重A→B）；★★**每加一个词就多一个「写这个词
+      即可蒙混」的口，而它照旧看不见没写那个词的活。**
+    ★★★今日之实：**292第7轮之轮记有十一版回灌表、一个相关系数、一处「42→27」，
+      是全十轮里量得最细的一轮**，而器判它「五路俱无·走了过场」——
+      ★**器报的不是活没干，是器看不见活**（此语係08-21那一修自己写下的，今日又应验一回）。
+    ★★★★故第五路不认词，只认账：**自台账取该轮之版与其前一版比净重，文动了即是实凭**；
+      并於每行下印「凭何而绿」，**见得出哪一轮靠轮记之实、哪一轮只靠正文动过。**
+    ★其回灌（令§六③）：⑥摘掉第五路，第2轮须由绿转⚠（**证非陪跑**）；
+      ⑤第3轮词无而正文亦未动，两式同判⚠（**证未把闸改成人人皆绿**）。"""
+    out = run('负测·功力回检', ['工具/负测_功力回检.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1409,6 +1435,7 @@ def main():
         items.append(('负测·棘轮裁', chk_ratchet_verdict))
         items.append(('负测·段间空行闸', chk_blankline_gate))
         items.append(('负测·填记口', chk_fill_note_gate))
+        items.append(('负测·功力回检', chk_effort_recheck))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

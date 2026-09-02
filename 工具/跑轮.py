@@ -1994,7 +1994,12 @@ def save(n, note=''):
         _sp = _ilu.spec_from_file_location(
             '_fadian', os.path.join(os.path.dirname(os.path.abspath(__file__)), '法典闸.py'))
         _fd = _ilu.module_from_spec(_sp); _sp.loader.exec_module(_fd)
-        _prev = open(snaps[-1], encoding='utf-8').read() if snaps else ''
+        # ★2026-09-02·293第2轮：`snaps` 已随空轮闸之改而去，而此处仍引它——
+        #   ★★遂使法典闸整个跑不成（其报只一行「未跑成」，且不拦）；
+        #   ★★★**一道不拦的闸出了错，报一行就过去了**——**这一行我今日才看见。**
+        #   故改与空轮闸同源：取台账所记之末版。
+        _pv = os.path.join(d, 'v%02d.md' % len(_vs)) if _vs else ''
+        _prev = open(_pv, encoding='utf-8').read() if (_pv and os.path.exists(_pv)) else ''
         _h10, _l10 = _fd.查(note, _prev, txt)
         if _h10 and not force:
             halt = True
@@ -2188,7 +2193,13 @@ def save(n, note=''):
     open(os.path.join(d, 'v%02d.md' % v), 'w', encoding='utf-8').write(txt)
     json.dump(ledger, open(led, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     try:
-        if os.path.exists(_ling_path(n)):
+        # ★★★★★2026-09-02·293第2轮：**「一领一存」之「一存」，只算认了轮号的那一存。**
+        #   ★领轮闸自己认的是说明里那个「第N轮」（闸八）——**说明一空，它整个不适用**；
+        #   ★★而基线之销从前不问说明，於是一次 `--验收 N`（不带说明）的自动存版
+        #     **既不受领轮闸管，又把领轮基线吃掉了**：★★★**不归它管的那一步，把归它管的那一步的凭据销了。**
+        #   ★★★★今日一坐之内我从这个口走过三回（292 v16/v17、293 v05），三回都得回头补领轮。
+        #   故改：**报轮号者方销基线；不报轮号者，基线原样留着。**
+        if _round_of(note) and os.path.exists(_ling_path(n)):
             os.remove(_ling_path(n))   # 一领一存，基线用毕即销，下一轮须重领
     except Exception:
         pass

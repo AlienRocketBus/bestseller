@@ -109,6 +109,19 @@ else:
         ('def _记(argv)' in io.open(os.path.join(_D, '跑轮.py'), encoding='utf-8').read())
         and ('def _记(argv)' not in _st), True)
 
+# ── 四·领轮基线之销，只算认了轮号的那一存（293第2轮所逮·第二形之馀波） ──
+# 其形：领轮闸自己认的是说明里那个「第N轮」（闸八）——说明一空，它整个不适用；
+#      而基线之销从前不问说明，於是一次 `--验收 N`（不带说明）的自动存版
+#      **既不受领轮闸管，又把领轮基线吃掉了**：不归它管的那一步，把归它管的那一步的凭据销了。
+#      （今日一坐之内从这个口走过三回：292 v16/v17、293 v05，三回都得回头补领轮。）
+_pl2 = io.open(os.path.join(_D, '跑轮.py'), encoding='utf-8').read()
+chk('⑨基线之销须以「说明报了轮号」为条件',
+    "if _round_of(note) and os.path.exists(_ling_path(n)):" in _pl2, True)
+chk('⑨之b 而其销未被删（报轮号者照旧一领一存）',
+    "os.remove(_ling_path(n))   # 一领一存" in _pl2, True)
+chk('⑨之c 且其由与领轮闸同源（闸八认的也是那个「第N轮」）',
+    "_r0 = _round_of(note)" in _pl2, True)
+
 坏 = [x for x in 案 if not x[1]]
 for 名, 过, 详 in 案:
     print(('  ✓ ' if 过 else '  ⛔ ') + 名 + ('' if 过 else '　' + 详))

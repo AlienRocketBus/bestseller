@@ -584,6 +584,33 @@ def chk_seal_new_cold():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_orphan_snapshot():
+    """★孤版负测（2026-09-02·293第1轮自逮·第二十四犯之第五形）：
+    ★`save()` 之快照落盘写在诸闸之前，而趋阈闸／棘轮闸拦停时 return——**快照落了盘，台账没落**；
+      ★★且当场印一句「⛔存版已拦停，未写入任何文件」——**那是假话，文件写了。**
+    ★★★其果有二：①磁盘上多一个无账之孤版；②**空轮闸原比「磁盘上最後一个 vNN.md」**，
+      而那个孤版恰与正文逐字相同，**空轮闸遂把「上一次被拦」读成「本轮零改动」**，
+      此後同一段文再也存不进去——★★★★**一道闸拦了我一回，然後把门锁上了。**
+    ★其实（今日之实，非设想）：293第1轮补感官毕，趋阈闸拦一回，此後 --补存 一律被空轮闸拦死；
+      **而那一次拦本身是对的**（长段数 0→1 余量0字），**错的是它拦完之後留下的那个孤版。**
+    ★★其治二样：①**快照之写下移至台账之写旁**（账上有它，磁盘才有它，其间无 return）；
+      ②**空轮闸改比「台账所记之末版」**——**账上没有的版，不作数。**
+    ★★★其回灌（令§六③）：④与⑤之b 以旧式於同一局面判「空轮·拦死」，新式放行——**两式相反，证非陪跑**；
+      ★③之b 真空轮（正文与台账末版逐字相同）照旧拦——**证未挖空。**"""
+    out = run('负测·孤版闸', ['工具/负测_孤版闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1492,6 +1519,7 @@ def main():
         items.append(('负测·功力回检', chk_effort_recheck))
         items.append(('负测·层census与立价查', chk_layer_census_honest))
         items.append(('负测·销立门', chk_seal_new_cold))
+        items.append(('负测·孤版闸', chk_orphan_snapshot))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

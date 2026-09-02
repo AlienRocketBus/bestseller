@@ -1973,9 +1973,16 @@ def save(n, note=''):
     chapters_now = _book_chapters()
     receipts = _receipts_of(n)
     txt = open(src, encoding='utf-8').read()
-    snaps = sorted(glob.glob(os.path.join(d, 'v[0-9][0-9].md')))
-    same_as_last = bool(snaps) and \
-        open(snaps[-1], encoding='utf-8').read().strip() == txt.strip()
+    # ★★★★★2026-09-02·293第1轮自逮：**此处原比「磁盘上最後一个 vNN.md」**，
+    #   ★而快照之写在诸闸之前，趋阈闸一拦即 return——**快照落了盘，台账没落**；
+    #   ★★於是磁盘上多一个无账之孤版，而它恰与正文逐字相同，
+    #     **空轮闸遂把「上一次被拦」读成「本轮零改动」，此後同一段文再也存不进去**：
+    #     **一道闸拦了我一回，然後把门锁上了。**
+    #   ★★★故改比「台账所记之末版」——**账上没有的版，不作数**。
+    _vs = ledger.get('版本') or []
+    _last = os.path.join(d, 'v%02d.md' % len(_vs)) if _vs else ''
+    same_as_last = bool(_last) and os.path.exists(_last) and \
+        open(_last, encoding='utf-8').read().strip() == txt.strip()
     halt, glines = gates(n, note, ledger, chapters_now, receipts,
                          reopen, force, same_as_last)
     # 闸十·法典闸（283封版后立）：把「立过而屡犯之法」搬进这条已经卡在路上的闸里。
@@ -2074,7 +2081,10 @@ def save(n, note=''):
             prev += open(pf, encoding='utf-8').read()
     naked = term_check(txt, prev)
     v = len(ledger['版本']) + 1
-    open(os.path.join(d, 'v%02d.md' % v), 'w', encoding='utf-8').write(txt)
+    # ★快照之写已下移至台账之写旁（2026-09-02·293第1轮）：
+    #   **原在此处落盘，而其下诸闸（棘轮／趋阈）拦停时 return，遂留一个无账之孤版**；
+    #   ★★而那一句「⛔存版已拦停，未写入任何文件」当时是假话——**文件写了。**
+    #   ★★★二者今同落：**账上有它，磁盘才有它。**
 
     print('\n███ 存版 v%02d · 第%d章 ███' % (v, n))
     hb = sum(hard.values())
@@ -2175,6 +2185,7 @@ def save(n, note=''):
     if _qy:
         _entry['趋阈'] = _qy
     ledger['版本'].append(_entry)
+    open(os.path.join(d, 'v%02d.md' % v), 'w', encoding='utf-8').write(txt)
     json.dump(ledger, open(led, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     try:
         if os.path.exists(_ling_path(n)):

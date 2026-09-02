@@ -100,14 +100,44 @@ def run():
     f = getattr(_qc, '_冷轮逾期俱有否决记', None)
     R.append(('⑫跑轮档之口在册（_冷轮逾期俱有否决记）', callable(f)))
     if callable(f):
-        今 = '⑥·冷轮之欠 ★3笔未执：COLD-288、COLD-289、COLD-290⛔（其中1笔已逾期）'
-        R.append(('⑬正测·今日三笔（逾期者只288，且其否决记在册）放行', f(今) is True))
-        R.append(('⑭真红·一笔逾期而无否决记者不放行（COLD-153，限155）',
-                  f('⑥·冷轮之欠 ★1笔未执：COLD-153⛔（其中1笔已逾期）') is False))
-        R.append(('⑮不逼未逾期者签字·限正是当章之二笔（289、290）单独亦放行',
-                  f('⑥·冷轮之欠 ★2笔未执：COLD-289、COLD-290') is True))
-        R.append(('⑯回灌·旧式对今日之报判「真漏」（故此口非陪跑）',
-                  ('逾期' in 今) is True))
+        # ★★★★★2026-09-02·293第1轮改：**⑬⑮原以 288/289/290 之号写死**，
+        #   ★而292封版之後 288、290 已销、289之限由292挪到293——**那三个号所指的局面已经不在**；
+        #   ★★於是二项皆坏，**而坏的不是那道口，是这两条断言**：
+        #     **它们钉的是某一天的账，不是那道口所守之理。**
+        #   ★★★同一坐之内我已第四回栽在「把快照当不变量」上
+        #     （负测_冷轮否决记⑤⑦⑩／负测_棘轮裁⑦⑧⑨／负测_冷轮否决记③⑤⑧／此处），
+        #     ★★★★**故此处不再写任何章号，改由磁盘现取**。
+        import glob as _g2
+        import re as _re2
+        import importlib.util as _iu2
+        _sp6 = _iu2.spec_from_file_location('_m6t', os.path.join(ROOT, '工具', '开轮六检.py'))
+        _m6 = _iu2.module_from_spec(_sp6)
+        _sp6.loader.exec_module(_m6)
+        _cur = _qc._末章()
+        _rcs2 = []
+        for _fp in _g2.glob(os.path.join(ROOT, '设定', '回执_*.md')):
+            try:
+                _rcs2.append(io.open(_fp, encoding='utf-8', errors='replace').read())
+            except OSError:
+                pass
+        _有否决 = sorted({int(x) for tx in _rcs2
+                          for x in _re2.findall(r'COLD-(\d+)·本章未执', tx)})
+        _逾期有否决 = [n for n in _有否决 if _m6._cold_limit(n) < _cur]
+        _无否决 = [n for n in range(73, 300)
+                   if n in getattr(_m6, 'F', {}) and n not in _有否决
+                   and _m6._cold_limit(n) < _cur]
+        R.append(('⑬正测·逾期而否决记在册者放行（今取 %s）' % (_逾期有否决 or '无'),
+                  bool(_逾期有否决) and
+                  f('⑥·冷轮之欠 ★%d笔未执：%s⛔（其中1笔已逾期）'
+                    % (len(_逾期有否决),
+                       '、'.join('COLD-%d' % x for x in _逾期有否决))) is True))
+        R.append(('⑭真红·逾期而无否决记者不放行（今取 %s）' % (_无否决[:1] or '无'),
+                  bool(_无否决) and
+                  f('⑥·冷轮之欠 ★1笔未执：COLD-%d⛔（其中1笔已逾期）' % _无否决[0]) is False))
+        R.append(('⑮不逼未逾期者签字·限≥当章者单独亦放行（其号取当章之限）',
+                  f('⑥·冷轮之欠 ★1笔未执：COLD-%d' % _cur) is True))
+        R.append(('⑯而其分逾期与否，用的是每一笔自书之限，不是一句「逾期」二字',
+                  f('⑥·冷轮之欠 ★1笔未执：COLD-%d⛔（其中1笔已逾期）' % _cur) is True))
 
     bad = [x for x, o in R if not o]
     for x, o in R:

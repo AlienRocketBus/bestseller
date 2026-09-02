@@ -438,6 +438,25 @@ def chk_band():
     return True, '%d/%d 全通（旧表带外74章25%%→新表0章｜中位3691正落旧缝｜序②在册）' % (ok, tot)
 
 
+def chk_ratchet_verdict():
+    """★棘轮裁负测（2026-09-02·292第3轮所立）：**那道专为「裁棘轮回退」而立的器，自己是歪的。**
+    ★①方向：其「历史最优」用 min()，不分方向；★★而棘轮 MIN 二目、MAX 二目、V01 四目，
+      **八目里六目愈高愈好**——跑 `--棘轮 292 --项 嗅` 得「历史最优 2（出於 v01）」，
+      而 v01 正是最薄那一版；**照它读，嗅 8 反倒该记功。**
+    ★②举证：292第2轮裁一处回退，其由是「所删那一拍係逐字抄290」——**而那句话是我说的，不是器说的**；
+      ★★其治不是让器替我免裁（回灌全书：可免裁者 18/28＝64%，含拆章之版，**太松，那是挖空闸**），
+      ★★★而是举证：**器摆凭据，裁仍归人**。
+    ★★★★其回灌（令§六③）：③以旧式（min）於嗅得 2，新式得 12；⑦⑧举证之句逐字可查。"""
+    out = run('负测·棘轮裁', ['工具/负测_棘轮裁.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    return m.group(3) == '全通', '棘轮裁负测 %s/%s' % (m.group(1), m.group(2))
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1340,6 +1359,7 @@ def main():
         items.append(('负测·数句闸', chk_count_sentence_gate))
         items.append(('负测·吞记闸', chk_swallowed_note_gate))
         items.append(('负测·封版档冷轮口', chk_seal_cold_slot))
+        items.append(('负测·棘轮裁', chk_ratchet_verdict))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

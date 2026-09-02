@@ -690,6 +690,34 @@ def chk_review_no_note():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_band_by_form():
+    """★比带负测（2026-09-02·293第8轮所立）：**一把带，取错了比的人，就把三处好文判成了伤。**
+    ★本坐之实（非设想）：293第5、7、8三轮各逮一「逾带」，**而三处用的是同一把手挑之带**
+      （苏衍近五章 282／285／287／289／291）；★★**而那五章之形是做事与问人，
+      而293是他近年唯一一篇翻判**。
+    ★★★换成形相同之十八章（201—280之翻判诸章），**三个数一个也不逾带**：
+      「因为」2.3（同形带 0.0—3.1 中位1.18）｜「像」0.9（同形带 0.0—1.2 中位0.31）｜
+      段长90分位 38（同形带 30—76 中位34）——★★★★**三个「逾带」，一个也不成立。**
+    ★而其所以险，不在这三处，在这一类：**「比她自己」这一句，本坐用了整整两章**；
+      ★★**而它对了几回，是因为292那几章凑巧同形（沈鸢诸章多记账），不是因为那把尺挑对了。**
+    ★★★故立 `工具/比带.py`：**一个数报三条带（全书／同镜／同形），并印本章落在哪几条里**；
+      ★★★★**而它不判**——**它只是不许我再只看一条带就下判。**
+    ★其回灌（令§六③）：②全书回灌须得≥10处「同镜与同形判得不一样」（今得33处，跨二项以上）——
+      **若为0，此器即无用，当日撤**；★★④验其不出「须改」二字（只报不判）。"""
+    out = run('负测·比带', ['工具/负测_比带.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1653,6 +1681,7 @@ def main():
         items.append(('负测·FS认账', chk_fs_ack))
         items.append(('负测·亮点闸', chk_highlight_gate))
         items.append(('负测·验收空说明', chk_review_no_note))
+        items.append(('负测·比带', chk_band_by_form))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

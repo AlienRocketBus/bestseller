@@ -2217,6 +2217,50 @@ def compare(n):
     return 0
 
 
+# ★★★★★填记口（2026-09-02·292第11轮自逮）：吞记闸之同族第二形。
+#   ★其形：`--验收 N` 之说明亦係位置参数（argv[3]），不写即自动存版并落一行占位说明
+#     「（本轮说明未填，须在回执补记开庭与真伤级别）」；★★而落完之後，正文与末版已逐字相同，
+#     空轮闸遂拦住一切 --存版／--补存——**那一行占位说明再也改不掉了。**
+#   ★★★即：账上多一版跑过的样子，而它说不出自己跑的是哪一轮、动的是哪一刀；
+#     真轮数轮号数的正是这一行。**一轮真跑过了，而账上说不出它跑了什么。**
+#   ★★★★故立此口：只许填洞，不许覆盖记录——
+#     凡该行说明非占位原文者，一律拒填（要改真说明，去 --补存 另存一版，留得下痕）。
+_占位 = '（本轮说明未填，须在回执补记开庭与真伤级别）'
+
+
+def tianji(n, ver, note):
+    """填记：把台账上一行占位说明补成真说明。只填洞，不覆盖。"""
+    import json as _j
+    d, led = paths(n)
+    if not os.path.exists(led):
+        print('  ✗ 无台账：%s' % led); return 2
+    if not note or note.startswith('--'):
+        print('⛔填记口：说明是位置参数，不是选项。')
+        print('   正确：python3 工具/跑轮.py --填记 %d v17 "第N轮·某庭：所改何事"' % n)
+        return 2
+    obj = _j.load(io.open(led, encoding='utf-8'))
+    vs = obj['版本']
+    hit = [x for x in vs if x.get('版') == ver]
+    if not hit:
+        print('  ✗ 台账无此版：%s（现有 %s）' % (ver, '、'.join(x.get('版', '?') for x in vs[-6:])))
+        return 2
+    row = hit[0]
+    old = row.get('说明', '')
+    if old != _占位:
+        print('⛔填记口：此行已有真说明，不许覆盖——本口只填洞。')
+        print('   %s 现说明：%s' % (ver, old[:80]))
+        print('   ★要改一个已写实的说明，须另存一版（--补存），让两行都留在账上；')
+        print('   ★★账是用来查的，不是用来好看的：改掉一行真话，日後就查不出它原来说的是什么。')
+        return 2
+    row['说明'] = note + '·填记'
+    row['原说明'] = _占位
+    io.open(led, 'w', encoding='utf-8').write(_j.dumps(obj, ensure_ascii=False, indent=1))
+    print('  ✓填记 %s：%s' % (ver, note[:70]))
+    print('  ℹ并留「原说明」一格，见得出这一行是後填的，不是当场写的。')
+    return 0
+
+
+
 def main():
     if len(sys.argv) == 2 and sys.argv[1] == '--自测':
         return selftest()
@@ -2256,6 +2300,9 @@ def main():
             raise SystemExit(2)
         return t
 
+    if cmd == '--填记':
+        return tianji(n, sys.argv[3] if len(sys.argv) > 3 else '',
+                      sys.argv[4] if len(sys.argv) > 4 else '')
     if cmd == '--补存':
         return buccun(n, _记(sys.argv))
     if cmd == '--还原':

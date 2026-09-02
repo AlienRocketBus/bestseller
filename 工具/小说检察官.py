@@ -2555,7 +2555,13 @@ def diff_gate(n, base="HEAD"):
         print('    破折%d／五逗句%d／半角逗%d  %s'%(_b1,_b2,_b3,'✓' if _b1+_b2+_b3==0 else '⛔亮点段未清零，禁同步'))
         if _b1+_b2+_b3: bad+=_b1+_b2+_b3
     print('\n  ── 六·段间空行（变动区） ──')
-    print('    '+('⛔漏空行' if re.search(r'。\n(?!\n)(?=[^\n])',new) else '✓无'))
+    # 批131：此闸原查全文，而【本章亮点】係markdown列行，行行紧挨本就无空行；
+    # 故全书292章中55章长红，且其白文内命中皆为0——一个只会假红的闸，教出来的是「看见红就跳过」。
+    # 段间空行是白文之律，非亮点段之律：故只查白文。
+    _bw = new.split('【本章亮点')[0]
+    _lk = re.search(r'[。！？”]\n(?!\n)(?=[^\n])',_bw)
+    print('    '+('⛔漏空行（白文·行%d）'%(_bw[:_lk.start()].count('\n')+1) if _lk else '✓无'))
+    if _lk: bad += 1
     print('█'*3+' 改动闸毕：机械层%s '%('通过' if bad==0 else '未过')+'█'*3)
     return 1 if bad else 0
 
@@ -5178,6 +5184,14 @@ def jj_hook(n, note=''):
     print('\n' + '=' * 64)
     print('   【跑轮 · 批103自动挂钩】本轮挑刺完毕，自动存版')
     print('=' * 64)
+    # 批131·吞记闸第二形：说明未填即落占位，而落完之後正文与末版逐字相同，
+    # 空轮闸遂拦住 --存版／--补存，那一行占位说明再也改不掉——账上多一版跑过的样子，
+    # 而它说不出自己跑的是哪一轮。故此处不许再静静落一行占位：先把话说在前头。
+    if not note:
+        print('  ⚠说明未填：本次自动存版将落一行占位说明。')
+        print('     ★说明是位置参数：python3 工具/小说检察官.py --验收 %d "第N轮·某庭：所改何事"' % n)
+        print('     ★★若已落占位，事後只有一条路（且只填得了洞，覆盖不了真说明）：')
+        print('        python3 工具/跑轮.py --填记 %d vNN "第N轮·某庭：所改何事"' % n)
     _m.save(n, note or '（本轮说明未填，须在回执补记开庭与真伤级别）')
     _d, _led = _m.paths(n)
     try:
@@ -5210,14 +5224,23 @@ def rel_day_check(n, body):
     hits = 0
     m = re.search(r'第([一二三四五六七八九十百]+)天', body)
     today = m.group(0) if m else '（本章未见日号）'
+    # 批131：此检之数原係全文之数，而【本章亮点】抄白文之句，故白文每一处在此数里算两回。
+    # 292第11轮我拿这个数当密度读（「昨天32处」），实则白文22处——错了45%，且是我自己读错，不是器报错。
+    # 故不缩其查（亮点段之日词一样要回查所指），只令其把两个数一并印出来：数是给人读的，读错一回就该印清楚。
+    _bw = body.split('【本章亮点')[0]
+    _bh = 0
     for w in REL_DAY:
-        cnt = len(re.findall(w if w != '前天' else r'(?<!大)前天', body))
+        pat = w if w != '前天' else r'(?<!大)前天'
+        cnt = len(re.findall(pat, body))
+        cb = len(re.findall(pat, _bw))
         if cnt:
             hits += cnt
-            lines.append('    · %s ×%d' % (w, cnt))
+            _bh += cb
+            lines.append('    · %s ×%d（白文 %d／亮点段 %d）' % (w, cnt, cb, cnt - cb))
     if hits:
         lines.insert(0, '  ── 日号相对词检（批110·只报不拦） ──')
-        lines.insert(1, '    本章日号：%s；以下相对日词共 %d 处，**须逐处回查所指之事出于第几章、该章日号为何**：' % (today, hits))
+        lines.insert(1, '    本章日号：%s；相对日词全文 %d 处（白文 %d／亮点段 %d），**须逐处回查所指之事出于第几章、该章日号为何**；'
+                        '★而论密度只许用白文之数，亮点段係抄白文，一处算两回。' % (today, hits, _bh, hits - _bh))
         lines.append('    （P07主型：105七处／106五处／107二处，连续三章皆栽于此）')
     return hits, lines
 

@@ -81,13 +81,16 @@ def read_chapters() -> list[dict[str, object]]:
                 f"标题={number}"
             )
         body_text = "\n".join(lines[header_index + 1:]).strip()
-        if re.search(r"[。！？”]\n(?!\n)(?=[^\n])", body_text):
-            _P14.append(path.name)
         highlight = ""
         if "【本章亮点】" in body_text:
             body_text, _, hl_part = body_text.partition("【本章亮点】")
             body_text = body_text.strip()
             highlight = " ".join(hl_part.strip().split())
+        # 批131：此检原在切开亮点段之前跑，而亮点段係markdown列行，行行紧挨本就无空行；
+        # 故长年假红，遂被「七十／八十」一条赦令堵住嘴（只对两批章号硬拦，余者「存量待补·不拦」）。
+        # 赦的不是伤，是噪。今改为只查白文，全书292章命中0，故赦令一并撤去：白文漏空行即硬拦。
+        if re.search(r"[。！？”]\n(?!\n)(?=[^\n])", body_text):
+            _P14.append(path.name)
         paragraphs = [
             " ".join(part.strip().splitlines())
             for part in re.split(r"\n\s*\n", body_text)
@@ -393,10 +396,7 @@ def main() -> int:
             temp_path.unlink(missing_ok=True)
     total = sum(int(chapter["char_count"]) for chapter in chapters)
     if _P14:
-        _new=[x for x in _P14 if any(k in x for k in ("七十","八十"))]
-        if _new:
-            raise SystemExit("段间漏空行(P14硬检·新章): "+"、".join(_new)+" —— 补齐空行后重跑")
-        print("  ⚠P14存量待补(不拦):", "、".join(_P14))
+        raise SystemExit("段间漏空行(P14硬检·白文·批131撤赦): "+"、".join(_P14)+" —— 补齐空行后重跑")
     print(f"已同步阅读器：{len(chapters)} 章，{total:,} 字")
     return 0
 

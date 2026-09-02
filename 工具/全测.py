@@ -457,6 +457,53 @@ def chk_ratchet_verdict():
     return m.group(3) == '全通', '棘轮裁负测 %s/%s' % (m.group(1), m.group(2))
 
 
+def chk_blankline_gate():
+    """★段间空行闸负测（2026-09-02·292第11轮·补跑所立）：
+    ★其形：**一个闸只会假红，於是它教出来的不是「补空行」，是「看见红就跳过」。**
+    ★★其凭据（器出，非本席之说）：段间空行之检原查全文，而【本章亮点】係markdown列行，行行紧挨；
+      **全书292章有55章长红，而这55章白文内之命中皆为0**——五十五分之五十五皆假。
+    ★★★而阅读器那一头更进一层：为堵这噪，加过一条「七十／八十」之赦——
+      **只对两批章号硬拦，余者一概「存量待补(不拦)」**；★★★★**赦的不是伤，是噪。**
+    ★其治：只查白文（段间空行本就是白文之律），赦令一并撤去，白文漏空行即硬拦。
+    ★★其回灌（令§六③）：②之b 以旧式判「白文洁净＋常规亮点段」得红，新式得净；
+      ⑧以旧式回灌全书须假红≥20章；⑦以新式回灌全书须为0——撤赦之凭据在此，不在本席口里。"""
+    out = run('负测·段间空行闸', ['工具/负测_段间空行闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
+def chk_fill_note_gate():
+    """★填记口负测（2026-09-02·292第11轮自逮）：**吞记闸之第二形**。
+    ★其形：`--验收 N` 之说明亦係位置参数（argv[3]）；不写即自动存版并落一行占位说明。
+      ★★而落完之後正文与末版已逐字相同，**空轮闸遂拦住 --存版 与 --补存**——
+      **那一行占位说明再也改不掉了**；★★★而真轮数轮号数的正是这一行：
+      **一轮真跑过了，而账上说不出它跑了什么。**（292 v16、v17 二行皆栽於此）
+    ★其治不是让验收少落一版（账上少一版比说不清更坏），而是开一个**只填得了洞的口**：
+      ★★凡该行说明非占位原文者一律拒填，且填完留「原说明」之痕——**能填洞，不能覆盖记录。**
+    ★★★其回灌（令§六③）：③以真说明一行试填，须拒；③之d 填过一回之後再填，仍须拒。"""
+    out = run('负测·填记口', ['工具/负测_填记口.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1360,6 +1407,8 @@ def main():
         items.append(('负测·吞记闸', chk_swallowed_note_gate))
         items.append(('负测·封版档冷轮口', chk_seal_cold_slot))
         items.append(('负测·棘轮裁', chk_ratchet_verdict))
+        items.append(('负测·段间空行闸', chk_blankline_gate))
+        items.append(('负测·填记口', chk_fill_note_gate))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

@@ -663,6 +663,33 @@ def chk_highlight_gate():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_review_no_note():
+    """★验收空说明只查不存 负测（2026-09-02·293第3轮所立·**第二十四犯第二形之根治**）：
+    ★前此之治只是「先出声，照旧落占位」；★★**而一坐之内我从这个口走过六回**
+      （292 v16/v17、293 v02/v05/v07/v08/v11/v12）——**每一回都是同一个来回**：
+      做完活 → 跑一次不带说明的 `--验收` 查硬项 → 它把版存了 →
+      我带着说明再存，空轮闸判「正文与末版逐字相同」→ 拦 → 回头 `--填记`。
+    ★★★数其群（令§六①②）：**全书台账 3,352 版，占位行旧史只 1 行（第101章 v03）**；
+      **而今日一坐造出 8 行**——★★★★**群不在旧史里，在今日这一坐里，而它是同一个口。**
+    ★故不再落占位：**不带说明的 `--验收` 只查不存**；
+      ★★**其由**：**一行读不出自己跑的是哪一轮的账，不如不落**；
+      ★★★**而「挑刺」带说明者照旧存版，批103之单一入口未动**（只少了「空说明也存」这一路）。
+    ★★★★其回灌（令§六③）：①之c 沙盘实跑一回，台账一行不动；
+      ★②③各验其不越界（带说明者照旧存／填记口未删，旧史那一行还得有路可填）。"""
+    out = run('负测·验收空说明', ['工具/负测_验收空说明.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1625,6 +1652,7 @@ def main():
         items.append(('负测·孤版闸', chk_orphan_snapshot))
         items.append(('负测·FS认账', chk_fs_ack))
         items.append(('负测·亮点闸', chk_highlight_gate))
+        items.append(('负测·验收空说明', chk_review_no_note))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

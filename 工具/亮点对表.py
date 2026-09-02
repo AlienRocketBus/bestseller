@@ -79,10 +79,31 @@ def 骨层数(txt):
     s = m.group(1)
     N = 10 if s == '十' else (10 + CNN.get(s[1], 0) if s.startswith('十') else CNN.get(s, 0))
     # 层之目：行首之 ①—⑩，或 ①之二／④之三 一类
-    层 = set()
-    for mm in re.finditer(r'^([①②③④⑤⑥⑦⑧⑨⑩])(之[一二三四五六七八九十])?', hl, re.M):
-        层.add(mm.group(0))
+    # ★★★★★2026-09-02·291第13轮再补：**原本字符类只到 ⑩**，於是逾十层之章（如249之十二目）
+    #   後两目根本不在它眼里——**同一族之病，又低一层**；今放到 ①—⑳。
+    # ★★★★★2026-09-02·291第13轮补：**原本此处用 set()，於是同一个号出现两回只算一处。**
+    #   ★291之亮点自书「其骨七层」而实列九目，其号为 ①②③④⑤④⑤⑥⑦——**④⑤各出二回**；
+    #   ★★去重之後恰得七，与其所报之七分毫不差，**於是这道昨日才立的闸，稳稳地绿。**
+    #   ★★★而它本是为「自书N层而只列M条」立的（一次静默的 replace 未命中）——
+    #      **它认「少列了几条」，不认「同一个号用了两回」**；**判据里少了那一样，它就在别处绿。**
+    #   ★★★★故今改计其目为「逐处点数」（重号亦各算一目），并另吐重号，使其报得出病在哪儿。
+    层 = []
+    for mm in re.finditer(r'^([\u2460-\u2473])(之[一二三四五六七八九十])?', hl, re.M):
+        层.append(mm.group(0))
     return N, len(层)
+
+
+def 骨层重号(txt):
+    """★2026-09-02·291第13轮立：吐出亮点段里重复出现之层号（同一号用了两回以上）。
+    ★★其与 骨层数 同族而各管一头：那一头管「数对不对得上」，这一头管「号有没有撞」。"""
+    if '【本章亮点】' not in txt:
+        return []
+    hl = txt.split('【本章亮点】', 1)[1]
+    seen = {}
+    for mm in re.finditer(r'^([\u2460-\u2473])(之[一二三四五六七八九十])?', hl, re.M):
+        k = mm.group(0)
+        seen[k] = seen.get(k, 0) + 1
+    return sorted(k for k, v in seen.items() if v > 1)
 
 
 def 三路(txt, n=None, 全书=None):
@@ -113,11 +134,16 @@ def 查(n, 路, 全书=None, 报=True, 详=False):
     txt = io.open(路, encoding='utf-8').read()
     约红, 引报, 数报 = 三路(txt, n, 全书 if 详 else None)
     N, M = 骨层数(txt)
-    骨红 = (N is not None and M is not None and N != M)
+    重 = 骨层重号(txt)
+    骨红 = (N is not None and M is not None and N != M) or bool(重)
     if 报:
-        if 骨红:
-            print('  ⛔ 第%d章 亮点段自书「其骨%d层」，而其下所列之层只有 %d 条。' % (n, N, M))
+        if N is not None and M is not None and N != M:
+            print('  ⛔ 第%d章 亮点段自书「其骨%d层」，而其下所列之层有 %d 条。' % (n, N, M))
             print('     ★改亮点段之骨而只改了那个数——多半是一次静默的 replace 未命中。')
+        if 重:
+            print('  ⛔ 第%d章 亮点段之层号撞了：%s（同一个号用了两回以上）。' % (n, '、'.join(重)))
+            print('     ★2026-09-02·291第13轮所补：原本此处计目用 set()，重号去重之後恰好对得上，')
+            print('       ★★於是「九目自书七层」这一形，从这道闸底下走了过去。')
         if 约红:
             print('  ⛔ 第%d章 约数相犯 %d 处：%s' % (n, len(约红), '、'.join(约红)))
             print('     ★亮点段不许把正文给准了的数抹成约数。')
@@ -142,7 +168,9 @@ if __name__ == '__main__':
         def _红(n):
             _t = io.open(全[n], encoding='utf-8').read()
             _N, _M = 骨层数(_t)
-            return bool(三路(_t)[0]) or (_N is not None and _M is not None and _N != _M)
+            return (bool(三路(_t)[0])
+                    or (_N is not None and _M is not None and _N != _M)
+                    or bool(骨层重号(_t)))
         bad = [n for n in sorted(全) if _红(n)]
         for n in bad:
             查(n, 全[n])

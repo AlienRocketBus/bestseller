@@ -611,6 +611,32 @@ def chk_orphan_snapshot():
     return True, '%d/%d 全通' % (ok, tot)
 
 
+def chk_fs_ack():
+    """★FS认账负测（2026-09-02·293第1轮所立）：
+    ★**FS沉默闸之销在本章回执，而回执须待十三轮跑毕**；
+      ★★故一根逾期之伏笔可以拦住此後十二轮的每一次推——
+      ★★★**而拦十二回并不能让回执早交一天，只能教出「见红就 --no-verify」**
+      （绕行审计.log 里那四十五次绕行，正是⑥当年这么长出来的）。
+    ★★★★其治之式与⑥之否决记同，一字不宽：**放行之价是一行写下来的字，不是一次沉默**——
+      **逾期之每一根 FS，须在本章之轮记或开镜卡里写着「FSxx·本章未兑」**；
+      ★**认账只有在肯写「未兑」二字时才写得出来**；★★**悄悄滑过去的那一根，照旧拦。**
+    ★★★其回灌（令§六③）：②之b 抽掉其中一根之认账即须拦（**不许拿「认了大半」蒙混**）；
+      ①一根也没认账者照旧拦（**证本闸之本职未被挖空**）。
+    ★★★★而其单取自 FS闸 自己那一支，不取自报文——**报文里本就没有根号**（头一版即栽於此，已与器同存）。"""
+    out = run('负测·FS认账', ['工具/负测_FS认账.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = (int(x) for x in m.groups())
+    if bad or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_seal_cold_slot():
     """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
     ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
@@ -1363,6 +1389,44 @@ def _已封版(n):
     return bool(_g.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
 
 
+def _逾期伏笔俱已认账(raw):
+    """★与⑥之否决记同式（2026-09-02·293第1轮立）：**逾期之每一根 FS，
+    须在本章之轮记或开镜卡里带着「FSxx·本章未兑」这个认账**，方许在跑轮档上放行。
+    ★★其由（与第十九犯所立之式同）：**认账只有在肯写「未兑」二字时才写得出来**；
+      ★★★**一根伏笔悄悄滑过它的到期章者，没有人写过这两个字**——那正是本闸要逮的。
+    ★★★★而其所以要放行：**本闸之销在回执，而回执须待十三轮跑毕**；
+      ★**一根逾期之伏笔可以拦住此後十二轮的每一次推**，
+      ★★**而拦十二回并不能让回执早交一天，只能教出「见红就 --no-verify」**
+        （绕行审计.log 里那四十五次绕行，正是⑥当年这么长出来的）。
+    ★★★**故放行之价是一行写下来的字，不是一次沉默。**"""
+    # ★其单不取自报文——**报文里没有根号**（今日之实：「逾期伏笔 2 根（其单在 FS闸.py）」，
+    #   而 `FS(\d+)` 在这一句上只匹配得着「FS闸」二字之後的空处，遂一根也数不出来）。
+    #   ★★故直调 FS闸 自己那一支，取其未答之根：**问器要单，不问报文要单。**
+    import importlib.util as _iu
+    _sp = _iu.spec_from_file_location('_fs', os.path.join(ROOT, '工具', 'FS闸.py'))
+    _fs = _iu.module_from_spec(_sp)
+    try:
+        _sp.loader.exec_module(_fs)
+        _n, _f, _欠, _未答, _答 = _fs.查()
+    except Exception:
+        return False
+    ns = [str(x['id']).replace('FS', '') for x in _未答]
+    if not ns:
+        return False
+    cur = _末章()
+    src = ''
+    for _p in (os.path.join(ROOT, '版本', '第%d章' % cur, '_轮记.md'),
+               os.path.join(ROOT, '版本', '第%d章' % cur, '_开镜卡.md')):
+        if os.path.exists(_p):
+            try:
+                src += open(_p, encoding='utf-8', errors='replace').read()
+            except OSError:
+                pass
+    if not src:
+        return False
+    return all(('FS%s·本章未兑' % x) in src for x in sorted(set(ns)))
+
+
 def _冷轮逾期俱有否决记(raw):
     """★与封版档之口同式（2026-09-02·292第1轮立）：**逾期之每一个 COLD-N，
     须在某份回执里带着「COLD-N·本章未执」这个否决记**，方不作真漏。
@@ -1481,6 +1545,19 @@ def 推闸(fails):
             if ('--立 %d' % (cur + 1)) not in raw:
                 return False, '⛔推闸：第零轮所索非下一章之卡，照旧拦。'
             准.append('第零轮（索第%d章之卡，而其卡须待第%d章封版方立）' % (cur + 1, cur))
+        elif name == 'FS沉默闸':
+            # ★★★★★2026-09-02·293第1轮补（与⑥之口同式，一字不宽）：
+            #   ★本闸之销在本章回执，而回执须待十三轮跑毕；
+            #   ★★**一根逾期之伏笔可以拦住此後十二轮的每一次推，而拦十二回并不能让回执早交一天**
+            #     ——**只能教出「见红就 --no-verify」**（绕行审计.log 里那四十五次绕行，
+            #     正是⑥当年这么长出来的）。
+            #   ★★★故放行之价是一行写下来的字：**逾期之每一根 FS，须在本章之轮记或开镜卡里
+            #     写着「FSxx·本章未兑」**——★**认账只有在肯写「未兑」二字时才写得出来**；
+            #     ★★**悄悄滑过去的那一根，没有人写过这两个字，照旧拦。**
+            if not _逾期伏笔俱已认账(raw):
+                return False, ('⛔推闸：FS沉默闸所报之逾期伏笔，有未在本章轮记／开镜卡里'
+                               '写「FSxx·本章未兑」认账者，那是无声滑过，照旧拦。')
+            准.append('FS沉默闸（其销须待第%d章回执；逾期者俱已在轮记认账）' % cur)
         else:
             return False, '⛔推闸：「%s」不在结构性之列，照旧拦。' % name
     return True, ('%s\n  【跑轮档】第%d章回执未交，正在跑轮；所放行者只此 %d 项：%s。\n'
@@ -1520,6 +1597,7 @@ def main():
         items.append(('负测·层census与立价查', chk_layer_census_honest))
         items.append(('负测·销立门', chk_seal_new_cold))
         items.append(('负测·孤版闸', chk_orphan_snapshot))
+        items.append(('负测·FS认账', chk_fs_ack))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

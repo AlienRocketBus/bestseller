@@ -438,6 +438,24 @@ def chk_band():
     return True, '%d/%d 全通（旧表带外74章25%%→新表0章｜中位3691正落旧缝｜序②在册）' % (ok, tot)
 
 
+def chk_count_sentence_gate():
+    """★数句闸负测（2026-09-02·291第12轮·极限轮所立）：
+    ★★其形：**一个数与另一个数比着，而两边都没被数过**——
+      291断言「他今天说了六句」，正文里数得出来的是「他说」十一处；
+      ★★★第3轮·逐数对表判其过，其判据是「此数有没有对头」，不是「此数自己对不对」。
+    ★取二组数（令§六①）：**组一·本章三处数，两处数不出来（钱满六句／老头六句），一处数得出（三个字）**；
+      ★★**组二·全书同类入闸者十处，九处皆在页上给了明细或逐句编号，唯291一处两样皆无**——群在，故入闸不入档。
+    ★★★其回灌（令§六③）：**改前之291原文存於 版本/第291章/_回灌_291改前.txt，须报红二处。**"""
+    out = run('负测·数句闸', ['工具/负测_数句闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    return m.group(3) == '全通', '数句闸负测 %s/%s' % (m.group(1), m.group(2))
+
+
 def chk_threshold_gate():
     """★趋阈闸负测（2026-09-02·291第7轮所立·每次存版必跑）：
     ★★其形：**一个数差一点就够到一条有名之限，而最省的一步是补几个字把它顶过去**；
@@ -1215,6 +1233,7 @@ def main():
         items.append(('负测·翻页备料查', chk_turnpage_obj))
         items.append(('负测·缺报格', chk_missing_slot))
         items.append(('负测·趋阈闸', chk_threshold_gate))
+        items.append(('负测·数句闸', chk_count_sentence_gate))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

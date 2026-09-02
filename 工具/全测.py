@@ -1190,6 +1190,36 @@ def _已封版(n):
     return bool(_g.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
 
 
+def _冷轮逾期俱有否决记(raw):
+    """★与封版档之口同式（2026-09-02·292第1轮立）：**逾期之每一个 COLD-N，
+    须在某份回执里带着「COLD-N·本章未执」这个否决记**，方不作真漏。
+    ★★其由：否决记只有说「不」的时候才写得出来（第十九犯所立之式）；
+    ★★★**一笔冷轮悄悄滑过它的到期章者，无人写过否决记**——那正是「逾期」本来要逮的。"""
+    import re as _re
+    import glob as _g
+    ns = [int(m) for m in _re.findall(r'COLD-(\d+)', raw)]
+    if not ns:
+        return False
+    rcs = []
+    for fp in _g.glob(os.path.join(ROOT, '设定', '回执_*.md')):
+        try:
+            rcs.append(open(fp, encoding='utf-8').read())
+        except OSError:
+            pass
+    # ★★★★★同日改（第一版从严过了头）：**原本向所报之每一笔都索否决记**，
+    #   ★而今日三笔里逾期的只有 COLD-288（限291<292）；COLD-289 与 COLD-290 之限正是292，
+    #     **它们不是逾期，是今天该办的**——**向没逾期的那两笔索否决记，是逼人替没犯的事签字。**
+    #   ★★故逐笔按其到期章分：**限 < 当章者方为逾期，方须有否决记**；未逾期者不问。
+    import importlib.util as _iu
+    _sp = _iu.spec_from_file_location('_lz6', os.path.join(ROOT, '工具', '开轮六检.py'))
+    _m6 = _iu.module_from_spec(_sp)
+    _sp.loader.exec_module(_m6)
+    过期 = [n for n in ns if _m6._cold_limit(n) < _末章()]
+    if not 过期:
+        return True
+    return all(any(('COLD-%d·本章未执' % n) in t for t in rcs) for n in 过期)
+
+
 def 推闸(fails):
     """★返回 (放行否, 语)。★★只在「本章回执未交」时才许放行，且只放行那两项。"""
     cur = _末章()
@@ -1264,9 +1294,16 @@ def 推闸(fails):
             if not 条 or any(not x.startswith('⑥·冷轮之欠') for x in 条):
                 return False, ('⛔推闸：开轮十六检所报不止⑥一条（%s），照旧拦。'
                                % '／'.join(x[:12] for x in 条 if not x.startswith('⑥·冷轮之欠'))[:60])
-            if '逾期' in raw:
-                return False, '⛔推闸：⑥所报含「逾期」，那是真漏，照旧拦。'
-            准.append('⑥·冷轮之欠（其销须待第%d章回执）' % cur)
+            # ★★★★★2026-09-02·292第1轮补（与今晨封版档所补係同一口，今接到跑轮档上）：
+            #   ★「逾期」本是真漏之凭，而今日之逾期不是漏**：COLD-288 限291，
+            #     ★★而其档第五节自书「291若仍非暗线，其红留在账上不许再挪」；291确为主线，
+            #       故其红依法留下，**292正是它所停的那一章，此刻正在执它**。
+            #   ★★★故其限与封版档同一条，一字不宽：**逾期之COLD-N，须在其到期之章的回执里
+            #     带着「COLD-N·本章未执」这个否决记**——★**否决记只有说「不」的时候才写得出来**；
+            #     ★★**一笔冷轮悄悄滑过它的到期章者，无人写过否决记，照旧拦**：那正是「逾期」本来要逮的。
+            if '逾期' in raw and not _冷轮逾期俱有否决记(raw):
+                return False, ('⛔推闸：⑥所报含「逾期」而其中有未写否决记者，那是真漏，照旧拦。')
+            准.append('⑥·冷轮之欠（其销须待第%d章回执；逾期者俱已写否决记）' % cur)
         elif name == '第零轮':
             if ('--立 %d' % (cur + 1)) not in raw:
                 return False, '⛔推闸：第零轮所索非下一章之卡，照旧拦。'

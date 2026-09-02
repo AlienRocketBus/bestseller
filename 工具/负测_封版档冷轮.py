@@ -86,6 +86,29 @@ def run():
                 if any(('COLD-%d·本章未执' % n) in t for t in rcs))
     R.append(('⑪今册中带否决记者 %s（≥1，且逐笔可查）' % (实 or '无'), len(实) >= 1))
 
+    # ⑫—⑯ 跑轮档之同口（2026-09-02·292第1轮补·与封版档共用一条判据）
+    #   ★其形：⑥所报含「逾期」时，原本一律判真漏；★★而今日之逾期不是漏——
+    #     COLD-288 限291，其档第五节自书「291若仍非暗线，其红留在账上不许再挪」，
+    #     291确为主线，故其红依法留下，**而292正是它所停的那一章，此刻正在执它**。
+    import importlib.util as _iu
+    _sp = _iu.spec_from_file_location('_qc', os.path.join(ROOT, '工具', '全测.py'))
+    _qc = _iu.module_from_spec(_sp)
+    try:
+        _sp.loader.exec_module(_qc)
+    except SystemExit:
+        pass
+    f = getattr(_qc, '_冷轮逾期俱有否决记', None)
+    R.append(('⑫跑轮档之口在册（_冷轮逾期俱有否决记）', callable(f)))
+    if callable(f):
+        今 = '⑥·冷轮之欠 ★3笔未执：COLD-288、COLD-289、COLD-290⛔（其中1笔已逾期）'
+        R.append(('⑬正测·今日三笔（逾期者只288，且其否决记在册）放行', f(今) is True))
+        R.append(('⑭真红·一笔逾期而无否决记者不放行（COLD-153，限155）',
+                  f('⑥·冷轮之欠 ★1笔未执：COLD-153⛔（其中1笔已逾期）') is False))
+        R.append(('⑮不逼未逾期者签字·限正是当章之二笔（289、290）单独亦放行',
+                  f('⑥·冷轮之欠 ★2笔未执：COLD-289、COLD-290') is True))
+        R.append(('⑯回灌·旧式对今日之报判「真漏」（故此口非陪跑）',
+                  ('逾期' in 今) is True))
+
     bad = [x for x, o in R if not o]
     for x, o in R:
         print('   %s %s' % ('✓' if o else '✗', x))

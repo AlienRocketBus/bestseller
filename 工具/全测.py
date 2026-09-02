@@ -438,6 +438,24 @@ def chk_band():
     return True, '%d/%d 全通（旧表带外74章25%%→新表0章｜中位3691正落旧缝｜序②在册）' % (ok, tot)
 
 
+def chk_seal_cold_slot():
+    """★封版档之冷轮口负测（2026-09-02·292第1轮立·欠-291D之群成立所致）：
+    ★★其历：291封版之日，十六检报⑭（恒真）与⑥（COLD-288之红，其档自书「留在账上不许再挪」），
+      而封版档只放行⑭，遂绕行一回；★★★当日判其孤例（在档不在闸）并立欠-291D：
+      **「若此形再现一回，其群已成，当日须改」**；★★★★今日再现，故改。
+    ★其限死在一处：**⑥所名之每一个 COLD-N，须在某份回执里带着「COLD-N·本章未执」之否决记**——
+      **凡一笔冷轮之红而无人写过否决记者，照旧拦**：那正是⑥本来要逮的，无声消失。
+    ★★其回灌（令§六③）：**旧式（只认⑭）对同一入参判「拦」**，见负测④。"""
+    out = run('负测·封版档冷轮口', ['工具/负测_封版档冷轮.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    return m.group(3) == '全通', '封版档冷轮口 %s/%s' % (m.group(1), m.group(2))
+
+
 def chk_swallowed_note_gate():
     """★吞记闸负测（2026-09-02·291第13轮开轮时所立）：
     ★★其形：**器收下了一样它本该拒收的东西，而它一声没出。**
@@ -1194,14 +1212,45 @@ def 推闸(fails):
             if name != '开轮十六检':
                 return False, ('⛔推闸：第%d章已封版，而「%s」不在封版档之列，照旧拦。'
                                % (cur, name))
+            # ★★★★★2026-09-02·292第1轮补（欠-291D之群今日成立，照其自书之条改）：
+            #   ★291封版之日，十六检报二条——⑭（恒真）与⑥·冷轮之欠（COLD-288之红，
+            #     其档第五节自书「其红留在账上不许再挪」）；★★而封版档只放行⑭，遂又绕行一回。
+            #   ★★★当日判其为孤例（在档不在闸），并立欠-291D：**若此形再现一回，其群已成，当日须改**。
+            #     ★今日再现（292未起草，末章仍为已封版之291，⑥仍红），**故其群成，今改**。
+            #   ★★★★而其限死在一处，不许宽半分：**⑥所名之每一个 COLD-N，须在某份回执里带着
+            #     「COLD-N·本章未执」这个否决记**——★**否决记只有说「不」的时候才写得出来**
+            #     （第十九犯所立之式）；★★**故此放行不是把红抹掉，是只放行「已经写下来认过的那几笔」**；
+            #     ★★★**凡一笔冷轮之红而无人写过否决记者，照旧拦**——那正是⑥本来要逮的：无声消失。
+            def _冷轮之红俱有否决记(x):
+                import re as _re, glob as _g
+                ns = [int(m) for m in _re.findall(r'COLD-(\d+)', x)]
+                if not ns:
+                    return False
+                rcs = []
+                for fp in _g.glob(os.path.join(ROOT, '设定', '回执_*.md')):
+                    try:
+                        rcs.append(open(fp, encoding='utf-8').read())
+                    except OSError:
+                        pass
+                return all(any(('COLD-%d·本章未执' % n) in t for t in rcs) for n in ns)
+
             条 = [x.strip() for x in raw.split('；') if x.strip()]
-            if not 条 or any(not x.startswith('⑭·已封版之章') for x in 条):
-                return False, ('⛔推闸：开轮十六检所报不止⑭一条（%s），照旧拦。'
-                               % '／'.join(x[:12] for x in 条
-                                          if not x.startswith('⑭·已封版之章'))[:60])
-            if ('第%d章已封版' % cur) not in raw:
-                return False, ('⛔推闸：⑭所指非第%d章，照旧拦。' % cur)
-            准.append('⑭·已封版之章（其红係恒真：cur＝刚封之章）')
+            余 = [x for x in 条
+                  if not x.startswith('⑭·已封版之章')
+                  and not (x.startswith('⑥·冷轮之欠') and _冷轮之红俱有否决记(x))]
+            if not 条 or 余:
+                return False, ('⛔推闸：开轮十六检所报不止⑭与「已写否决记之⑥」（%s），照旧拦。'
+                               % '／'.join(x[:14] for x in 余)[:70])
+            # ★同日补：**⑭所指之章只在⑭真在报里时才验得着**——
+            #   ★★而报里可以只有⑥（今日之实：十六检之报只一条「⑥·冷轮之欠」，⑭一字不在）；
+            #   ★★★原本无条件验「第N章已封版」在不在 raw 里，遂把一份没有⑭的报也判作「⑭指错了章」。
+            if any(x.startswith('⑭·已封版之章') for x in 条):
+                if ('第%d章已封版' % cur) not in raw:
+                    return False, ('⛔推闸：⑭所指非第%d章，照旧拦。' % cur)
+                准.append('⑭·已封版之章（其红係恒真：cur＝刚封之章）')
+            for x in 条:
+                if x.startswith('⑥·冷轮之欠'):
+                    准.append('⑥·冷轮之欠（其所名者俱已写否决记，非无声消失）')
         if not 准:
             return True, ('%s\n  【封版档】第%d章已封版且全测全绿。' % (_放行标, cur))
         return True, ('%s\n  【封版档】第%d章今日封版；所放行者只此 1 项：%s。\n'
@@ -1253,6 +1302,7 @@ def main():
         items.append(('负测·趋阈闸', chk_threshold_gate))
         items.append(('负测·数句闸', chk_count_sentence_gate))
         items.append(('负测·吞记闸', chk_swallowed_note_gate))
+        items.append(('负测·封版档冷轮口', chk_seal_cold_slot))
         items.append(('负测·章型带', chk_band))
         items.append(('负测·冷轮闸', chk_cold_gate))
         items.append(('负测·日词闸', chk_day_gate))

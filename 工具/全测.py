@@ -300,21 +300,39 @@ def chk_outside_voice():
 
 
 def chk_big_questions():
-    """大问表（2026-09-01立·见 工具/大问表.py）——**只报不拦**。
+    """大问表（2026-09-01立·八造2026-09-03改·见 工具/大问表.py）——**可以欠，不可以不认**。
     ★其立之由：机器一处也没在问「读者还在等什么」——到期账258笔 open 0，
     ★★书级体检遂每章印「未清0笔｜距终点163章｜须净减0.00笔/章 ✓」。
     ★★★而器印：玉末见第80章缺207章／血图末60缺227／悬赏末71缺216／寨老末108／地窖末72缺215。
-    ★★★★更要命者：E4指定要用的两样旧物（玉、听针）分别缺席207章与85章。"""
+    ★★★★更要命者：E4指定要用的两样旧物（玉、听针）分别缺席207章与85章。
+
+    ★★★★★**八造所改（其红在哪一行·2026-09-03 上磁盘核）**：其律自印「只报不拦」，
+    以294章计逾四十章者七样（血图缺234章、悬赏223、地窖222、寨里那些人186、爷爷184、
+    走路的理由116、听针92）——**二百三十四章之内没有一道闸因此拦过一次**。
+    ★而其治**不是**逼着每章补喂一样（那必写成回忆段，正是令§二所禁），
+    ★★是**逼着在册上认一笔**：逾限者须各有一笔挂账（其样／限第N章／其形写死），
+    ★★★**挂了账又逾了自己那个限的，当场拦。**
+    """
     out = run('大问表', ['工具/大问表.py'])
     if out is None:
         return False, '运行失败'
     import re as _r
     m = _r.search(r'逾上限者 (\d+) 样', out or '')
     n = int(m.group(1)) if m else 0
+    无挂 = _r.search(r'⛔ 逾限而无一笔挂账者 (\d+) 样：(.+)', out or '')
+    逾限 = _r.search(r'⛔ 挂了账而逾了自己那个限者 (\d+) 样：(.+)', out or '')
+    if 无挂 or 逾限:
+        b = []
+        if 无挂:
+            b.append('无挂账 %s 样（%s）' % (无挂.group(1), 无挂.group(2).strip()))
+        if 逾限:
+            b.append('逾自定之限 %s 样（%s）' % (逾限.group(1), 逾限.group(2).strip()))
+        return False, '｜'.join(b)
     if n == 0:
         return True, '八样俱在四十章之内'
     首 = _r.findall(r'^  (\S+)\s+\d+\s+第(\d+)章\s+(\d+)章\s+⛔', out or '', _r.M)[:3]
-    return True, ('⚠逾四十章者 %d 样（只报不拦）：%s' % (n, '、'.join('%s缺%s章' % (a, c) for a, b, c in 首)))
+    return True, ('逾四十章者 %d 样，俱已挂账且未逾其限：%s'
+                  % (n, '、'.join('%s缺%s章' % (a, c) for a, b, c in 首)))
 
 
 def chk_cold_agree():
@@ -731,6 +749,40 @@ def _简测(名, 脚本):
         _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
         return False, '%d/%d｜%s' % (ok, tot, '；'.join(_b[:3]))
     return True, '%d/%d 全通' % (ok, tot)
+
+
+def chk_bigq_neg():
+    """负测·大问挂账（八造·2026-09-03 立·见 工具/负测_大问挂账.py）。"""
+    return _简测('负测·大问挂账', '工具/负测_大问挂账.py')
+
+
+def chk_duiwei():
+    """对位闸（八造·2026-09-03 立·见 工具/对位.py）——**所有的机制都得跑起来**（作者令）。
+
+    ★其查三样：①孤器（有器而无一条路够得着）｜②剧情之器出声之位（出声之时文还改不改得动）
+    ｜③负测覆盖（令§一⑤★★★★：一项要进「所守」，须其负测里有一条回灌须报红）。
+    ★★其红在哪一行（2026-09-03 上磁盘核）：`pageturn`（五钩·本书唯一一件量「读者翻不翻页」之器）
+    全仓只有一个调用点，在 `ai_homework` 之内，而 `ai_homework` 只在 `--封版` 之下——
+    **十三轮无一轮调得着它**；且 `--封版 293` 实跑，其「收尾三段」印的是封版台账，不是小说的结尾。
+    """
+    out = run('对位闸', ['工具/对位.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    孤 = _r.search(r'⛔ 孤器 (\d+) 件', out or '')
+    哑 = len(_r.findall(r'⚠ \S+：\*\*令里有其事而无其命令\*\*', out or ''))
+    负 = _r.search(r'赤手无负测者 (\d+)（(\d+)%）', out or '')
+    msg = []
+    if 负:
+        msg.append('负测覆盖：赤手无负测者 %s 项（%s%%）之绿一律记「未验」' % (负.group(1), 负.group(2)))
+    if 孤 or 哑:
+        b = []
+        if 孤:
+            b.append('孤器 %s 件' % 孤.group(1))
+        if 哑:
+            b.append('哑器 %d 件（令里有其事而无其命令）' % 哑)
+        return False, '｜'.join(b + msg)
+    return True, '｜'.join(['诸器各有其位'] + msg)
 
 
 def chk_grand_audit():
@@ -1806,6 +1858,8 @@ def main():
         items.append(('FS沉默闸', chk_fs_silence))
         items.append(('外声闸', chk_outside_voice))
         items.append(('大问表', chk_big_questions))
+        items.append(('负测·大问挂账', chk_bigq_neg))
+        items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))

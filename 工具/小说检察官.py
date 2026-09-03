@@ -5103,8 +5103,21 @@ def cardiogram(n,files):
         mx=max(mx,run)
     if mx>=4: print(f'   段首复读:同一开头字连排{mx}段(如我我我…),审是否催眠')
     if top: print('   高频双字:',' '.join(f'{w}×{c}' for w,c in top),'←≥6次者自审是否口头禅')
+def _story_only(t):
+    """切掉封版之後贴在文件尾巴上的台账，只留小说本身。
+
+    ★立此法之由（2026-09-03·对位闸所逮）：`--封版 293` 实跑，五钩之「收尾三段」印的是
+      「★★★而其数：第一百零四天｜十层一样长…」——**那是台账，不是小说的结尾**
+      （293 真末句在第373行「而那一排点，明天还是六个。」）。
+      **一件量结尾之钩的器，读的是台账；於是它两百多章一直在给台账打分。**
+    ★★其界：`【本章亮点】`（全书294章中188章有之；无之者多系早章，其全文即正文，故原样返回）。
+    """
+    i = t.find('【本章亮点】')
+    return t[:i] if i > 0 else t
+
+
 def pageturn(n,files):
-    f,nm,t=files[n]; body=re.sub(r'^.*?第.+?章[^\n]*\n','',t,count=1,flags=re.S)
+    f,nm,t=files[n]; body=re.sub(r'^.*?第.+?章[^\n]*\n','',_story_only(t),count=1,flags=re.S)
     ps=_paras(body)
     print('【九·翻页力五钩评分】(AI必打分必答:钩/新问/情绪波/危机升档/承诺推进 各0-2。<7二选一:补钩,或答明\'静章有意\'之由——静水深流合法,59《不像他》即无钩神品。闸在必答,不在分数)')
     print('   开篇两段:',' ␤ '.join(x[:38] for x in ps[:2]))
@@ -5340,6 +5353,20 @@ def super_main():
         return _round11_main(int(args[1]))
     lib=_load_lib()
     files=_chapters()
+    # ★★★2026-09-03·八造：五钩单出一口（对位闸所逮）
+    #   其由：`pageturn` 全仓只有一个调用点，在 `ai_homework` 之内，而 `ai_homework` 只在
+    #   `--封版` 之下——**十三轮无一轮调得着它**；於是本书唯一一件量「读者翻不翻页」的器，
+    #   出声之时文已定。今另开此口，令第7轮（节奏／留白）跑得着它，**趁文还改得动**。
+    if args and args[0] == '--五钩':
+        if len(args) < 2 or not args[1].lstrip('-').isdigit():
+            print('  ✗ 用法：python3 工具/小说检察官.py --五钩 N'); return 2
+        _c = int(args[1])
+        if _c not in files:
+            print('  ✗ 第%d章不存在' % _c); return 2
+        pageturn(_c, files)
+        foreshadow_report(slice_for=_c)
+        print('  ★此口只报不判：五钩之分由人打，而**打分之时文还改得动**，这正是它移到第7轮的全部理由。')
+        return 0
     if args and args[0] in ('框架','--framework'):
         print(FRAMEWORK.strip()); return 0
     if args and args[0] in ('规范','导出规范','知识','--spec','--knowledge'):

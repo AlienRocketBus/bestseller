@@ -173,6 +173,22 @@ def chk_open_six():
     return False, '｜'.join(_m)
 
 
+def chk_three_bands():
+    """评论员三条带 负测（2026-09-03立·298第13轮·见 工具/负测_三条带.py）。
+    ★其立之由：评论员之群只一条「前6章之窗」，而比带两造之前就立过「三条带，以同形为先」；
+    ★★298第13轮实逮：本席判「弱在动拍%（本章46，窗中位54.5）」，
+    ★★★而全书中位38、同形「做事」中位38——本章46在两条带之上，那个弱是六章之窗造出来的。
+    ★★★★而此测须在旧式（只取窗）下与新式判得不同方算数（令§六③·回灌验），否则它是陪跑。"""
+    out = run('负测·三条带', ['工具/负测_三条带.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    if '非陪跑' not in out:
+        return False, '★此测在旧式下亦同判，是陪跑之测'
+    return True, out.strip().split('\n')[0].replace('✓ ', '')
+
+
 def chk_nomination_ledger():
     """小说家提名账 负测（2026-09-03立·298第12轮·见 工具/负测_提名账.py）。
     ★其立之由：小说家席在第298章连提同一对拍四回，而看官账所记者是拍号，
@@ -1956,6 +1972,7 @@ def main():
         items.append(('负测·阅读器催', chk_reader_nag))
         items.append(('负测·看官手闸', chk_kanguan_hand))
         items.append(('负测·提名账', chk_nomination_ledger))
+        items.append(('负测·三条带', chk_three_bands))
         items.append(('负测·硬闸', chk_hard_gate))
         items.append(('负测·叠词闸', chk_dup_gate))
         items.append(('数闸', chk_num_gate))

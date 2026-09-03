@@ -2678,8 +2678,35 @@ def work_order(n):
     print('█'*3 + ' 作业令毕：%d条 '%i + '█'*3)
     try: emit_prompts(n)
     except Exception as _e: print('  (提示词喷发失败:%s)'%_e)
+# ★★★★★2026-09-03·295第1轮·全测三红之一所逮：**冷轮之判在本仓有两把尺。**
+#   ★其形：本器自有一份 `_cold_done` 与一句硬写的 `到期章=n+2`；
+#     而 `开轮六检.py` 另有一份，**其限读档自书之「限N」（档里没写的才退回通则 N+2，且逾 N+5 者不认）**，
+#     **其执认否决记「COLD-N·本章未执」，且以「提过此笔之回执中章号最大的那一份」为准**。
+#   ★★取二组数（令§六①②）：**73—295 之间，二尺之限相异者 99 章**；
+#     ★★★**而执之判今日相异 0 章**——**只因今日无一份回执含否决记**；
+#     **一写否决记，本器即与六检分家**（其形正是 `硬闸.py` 档头所治之「散在四处，各记各的，遂成两本账」）。
+#   ★★★★**故本器不再自留一份**：**限与执俱转调 `开轮六检.py`**，取不着时方退回旧法。
+#   ★**其所认者（令§六④之一行）**：**限认三样**——档首之「限N」／通则 N+2／N+5 之上限；
+#     **执认两样**——回执中之「N章冷眼轮」六字与否决记「COLD-N·本章未执」，**否决在先，签核在後**。
+def _cold_six():
+    """取 开轮六检 之二函数（限与执）。取不着即返 None，由调用处退回旧法。"""
+    try:
+        import importlib.util as _iu
+        _p = os.path.join(REPO_ROOT, '工具', '开轮六检.py')
+        if not os.path.exists(_p):
+            return None
+        _s = _iu.spec_from_file_location('_klj', _p)
+        _m = _iu.module_from_spec(_s); _s.loader.exec_module(_m)
+        return _m
+    except Exception:
+        return None
+
+
 def _cold_done(n):
-    """冷眼轮完成判定：该章回执含"N章冷眼轮"即视为已签核。"""
+    """冷眼轮完成判定——★转调 开轮六检::_cold_done（认否决记，且以章号最大之回执为准）。"""
+    _m = _cold_six()
+    if _m is not None and hasattr(_m, '_cold_done'):
+        return _m._cold_done(n)
     for fp in glob.glob(os.path.join(REPO_ROOT,'设定','回执_*.md')):
         try: tx=open(fp,encoding='utf-8').read()
         except OSError: continue
@@ -2687,13 +2714,31 @@ def _cold_done(n):
     return False
 
 
+def _cold_due(n):
+    """冷眼轮之限——★转调 开轮六检::_cold_limit（档自书之限压倒通则）。"""
+    _m = _cold_six()
+    if _m is not None and hasattr(_m, '_cold_limit'):
+        try:
+            return _m._cold_limit(n)
+        except Exception:
+            pass
+    return n + 2
+
+
 def _auto_cold(files):
-    """冷轮自动派生：每章N之冷眼轮于第N+2章写完时到期，无需手工登记。"""
+    """冷轮自动派生：其限由 开轮六检::_cold_limit 定（档自书之限压倒通则 N+2）。"""
     if not files: return []
     cur=max(files)
-    return [{'id':'COLD-%d'%n,'类':'冷轮(自动)','事':'第%d章冷眼轮（镜头须避开该章热轮已开者）'%n,
-             '立账章':n,'到期章':n+2,'状态':'open'}
-            for n in sorted(files) if n>=73 and n+2<=cur and not _cold_done(n)]
+    out=[]
+    for n in sorted(files):
+        if n < 73 or _cold_done(n):
+            continue
+        due=_cold_due(n)
+        if due <= cur:
+            out.append({'id':'COLD-%d'%n,'类':'冷轮(自动)',
+                        '事':'第%d章冷眼轮（镜头须避开该章热轮已开者）'%n,
+                        '立账章':n,'到期章':due,'状态':'open'})
+    return out
 def _load_due():
     p=os.path.join(REPO_ROOT,'设定','到期账.json')
     try: return json.load(open(p,encoding='utf-8')).get('items',[])

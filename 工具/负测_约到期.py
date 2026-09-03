@@ -68,17 +68,47 @@ def 跑():
 
     # ⑤认账即销（写一行「约-NNN」进轮记，闸即放行）
     #   ★★★★而验其理之法：**把回话抽掉，须复欠；还回去，须复销**——二向俱验，缺一即半。
-    lj = os.path.join(ROOT, '版本', '第293章', '_轮记.md')
-    o = io.open(lj, encoding='utf-8').read()
-    _t('⑤认账即销（今293之轮记已回话）',
+    # ★★★★★2026-09-03·295第1轮所修（第二十八犯之形·同日第二回）：
+    #   ★原码只抽 293 之回话，**而其断言是「回话只在293」**——那是把断言钉在快照上；
+    #   ★★295亦在其到期之窗内（其窗係「第293、295章」），295之轮记一回话，此条当场判红；
+    #   ★★★**器一分没坏，坏的还是测所站的那一刻。**
+    #   ★★★★**其治**：**抽的不是某一章，是其窗内每一章**——逐章抽毕方验，验毕逐章还原。
+    #   ★而其判准（令§六④）：改後它还逮不逮得住它本来要逮的东西？
+    #     ——**逮得住**：窗内一处回话也没有时，此约须复欠；有一处回话，即须销。
+    _窗 = []
+    for _x in _m.扫():
+        if _x['号'] == '约-291.139':
+            _窗 = list(_x.get('窗') or [])
+            break
+    if not _窗:
+        _窗 = [293, 295]
+    # ★★而其所读者有三处，非一处（约到期.py:179—187）：**轮记／开镜卡／到期之章之回执**。
+    #   ★头一版之修只抽了轮记，遂又漏——**故此处逐处数它读哪几样**（令§六④）：
+    #   ①版本/第N章/_轮记.md ②版本/第N章/_开镜卡.md ③设定/回执_*第N章*.md。
+    import glob as _g
+    _档 = []
+    for _c in _窗:
+        for _p in (os.path.join(ROOT, '版本', '第%d章' % _c, '_轮记.md'),
+                   os.path.join(ROOT, '版本', '第%d章' % _c, '_开镜卡.md')):
+            if os.path.exists(_p):
+                _档.append((_p, io.open(_p, encoding='utf-8').read()))
+        for _p in _g.glob(os.path.join(ROOT, '设定', '回执_*第%d章*.md' % _c)):
+            _档.append((_p, io.open(_p, encoding='utf-8').read()))
+    _t('⑤之前置·其窗内三处（轮记／开镜卡／回执）有档可抽（窗＝%s，得%d档）'
+       % ('、'.join(str(c) for c in _窗), len(_档)), len(_档) >= 1, True)
+    _t('⑤认账即销（今其窗内已有一处回话）',
        any(x['号'] == '约-291.139' and not x['欠'] for x in _m.扫()), True)
     try:
-        io.open(lj, 'w', encoding='utf-8').write(o.replace('约-291.139', '约-XXX.XXX'))
-        _t('⑤之b★抽掉回话即复欠（此係本闸之本职）',
+        for _p, _o in _档:
+            io.open(_p, 'w', encoding='utf-8').write(_o.replace('约-291.139', '约-XXX.XXX'))
+        _t('⑤之b★窗内逐章抽掉回话即复欠（此係本闸之本职）',
            any(x['号'] == '约-291.139' and x['欠'] for x in _m.扫()), True)
     finally:
-        io.open(lj, 'w', encoding='utf-8').write(o)
+        for _p, _o in _档:
+            io.open(_p, 'w', encoding='utf-8').write(_o)
     _t('⑤之c 还原毕·复销', any(x['号'] == '约-291.139' and not x['欠'] for x in _m.扫()), True)
+    _t('⑤之d 还原毕·逐章与测前逐字相同',
+       all(io.open(_p, encoding='utf-8').read() == _o for _p, _o in _档), True)
 
     # ⑥自陈其限须在器上（令§六④）
     _t('⑥自陈其限·三样认不着', ('没有数的约' in _SRC) and ('跨线之约' in _SRC), True)

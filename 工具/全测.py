@@ -1083,7 +1083,9 @@ def chk_carry_gate():
     if bad or ok != tot:
         _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
         return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（同线新旧同判｜换线红率 51→31，非挖空）' % (ok, tot)
+    return True, ('%d/%d 全通（同线新旧第一路同判｜换线红率 51→31；'
+                  '2026-09-03并入第二节：轮记逐样落判者亦算过，转绿之旧章12皆有真声明）'
+                  % (ok, tot))
 
 
 def chk_cold_gate():

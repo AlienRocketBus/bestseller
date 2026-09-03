@@ -23,6 +23,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV = dict(os.environ, ZM_STREAM=os.environ.get('ZM_STREAM', 'streamA-cli'))
 
 
+
+def _测数(out, 兜底):
+    """★2026-09-03·295第4轮立：从负测自印之首行里取它自己那个「M/N 全通」。
+    ★★其立之由：三处 wrapper 把「3/3」「9/9」写死在码里，而 `负测_冷轮同判` 已扩至 7/7；
+    全测遂逐日印「3/3 全通」——**器没印的数，令§一②不许说**，而这一处正是全测自己在说。
+    ★★★故此後一律回印其自印之数；取不着方退回兜底，且兜底须带「★未取着」以示其疑。"""
+    m = re.search(r'(\d+/\d+)\s*全通', (out or '').split('\n')[0])
+    return m.group(1) if m else ('★未取着·' + 兜底)
+
 def run(desc, args, timeout=900):
     try:
         r = subprocess.run([sys.executable] + args, cwd=ROOT, env=ENV,
@@ -204,7 +213,7 @@ def chk_dup_gate():
         return False, out.strip().split('\n')[0]
     if '非陪跑' not in out:
         return False, '★陪跑之测'
-    return True, '9/9 全通'
+    return True, _测数(out, '9/9') + ' 全通'
 
 
 def chk_num_gate():
@@ -247,7 +256,7 @@ def chk_receipt_recon():
         return False, '运行失败'
     if '全通' not in out:
         return False, out.strip().split('\n')[0]
-    return True, '3/3 全通（含灌回旧错之验）'
+    return True, _测数(out, '3/3') + ' 全通（含灌回旧错之验）'
 
 
 def chk_fs_silence():
@@ -344,7 +353,7 @@ def chk_cold_agree():
         return False, '运行失败'
     if '全通' not in out:
         return False, out.strip().split('\n')[0]
-    return True, '3/3 全通（二器同用一处 _cold_done）'
+    return True, _测数(out, '3/3') + ' 全通（二器同用一处 _cold_done）'
 
 
 def chk_reader_nag():

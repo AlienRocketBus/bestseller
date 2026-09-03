@@ -1,0 +1,18 @@
+{
+ "号": "R0037",
+ "时": "2026-09-03 22:20",
+ "类": "文件",
+ "其由": "第298章封版之序·翻页八件套：canon事实库 open_brief 由298进位至299（for_ch／批次／接写自／位／须办／required_state_cards 五项俱覆写），并 state_canon 补沈鸢·298之即时状态；此为覆盖既有之设定档，故先存",
+ "所存": [
+  "设定/canon事实库.json"
+ ],
+ "件": [
+  {
+   "路": "设定/canon事实库.json",
+   "sha256": "a6c5684198ab0406a9ba2859bf444ffdd52968ccecb17a24092a31d313d1bc0e",
+   "字节": 1302659
+  }
+ ],
+ "HEAD": "01be36a4fd47bec29c07e9bdace49c7a27f160bf",
+ "枝": "claude/the-novel-review-4dtuit"
+}

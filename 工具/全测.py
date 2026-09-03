@@ -390,6 +390,19 @@ def chk_object_roll():
         return False, '★陪跑之测'
     return True, _测数(out, '7/7') + ' 全通'
 
+def chk_reread_dup():
+    """连读客·问五（逐字重出）负测（2026-09-03·296第11轮立·见 工具/负测_连读重出.py）。
+    ★其立之由：296第10轮手打一条 grep 量出 294→296 有19/138拍含≥10字逐字重出，
+      ★★而同日 `看官.py --连读 292 296` 四问俱绿——**本书唯一一只跨章之眼对此是瞎的**；
+    ★★★§六④：31对相邻同线之章，中位2.1%｜顶13.8%（294→296）；故6%⚠、10%⛔。"""
+    out = run('负测·连读重出', ['工具/负测_连读重出.py'], timeout=1200)
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[-1]
+    return True, _测数(out, '8/8') + ' 全通（旧式问三对292—296一无所报）'
+
+
 def chk_price_check():
     """立价查 负测（2026-09-03·296第9轮立·见 工具/负测_立价查.py）。
     ★其立之由：`立价查.py` 自292第13轮立起，全书无一条负测证明它红得起来
@@ -1938,6 +1951,7 @@ def main():
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('负测·器物点名', chk_object_roll))
         items.append(('负测·立价查', chk_price_check))
+        items.append(('负测·连读重出', chk_reread_dup))
         items.append(('负测·空头签', chk_blank_sign))
         items.append(('空头签', chk_blank_sign_live))
         items.append(('第零轮', chk_round_zero))

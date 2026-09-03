@@ -173,6 +173,22 @@ def chk_open_six():
     return False, '｜'.join(_m)
 
 
+def chk_nomination_ledger():
+    """小说家提名账 负测（2026-09-03立·298第12轮·见 工具/负测_提名账.py）。
+    ★其立之由：小说家席在第298章连提同一对拍四回，而看官账所记者是拍号，
+    ★★拍号每削一刀就漂一格——四条记的是同两拍，四条却无一条对得上另一条，
+    ★★★故那四回提名一回也没被看见，而第12轮重判判它该删。
+    ★★★★而此测须在旧式（认号）下认 0 回方算数（令§六③·回灌验），否则它是陪跑。"""
+    out = run('负测·提名账', ['工具/负测_提名账.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    if '非陪跑' not in out:
+        return False, '★此测在旧式下亦认得出，是陪跑之测'
+    return True, out.strip().split('\n')[0].replace('✓ ', '')
+
+
 def chk_kanguan_hand():
     """看官·「手上之事」闸 负测（2026-09-01立·见 工具/负测_看官手闸.py）。
     ★其立之由：生客问一报第287章「拍25—49连25拍无一手上之事」，
@@ -1939,6 +1955,7 @@ def main():
         items.append(('负测·可逆册', chk_reversible_neg))
         items.append(('负测·阅读器催', chk_reader_nag))
         items.append(('负测·看官手闸', chk_kanguan_hand))
+        items.append(('负测·提名账', chk_nomination_ledger))
         items.append(('负测·硬闸', chk_hard_gate))
         items.append(('负测·叠词闸', chk_dup_gate))
         items.append(('数闸', chk_num_gate))

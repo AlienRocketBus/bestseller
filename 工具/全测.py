@@ -344,6 +344,22 @@ def chk_big_questions():
                   % (n, '、'.join('%s缺%s章' % (a, c) for a, b, c in 首)))
 
 
+
+def chk_object_roll():
+    """器物点名 负测（2026-09-03立·见 工具/负测_器物点名.py）。
+    ★其立之由：令§三③写死「器物须有来去，入用出缺一即伤」并指名归第6轮，
+      ★★而 `一坐.py::逐轮之器` 第6轮空着——一条有主人的法，主人手上没有尺。
+    ★★★而立闸当日负测②即逮出闸自身一洞：`len(parts)<4: continue`
+      把「缺了一格的行」当成「没有这一行」，於是删掉一格「出」反倒全绿。"""
+    out = run('负测·器物点名', ['工具/负测_器物点名.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    if '非陪跑' not in out:
+        return False, '★陪跑之测'
+    return True, _测数(out, '7/7') + ' 全通'
+
 def chk_cold_agree():
     """一坐与开轮六检对冷轮须同判 负测（2026-09-01立·见 工具/负测_冷轮同判.py）。
     ★其立之由：同一 HEAD 上一坐印「COLD-284／285 未执」而六检印「⑥ 零」——二器相反 ⛔。
@@ -1872,6 +1888,7 @@ def main():
         items.append(('负测·大问挂账', chk_bigq_neg))
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
+        items.append(('负测·器物点名', chk_object_roll))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

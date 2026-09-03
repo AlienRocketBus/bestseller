@@ -29,8 +29,12 @@ def _测数(out, 兜底):
     ★★其立之由：三处 wrapper 把「3/3」「9/9」写死在码里，而 `负测_冷轮同判` 已扩至 7/7；
     全测遂逐日印「3/3 全通」——**器没印的数，令§一②不许说**，而这一处正是全测自己在说。
     ★★★故此後一律回印其自印之数；取不着方退回兜底，且兜底须带「★未取着」以示其疑。"""
-    m = re.search(r'(\d+/\d+)\s*全通', (out or '').split('\n')[0])
-    return m.group(1) if m else ('★未取着·' + 兜底)
+    ls = [x for x in (out or '').split('\n') if x.strip()]
+    for line in ([ls[0]] if ls else []) + (ls[-1:] if ls else []) + ls:
+        m = re.search(r'(\d+/\d+)\s*全通', line)
+        if m:
+            return m.group(1)
+    return '★未取着·' + 兜底
 
 def run(desc, args, timeout=900):
     try:
@@ -385,6 +389,24 @@ def chk_object_roll():
     if '非陪跑' not in out:
         return False, '★陪跑之测'
     return True, _测数(out, '7/7') + ' 全通'
+
+def chk_price_check():
+    """立价查 负测（2026-09-03·296第9轮立·见 工具/负测_立价查.py）。
+    ★其立之由：`立价查.py` 自292第13轮立起，全书无一条负测证明它红得起来
+      （对位闸印「赤手无负测者 21 项」，此器即其一）；
+    ★★而296第9轮当场见其缺口：旧式四条认不着「只要」，
+      故它在296之第4、7、9三轮连印「✓全章无立价之句」，
+      **而本章之价正写在「而它管用只在一样上：只要它今天这么摆着」**。
+    ★★★数其群：条件句全集688处，旧式认544处，**144处（21%）此器一眼看不见**。"""
+    out = run('负测·立价查', ['工具/负测_立价查.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[-1]
+    if '非陪跑' not in out:
+        return False, '★陪跑之测'
+    return True, _测数(out, '7/7') + ' 全通（旧式回灌真器印「全章无立价之句」）'
+
 
 def chk_cold_agree():
     """一坐与开轮六检对冷轮须同判 负测（2026-09-01立·见 工具/负测_冷轮同判.py）。
@@ -1915,6 +1937,7 @@ def main():
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('负测·器物点名', chk_object_roll))
+        items.append(('负测·立价查', chk_price_check))
         items.append(('负测·空头签', chk_blank_sign))
         items.append(('空头签', chk_blank_sign_live))
         items.append(('第零轮', chk_round_zero))

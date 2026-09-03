@@ -345,6 +345,32 @@ def chk_big_questions():
 
 
 
+
+def chk_blank_sign():
+    """空头签 负测（2026-09-03立·见 工具/负测_空头签.py）。
+    ★其立之由：295之回执以本章之号写了签核之六字，而 `_cold_done` 之 N 是被执者之号；
+      ★★於是296起手时一坐印「COLD-295 限299 已执」——一笔方才立的冷轮，被一张空头签当场销掉。
+    ★★★而立闸当日数其群（令§六②）当场驳掉头一版判据：那六字在本书有两代写法，
+      75—278 以本章之号写它（195份），281起以被执者之号写它——故此闸只判新式那一代。"""
+    out = run('负测·空头签', ['工具/负测_空头签.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[0]
+    if '非陪跑' not in out:
+        return False, '★陪跑之测'
+    return True, _测数(out, '6/6') + ' 全通'
+
+
+def chk_blank_sign_live():
+    """空头签·实盘（每回直扫全书回执，不只跑负测）。"""
+    out = run('空头签', ['工具/空头签.py'])
+    if out is None:
+        return False, '运行失败'
+    if '零处' not in out:
+        return False, '★有空头签，须逐份改其号'
+    return True, '零处（新式那一代无一份签自己那一笔）'
+
 def chk_object_roll():
     """器物点名 负测（2026-09-03立·见 工具/负测_器物点名.py）。
     ★其立之由：令§三③写死「器物须有来去，入用出缺一即伤」并指名归第6轮，
@@ -1889,6 +1915,8 @@ def main():
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('负测·器物点名', chk_object_roll))
+        items.append(('负测·空头签', chk_blank_sign))
+        items.append(('空头签', chk_blank_sign_live))
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))

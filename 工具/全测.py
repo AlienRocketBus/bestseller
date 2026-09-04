@@ -923,6 +923,15 @@ def chk_bigq_neg():
     return _简测('负测·大问挂账', '工具/负测_大问挂账.py')
 
 
+def chk_scenecut_neg():
+    """负测·场景切换闸（2026-09-04·300第5轮立·见 工具/负测_场景切换闸.py）。
+
+    ★其由：质量三闸①之c 之词表原有四样，而三百章里只响过三回，三回皆假；
+      真切换词「与此同时／同一时候」全书零处。今缩其词表至二样，并以本测钉死其判据。
+    """
+    return _简测('负测·场景切换闸', '工具/负测_场景切换闸.py')
+
+
 def chk_duiwei():
     """对位闸（八造·2026-09-03 立·见 工具/对位.py）——**所有的机制都得跑起来**（作者令）。
 
@@ -2030,6 +2039,7 @@ def main():
         items.append(('外声闸', chk_outside_voice))
         items.append(('大问表', chk_big_questions))
         items.append(('负测·大问挂账', chk_bigq_neg))
+        items.append(('负测·场景切换闸', chk_scenecut_neg))
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('负测·器物点名', chk_object_roll))

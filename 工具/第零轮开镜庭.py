@@ -196,6 +196,16 @@ def _品报(c):
                '（%s）' % '、'.join(str(x[0]) for x in 非常) if 非常 else ''))
 
 
+def _起草庭模():
+    """★取起草庭之四格模子，随卡一并立——**模子不在卡上，那一格就永远没人填**。"""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import 起草庭 as _q
+        return _q.模
+    except Exception:                                        # pragma: no cover
+        return '\n（⛔起草庭之模读不出，请跑 python3 工具/起草庭.py --模子 N 自取）\n'
+
+
 def make_card(c):
     """★立开镜卡（起草前之实产物）。"""
     d = os.path.join(ROOT, '版本', '第%d章' % c)
@@ -271,7 +281,16 @@ def make_card(c):
 
 ---
 **★★★★★而此卡须於起草之前填毕（七问）**；**★填毕即抄一行「本章之一事」入轮记之首。**
-''' % (c, DARK_EVERY, '；'.join('%s %s' % (n, m) for n, ok, m in rows if m), _品报(c))
+
+---
+
+# ★★★★★起草庭四格（2026-09-04·作者亲令所立·其器 `工具/起草庭.py`）
+
+★**七问问的是「这一章合不合规」；以下四格只问一样：这一章凭什么好看。**
+★★**其红在哪一行**：**开镜卡 102 份**——写了「五钩」者 **0 份**｜「新问」**0 份**｜「弃卷／合上书／翻下一页」**0 份**；
+一事之另二候选 **3 份**（其余 99 份只写一个一事，**从来没有比过**）；
+「最神一句」轮记 **87 份**（第13轮才问）而开镜卡 **0 份**——**书里最好的那几句，一句也不是先立志要写、而後挣来的。**
+%s''' % (c, DARK_EVERY, '；'.join('%s %s' % (n, m) for n, ok, m in rows if m), _品报(c), _起草庭模())
     open(p, 'w', encoding='utf-8').write(tmpl)
     print('★开镜卡已立：%s' % p)
     print('★★而其须於起草之前填毕（六问）。')
@@ -312,6 +331,27 @@ def _check7(c):
     return True, '✓问七：大审与看官账俱在卡上'
 
 
+def _check_draft_court(c):
+    """★八·起草庭四格（2026-09-04·作者亲令）——其器在 工具/起草庭.py，此处只取其判。
+    ★★它认哪几样：甲三拟／乙预五钩／丙一句之券／丁预弃卷点，**四格俱须落字**；
+      ★★★它认不着的：那三拟是不是真的三条路、那一句券好不好——**只有写的人判得了**。"""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import 起草庭 as _qcz
+    except Exception as e:                                   # pragma: no cover
+        return [('八·起草庭四格', False, '⛔起草庭之器读不出：%s' % e)]
+    p = os.path.join(ROOT, '版本', '第%d章' % c, '_开镜卡.md')
+    if not os.path.exists(p):
+        return [('八·起草庭四格（凭什么好看）', False, '⛔开镜卡不在，四格无从填')]
+    t = open(p, encoding='utf-8', errors='replace').read()
+    坏 = [(n, m) for n, f in _qcz.四格 for ok, m in [f(t)] if not ok]
+    if 坏:
+        return [('八·起草庭四格（凭什么好看）', False,
+                 '⛔%d 格未填：%s（模子：python3 工具/起草庭.py --模子 %d）'
+                 % (len(坏), '、'.join(n for n, _ in 坏), c))]
+    return [('八·起草庭四格（凭什么好看）', True, '✓四格俱已落字（其好坏不由机器判）')]
+
+
 def run(c, quiet=False):
     rows = []
     rows += check0(c)
@@ -322,6 +362,11 @@ def run(c, quiet=False):
     # ★2026-09-02 补·问七：大审与看官账须随卡带着（令§十一之实）
     _ok7, _m7 = _check7(c)
     rows.append(('七·大审与看官账随卡带着', _ok7, _m7))
+    # ★★★★★2026-09-04·作者亲令：起草庭四格（本庭问「合不合规」，起草庭问「凭什么好看」）
+    #   ★其红在哪一行：开镜卡 102 份，写了「五钩」者 0 份｜「新问」0 份｜「弃卷」0 份；
+    #     一事之另二候选只 3 份；「最神一句」轮记 87 份而卡上 0 份。
+    #   ★★故本庭放行的那一张卡，从来没有一格在问「这一章凭什么好看」。
+    rows += _check_draft_court(c)
     bad = sum(1 for _, ok, _ in rows if not ok)
     if quiet:
         print('第零轮通过' if bad == 0 else

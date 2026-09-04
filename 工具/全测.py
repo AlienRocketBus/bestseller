@@ -484,6 +484,23 @@ def chk_reread_dup():
     return True, _测数(out, '8/8') + ' 全通（旧式问三对292—296一无所报）'
 
 
+def chk_draft_court():
+    """起草庭 负测（2026-09-04·作者亲令所立·见 工具/起草庭.py）。
+    ★其立之由（上磁盘核·两组数）：**开镜卡 102 份**——写了「五钩」者 0 份｜「新问」0 份｜
+      「弃卷／合上书／翻下一页」0 份｜一事之另二候选 3 份（其余 99 份只写一个一事，从来没有比过）；
+      ★★而「最神一句」轮记 87 份（第13轮才问），**开镜卡 0 份**——
+      **书里最好的那几句，一句也不是先立志要写、而後挣来的。**
+    ★★★故十三轮管的是「写完之後怎么改到最好」，而「怎么想才起草得出最好的那一章」，
+      **全书一件器也没有**。★★★★本庭补的正是那一件。
+    ★而其非陪跑之凭：**拿 303 之现卡回灌，四格须皆报红**（负测断言②）。"""
+    out = run('负测·起草庭', ['工具/起草庭.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[-1]
+    return True, out.strip().split('\n')[-1].strip()
+
+
 def chk_due_states():
     """到期账词表 负测（2026-09-04·303第1轮立·见 工具/负测_到期账词表.py）。
     ★其立之由：`小说检察官.py::_CLEARED_STATES` 只认 done/closed/half/废弃/cold/冷藏/已清，
@@ -2146,6 +2163,7 @@ def main():
         items.append(('负测·拦停旗', chk_stop_flag))
         items.append(('负测·立价查', chk_price_check))
         items.append(('负测·到期账词表', chk_due_states))
+        items.append(('负测·起草庭', chk_draft_court))
         items.append(('负测·连读重出', chk_reread_dup))
         items.append(('负测·空头签', chk_blank_sign))
         items.append(('空头签', chk_blank_sign_live))

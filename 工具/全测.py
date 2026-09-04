@@ -484,6 +484,24 @@ def chk_reread_dup():
     return True, _测数(out, '8/8') + ' 全通（旧式问三对292—296一无所报）'
 
 
+def chk_due_states():
+    """到期账词表 负测（2026-09-04·303第1轮立·见 工具/负测_到期账词表.py）。
+    ★其立之由：`小说检察官.py::_CLEARED_STATES` 只认 done/closed/half/废弃/cold/冷藏/已清，
+      而账写的是「清」——故 301 封版那一坐清掉的三笔（PRES-297A／PRES-297B／PROM-295.83），
+      **在 303 之全书检里照旧被催作「逾期2章未清」，ERROR=3，封版即拦。**
+    ★★而这已是第二回：批123 之 closed 是头一回（220判账写 closed，闸不认，222报红）。
+    ★★★其群：全表266项，状态之全集只六样（done247/closed9/cold3/half1/open3/清3），
+      **「清」只三笔，而三笔同出於一坐**——一坐写下一个新词，闸就跟不上。"""
+    out = run('负测·到期账词表', ['工具/负测_到期账词表.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[-1]
+    if '非陪跑' not in out:
+        return False, '负测未证其非陪跑（旧表回灌须报红）'
+    return True, out.strip().split('\n')[-1] + '（旧表回灌那三笔皆判未清，故非陪跑）'
+
+
 def chk_price_check():
     """立价查 负测（2026-09-03·296第9轮立·见 工具/负测_立价查.py）。
     ★其立之由：`立价查.py` 自292第13轮立起，全书无一条负测证明它红得起来
@@ -2127,6 +2145,7 @@ def main():
         items.append(('器物册·逐章回灌', chk_object_roll_all))
         items.append(('负测·拦停旗', chk_stop_flag))
         items.append(('负测·立价查', chk_price_check))
+        items.append(('负测·到期账词表', chk_due_states))
         items.append(('负测·连读重出', chk_reread_dup))
         items.append(('负测·空头签', chk_blank_sign))
         items.append(('空头签', chk_blank_sign_live))

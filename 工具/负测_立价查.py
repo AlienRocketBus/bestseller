@@ -55,7 +55,8 @@ def 群():
 
 def 扫(text, forms):
     hits = []
-    for nm, rx, g in forms:
+    for _f in forms:
+        nm, rx, g = _f[0], _f[1], _f[2]
         for m in re.finditer(rx, text):
             hits.append((nm, m.group(0)))
     return hits
@@ -157,6 +158,57 @@ def main():
     # ⑩此改非放宽：新增之形与新增之字，逐样在本书成群
     chk('⑩新增二式在本书皆成群（了就 ≥100章｜只有一样 ≥10章）',
         g['了就'][1] >= 100 and g['只有一样'][1] >= 10)
+
+    # ────────────────────────────────────────────────────────────────
+    # ★★★★★2026-09-04·300第9轮补二式（多大就多大｜再X得Y）之验
+    #   ★其红在哪一行：300之价有五（其形係条件），而旧式一处也不认，器印「✓全章无立价之句」；
+    #   ★★即§一④之戒：闸报绿的时候，不许把那个绿当成「这一项没事」。
+    # ────────────────────────────────────────────────────────────────
+    def 跑式(n, forms):
+        import contextlib, io as _io
+        keep = LJ.FORMS
+        LJ.FORMS = forms
+        buf = _io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                LJ.查(n)
+        finally:
+            LJ.FORMS = keep
+        return buf.getvalue()
+
+    旧FORMS = [f for f in LJ.FORMS if f[0] not in ('多大就多大', '再X得Y')]
+    旧出 = 跑式(300, 旧FORMS)
+    今出 = 跑式(300, LJ.FORMS)
+    chk('⑪旧式回灌跑300：印「✓全章无立价之句」（此即当日之实）',
+        '全章无立价之句' in 旧出)
+    chk('⑪之b 今式跑300：逮着二处（她泼多大它就答多大｜再往外得撕）',
+        '多大就多大' in 今出 and '再X得Y' in 今出)
+    chk('⑪之c 而「再往外，得撕」之果须判「收」（其收在下一拍「撕下这一页」）',
+        '再X得Y' in 今出 and '收於拍' in 今出)
+
+    # ⑫其果之取须连着量词，不许只取主语（头一版取到「它」，实字0，当场丢掉）
+    import re as _r
+    m = _r.search(r'【多大就多大】.*?\n\s*果「([^」]+)」', 今出, _r.S)
+    chk('⑫「多大就多大」之果须係「答多大」，非「它」', bool(m) and m.group(1) == '答多大')
+
+    # ⑬其项之四元（每式自带其果之最短实字数）须真在用
+    chk('⑬FORMS 之「再X得Y」係四元，其末位为1（其果常只一二字）',
+        any(f[0] == '再X得Y' and len(f) > 3 and f[3] == 1 for f in LJ.FORMS))
+
+    # ⑭此改非放宽：二式逐样在本书成群，而所驳之一式（X，Y跟着Z）之噪已上磁盘核过
+    def 群式(pat):
+        import glob as _g
+        c = 0
+        for f in _g.glob('正文/*.md'):
+            s = io.open(f, encoding='utf-8').read().split('【本章亮点')[0]
+            if _r.search(pat, s):
+                c += 1
+        return c
+    n1 = 群式(r'(多大|多少|多深|多宽|多远|多长)[，,]')
+    n2 = 群式(r'再[^。；！？\n]{1,12}[，,]\s*(?:就)?得')
+    n3 = 群式(r'[，,]\s*[^。；！？\n]{1,12}?跟着')
+    chk('⑭二式在本书成群（多大之式 ≥5章｜再得之式 ≥5章），而「跟着」之式係噪（≥100章，故驳）',
+        n1 >= 5 and n2 >= 5 and n3 >= 100)
 
     print('  ── %d/%d %s ──' % (OK[0], OK[1], '全通' if OK[0]==OK[1] else '有红'))
     return 0 if OK[0] == OK[1] else 1

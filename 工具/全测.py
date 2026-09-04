@@ -1388,6 +1388,22 @@ def chk_repair_name():
     return m.group(3) == '全通', '%s/%s %s' % (m.group(1), m.group(2), m.group(3))
 
 
+
+def chk_adj_dup():
+    """★负测·邻拍重出（301第13轮立·同日与其器并立·令§六④）：
+    ★一句话拆开来摆在两拍上，读起来是两步；逐字一比，是一句。
+    ★★而此测另守一样：**器之限须写在器里**——它逮不着立它的那一处（公共串只5字），
+      而降槛之式已数其群而驳（近四十章 8 处→247 处）。"""
+    out = run('负测·邻拍重出', ['工具/负测_邻拍重出.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔有败)', out)
+    if not m:
+        return False, '取不着其数'
+    return m.group(3) == '全通', '%s/%s %s' % (m.group(1), m.group(2), m.group(3))
+
+
 def chk_dup_defs():
     """重名定义扫描。
     病灶实证：批113所加之 s_withlog／s_nolog／s_reopen 落在批114替换区之外而与新写者重名，
@@ -2043,6 +2059,7 @@ def main():
         items.append(('负测·棘轮预检', chk_ratchet_pre))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
+        items.append(('负测·邻拍重出', chk_adj_dup))
         items.append(('负测·棘轮v01', chk_ratchet_v01))
         items.append(('负测·冷轮否决记', chk_cold_veto))
         items.append(('负测·翻页备料查', chk_turnpage_obj))

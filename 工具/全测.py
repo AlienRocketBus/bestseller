@@ -422,6 +422,55 @@ def chk_object_roll():
         return False, '★陪跑之测'
     return True, _测数(out, '7/7') + ' 全通'
 
+def chk_object_roll_all():
+    """器物册·逐章回灌（2026-09-04立·299第6轮之坐所兑）。
+    ★其立之由（其红在哪一行，上磁盘核过）：**器物点名只在它自己那一章的第6轮跑一回，跑完再没有人跑它**；
+      ★★故凡第6轮之後的每一刀，都在册上留一道拍号错位，而没有一道有人看见；
+      ★★★2026-09-04 逐章回灌，**297之册当场红五格**（本子·出107｜笔·用107、出109｜指甲·用76、出78——
+        皆差一，其由是第6轮之後全章少了一拍而册一格也没跟着数），**而它自第7轮起一直绿到封版**。
+    ★★★★**一份只在立它那一天跑过一回的册，跟没有是一个样**——故今逐章跑，一章红即此项红。
+    ★其判据（令§六④）：**它认哪几样**——`版本/第*章/_器物.md` 之全部（今5份：295—299）；
+      **本书同类共几样**——已写299章，其中有册者5章，无册者294章（第6轮之器立於295，其前无册，不追）。"""
+    import glob as _g
+    ps = sorted(_g.glob(os.path.join(ROOT, '版本', '第*章', '_器物.md')))
+    if not ps:
+        return False, '★一份器物册也没有'
+    红 = []
+    for f in ps:
+        m = re.search(r'第(\d+)章', f)
+        if not m:
+            continue
+        n = int(m.group(1))
+        out = run('器物点名%d' % n, ['工具/器物点名.py', str(n)])
+        if out is None or out.startswith('__'):
+            return False, '第%d章 运行失败' % n
+        if '⛔' in out:
+            头 = [l.strip() for l in out.split('\n') if '⛔ ★' in l]
+            红.append('第%d章·%s' % (n, 头[0] if 头 else '未过'))
+    if 红:
+        return False, '★' + '｜'.join(红[:3])
+    return True, '%d 份册逐章跑过，皆绿' % len(ps)
+
+
+def chk_stop_flag():
+    """拦停旗自失其义 负测（2026-09-04立·见 工具/负测_拦停旗.py）。
+    ★其立之由（299第6轮亲犯）：`--存版 N` 不带说明，版落盘而说明为空；
+      ★★带着说明再存，空轮闸判「正文与末版逐字相同」→ 拦 → 落旗；
+      ★★★而销旗之路只有一条「一次成功的存版／补存」，那一条路正被空轮闸堵着——
+      **旗落下去就再也拿不掉，而它拦的是其後一切轮务**（第二十四犯之族）。
+    ★★★★故立「旗自失其义」之查，其条件写死三样（因是空轮闸｜说明报得出轮号｜账上有那一轮之真说明）；
+      **而棘轮回退／趋阈闸／硬项／闸八所落之旗，一面也销不掉**——那几样是「存坏了」，不是「存了两回」。"""
+    out = run('负测·拦停旗', ['工具/负测_拦停旗.py'])
+    if out is None or out.startswith('__'):
+        return False, '运行失败'
+    if '坏 0' not in out:
+        bad = [l.strip() for l in out.split('\n') if l.strip().startswith('✗')]
+        return False, bad[0] if bad else out.strip().split('\n')[-1]
+    if '非陪跑' not in out:
+        return False, '★陪跑之测'
+    return True, _测数(out, '19 项') + ' 全通（旧式「只问旗在不在」在①之下照旧拒，故非陪跑）'
+
+
 def chk_reread_dup():
     """连读客·问五（逐字重出）负测（2026-09-03·296第11轮立·见 工具/负测_连读重出.py）。
     ★其立之由：296第10轮手打一条 grep 量出 294→296 有19/138拍含≥10字逐字重出，
@@ -1984,6 +2033,8 @@ def main():
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('负测·器物点名', chk_object_roll))
+        items.append(('器物册·逐章回灌', chk_object_roll_all))
+        items.append(('负测·拦停旗', chk_stop_flag))
         items.append(('负测·立价查', chk_price_check))
         items.append(('负测·连读重出', chk_reread_dup))
         items.append(('负测·空头签', chk_blank_sign))

@@ -154,18 +154,54 @@ def 跑():
                           '册的另一半（只有人读得懂的那一半）一格也没验着')
             elif rc == 0:
                 坏.append('★⑫册之注对不上而它没把册判红（rc=0）')
+        # ⑬⑭⑮【303第6轮立·别名之格】一章之内两件同名之物。
+        #   ★其红在哪一行：303手上过两根针（钱满那根／老头那根铜听针），
+        #     二者之入用出各不相同，而白文里两根都写作「针」；
+        #     ★★以本名验则逐格皆判「那一拍无其名」，以「针」为名则二行撞号——**册无法写实**。
+        #   ★★★故补一格 `本名（别名）`：验其名用别名，印其名用本名。
+        _别 = re.sub(r'^(\S+?)｜', r'\1（笔）｜', 原, count=1)
+        if _别 != 原:
+            rc, o = _跑(m, _别)
+            # 别名係「笔」而其三格之拍未必有「笔」字，故此处只验「它认得别名这一格」，
+            # 即：其红之文须引别名，不许再引本名。
+            if rc != 0 and '没有「笔」三字' not in o and '拍号是抄的' in o:
+                坏.append('★⑬别名之格未被认：其红仍以本名去验，而别名一格写着「笔」')
+        # ⑭旧式回灌：以本名验之旧法，跑 303 之册须逐格报红（故此改非陪跑）
+        _P303 = os.path.join(ROOT, '版本', '第303章', '_器物.md')
+        if os.path.exists(_P303):
+            _册 = io.open(_P303, encoding='utf-8').read()
+            _旧 = re.sub(r'^([^｜\n#★]+?)（[^）]+）｜', r'\1｜', _册, flags=re.M)
+            if _旧 == _册:
+                坏.append('★⑭303之册里找不着别名之格——本测所依之料不在')
+            else:
+                import subprocess
+                _bak = _册
+                try:
+                    io.open(_P303, 'w', encoding='utf-8').write(_旧)
+                    r = subprocess.run([sys.executable,
+                                        os.path.join(ROOT, '工具', '器物点名.py'), '303'],
+                                       capture_output=True, text=True)
+                    if '无其名' not in r.stdout:
+                        坏.append('★⑭旧式（无别名）回灌303之册而它没红——故此改係陪跑')
+                finally:
+                    io.open(_P303, 'w', encoding='utf-8').write(_bak)
+                r2 = subprocess.run([sys.executable,
+                                     os.path.join(ROOT, '工具', '器物点名.py'), '303'],
+                                    capture_output=True, text=True)
+                if '3 件俱全' not in r2.stdout:
+                    坏.append('★⑮新式跑303之册而它未判「俱全」')
     finally:
         io.open(P, 'w', encoding='utf-8').write(原)
     # ★还原毕须与测前逐字相同（第二十八犯之处方）
     if io.open(P, encoding='utf-8').read() != 原:
         坏.append('★⑦还原毕之册与测前不同——本测改坏了它所读的盘')
     if 坏:
-        print('✗ 负测·器物点名 %d/12 ⛔未过' % (12 - len(坏)))
+        print('✗ 负测·器物点名 %d/15 ⛔未过' % (15 - len(坏)))
         for x in 坏:
             print('   ⛔ ' + x)
         return 1
-    print('✓ 负测·器物点名 12/12 全通（②③④三条在旧式「只数行数」之下俱过；'
-          '⑧在旧式「不验序」之下亦过——故本测非陪跑）')
+    print('✓ 负测·器物点名 15/15 全通（②③④三条在旧式「只数行数」之下俱过；'
+          '⑧在旧式「不验序」之下亦过；⑭以旧式（无别名）回灌303之册逐格报红——故本测非陪跑）')
     return 0
 
 

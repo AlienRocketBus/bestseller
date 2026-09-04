@@ -923,6 +923,28 @@ def chk_bigq_neg():
     return _简测('负测·大问挂账', '工具/负测_大问挂账.py')
 
 
+def chk_two_ledger():
+    """两册对限（2026-09-04·300第7轮立·见 工具/两册对限.py）。
+
+    ★其由：一笔改了限而另一册没跟着改——刘二之限由300改301，同笔改了四处档，
+      而 到期账.json 照旧写着300，三坐无人看见（欠-297A之形：令与闸各读一册）。
+    """
+    out = run('两册对限', ['工具/两册对限.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'两册认得上者 (\d+) 对', out or '')
+    bad = _r.search(r'⛔ 两册不合 (\d+) 笔', out or '')
+    if bad:
+        return False, '⛔两册不合 %s 笔（一笔改了限而另一册没跟着改）' % bad.group(1)
+    return True, '两册认得上者 %s 对，逐笔同限（★其余只在一册上者本器不说）' % (m.group(1) if m else '?')
+
+
+def chk_two_ledger_neg():
+    """负测·两册对限（见 工具/负测_两册对限.py）。"""
+    return _简测('负测·两册对限', '工具/负测_两册对限.py')
+
+
 def chk_scenecut_neg():
     """负测·场景切换闸（2026-09-04·300第5轮立·见 工具/负测_场景切换闸.py）。
 
@@ -2040,6 +2062,8 @@ def main():
         items.append(('大问表', chk_big_questions))
         items.append(('负测·大问挂账', chk_bigq_neg))
         items.append(('负测·场景切换闸', chk_scenecut_neg))
+        items.append(('两册对限', chk_two_ledger))
+        items.append(('负测·两册对限', chk_two_ledger_neg))
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('负测·器物点名', chk_object_roll))

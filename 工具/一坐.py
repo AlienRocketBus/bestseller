@@ -371,6 +371,20 @@ def main():
                      capture_output=True, text=True, timeout=90)
         _m = re.search(r'逾上限者 (\d+) 样', _r.stdout or '')
         if _m and int(_m.group(1)):
+            # ★★★★★2026-09-04·作者第二令：起草账焊在起手
+            #   ★其由：一道闸只答得出「这一次填了没有」；**认不认真，只有事後结算才看得出来**；
+            #   ★★而其要害在累积——**一章敷衍看不出来，三章敷衍摆在一起，谁都看得出来。**
+            out.append('── 起草账（起草之日所拟的，与事後真跑出来的）──')
+            try:
+                import io as _io2, contextlib as _ctx2
+                import 起草庭 as _qcz2
+                _b = _io2.StringIO()
+                with _ctx2.redirect_stdout(_b):
+                    _qcz2.账(静=True)
+                for _l in _b.getvalue().strip().split('\n'):
+                    out.append('  ' + _l)
+            except Exception as _e:
+                out.append('  ⚠起草账读不出：%s' % _e)
             out.append('── 大问（读者还挂着的·可以欠，不可以不认）──')
             for _l in (_r.stdout or '').split('\n'):
                 if '⛔' in _l and '章' in _l:

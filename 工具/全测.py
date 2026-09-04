@@ -1356,6 +1356,15 @@ def chk_huixiu():
     for f in fs:
         n = re.search(r'第(\d+)章', os.path.basename(f))
         if not n:
+            # ★★★★★2026-09-04 治（301第12轮自逮）：**一份档名它读不懂的案，从前是 continue。**
+            #   ★其红在哪一行：本坐当日立「回修案_第288至299章_20260904_骨记残引.md」，
+            #     `第(\d+)章` 一处也匹配不着（288之後是「至」，不是「章」），
+            #     ★★而其果不是报错，是**这一件案从此不在册上，而末行照旧印「N件俱办毕」**；
+            #   ★★★即令§一④之形：**闸绿，而那一件根本不在它的判据里。**
+            #   ★★★★故改作报红，不作 continue：**读不懂的档名，是档名之伤，不是不存在。**
+            bad.append('%s：档名里读不出章号（式须作「回修案_第N章_日期…md」）——'
+                       '读不懂的案从前一律跳过，而末行照旧印「俱办毕」'
+                       % os.path.basename(f))
             continue
         out = run('回修', ['工具/回修.py', '--验案', n.group(1)])
         if out is None or '禁封版' in (out or '') or '未办毕' in (out or ''):
@@ -1363,6 +1372,20 @@ def chk_huixiu():
     if bad:
         return False, '回修案未办毕：%s（见 设定/10_回修令.md 第四节）' % '、'.join(bad)
     return True, '回修案 %d 件俱办毕' % len(fs)
+
+
+
+def chk_repair_name():
+    """★负测·回修案档名（301第12轮立·同日与其闸并立·令§六④）：
+    ★一份档名读不出章号的案，从前在回修案检里是 continue——**它不在册上，而末行照旧印「俱办毕」。**"""
+    out = run('负测·回修案档名', ['工具/负测_回修案档名.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔有败)', out)
+    if not m:
+        return False, '取不着其数'
+    return m.group(3) == '全通', '%s/%s %s' % (m.group(1), m.group(2), m.group(3))
 
 
 def chk_dup_defs():
@@ -2019,6 +2042,7 @@ def main():
         items.append(('负测·未答闸', chk_unans_gate))
         items.append(('负测·棘轮预检', chk_ratchet_pre))
         items.append(('负测·亮点对表', chk_hl_table))
+        items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·棘轮v01', chk_ratchet_v01))
         items.append(('负测·冷轮否决记', chk_cold_veto))
         items.append(('负测·翻页备料查', chk_turnpage_obj))

@@ -130,12 +130,52 @@ def 三路(txt, n=None, 全书=None):
     return 约红, 引报, 数报
 
 
+
+def 旧版残引(n, txt):
+    """★★★★★2026-09-04 立（301第12轮·极限轮所逮）：**亮点段引了一句，而那一句是本章自己删掉的。**
+
+    ★其红在哪一行：301之骨记⑦引「搬过来还是那只手报的」（第8轮刀一所删）｜
+      ⑩引「答它要明天」（第9轮所删）｜其一处引「数第二遍跟数第一遍，用的是同一个指甲。」（第11轮所删）——
+      ★★三处逐处在删它那一轮之後又跑过三至四轮，而三路（引文／数／约数）一路也没看见。
+    ★★★其由：三路量的都是「亮点段与今日正文对不对得上」，
+      而此形是「亮点段与今日正文对不上，且对得上的是一份旧版」——**旧版从来不在它们的判据里。**
+    ★★★★其法（零猜测）：取亮点段里加重之串，凡今版正文里没有、而本章某一旧版正文里逐字有者，即红。
+    ★其判据无一处靠形近或转述：**同一章、同一串、逐字**。
+
+    ★★它认哪几样，本书同类共几样（令§六④）：**只认亮点段里 ** ** 之内、八字以上、今版正文所无之串**；
+      **本书同类**：以285至301十七章回灌，**十七章共 16 处**（288之7｜292之2｜294至299各1｜301之1）——
+      ★★成群而不噪（均每章约一处）；★★★而其反面之验：**同一份料若以「亮点段所无而正文所有」量之，
+      全书195章共1384处（均7.1处），那是骨记之转述，不是伤**——**故彼式驳，此式收。**
+    """
+    g = sorted(glob.glob(os.path.join(根, '版本', '第%d章' % n, 'v*.md')))
+    if len(g) < 2 or '【本章亮点】' not in txt:
+        return []
+    body = re.sub(r'\s', '', txt.split('【本章亮点】', 1)[0])
+    hl = txt.split('【本章亮点】', 1)[1]
+    旧 = []
+    for f in g:
+        try:
+            s = io.open(f, encoding='utf-8').read()
+        except OSError:
+            continue
+        旧.append(re.sub(r'\s', '', s.split('【本章亮点】')[0]))
+    out = []
+    for q in re.findall(r'\*\*([^*\n]{8,60})\*\*', hl):
+        q2 = re.sub(r'[★｜\s]', '', q)
+        if len(q2) < 8 or q2 in body:
+            continue
+        if any(q2 in o for o in 旧):
+            out.append(q2)
+    return list(dict.fromkeys(out))
+
+
 def 查(n, 路, 全书=None, 报=True, 详=False):
     txt = io.open(路, encoding='utf-8').read()
     约红, 引报, 数报 = 三路(txt, n, 全书 if 详 else None)
     N, M = 骨层数(txt)
     重 = 骨层重号(txt)
-    骨红 = (N is not None and M is not None and N != M) or bool(重)
+    残 = 旧版残引(n, txt)
+    骨红 = (N is not None and M is not None and N != M) or bool(重) or bool(残)
     if 报:
         if N is not None and M is not None and N != M:
             print('  ⛔ 第%d章 亮点段自书「其骨%d层」，而其下所列之层有 %d 条。' % (n, N, M))
@@ -144,6 +184,12 @@ def 查(n, 路, 全书=None, 报=True, 详=False):
             print('  ⛔ 第%d章 亮点段之层号撞了：%s（同一个号用了两回以上）。' % (n, '、'.join(重)))
             print('     ★2026-09-02·291第13轮所补：原本此处计目用 set()，重号去重之後恰好对得上，')
             print('       ★★於是「九目自书七层」这一形，从这道闸底下走了过去。')
+        if 残:
+            print('  ⛔ 第%d章 亮点段引了本章自己删掉的话 %d 处：' % (n, len(残)))
+            for q in 残:
+                print('        「%s」' % q)
+            print('     ★其串在本章某一旧版之正文里逐字有，而今版没有——'
+                  '即一刀落了而骨记没有同笔改。')
         if 约红:
             print('  ⛔ 第%d章 约数相犯 %d 处：%s' % (n, len(约红), '、'.join(约红)))
             print('     ★亮点段不许把正文给准了的数抹成约数。')

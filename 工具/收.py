@@ -185,8 +185,34 @@ def main():
     _立 = glob.glob('设定/冷轮_COLD%d_*.md' % n)
     print('    本章回执 %d 份｜销旧 %s｜立新 %s'
           % (len(_rc), '有' if _销 else '无', _立[0].split('/')[-1] if _立 else '⛔无'))
-    if _销 and not _立:
+    # ★★★★★2026-09-04 补一口（301封版之序自逮·令§六）：**销而不立未必是伤。**
+    #   ★其伤之真形在闸自己的注里：**「账上会红一个不存在的东西」**——
+    #     **其祸是 `_cold_limit(n)` 退回通则 N+2 而那一格无档。**
+    #   ★★故凡 N+2 那一格已由别章之冷轮占住者，本章不立即非漏立，是其位已满；
+    #     ★★★而其分之利在此（数其群·令§六②）：**史上三笔真犯（155、198、200）之 N+2 皆空**，
+    #     **而291（补立之後）与301之 N+2 各由 COLD-289、COLD-299 占住**——**一比即分得开。**
+    #   ★★★★而其口不许白开：**回执里须逐字写「销而不立」并说其由**，方许过。
+    _tt = '\n'.join(io.open(f, encoding='utf-8', errors='replace').read() for f in _rc)
+    _限 = {}
+    for _f in glob.glob('设定/冷轮_COLD*.md'):
+        _m = re.search(r'COLD(\d+)', _f)
+        if not _m:
+            continue
+        _h = io.open(_f, encoding='utf-8', errors='replace').readline()
+        _mm = re.search(r'限(\d+)', _h)
+        if _mm:
+            _限.setdefault(int(_mm.group(1)), []).append(int(_m.group(1)))
+    _位满 = bool(_限.get(n + 2))
+    if _销 and not _立 and _位满 and '销而不立' in _tt:
+        print('    ⚠销而不立，而其位已满：通则 N+2＝%d 一格由 COLD-%s 占住；'
+              '且回执逐字写了「销而不立」及其由——放行。'
+              % (n + 2, '、'.join(str(x) for x in _限[n + 2])))
+    elif _销 and not _立:
         print('【停】销旧而未立新——**账上会红一个不存在的东西**。')
+        if _位满:
+            print('　　　★而通则 N+2＝%d 一格其实已满（COLD-%s）——'
+                  '若本章确係「其位已满」，须在回执里逐字写「销而不立」并说其由。'
+                  % (n + 2, '、'.join(str(x) for x in _限[n + 2])))
         print('　　　须先立 设定/冷轮_COLD%d_於{限}补执.md，' % n)
         print('　　　且立之前先调近三笔冷轮之面各对过一遍（不撞方许立）。')
         return

@@ -55,8 +55,33 @@ chk('④回灌·自COLD-153以降，销而未立者须≥3笔（证其群成，�
     len(史) >= 3, True)
 chk('④之b 而291今已补立，故不在其中（若它还在，说明补立那一档没落盘）',
     291 in 史, False)
-chk('④之c 且其向只朝前——已封之史不再重封，故封版之序上零假红',
-    all(x < 291 for x in 史), True)
+# ★★★★★2026-09-04 改（301封版之序·令§五：报与场不合者以场为准，且当场正其报）：
+#   ★此条原作 all(x < 291)，其意是「291补立之後，其後之章无一销而不立」——
+#     ★★而301正是一笔真的「销而不立」（COLD-298／299／300 三笔已占302、303、304三格），
+#     **故其快照今日为假，而它所守的那一样并没有变。**
+#   ★★★故照其本意重述：**所守者是「零假红」，不是「零红」**——
+#     **凡销而不立而其通则 N+2 一格已由别章之冷轮占住者，即非漏立，是其位已满。**
+#   ★★★★而此分之利，逐笔上磁盘核过：
+#     **155、198、200 三笔（史上真犯）之 N+2 皆空｜291（补立之後）与301之 N+2 各由 COLD-289、COLD-299 占住。**
+_限 = {}
+for _f in glob.glob(os.path.join(_R, '设定', '冷轮_COLD*.md')):
+    _m = re.search(r'COLD(\d+)', os.path.basename(_f))
+    if not _m:
+        continue
+    _h = io.open(_f, encoding='utf-8', errors='replace').readline()
+    _mm = re.search(r'限(\d+)', _h)
+    if _mm:
+        _限.setdefault(int(_mm.group(1)), []).append(int(_m.group(1)))
+_真犯 = [x for x in 史 if not _限.get(x + 2)]
+chk('④之c 其向只朝前，且「位已满」者不算漏立——故封版之序上零假红',
+    all(x < 291 for x in _真犯), True)
+chk('④之d 而此分真分得开：301在史上而不在真犯之列（其N+2＝303由COLD-299占住）',
+    (301 in 史, 301 in _真犯), (True, False))
+chk('④之e 而史上三笔真犯之N+2皆空，一笔也没被这个口放走',
+    [x for x in (155, 198, 200) if x in 史 and x in _真犯], [155, 198, 200])
+chk('④之f 且其口不许白开：收.py 索回执里逐字写「销而不立」',
+    "'销而不立' in _tt" in io.open(
+        os.path.join(_D, '收.py'), encoding='utf-8').read(), True)
 
 # ── ⑤实跑：造一间沙盘，验其真停真过 ──
 tmp = tempfile.mkdtemp()

@@ -1583,7 +1583,18 @@ def chk_ratchet_pre():
     if 判 != '全通' or ok != tot:
         _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
         return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（与跑轮同源｜v14/v16 回灌逐版报红）' % (ok, tot)
+    # ★2026-09-05 加（丙㉑之治）：棘轮预检自身之自测亦须过——
+    # ★★其⑤钉住「台账之数与今日之尺不符者 31/193，故末版之数自档重算」，
+    # ★★★其⑥⑦钉住「拆章之豁免只发给真拆过的、且不吞真回退」。
+    out2 = run('棘轮预检·自测', ['工具/棘轮预检.py', '--自测'])
+    if out2 is None:
+        return False, '棘轮预检自测运行失败'
+    m2 = _r.search(r'自测 (\d+)/(\d+)', out2)
+    if not m2 or m2.group(1) != m2.group(2):
+        _b2 = [ln.strip() for ln in out2.splitlines() if '⛔' in ln]
+        return False, '棘轮预检自测未全过：' + ('；'.join(_b2[:3]) or (m2.group(0) if m2 else '未见其数'))
+    return True, ('%d/%d 全通（与跑轮同源｜v14/v16 回灌逐版报红）｜棘轮预检自测 %s'
+                  % (ok, tot, m2.group(0).replace('自测 ', '')))
 
 
 def chk_unans_gate():

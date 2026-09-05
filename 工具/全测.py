@@ -1292,6 +1292,22 @@ def chk_duty_num_neg():
     return m.group(3) == '全通', '必答表负测 %s/%s' % (m.group(1), m.group(2))
 
 
+def chk_vague_time_neg():
+    """★模糊时距负测（2026-09-05·机制总审·硬闸探伤审第1条·见 工具/负测_模糊时距.py）：
+    ★★其形：崩坏对照第121条自称「永禁词表（不知过了多久一类）已机化」，而永禁词表里一个时间词也没有——
+      `grep -l` 全书：不知过了多久 7 章／不知多久 7 章／过了很久 5 章，预检一个字不出。
+    ★取二组数（令§六①）：**组一·六形逐形认（①）**；**组二·半晌44章／良久6章／一晃19章三形不认（②）**。
+    ★★★其回灌（令§六③）：③以 HEAD 之预检回灌须无此项；④第1章须≥1处、第305章须0处。**报而不拦，旧章不追。**"""
+    out = run('负测·模糊时距', ['工具/负测_模糊时距.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    return m.group(3) == '全通', '模糊时距负测 %s/%s' % (m.group(1), m.group(2))
+
+
 def chk_threshold_gate():
     """★趋阈闸负测（2026-09-02·291第7轮所立·每次存版必跑）：
     ★★其形：**一个数差一点就够到一条有名之限，而最省的一步是补几个字把它顶过去**；
@@ -2249,6 +2265,7 @@ def main():
         items.append(('负测·趋阈闸', chk_threshold_gate))
         items.append(('负测·数句闸', chk_count_sentence_gate))
         items.append(('负测·必答表', chk_duty_num_neg))
+        items.append(('负测·模糊时距', chk_vague_time_neg))
         items.append(('负测·吞记闸', chk_swallowed_note_gate))
         items.append(('负测·封版档冷轮口', chk_seal_cold_slot))
         items.append(('负测·棘轮裁', chk_ratchet_verdict))

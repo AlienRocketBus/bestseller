@@ -391,6 +391,27 @@ def main():
                     out.append('  ' + _l.strip())
     except Exception:
         pass
+    # ★★★★★人账（2026-09-05·作者亲令「防剧情崩坏」所立）：**一个人可以不出场，不可以无声。**
+    #   ★其位与大问同轮（第12轮·翻案）＋每坐起手——**大问认的是「问」，人账认的是「人」**；
+    #   ★★其红之实：小周末见第12章·距293章｜陈队末见第9章·距296章，而大问表一个字也不说。
+    try:
+        import subprocess as _sp9
+        _r9 = _sp9.run(['python3', os.path.join(ROOT, '工具', '人账.py')],
+                       capture_output=True, text=True, timeout=90)
+        _bad = [l.strip() for l in (_r9.stdout or '').split('\n')
+                if '⛔' in l and ('逾限而无' in l or '逾了自己那个限' in l)]
+        _warn = [l.strip() for l in (_r9.stdout or '').split('\n')
+                 if '已挂账·限第' in l]
+        out.append('── 人账（一个人可以不出场，不可以无声）──')
+        if _bad:
+            for _l in _bad[:4]:
+                out.append('  ' + _l)
+        else:
+            out.append('  ✓逐人各有其账｜挂着的 %d 笔：%s'
+                       % (len(_warn), '｜'.join(x.split('｜')[0].replace('⚠ ', '')
+                                               for x in _warn[:3]) or '无'))
+    except Exception:
+        pass
     # ★而旧账须逐坐印在眼前，否则「不回头判红」就成了「不了了之」。
     try:
         import subprocess as _sp3

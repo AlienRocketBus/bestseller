@@ -344,6 +344,36 @@ def chk_outside_voice():
     return True, ('末尾连续无声 %d 章（限5）%s' % (z, 尾))
 
 
+def chk_person_ledger():
+    """人账闸（2026-09-05·作者亲令「防剧情崩坏」所立·见 工具/人账.py）——**一个人可以不出场，不可以无声。**
+    ★其红在哪一行（上磁盘核，非设想）：**小周 出场4章·末见第12章·距293章｜陈队 出场3章·末见第9章·距296章**；
+    ★★而 `大问表.py` 只认六笔手挂之问——**它认的是「问」，认不着「人」**，故这二人二百九十余章无声，一道闸也没响过。
+    ★★★其律与大问表同：**可以欠，不可以不认**；逾40章者须各有一笔挂账（其人／限第N章／其形写死）。
+    ★★★★而其限（§一⑤）：**只认名表九人**，书中无名之人本器一个字也不说。"""
+    out = run('人账闸', ['工具/人账.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    bad = _r.findall(r'⛔ ([^\n]+·[^\n]+)', out or '')
+    bad = [x for x in bad if '逾限而无' in x or '逾了自己那个限' in x]
+    if bad:
+        return False, '｜'.join(bad[:3])
+    m = _r.search(r'已挂账·限第(\d+)章', out or '')
+    return True, ('逐人各有其账' + ('｜已挂账者其限最近在第%s章' % m.group(1) if m else ''))
+
+
+def chk_person_ledger_neg():
+    """负测·人账闸——★其非陪跑之凭：**旧式（大问挂账）里一个字也没有「小周」「陈队」**。"""
+    out = run('负测·人账闸', ['工具/人账.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·人账闸 (\d+)/(\d+) (全通|有败)', out or '')
+    if not m:
+        return False, '未见自测之印'
+    return m.group(3) == '全通', '%s/%s' % (m.group(1), m.group(2))
+
+
 def chk_big_questions():
     """大问表（2026-09-01立·八造2026-09-03改·见 工具/大问表.py）——**可以欠，不可以不认**。
     ★其立之由：机器一处也没在问「读者还在等什么」——到期账258笔 open 0，
@@ -2169,6 +2199,8 @@ def main():
         items.append(('FS沉默闸', chk_fs_silence))
         items.append(('外声闸', chk_outside_voice))
         items.append(('大问表', chk_big_questions))
+        items.append(('人账闸', chk_person_ledger))
+        items.append(('负测·人账闸', chk_person_ledger_neg))
         items.append(('负测·大问挂账', chk_bigq_neg))
         items.append(('负测·场景切换闸', chk_scenecut_neg))
         items.append(('两册对限', chk_two_ledger))

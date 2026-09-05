@@ -89,6 +89,18 @@ def run():
     # ⑩说明随表·第3轮之说明里写着同指对怎么裁
     R.append(('⑩说明随表·第3轮说明含「同指对」与「同一物即真伤」', '同指对' in why14 and '同一物即真伤' in why14))
 
+    # ⑪回述词·旧式回灌：305 v13 含「前天」而旧式十样不认；新式认
+    _old2 = re.compile(r'[^。！？\n]{0,26}(想起|记得|那天|那一回|昨天|前几天|早上|进来的时候|前十|二十七年前)[^。！？\n]{0,26}')
+    old_hits = {m.group(1) for m in _old2.finditer(v13)}
+    new_hits, why2 = pl._回述项(v13)
+    R.append(('⑪回述词·v13 含「前天」：旧式不认（%s），新式认' % ('认' if '前天' in old_hits else '不认'),
+              '前天' not in old_hits and '前天' in new_hits and '前天' in v13))
+
+    # ⑫P36／P38 黑名单八词皆入式（这两天／前几天／这十来天／这几天｜那时候／那天／那一天／那会儿）
+    黑 = ['这两天', '前几天', '这十来天', '这几天', '那时候', '那天', '那一天', '那会儿']
+    got = [w for w in 黑 if w in pl._回述项('他说%s来过。' % w)[0]]
+    R.append(('⑫黑名单八词皆入第2轮之式（%d/8）' % len(got), len(got) == 8))
+
     bad = [x for x, o in R if not o]
     for x, o in R:
         print('   %s %s' % ('✓' if o else '✗', x))

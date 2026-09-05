@@ -87,12 +87,21 @@ def main():
         局 += 1
     局 += 1                                     # ★下一未写之章：其「下一章之锚」必未备
     局路 = os.path.join(ROOT, '版本', '第%d章' % 局)
+    局记 = os.path.join(局路, '_轮记.md')
     造 = not os.path.exists(局路)
+    # ★★★★★2026-09-05 治（305第1轮·开轮当场自逮）：★此测头一版之 finally 只在「目录係本测所造」
+    #   时才清扫；★★而 304 封版之序当日先立了 版本/第305章/_开镜卡.md，目录遂已在，
+    #   **造＝False，所写之 _轮记.md 一个字也没清掉**；★★★其果：**它随封版那一笔提交推上了 GitHub**，
+    #   而次日开轮，跑轮之「前轮所见」印的是「## 第10轮·负测所造」「## 第11轮·负测所造」——
+    #   **一份负测造的假轮记，混进了一章真的台账之前**。
+    #   ★★★★故改作「先记其旧貌，跑毕逐样还原」：**目录係本测所造则整个删；目录本已在则只删（或还原）本测所写那一件**
+    #   ——**一份测不许在仓库里留下一个字。**
+    旧记 = io.open(局记, encoding='utf-8').read() if os.path.exists(局记) else None
     真轮数0 = K._rounds
     try:
         if 造:
             os.makedirs(局路)
-        io.open(os.path.join(局路, '_轮记.md'), 'w', encoding='utf-8').write(
+        io.open(局记, 'w', encoding='utf-8').write(
             ''.join('## 第%d轮·负测所造\n\n' % i for i in range(1, 12)))
         K._rounds = lambda: 12                  # ★阈高於其轮数（11）＝轮未满，须放行
         放 = K.check7(局)[0][1]
@@ -102,12 +111,18 @@ def main():
         K._rounds = 真轮数0
         import shutil
         if 造 and os.path.isdir(局路):
-            shutil.rmtree(局路)
-        elif os.path.exists(os.path.join(局路, '_轮记.md')) and 造:
-            os.remove(os.path.join(局路, '_轮记.md'))
+            shutil.rmtree(局路)                 # ★本测所造之目录，整个删
+        elif 旧记 is None:
+            if os.path.exists(局记):
+                os.remove(局记)                 # ★本测所写而先前无此件，删之
+        else:
+            io.open(局记, 'w', encoding='utf-8').write(旧记)   # ★先前有此件，还原其旧貌
     chk('②之d 真器走一回（阈高一即放、阈平即咬·其局自造自灭，不钉任何一章）',
         (放, 咬) == (True, False))
-    chk('②之e 而其局跑毕即灭（不留一件文件在仓库里）', not os.path.exists(局路) or not 造)
+    chk('②之e 而其局跑毕即灭（不留一件文件在仓库里）',
+        (not os.path.exists(局路)) if 造 else
+        ((io.open(局记, encoding='utf-8').read() == 旧记) if 旧记 is not None
+         else (not os.path.exists(局记))))
 
     # ③新式未挖空：上之「咬」那一半即是——轮已满而锚未备者，新式照旧报⛔。
     chk('③新式仍咬：轮已满而锚未备者，报⛔（不是挖空闸，是挪回它该出声的那一刻）',

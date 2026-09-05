@@ -300,6 +300,27 @@ def chk_hard_gate():
     return True, out.strip().split('｜', 1)[0].replace('✓ 负测·硬闸 ', '')
 
 
+def chk_highlight_boundary():
+    """亮点界（2026-09-05立·见 工具/亮点界.py）。
+    ★其立之由：段三验席在 133／134 报三条「改了一半」，而根不在那三句——
+    ★★134 係 133 拆出，拆的时候正文分了、亮点段没有分：133 之亮点 6457 字里 2963 字讲的是 134 的正文。
+    ★★★於是 134 每治一处 133 的亮点就欠一处，是一台会持续产欠的机器；同类（施工表注明「N拆出」者）共 23 对。
+    ★★★★而先造的 `回修留痕`（比「删掉的字串还在不在」）在同一形上召回 0/9，已删——
+    　　　亮点段是**转述**不是复制，要比的是「这一句讲的是谁家的事」。"""
+    out = run('亮点界·自测', ['工具/亮点界.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    if '自测 10/10' not in out:
+        return False, out.strip().split('\n')[-1]
+    out2 = run('亮点界·全书', ['工具/亮点界.py'])
+    if out2 is None:
+        return False, '全书运行失败'
+    if '⛔' in out2:
+        return False, [x for x in out2.split('\n') if '⛔' in x][0].strip()
+    ln = [x for x in out2.split('\n') if '✓' in x]
+    return True, (ln[0].strip() if ln else '全书绿') + '｜自测 10/10（⑨旧式回灌拿盘上真章作夹具，非造句，故非陪跑）'
+
+
 def chk_dup_gate():
     """叠词粘连闸 负测（2026-09-01立·见 工具/负测_叠词闸.py）。
     ★其立之由：检察官那道叠词闸写作 r'(那个|…)\\1'——r-string 里是「反斜杠＋1」两个字面字符，
@@ -2441,6 +2462,7 @@ def main():
         items.append(('负测·三条带', chk_three_bands))
         items.append(('负测·硬闸', chk_hard_gate))
         items.append(('负测·叠词闸', chk_dup_gate))
+        items.append(('亮点界', chk_highlight_boundary))
         items.append(('数闸', chk_num_gate))
         items.append(('负测·回执对账', chk_receipt_recon))
         items.append(('FS沉默闸', chk_fs_silence))

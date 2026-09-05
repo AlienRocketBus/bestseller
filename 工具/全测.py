@@ -537,6 +537,23 @@ def chk_price_check():
     return True, _测数(out, '7/7') + ' 全通（旧式回灌真器印「全章无立价之句」）'
 
 
+def chk_open6_gate():
+    """开轮六检·check7 之阈 负测（2026-09-05·304第10轮立·清 DEBT-297E·见 工具/负测_开轮六检.py）。
+    ★其立之由：check7 之阈原写死作 10，而码注自陈「十轮已满」——係十轮制之遗；
+    ★★而本系统十三轮（跑轮.py::ROUNDS=13），**而锚之备係封版之事，封版在第13轮之後**；
+    ★★★故此拦在第10轮即出声，早了三轮，且它一出声便拦住往後每一轮之推
+      （297第10轮实逮，304第10轮再逮——同形第二次，故今结清）。
+    ★★★★而其治不是把 10 改写成 13，是去问跑轮它自己有几轮（_rounds）——一改全改。"""
+    out = run('负测·开轮六检', ['工具/负测_开轮六检.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, out.strip().split('\n')[-1]
+    if '非陪跑' not in out:
+        return False, '★陪跑之测'
+    return True, _测数(out, '8/8') + ' 全通（旧阈回灌304真报⛔，而满轮无锚者新阈照旧咬）'
+
+
 def chk_cold_agree():
     """一坐与开轮六检对冷轮须同判 负测（2026-09-01立·见 工具/负测_冷轮同判.py）。
     ★其立之由：同一 HEAD 上一坐印「COLD-284／285 未执」而六检印「⑥ 零」——二器相反 ⛔。
@@ -2162,6 +2179,7 @@ def main():
         items.append(('器物册·逐章回灌', chk_object_roll_all))
         items.append(('负测·拦停旗', chk_stop_flag))
         items.append(('负测·立价查', chk_price_check))
+        items.append(('负测·开轮六检', chk_open6_gate))
         items.append(('负测·到期账词表', chk_due_states))
         items.append(('负测·起草庭', chk_draft_court))
         items.append(('负测·连读重出', chk_reread_dup))

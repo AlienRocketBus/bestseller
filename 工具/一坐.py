@@ -437,6 +437,16 @@ def main():
         out.append('  ' + (_l11[-1] if _l11 else '（器未出声）'))
     except Exception:
         pass
+    # ★★★★★看官账（2026-09-05·机制总审·八路之数与册审第6条）：看官账律③「封那一章时全测据此拦」而全测无一处读其 open／限——今起手先印其数（报）。
+    try:
+        import subprocess as _sp12
+        _r12 = _sp12.run(['python3', os.path.join(ROOT, '工具', '看官.py'), '--欠'],
+                         capture_output=True, text=True, timeout=120)
+        _items = [l for l in (_r12.stdout or '').split('\n') if l.strip().startswith('·')]
+        out.append('── 看官账（open 之笔·报而不拦）──')
+        out.append('  未清 %d 笔（`python3 工具/看官.py --欠`）；★律③所言「封版时全测据此拦」今仍无器，其治见 机制总审 丙' % len(_items))
+    except Exception:
+        pass
     # ★而旧账须逐坐印在眼前，否则「不回头判红」就成了「不了了之」。
     try:
         import subprocess as _sp3

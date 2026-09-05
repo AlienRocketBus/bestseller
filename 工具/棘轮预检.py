@@ -139,6 +139,9 @@ def 跑(n, 报=True):
             return 0
         print('  历来最优：' + '｜'.join('%s %s' % (k, best[k]) for k in sorted(best)))
         print('  当前正文：' + '｜'.join('%s %s' % (k, soft[k]) for k in sorted(best)))
+        if soft.get('嗅') == 0:
+            # ★2026-09-05·机制总审（八路·覆盖之缺审第11条·P35 嗅零复发3）：无一闸在嗅==0时出声；今此处出一声（报而不拦）。
+            print('  ⚠ 嗅零（P35·复发3）：本章嗅之密度为零——起草只顾一样感官；159/160/161 三章连零之旧病。')
         if not worse:
             print('  ✓ 此刻存版，棘轮不会报回退。')
         for k, a, b, d in worse:

@@ -306,6 +306,23 @@ def 自测():
 if __name__ == '__main__':
     if '--自测' in sys.argv:
         sys.exit(自测())
+    if '--点名' in sys.argv:
+        # ★2026-09-05·机制总审（八路·人与线审第8条）：名表係手抄，正文有名有对白者（马大夫57/61、老周261）不在表——今自扫表外之名。
+        表外 = {}
+        for n, p in 逐章():
+            b = _白文(p)
+            for m in re.finditer(r'(?<![一-龥])([一-龥]{2,3})(说|道)[：:，。]', b):
+                名 = m.group(1)
+                # ★只认「X说：」之式；X 不许含代词／副词／否定（他她我你这那没不又是一就都还也才和跟）
+                if 名 in NAMES or any(c in 名 for c in '他她我你这那没不又是一二三四五六七八九十就都还也才和跟人两几地声天第条了知只极慢缓低轻忽然却便'):
+                    continue
+                表外.setdefault(名, set()).add(n)
+        print('════ 人账·点名（表外有名有对白者）════')
+        for 名, ch in sorted(表外.items(), key=lambda x: -len(x[1])):
+            if len(ch) >= 2:
+                print('  %s：%d 章（%s）' % (名, len(ch), '、'.join(str(x) for x in sorted(ch)[:8])))
+        print('  ★表外之名须由人判：入表（给他一个下落）或判哑（别再给他名字与对白）。')
+        sys.exit(0)
     if '--扫' in sys.argv:
         见, 末章 = 扫()
         for k in NAMES:

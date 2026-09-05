@@ -181,10 +181,10 @@ def main():
     #     而销而未立新者 4 份（155、198、200、291）**——★**群成，非孤例，故机化。**
     #   ★而其向只朝前，不朝後：只查正在封版的这一章，**155/198/200 係已封之史，不再重封，无假红。**
     print('── ④之五 销立门（销旧须当场立新）──')
-    _rc = glob.glob('设定/回执_*第%d章*.md' % n)
+    _rc = glob.glob(os.path.join(ROOT, '设定', '回执_*第%d章*.md' % n))
     _销 = any(re.search(r'\d+章冷眼轮', io.open(f, encoding='utf-8', errors='replace').read())
               for f in _rc)
-    _立 = glob.glob('设定/冷轮_COLD%d_*.md' % n)
+    _立 = glob.glob(os.path.join(ROOT, '设定', '冷轮_COLD%d_*.md' % n))
     print('    本章回执 %d 份｜销旧 %s｜立新 %s'
           % (len(_rc), '有' if _销 else '无', _立[0].split('/')[-1] if _立 else '⛔无'))
     # ★★★★★2026-09-04 补一口（301封版之序自逮·令§六）：**销而不立未必是伤。**
@@ -196,7 +196,7 @@ def main():
     #   ★★★★而其口不许白开：**回执里须逐字写「销而不立」并说其由**，方许过。
     _tt = '\n'.join(io.open(f, encoding='utf-8', errors='replace').read() for f in _rc)
     _限 = {}
-    for _f in glob.glob('设定/冷轮_COLD*.md'):
+    for _f in glob.glob(os.path.join(ROOT, '设定', '冷轮_COLD*.md')):
         _m = re.search(r'COLD(\d+)', _f)
         if not _m:
             continue

@@ -3977,7 +3977,9 @@ def round11_audit(n):
     trio = [('P04越权', ('越权', '视角', 'P04')), ('P07时序自破', ('时序', '日历', 'P07')),
             ('P05复读', ('复读', '重复', '近距', 'P05'))]
     for nm, keys in trio:
-        got = any(k in lj for k in keys)
+        # ★2026-09-05·机制总审（八路·覆盖之缺审第4条）：旧式认「时序／越权／复读」之字——「时序」係第7轮之庭名，151份轮记151份全过，自立至今从未红。
+        #   今自306起须见病号之码（P04／P07／P05）方算专查过；旧章仍照旧式。
+        got = (keys[-1] in lj) if int(n) >= 306 else any(k in lj for k in keys)
         out.append('   %s %s' % ('✓' if got else '⛔', nm))
         if not got:
             hard.append('前三大病号之「%s」全十轮未见专查' % nm)

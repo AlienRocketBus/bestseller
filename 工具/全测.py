@@ -1143,6 +1143,9 @@ def chk_two_ledger():
     bad = _r.search(r'⛔ 两册不合 (\d+) 笔', out or '')
     if bad:
         return False, '⛔两册不合 %s 笔（一笔改了限而另一册没跟着改）' % bad.group(1)
+    if m and m.group(1) == '0':
+        # ★2026-09-05·机制总审（八路·陪跑闸审第4条）：认得上者 0 对时其绿係「所守为空集」——不红（两册合法不重叠亦然），但须说出来。
+        return True, '两册认得上者 0 对——★所守为空集，此绿只及於「不相犯」，不及於「两册全对上」'
     return True, '两册认得上者 %s 对，逐笔同限（★其余只在一册上者本器不说）' % (m.group(1) if m else '?')
 
 

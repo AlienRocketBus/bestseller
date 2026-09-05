@@ -317,8 +317,14 @@ def chk_highlight_boundary():
         return False, '全书运行失败'
     if '⛔' in out2:
         return False, [x for x in out2.split('\n') if '⛔' in x][0].strip()
+    neg = run('负测·亮点界', ['工具/负测_亮点界.py'])
+    if neg is None or '全通' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
     ln = [x for x in out2.split('\n') if '✓' in x]
-    return True, (ln[0].strip() if ln else '全书绿') + '｜自测 10/10（⑨旧式回灌拿盘上真章作夹具，非造句，故非陪跑）'
+    return True, ((ln[0].strip() if ln else '全书绿')
+                  + '｜自测 10/10｜负测_亮点界 6/6 全通'
+                  + '（①拿 fe37e08f^ 之 133／134 治前原物回灌须报红；'
+                  + '②八字窗逮 80 句 2365 字而「整句逐字相同」只逮 42 句 1236 字，故非陪跑）')
 
 
 def chk_breath_day():
@@ -331,14 +337,19 @@ def chk_breath_day():
     out = run('息日链·自测', ['工具/息日链.py', '--自测'])
     if out is None:
         return False, '运行失败'
-    if '自测 5/5' not in out:
+    if '自测 7/7' not in out:
         return False, [x.strip() for x in out.split('\n') if '⛔' in x][:1] or '未见其数'
     out2 = run('息日链·全书', ['工具/息日链.py'])
     if out2 is None:
         return False, '全书运行失败'
     if '⛔' in out2:
         return False, [x.strip() for x in out2.split('\n') if '⛔' in x][0]
-    return True, '全书息账之日逐章接得上｜自测 5/5（④拿 114 之真案回灌须报红，故非陪跑）'
+    neg = run('负测·息日链', ['工具/负测_息日链.py'])
+    if neg is None or '全通' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
+    return True, ('全书息账之日逐章接得上（正文 15 章、施工表锁定行 8 章，两边同验）'
+                  '｜自测 7/7｜负测_息日链 7/7 全通'
+                  '（①114 之真案回灌报红；②施工表八行退回治前之数逐行逮出；③旧式对同一份原物零报）')
 
 
 def chk_dup_gate():

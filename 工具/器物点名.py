@@ -102,11 +102,91 @@ def 读册(n):
             m = re.match(r'(入|用|出)\s*=\s*(\d+)', x)
             if m:
                 d[m.group(1)] = int(m.group(2))
+            # ★2026-09-05·机制总审丙①（303铜听针换主、通读段一十四处器物之账之教）：可选一格「主=谁」——这件东西是谁的。
+            m2 = re.match(r'主\s*=\s*(.+)$', x)
+            if m2:
+                d['主'] = m2.group(1).strip()
         rows.append(d)
     return rows, p, 全文
 
 
+# ═══════ 跨章（2026-09-05·机制总审丙①）═══════
+# ★其红在哪一行：303把钱满祖传三寸七铜听针写成老头递的（回修R0060）；通读段一二十一崩里十四处係器物与日子之账
+#   （灯五处、骆驼、红柳、刀…）——皆「改一处而未回扫同一物在邻章的每一处」。
+# ★★而旧闸只验「那一拍有其名」，不问「谁的」，亦不问「上一同线章末了它在谁手上」。
+# ★★★它认哪几样：只认两份册（本章与上一同线章）里同名之器；三问：
+#   ①其主换了没有（两册皆写「主=」而不同 → ⛔）；②上章在手（有用无出）而本章册上无它、白文亦无其名 → ⚠；
+#   ③上章已出而本章又入，而本章册全文无一句它怎么回来的（借／拿／递／取／回／还／出／带）→ ⚠。
+#   ★只⛔第①问：其主是死账，换了就是换了；②③係提醒，逼这一章说一句话。
+def 线(body):
+    净 = len(re.sub(r'\s', '', body)) or 1
+    return '暗' if body.count('我') / 净 * 1000 < 3 else '主'
+
+
+def 上一同线章(n):
+    """往前找与第n章同线且有器物册之章。"""
+    b = 正文(n)
+    if b is None:
+        return None
+    我线 = 线(b)
+    for k in range(n - 1, max(0, n - 12), -1):
+        bk = 正文(k)
+        if bk is None or 线(bk) != 我线:
+            continue
+        if os.path.exists(os.path.join(ROOT, '版本', '第%d章' % k, '_器物.md')):
+            return k
+    return None
+
+
+def 比(prev_rows, cur_rows, cur_body, cur_册文):
+    """返回 (坏, 疑)。纯函数，供负测。"""
+    坏, 疑 = [], []
+    cur = {r['名']: r for r in cur_rows}
+    for r in prev_rows:
+        名 = r['名']
+        c = cur.get(名)
+        if c is not None:
+            if r.get('主') and c.get('主') and r['主'] != c['主']:
+                坏.append('★%s·其主换了：上一同线章「主=%s」，本章「主=%s」——一件东西的主人不许隔章换人（303铜听针之伤）' % (名, r['主'], c['主']))
+            if '出' in r and '入' in c:
+                # ★只看册之注文，不看格行（格行「出=134」自带「出」字，会把这一问蒙过——负测⑱所逮）
+                窗 = [x for x in re.findall(r'[^。\n]*' + re.escape(名) + r'[^。\n]*', cur_册文)
+                     if not re.search(r'(入|用|出)\s*=\s*\d', x)]
+                if not any(re.search(r'借|拿|递|取|回|还|出|带|拆', x) for x in 窗):
+                    疑.append('%s·上一同线章已出（拍%s），本章又入（拍%s）——册上须写一句它怎么回来的' % (名, r['出'], c['入']))
+        else:
+            if '用' in r and '出' not in r:
+                验名 = r.get('验名', 名)
+                if cur_body.count(验名) == 0:
+                    疑.append('%s·上一同线章末了还在手上（有用无出），本章册上无它、白文亦无其名——是不过手了，还是忘了' % 名)
+    return 坏, 疑
+
+
+def 跨章(n, quiet=False):
+    k = 上一同线章(n)
+    if k is None:
+        if not quiet:
+            print('  ── 跨章 ──\n   ℹ往前十二章无同线之册，跨章不比。')
+        return [], []
+    prev, _, _ = 读册(k)
+    cur, _, 册文 = 读册(n)
+    b = 正文(n)
+    if prev is None or cur is None or b is None:
+        return [], []
+    坏, 疑 = 比(prev, cur, b, 册文)
+    if not quiet:
+        print('  ── 跨章（对上一同线章·第%d章之册）──' % k)
+        for x in 坏:
+            print('   ⛔ ' + x)
+        for x in 疑:
+            print('   ⚠ ' + x)
+        if not 坏 and not 疑:
+            print('   ✓ 同名之器其主未换；上章在手者本章皆有声。')
+    return 坏, 疑
+
+
 def 跑(n):
+    _章 = n   # ★下文循环有复用 n 者，跨章须以此为章号
     b = 正文(n)
     if b is None:
         print('⛔ 取不到第%d章正文' % n)
@@ -218,12 +298,15 @@ def 跑(n):
         for k, v in 尺疑:
             print('   ⚠本章有一把身上的尺「%s」（拍%s），而册上一字未提——'
                   '入不入册，须当场说一句' % (k, '、'.join(str(z) for z in v[:4])))
+    # ── 跨章（2026-09-05·机制总审丙①）──
+    坏2, _疑2 = 跨章(_章)
+    坏 += 坏2
     if 坏:
         print('  ⛔ 器物点名 %d 处未过' % len(坏))
         for x in 坏:
             print('     ⛔ ' + x)
         return 1
-    print('  ✓ 器物点名 %d 件俱全（入／用／出三格皆有拍号，且逐拍验过其名在）' % len(rows))
+    print('  ✓ 器物点名 %d 件俱全（入／用／出三格皆有拍号，且逐拍验过其名在；跨章其主未换）' % len(rows))
     return 0
 
 

@@ -10,7 +10,7 @@ import io, os, re, sys, glob, json, tempfile, shutil
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(根, '工具'))
 import 棘轮预检 as J                                   # noqa: E402
-from 跑轮 import score, RATCHET_MIN, RATCHET_MAX       # noqa: E402
+from 跑轮 import score, RATCHET_MIN, RATCHET_MAX, RATCHET_V01       # noqa: E402
 
 过 = []
 def t(名, 实, 期):
@@ -68,6 +68,22 @@ _h, sf0 = score(txt)        # ★底取现文自身，不许写死一个数—�
 _h, sf = score(假)          #   写死的数会随文而陈（本器⑨於289第8轮即因此自败一回）
 t('⑨假章（一串三现）预检逮得住', sf['四字串三现'] > sf0['四字串三现'], True)
 
+# ⑩ 四感删证（2026-09-05·305第8、9两轮所立·欠-305A之治）
+#    ★其红在哪一行：二回减法轮各减一句转述，器只印「听 14→13」而不印那一句是什么。
+#    ★★旧式即「无此块」——其判据里没有「所删之句」这一样，故它对二回一言不发。
+import re as _re
+_旧文 = 'A他说硬，针上说一响。B我把手贴上去。C那十道白是直的。'
+_新文 = 'B我把手贴上去。C那十道白是直的。'
+_切 = lambda t: [x for x in _re.split(r'[。！？\n]', t) if x.strip()]
+_有 = set(_切(_新文))
+_删 = [x for x in _切(_旧文) if x not in _有]
+t('⑩造一处「删一句转述」之局：所删恰一句', len(_删), 1)
+t('⑩之二·所删之句含「听」之字（响）', bool(_re.search(J._感式['听'], _删[0])), True)
+t('⑩之三·所留之句不入表（不许把没删的算成删的）',
+  any(_re.search(J._感式['触'], x) for x in _有), True)
+t('⑩之四·器认得四感四样，与 RATCHET_V01 同源（§六④）',
+  sorted(J._感式) == sorted(RATCHET_V01), True)
+t('⑩之五·旧式（判据里无「所删之句」）对同一局一言不发', hasattr(J, '_四感删证'), True)
 print('════ 负测·棘轮预检 ════')
 for 名, ok, 实, 期 in 过:
     print('  %s %s' % ('✓' if ok else '✗', 名), '' if ok else '（实 %r 期 %r）' % (实, 期))

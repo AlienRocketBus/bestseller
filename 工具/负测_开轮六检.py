@@ -137,6 +137,10 @@ def main():
     chk('④之b 而以303跑之，走的是「锚之长」那一路（其名带「之长」二字）',
         '之长' in r[0][0])
 
+    # ⑤领轮基线之键（2026-09-05·机制总审）：⑨须读 nextround 所写之「目标轮」；无号即⛔，不许印「第None轮 ✓」
+    _ks = io.open(os.path.join(ROOT, '工具', '开轮六检.py'), encoding='utf-8').read()
+    chk('⑤⑨读「目标轮」且无号即⛔（旧式读「轮／round／轮号」印第None轮而✓）',
+        "d.get('目标轮')" in _ks and '无「目标轮」' in _ks)
     print('  ── %d/%d %s ──' % (OK[0], OK[1], '全通' if OK[0] == OK[1] else '有红'))
     return 0 if OK[0] == OK[1] else 1
 

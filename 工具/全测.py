@@ -411,7 +411,7 @@ def chk_person_ledger():
     ★其红在哪一行（上磁盘核，非设想）：**小周 出场4章·末见第12章·距293章｜陈队 出场3章·末见第9章·距296章**；
     ★★而 `大问表.py` 只认六笔手挂之问——**它认的是「问」，认不着「人」**，故这二人二百九十余章无声，一道闸也没响过。
     ★★★其律与大问表同：**可以欠，不可以不认**；逾40章者须各有一笔挂账（其人／限第N章／其形写死）。
-    ★★★★而其限（§一⑤）：**只认名表九人**，书中无名之人本器一个字也不说。"""
+    ★★★★而其限（§一⑤）：**只认名表十人**，书中无名之人本器一个字也不说。"""
     out = run('人账闸', ['工具/人账.py'])
     if out is None:
         return False, '运行失败'
@@ -419,8 +419,9 @@ def chk_person_ledger():
     if _h:
         return _h
     import re as _r
-    bad = _r.findall(r'⛔ ([^\n]+·[^\n]+)', out or '')
-    bad = [x for x in bad if '逾限而无' in x or '逾了自己那个限' in x]
+    # ★2026-09-05·机制总审（八路·人与线审第2条）：旧式只认两句子串（「逾限而无」「逾了自己那个限」），「⛔真欠」一行被过滤吞掉——器红、总闸绿。
+    #   今凡 人账 之「── ⛔ ──」节下之行一律红。
+    bad = [x.strip() for x in _r.findall(r'\n\s*⛔ ([^\n]+)', out or '')]
     if bad:
         return False, '｜'.join(bad[:3])
     m = _r.search(r'已挂账·限第(\d+)章', out or '')
@@ -1386,6 +1387,32 @@ def chk_sentence_reuse_neg():
     return m.group(3) == '全通', '%s/%s' % (m.group(1), m.group(2))
 
 
+def chk_anchor_join():
+    """接口验（2026-09-05·机制总审·八路之起草庭审第8条／流程之缝审第1条·见 工具/接口验.py）——**圣经之锚所录「N-1之末句逐字」对不对得上正文。**
+    ★其红在哪一行：锚令「其末句逐字录於本条之尾，不许凭记忆抄」，而验它的只有 check7「锚在不在／多长」；N-1 一经回修（今日 R0059/R0060），锚不随，无一器读正文。
+    ★★自306起不合即⛔；旧锚只报。"""
+    out = run('接口验', ['工具/接口验.py', '--静'])
+    if out is None:
+        return False, '运行失败'
+    if '⛔' in out:
+        return False, out.strip().split('\n')[-1][:120]
+    if '接口验' not in out:
+        return False, '器未出声'
+    return True, out.strip().split('\n')[-1].replace('✓ 接口验：', '')[:100]
+
+
+def chk_anchor_join_neg():
+    """负测·接口验——★其非陪跑之凭：⑤抄错一字之锚旧式（check7 只验在不在）判✓，本器⛔。"""
+    out = run('负测·接口验', ['工具/接口验.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·接口验 (\d+)/(\d+) (全通|有败)', out or '')
+    if not m:
+        return False, '未见自测之印'
+    return m.group(3) == '全通', '%s/%s' % (m.group(1), m.group(2))
+
+
 def chk_threshold_gate():
     """★趋阈闸负测（2026-09-02·291第7轮所立·每次存版必跑）：
     ★★其形：**一个数差一点就够到一条有名之限，而最省的一步是补几个字把它顶过去**；
@@ -1940,9 +1967,10 @@ def chk_lunci():
             # 回归之桩为假章，须自带五层与「已到底」之记，否则正测必被尽力查误拦。
             _ceng = ('第一层：甲。第二层：乙。第三层：丙。第四层：丁。第五层：戊。'
                      '而第五层底下已到底，其由为此为回归之桩，非真章。')
-            return ('\n## 第%d轮|v%02d|x|净重100\n**镜头**：%s\n**必答逐项**：%s\n'
+            # ★2026-09-05·机制总审：对数查今须「名数相邻」，桩之轮记遂须真报其数（旧桩只写「净重100」，别的数靠子串蒙混——正是对数查之陪跑）。
+            return ('\n## 第%d轮|v%02d|x|净重%d｜嗅%d｜触%d｜四字串三现%d\n**镜头**：%s\n**必答逐项**：%s\n'
                     '%s\n**真伤**：一根。其治：改作某句；已复量、复扫、复核。%s\n'
-                    % (i, i, '｜'.join(m.LENS_KEY[i]),
+                    % (i, i, SOFT['净重'] + 10 * (i - 1), SOFT['嗅'], SOFT['触'], SOFT['四字串三现'], '｜'.join(m.LENS_KEY[i]),
                        '；'.join(duties) if duties else '本轮无可机抽之必答项',
                        _ceng if i == 4 else '',
                        '补白之句' * 40))
@@ -2353,6 +2381,8 @@ def main():
         items.append(('负测·必答表', chk_duty_num_neg))
         items.append(('负测·模糊时距', chk_vague_time_neg))
         items.append(('负测·整句复述哨', chk_sentence_reuse_neg))
+        items.append(('接口验', chk_anchor_join))
+        items.append(('负测·接口验', chk_anchor_join_neg))
         items.append(('负测·吞记闸', chk_swallowed_note_gate))
         items.append(('负测·封版档冷轮口', chk_seal_cold_slot))
         items.append(('负测·棘轮裁', chk_ratchet_verdict))

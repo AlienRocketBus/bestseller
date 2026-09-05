@@ -66,8 +66,10 @@ def 硬项(txt):
         '半角撇': txt.count("'"),          # ★新
         '五逗句': sum(1 for s in sents if s.count('，') >= 5),
         '英文': len(re.findall(r'[A-Za-z]', txt)),
-        '章号入正文': len(re.findall(r'[一二三四五六七八九十百]+章', body)),
-        '禁抖': body.count('抖'),
+        # ★2026-09-05·机制总审（八路·硬闸探伤审第5、7条）：章号只认汉字（「第37章」放行）；禁抖只数「抖」（F107 明列手抖／哆嗦／颤）。
+        #   今章号并认阿拉伯数字；禁抖并数「颤」（全书白文「颤」74章後 0 处·74前 24 章 32 处，旧章其数只增不减，见 负测_硬闸 ③）。
+        '章号入正文': len(re.findall(r'(?:[一二三四五六七八九十百零〇]+|\d+)章', body)),
+        '禁抖': body.count('抖') + body.count('颤'),
         '永禁词': sum(body.count(w) for w in 永禁词()),   # ★由四个补到 22＋4
         '叠词粘连': len(叠词式.findall(body)),             # ★新·检察官有而跑轮无
         # ★2026-09-05·机制总审（八路·硬闸探伤审第2条）：旧式只认「。\n」，检察官批131已改 [。！？”]，两本账重现；
@@ -95,7 +97,9 @@ if __name__ == '__main__':
                 红[k][0] += 1
                 红[k][1] += v
         print('════ 硬闸 · 全书回灌 ════')
-        print('  永禁词共 %d 个（canon %d ＋旧表独有 4）' % (len(永禁词()), len(永禁词()) - 4))
+        _pf = 永禁词()
+        _old_only = [w for w in ('哆嗦', '骊山', '僵尸', '点亮') if w not in _pf[:len(_pf) - 4] or True]
+        print('  永禁词共 %d 个（其中 canon 之表 %d 个）' % (len(_pf), len(_pf) - sum(1 for w in ('哆嗦', '骊山', '僵尸', '点亮') if _pf.index(w) >= len(_pf) - 4)))
         if not 红:
             print('  ✓ 十八格全零。')
         for k, v in sorted(红.items(), key=lambda x: -x[1][1]):

@@ -66,7 +66,7 @@ def score(txt):
     body = body_of(txt)
     hl = txt[txt.find('【本章亮点】'):] if '【本章亮点】' in txt else ''
     sents = re.split(r'(?<=[。！？…])', txt)
-    paras = [re.sub(r'\s', '', x) for x in body.split('\n') if x.strip()]
+    paras = [re.sub(r'\s', '', x) for x in body.split('\n') if x.strip() and x.strip() != '＊']   # ★2026-09-05：分节符不算一段（P40 总则）
     lens = [len(x) for x in paras] or [0]
 
     def cnt(pat, s=body):
@@ -1138,7 +1138,7 @@ def metric_reconcile(n, r, logtext):
             continue
         sf = x.get('soft') or {}
         keys = ['净重', '段数', '长段数', '嗅', '触', '四字串三现']
-        hit = [k for k in keys if k in sf and str(sf[k]) in logtext]
+        hit = [k for k in keys if k in sf and re.search(re.escape(k) + r'[：:＝= ]{0,3}' + re.escape(str(sf[k])) + r'(?!\d)', logtext)]
         return len(hit), [k for k in keys if k in sf and k not in hit]
     return None, []
 

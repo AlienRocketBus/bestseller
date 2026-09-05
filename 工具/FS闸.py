@@ -33,7 +33,9 @@ def 未销():
         #   ★★★故凡改期者其 reschedule_note 逐次累加，此处数之并印：
         #     ★★★★**改期逾二回者，无论逾没逾期，一律入报**——由人当场裁它还算不算一根活钩子。
         # ★数其回数只认一个记号「（原限」——立此闸之日以二词并数，一回改期数成了二回 ⛔
-        n = str(x.get('reschedule_note', '')).count('（原限')
+        _rn = str(x.get('reschedule_note', ''))
+        # ★2026-09-05·机制总审（八路·跨章连贯审第6条）：只数「（原限」一个记号——FS03 实改五回印 2 回；今取「（原限」「改期」「改至」三记号之最大者。
+        n = max(_rn.count('（原限'), _rn.count('改期'), _rn.count('改至'))
         out.append({'id': x.get('id'), 'due': x.get('due'),
                     'desc': x.get('desc', ''), '改期': max(n, 1 if x.get('reschedule_note') else 0)})
     return out

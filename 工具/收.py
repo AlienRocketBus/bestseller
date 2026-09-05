@@ -76,8 +76,9 @@ def rounds_done(n):
     if not os.path.exists(lp):
         return []
     L = json.load(io.open(lp, encoding='utf-8'))
+    # ★2026-09-05·机制总审：轮号之式与 跑轮._round_of 同源（re.match 锚句首；「回补·第6轮镜头之补」不算第6轮）
     return sorted({int(m.group(1)) for x in L.get('版本', [])
-                   for m in [re.search(r'第\s*(\d+)\s*轮', x.get('说明', ''))] if m})
+                   for m in [re.match(r'\s*第\s*(\d+)\s*轮', x.get('说明', ''))] if m})
 
 
 def text_exists(n):
@@ -144,8 +145,9 @@ def main():
     rc, o = R('python3', '工具/小说检察官.py', '--十一轮', str(n), t=900)
     key = [x.strip() for x in o.split('\n') if '第十一轮' in x or '硬项' in x]
     print('\n'.join('    ' + x[:110] for x in key[-4:]) or tail(o, 3))
-    if '通过' not in o:
-        print('【停】十一轮未过——其硬项须人修。器不猜。')
+    # ★2026-09-05·机制总审（八路·流程之缝审第8条）：旧式 `'通过' in o` 被左眼「【尽力查·通过】」满足而恒放行；今只认总核之印。
+    if '【总核·通过】' not in o:
+        print('【停】十一轮未过（无「【总核·通过】」之印）——其硬项须人修。器不猜。')
         return
 
     # ── ④ 全测 ──

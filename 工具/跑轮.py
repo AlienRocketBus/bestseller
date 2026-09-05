@@ -67,7 +67,7 @@ def score(txt):
     body = body_of(txt)
     hl = txt[txt.find('【本章亮点】'):] if '【本章亮点】' in txt else ''
     sents = re.split(r'(?<=[。！？…])', txt)
-    paras = [re.sub(r'\s', '', x) for x in body.split('\n') if x.strip()]
+    paras = [re.sub(r'\s', '', x) for x in body.split('\n') if x.strip() and x.strip() != '＊']   # ★2026-09-05：分节符不算一段（P40 总则）
     lens = [len(x) for x in paras] or [0]
 
     def cnt(pat, s=body):
@@ -1328,7 +1328,9 @@ def metric_reconcile(n, r, logtext):
             continue
         sf = x.get('soft') or {}
         keys = ['净重', '段数', '长段数', '嗅', '触', '四字串三现']
-        hit = [k for k in keys if k in sf and str(sf[k]) in logtext]
+        # ★2026-09-05·机制总审（八路·流程之缝审第3条）：旧式 `str(数) in logtext`——单位数（长段数0／嗅3）在任何文里都在，对数查永不红。
+        #   今须「名与数相邻」（名後至多三个连接符再接其数，如「嗅6」「嗅：6」「嗅 6」「嗅＝6」）。
+        hit = [k for k in keys if k in sf and re.search(re.escape(k) + r'[：:＝= ]{0,3}' + re.escape(str(sf[k])) + r'(?!\d)', logtext)]
         return len(hit), [k for k in keys if k in sf and k not in hit]
     return None, []
 
@@ -1902,6 +1904,11 @@ def selftest():
         not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 151, [])[0])
     chk('章界闸不得误拦旧台账（无全书章数字段）',
         not gates(1, '第4轮·甲', L([v('第3轮·乙')]), 151, [])[0])
+    # ★2026-09-05·机制总审（八路·覆盖之缺审第12条·P40 总则）：score 不把分节符「＊」算段——以 305 v01（不变之版）回灌
+    _v01 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '版本', '第305章', 'v01.md')
+    if os.path.exists(_v01):
+        _s305 = score(open(_v01, encoding='utf-8').read())[1]
+        chk('score 不把「＊」算段：305 v01 段数须 125（含＊之旧式为 249）', _s305.get('段数') == 125)
     chk('章界闸须认 ZM_FORCE 之豁免',
         not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 152, [], force='已对表')[0])
 
@@ -2255,7 +2262,9 @@ def save(n, note=''):
     _prev = max([x for x in rounds_state(ledger)[0]], default=0)
     if _r and _prev and _r > _prev and not force:
         _lp = _lunji_path(n)
-        _has = os.path.exists(_lp) and ('第%d轮' % _prev) in open(_lp, encoding='utf-8').read()
+        # ★2026-09-05·机制总审（八路·流程之缝审第2条）：旧式以子串「第N轮」判前轮已录轮记——前轮之引文（「留第N轮判」）先把它满足了，闸从未有机会红。
+        #   今须一、二级标题以「第N轮」起头（与 _lunji_blocks 同尺）。
+        _has = os.path.exists(_lp) and bool(re.search(r'^#{1,2}\s*第%d轮' % _prev, open(_lp, encoding='utf-8').read(), re.M))
         if not _has:
             halt = True
             glines.append('   ⛔轮记闸：第%d轮未录轮记，不许起第%d轮。' % (_prev, _r))

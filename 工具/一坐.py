@@ -181,8 +181,9 @@ def main():
         last = vs[-1] if vs else {}
         lw = last.get('soft', {}).get('净重', 0)
         hard = sum(last.get('hard', {}).values()) if last.get('hard') else 0
+    # ★2026-09-05·机制总审：轮号之式与 跑轮._round_of 同源（re.match 锚句首；「回补·第6轮镜头之补」不算第6轮）
         rounds = sorted({int(m.group(1)) for x in vs
-                         for m in [re.search(r'第\s*(\d+)\s*轮', x.get('说明', ''))] if m})
+                         for m in [re.match(r'\s*第\s*(\d+)\s*轮', x.get('说明', ''))] if m})
         out.append('台账：%d版｜末版 %s｜硬项 %d' % (len(vs), last.get('版', '?'), hard))
         out.append('净重：台账 %d ｜ 正文 %d ｜ %s'
                    % (lw, tw, '相符' if lw == tw else '★相违（差%d）' % (tw - lw)))
@@ -401,7 +402,7 @@ def main():
         _r9 = _sp9.run(['python3', os.path.join(ROOT, '工具', '人账.py')],
                        capture_output=True, text=True, timeout=90)
         _bad = [l.strip() for l in (_r9.stdout or '').split('\n')
-                if '⛔' in l and ('逾限而无' in l or '逾了自己那个限' in l)]
+                if l.strip().startswith('⛔')]   # ★2026-09-05：任一⛔行皆红，不再以子串过滤（「⛔真欠」旧式被吞）
         _warn = [l.strip() for l in (_r9.stdout or '').split('\n')
                  if '已挂账·限第' in l]
         out.append('── 人账（一个人可以不出场，不可以无声）──')
@@ -424,6 +425,16 @@ def main():
         _l10 = [l.strip() for l in (_r10.stdout or '').split('\n') if l.strip()]
         out.append('── 日差哨（二线之历：暗线之日差＝前一主线章之天−本章之日）──')
         out.append('  ' + (_l10[-1] if _l10 else '（哨未出声）'))
+    except Exception:
+        pass
+    # ★★★★★接口验（2026-09-05·机制总审所立）：圣经之锚所录「N-1之末句逐字」对不对得上正文——锚不许凭记忆抄，回修之後尤须对。
+    try:
+        import subprocess as _sp11
+        _r11 = _sp11.run(['python3', os.path.join(ROOT, '工具', '接口验.py'), '--静'],
+                         capture_output=True, text=True, timeout=90)
+        _l11 = [l.strip() for l in (_r11.stdout or '').split('\n') if l.strip()]
+        out.append('── 接口验（圣经之锚所录末句 对 正文真末句）──')
+        out.append('  ' + (_l11[-1] if _l11 else '（器未出声）'))
     except Exception:
         pass
     # ★而旧账须逐坐印在眼前，否则「不回头判红」就成了「不了了之」。

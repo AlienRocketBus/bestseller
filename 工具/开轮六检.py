@@ -299,7 +299,12 @@ def check9(c):
         d = json.load(open(p, encoding='utf-8'))
     except Exception:
         return [('⑨·领轮基线', False, '⛔读不出')]
-    r = d.get('轮') or d.get('round') or d.get('轮号')
+    # ★2026-09-05·机制总审（八路·流程之缝审第13条）：nextround 写的键是「目标轮」，此处读「轮／round／轮号」，遂印「所领为第None轮」并判✓。
+    r = d.get('目标轮')
+    if r is None:
+        r = d.get('轮') or d.get('round') or d.get('轮号')
+    if r is None:
+        return [('⑨·领轮之号', False, '⛔基线里无「目标轮」（领了轮而没记所领之号）')]
     return [('⑨·领轮之号', True, '★所领为第%s轮（存版时须报同号）' % r)]
 
 

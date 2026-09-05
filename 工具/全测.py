@@ -551,7 +551,7 @@ def chk_open6_gate():
         return False, out.strip().split('\n')[-1]
     if '非陪跑' not in out:
         return False, '★陪跑之测'
-    return True, _测数(out, '8/8') + ' 全通（旧阈回灌304真报⛔，而满轮无锚者新阈照旧咬）'
+    return True, _测数(out, '10/10') + ' 全通（旧阈咬合成之局而新阈放，且满轮无锚者新阈照旧咬）'
 
 
 def chk_cold_agree():

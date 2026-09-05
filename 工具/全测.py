@@ -1208,6 +1208,24 @@ def chk_count_sentence_gate():
     return m.group(3) == '全通', '数句闸负测 %s/%s' % (m.group(1), m.group(2))
 
 
+def chk_duty_num_neg():
+    """★必答表负测（2026-09-05·机制总审所立·见 工具/负测_必答表.py）：
+    ★★其形：**第3轮逐数对表之必答表自正文抽数，而其量词表不认「处」「行」「道」「层」**——
+      305 全章「N处」二十四见，入表者零；★★★於是 v13 拍61「前天那三处」对拍23「前天那四处」之相犯，
+      十二轮带器之轮一个没把它摆上桌，第13轮一遍通读才撞上（版本/第305章/_轮记.md 第13轮）。
+    ★取二组数（令§六①）：**组一·305 之处数五样（六／三／五／四／十一）旧式入表 0**；
+      ★★**组二·全书数≥2之後之量词频≥50者三十四样，旧式认 21，今认 33，不认「只」「指」**。
+    ★★★其回灌（令§六③）：**以旧式抽 305 v14 须一个「处」也抽不着（①）；以新式抽 v13 须上「前天那三处／前天那四处」之对（③）。**"""
+    out = run('负测·必答表', ['工具/负测_必答表.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    return m.group(3) == '全通', '必答表负测 %s/%s' % (m.group(1), m.group(2))
+
+
 def chk_threshold_gate():
     """★趋阈闸负测（2026-09-02·291第7轮所立·每次存版必跑）：
     ★★其形：**一个数差一点就够到一条有名之限，而最省的一步是补几个字把它顶过去**；
@@ -2164,6 +2182,7 @@ def main():
         items.append(('负测·缺报格', chk_missing_slot))
         items.append(('负测·趋阈闸', chk_threshold_gate))
         items.append(('负测·数句闸', chk_count_sentence_gate))
+        items.append(('负测·必答表', chk_duty_num_neg))
         items.append(('负测·吞记闸', chk_swallowed_note_gate))
         items.append(('负测·封版档冷轮口', chk_seal_cold_slot))
         items.append(('负测·棘轮裁', chk_ratchet_verdict))

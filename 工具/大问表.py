@@ -66,20 +66,47 @@ def 白文(f):
     return re.sub(r'^.*?第.+?章[^\n]*\n', '', t, count=1, flags=re.S)
 
 
+挂账档 = os.path.join(ROOT, '设定', '大问挂账.md')
+
+
+def 还():
+    """读挂账册§二「还」表：{其样: 还於第N章}。
+
+    ★2026-09-05·机制总审（数与册审第3条）所立·其红在哪一行：**305 把爷爷一笔当章还了（铜钥匙当了一天的尺），
+      而其形写死「不许出现回想爷爷的段落」，故 305 白文「爷爷」二字零处**——★★而本器量「末见」只数其词，
+      **一笔照其形还得越干净，本器越看不见它**；於是 305 回执写「已还」，本器到 306 照旧印「爷爷缺195章·限305·逾」而拦。
+    ★★★故还表一行即一处「末见」：其样於第N章还，末见即取 max(词之末见, N)。**它认的只是 §二 表上带章号之行。**"""
+    if not os.path.exists(挂账档):
+        return {}
+    out, 在 = {}, False
+    for ln in io.open(挂账档, encoding='utf-8'):
+        if ln.startswith('## '):
+            在 = ln.startswith('## 二')
+            continue
+        if not 在 or not ln.startswith('|'):
+            continue
+        c = [x.strip().strip('*') for x in ln.strip().strip('|').split('|')]
+        if len(c) < 4 or not re.fullmatch(r'\d+', c[0]):
+            continue
+        out[c[1]] = max(out.get(c[1], 0), int(c[0]))
+    return out
+
+
 def 量():
     fs = sorted(glob.glob(os.path.join(ROOT, '正文', '*.md')), key=章号)
     末 = 章号(fs[-1]) if fs else 0
     库 = [(章号(f), 白文(f)) for f in fs]
+    H = 还()
     out = []
     for 名, 词, 问 in 表:
         章 = [n for n, t in 库 if any(w in t for w in 词)]
         末见 = max(章) if 章 else 0
-        out.append({'名': 名, '问': 问, '几章': len(章), '末见': 末见,
+        还於 = H.get(名, 0)
+        if 还於 > 末见:
+            末见 = 还於
+        out.append({'名': 名, '问': 问, '几章': len(章), '末见': 末见, '还於': 还於,
                     '缺': (末 - 末见) if 末见 else 末, '逾': (末 - 末见) > 上限 if 末见 else True})
     return 末, out
-
-
-挂账档 = os.path.join(ROOT, '设定', '大问挂账.md')
 
 
 def 挂():
@@ -178,9 +205,10 @@ def 报(quiet=False):
         print('  【其律】可以欠，不可以不认：逾限者须各有一笔挂账，挂账须带限章；逾自定之限而未还者，拦。')
         print('  %-10s %-6s %-7s %-7s %s' % ('其样', '出现', '末见', '缺席', '读者挂着的那一问'))
         for r in rows:
-            print('  %-10s %-6d %-7s %-7s %s %s'
+            print('  %-10s %-6d %-7s %-7s %s %s%s'
                   % (r['名'], r['几章'], ('第%d章' % r['末见']) if r['末见'] else '全书无',
-                     '%d章' % r['缺'], '⛔' if r['逾'] else '✓', r['问']))
+                     '%d章' % r['缺'], '⛔' if r['逾'] else '✓', r['问'],
+                     ('（还於第%d章·落在物上不带其名·见挂账§二）' % r['还於']) if r.get('还於') and r['还於'] >= r['末见'] else ''))
         print('  ── 逾上限者 %d 样 ──' % len(逾))
         if 逾:
             print('  ★而其治不在补写一段回忆**，在让它在手上再出现一回**：')

@@ -823,7 +823,12 @@ def chk_band():
     if 判 != '全通' or ok != tot:
         _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
         return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（旧表带外74章25%%→新表0章｜中位3691正落旧缝｜序②在册）' % (ok, tot)
+    # ★2026-09-05·机制总审（八路·陪跑闸审第12条）：绿旁之数原写死「74章25%／中位3691」，而器今印「74章24%／中位3578」——
+    #   §一⑥：每个数旁边须有印它的命令；故此处改取器之印，不再抄陈数。
+    _w = _r.search(r'旧表之下[^\n]*带外 (\d+) 章＝(\d+)%', out)
+    _z = _r.search(r'全书净重中位 (\d+)', out)
+    return True, '%d/%d 全通（旧表带外%s章%s%%→新表0章｜中位%s正落旧缝｜序②在册）' % (
+        ok, tot, _w.group(1) if _w else '?', _w.group(2) if _w else '?', _z.group(1) if _z else '?')
 
 
 def chk_ratchet_verdict():
@@ -1356,7 +1361,9 @@ def chk_threshold_gate():
     if 判 != '全通' or ok != tot:
         _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
         return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（全书回灌红率1.72%%｜275/276/283/284四章落线俱逮着｜3000→3900阔跨零报）' % (ok, tot)
+    _h = _r.search(r'红(\d+)次＝([\d.]+)%', out)
+    return True, '%d/%d 全通（全书回灌红率%s%%·红%s次｜275/276/283/284四章落线俱逮着｜3000→3900阔跨零报）' % (
+        ok, tot, _h.group(2) if _h else '?', _h.group(1) if _h else '?')
 
 
 def chk_missing_slot():
@@ -1493,9 +1500,11 @@ def chk_carry_gate():
     if bad or ok != tot:
         _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
         return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, ('%d/%d 全通（同线新旧第一路同判｜换线红率 51→31；'
+    _o = _r.search(r'旧式於换线之章红率[^\n]*?(\d+)/(\d+)', out)
+    _n = _r.search(r'新(\d+) ＜ 旧(\d+)', out)
+    return True, ('%d/%d 全通（同线新旧第一路同判｜换线红率 旧%s→新%s（/%s章）；'
                   '2026-09-03并入第二节：轮记逐样落判者亦算过，转绿之旧章12皆有真声明）'
-                  % (ok, tot))
+                  % (ok, tot, _o.group(1) if _o else '?', _n.group(1) if _n else '?', _o.group(2) if _o else '?'))
 
 
 def chk_cold_gate():

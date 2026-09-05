@@ -1162,7 +1162,37 @@ def _回述项(body):
                          '（★2026-09-05 添「前天」与 P36 泛日词四型、P38 回述日词四型——305 v13 之伤正在「前天」上，旧式不认它）')
 
 
+_QWDM = [None]
+
+
+def _qwdm():
+    """器物点名之器（只载一回·载了即缓存；每回 exec_module 之价太贵，全书回灌时尤甚）。"""
+    if _QWDM[0] is None:
+        import importlib.util as _u
+        _s = _u.spec_from_file_location('qwdm', os.path.join(ROOT, '工具', '器物点名.py'))
+        _m = _u.module_from_spec(_s)
+        _s.loader.exec_module(_m)
+        _QWDM[0] = _m
+    return _QWDM[0]
+
+
+_DUTY_CACHE = {}
+
+
+def duty_clear_cache():
+    """清必答表之缓存（凡在同一进程里改过正文者，须先清）。"""
+    _DUTY_CACHE.clear()
+
+
 def duty_list(n, r):
+    """必答表（带缓存·其体见 _duty_list_raw）。"""
+    key = (n, r)
+    if key not in _DUTY_CACHE:
+        _DUTY_CACHE[key] = _duty_list_raw(n, r)
+    return _DUTY_CACHE[key]
+
+
+def _duty_list_raw(n, r):
     """【批124·必答表】某轮该碰的地方，由正文自己长出来。
     立此表之由（作者问「怎么保证每一轮真干活」）：**努力不可观测**，
     可观测的只有痕迹，而痕迹能被无意地演出来（照着「一轮好轮记的样子」去凑）。
@@ -1208,8 +1238,28 @@ def duty_list(n, r):
                      '★★★★★而「暗线之账」一项须逐一报：末见於第几章、距今几章、本轮补不补；'
                      '★零处者不得只书「本不在场」，须并报其距——而距逾80章者，本轮须补一处回切或插一篇暗线章。')
     if r == 6:
-        props = [w for w in ('绳', '灯', '刀', '架子', '本子', '笔', '腿上', '鞋', '水', '盐', '布包', '竹筒') ]
-        return props, '器物逐件点名：在场者报其处，零字者判该点或不该点'
+        # ★2026-09-05·机制总审丙⑭之一：此表原写死十二样——**而写死的表只认它立表那一天的器物**；
+        #   ★本书第301章起有器物册（`版本/第N章/_器物.md`），册上之器由本章自报，後来新添之物只在册上，不在此表；
+        #   ★★故改为「写死之十二样 ∪ 本章册上之器 ∪ 上一同线章册上之器」——**册在则以册为主，册不在则照旧十二样**。
+        #   ★★★它认哪几样：**十二样旧器＋册上诸器**；本书今有册 11 份（296—305），其上之器 30 样，
+        #     其中不在旧十二样者如「担架／毡子／针／竹片／炭／本子那一页」——**旧表一样也点不到它们**。
+        props = ['绳', '灯', '刀', '架子', '本子', '笔', '腿上', '鞋', '水', '盐', '布包', '竹筒']
+        try:
+            _m6 = _qwdm()
+            _seen = set(props)
+            for _src in (n, _m6.上一同线章(n)):
+                if not _src:
+                    continue
+                _rows6 = _m6.读册(_src)
+                _rows6 = _rows6[0] if isinstance(_rows6, tuple) else (_rows6 or [])
+                for _row in _rows6:
+                    _名 = _row.get('名') if isinstance(_row, dict) else None
+                    if _名 and _名 not in _seen and len(_名) <= 6:
+                        _seen.add(_名)
+                        props.append(_名)
+        except Exception:
+            pass
+        return props, '器物逐件点名：在场者报其处，零字者判该点或不该点（★册上之器一并上桌）'
     if r == 7:
         return ['时标', '句长方差', '段长90分位', '说破密度'], '时序须逐时标核日；节奏与留白须报数并横比'
     if r in (8, 9):
@@ -1967,6 +2017,38 @@ def selftest():
                 _diff == 0 and _tot > 1000)
         except Exception as _e:
             chk('裁定查·全书回灌跑得起来（%s）' % _e, False)
+
+    # ★2026-09-05·机制总审丙⑭之一（第6轮必答表写死十二样）之负测：
+    #   ①册上之器须上桌 ②无册之章照旧十二样 ③旧式认不着册上之器（故非陪跑）④不打红已封版之章。
+    _FIX6 = ['绳', '灯', '刀', '架子', '本子', '笔', '腿上', '鞋', '水', '盐', '布包', '竹筒']
+    _i6 = duty_list(305, 6)[0]
+    chk('第6轮·册上之器上桌（305之钥匙与针）', '钥匙' in _i6 and '针' in _i6)
+    chk('第6轮·旧式写死十二样认不着册上之器（故此负测非陪跑）',
+        '钥匙' not in _FIX6 and '针' not in _FIX6)
+    chk('第6轮·无册之章照旧十二样（290）', duty_list(290, 6)[0] == _FIX6)
+    chk('第6轮·册在则十二样一样不少', all(x in _i6 for x in _FIX6))
+    try:
+        _red = []
+        for _n6 in range(290, 306):
+            _b6 = '\n'.join(_lunji_blocks(_n6).get(6, []))
+            if not _b6:
+                continue
+            _it6 = duty_list(_n6, 6)[0]
+            _j6 = duty_cover2(_n6, 6, _b6)[1]
+            _o6 = 0
+            for _x6 in _FIX6:
+                for _m6 in re.finditer(re.escape(_x6), _b6):
+                    if _judged_near(_b6[max(0, _m6.start() - 70):_m6.start() + len(_x6) + 70],
+                                    sorted(_FIX6, key=len, reverse=True)):
+                        _o6 += 1
+                        break
+            _o6 = _o6 * 100 // len(_FIX6)
+            _g6 = lambda q: 0 if q < 50 else (1 if q < 80 else 2)
+            if _g6(_j6) < _g6(_o6):
+                _red.append((_n6, _o6, _j6))
+        chk('第6轮·册上之器上桌不打红已封版之章（290—305）', not _red)
+    except Exception as _e6:
+        chk('第6轮·封版之章之验跑得起来（%s）' % _e6, False)
 
     L = lambda vs: {'章': 1, '版本': vs}
     _SOFT = {'净重': 100, '段数': 9, '均段': 11, '长段数': 0, '嗅': 3, '听': 4,

@@ -971,7 +971,37 @@ def _回述项(body):
                          '（★2026-09-05 添「前天」与 P36 泛日词四型、P38 回述日词四型——305 v13 之伤正在「前天」上，旧式不认它）')
 
 
+_QWDM = [None]
+
+
+def _qwdm():
+    """器物点名之器（只载一回·载了即缓存；每回 exec_module 之价太贵，全书回灌时尤甚）。"""
+    if _QWDM[0] is None:
+        import importlib.util as _u
+        _s = _u.spec_from_file_location('qwdm', os.path.join(ROOT, '工具', '器物点名.py'))
+        _m = _u.module_from_spec(_s)
+        _s.loader.exec_module(_m)
+        _QWDM[0] = _m
+    return _QWDM[0]
+
+
+_DUTY_CACHE = {}
+
+
+def duty_clear_cache():
+    """清必答表之缓存（凡在同一进程里改过正文者，须先清）。"""
+    _DUTY_CACHE.clear()
+
+
 def duty_list(n, r):
+    """必答表（带缓存·其体见 _duty_list_raw）。"""
+    key = (n, r)
+    if key not in _DUTY_CACHE:
+        _DUTY_CACHE[key] = _duty_list_raw(n, r)
+    return _DUTY_CACHE[key]
+
+
+def _duty_list_raw(n, r):
     """【批124·必答表】某轮该碰的地方，由正文自己长出来。
     立此表之由（作者问「怎么保证每一轮真干活」）：**努力不可观测**，
     可观测的只有痕迹，而痕迹能被无意地演出来（照着「一轮好轮记的样子」去凑）。
@@ -1017,8 +1047,28 @@ def duty_list(n, r):
                      '★★★★★而「暗线之账」一项须逐一报：末见於第几章、距今几章、本轮补不补；'
                      '★零处者不得只书「本不在场」，须并报其距——而距逾80章者，本轮须补一处回切或插一篇暗线章。')
     if r == 6:
-        props = [w for w in ('绳', '灯', '刀', '架子', '本子', '笔', '腿上', '鞋', '水', '盐', '布包', '竹筒') ]
-        return props, '器物逐件点名：在场者报其处，零字者判该点或不该点'
+        # ★2026-09-05·机制总审丙⑭之一：此表原写死十二样——**而写死的表只认它立表那一天的器物**；
+        #   ★本书第301章起有器物册（`版本/第N章/_器物.md`），册上之器由本章自报，後来新添之物只在册上，不在此表；
+        #   ★★故改为「写死之十二样 ∪ 本章册上之器 ∪ 上一同线章册上之器」——**册在则以册为主，册不在则照旧十二样**。
+        #   ★★★它认哪几样：**十二样旧器＋册上诸器**；本书今有册 11 份（296—305），其上之器 30 样，
+        #     其中不在旧十二样者如「担架／毡子／针／竹片／炭／本子那一页」——**旧表一样也点不到它们**。
+        props = ['绳', '灯', '刀', '架子', '本子', '笔', '腿上', '鞋', '水', '盐', '布包', '竹筒']
+        try:
+            _m6 = _qwdm()
+            _seen = set(props)
+            for _src in (n, _m6.上一同线章(n)):
+                if not _src:
+                    continue
+                _rows6 = _m6.读册(_src)
+                _rows6 = _rows6[0] if isinstance(_rows6, tuple) else (_rows6 or [])
+                for _row in _rows6:
+                    _名 = _row.get('名') if isinstance(_row, dict) else None
+                    if _名 and _名 not in _seen and len(_名) <= 6:
+                        _seen.add(_名)
+                        props.append(_名)
+        except Exception:
+            pass
+        return props, '器物逐件点名：在场者报其处，零字者判该点或不该点（★册上之器一并上桌）'
     if r == 7:
         return ['时标', '句长方差', '段长90分位', '说破密度'], '时序须逐时标核日；节奏与留白须报数并横比'
     if r in (8, 9):

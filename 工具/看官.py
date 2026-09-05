@@ -644,10 +644,17 @@ def 落凭(席, n, 判数, 详=''):
          'items': []}
     if os.path.exists(凭):
         d = json.load(open(凭, encoding='utf-8'))
+    # ★2026-09-05·机制总审：旧式每落一凭必重写「时」并把该条挪到末尾——**同一版回跑十遍，凭册十遍不同**，
+    #   全测／pre-push 一跑工作树即脏（stop-hook 逐次催提交）。★★凭之义在指纹与判，不在钟点：
+    #   同席同章同指纹同判同详者不重落；落则按（章，席）排定序。
+    新 = {'席': 席, '章': n, '指纹': 白文指纹(n), '判数': 判数, '详': 详[:80]}
+    旧 = [x for x in d['items'] if x.get('席') == 席 and x.get('章') == n]
+    if 旧 and all(旧[0].get(k) == v for k, v in 新.items()):
+        return
     d['items'] = [x for x in d['items'] if not (x.get('席') == 席 and x.get('章') == n)]
-    d['items'].append({'席': 席, '章': n, '指纹': 白文指纹(n),
-                       '判数': 判数, '详': 详[:80],
-                       '时': datetime.datetime.now().isoformat(timespec='seconds')})
+    新['时'] = datetime.datetime.now().isoformat(timespec='seconds')
+    d['items'].append(新)
+    d['items'].sort(key=lambda x: (x.get('章') or 0, x.get('席') or ''))
     json.dump(d, open(凭, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 
 

@@ -526,7 +526,7 @@ def duibiao(n):
                   % (x.get('版', ''), x.get('时', ''), x.get('说明', ''),
                      x.get('soft', {}).get('净重', '?')))
         rs, miss = rounds_state(lg)
-        print('  真轮：%d/10%s' % (len(rs), '' if not miss else
+        print('  真轮：%d/%d%s' % (len(rs), ROUNDS, '' if not miss else
               '｜缺 ' + '、'.join('第%d轮' % i for i in miss)))
         # 【批112·闸四｜批113修】封版凭据之验，两级判：洞＝硬伤，短＝存疑。
         if rc:
@@ -1208,7 +1208,21 @@ def duty_list(n, r):
     if r == 7:
         return ['时标', '句长方差', '段长90分位', '说破密度'], '时序须逐时标核日；节奏与留白须报数并横比'
     if r in (8, 9):
-        return ['刀数', '减字'], '减法轮须报刀数与实减字数'
+        # ★2026-09-05·机制总审（八路·覆盖之缺审第9条·P21 整句复述复发7）：第8轮另上「复述」之项——
+        #   本章凡 ≥10 字之整句与任一前章逐字同者，逐句上桌（式「复述·首十二字←第M章」），判「有意的回响」或「懒的搬」。
+        #   ★其器 工具/整句复述哨.py（全书 357 处／165 章，故不判红只上桌）；第9轮不重上（一事不两裁）。
+        项 = ['刀数', '减字']
+        if r == 8:
+            try:
+                import importlib.util as _u
+                _sp = _u.spec_from_file_location('zjfs', os.path.join(ROOT, '工具', '整句复述哨.py'))
+                _m = _u.module_from_spec(_sp)
+                _sp.loader.exec_module(_m)
+                项 += _m.必答项(n, body)
+            except Exception:
+                pass
+        return 项, ('减法轮须报刀数与实减字数'
+                    + ('；★「复述·…←第M章」逐句须判：合（有意之回响）／删（懒的搬）' if len(项) > 2 else ''))
     if r == 10:
         return ['器物总账', '逐段生死'], '收官轮须出器物总账并逐段判生死'
     if r == 11:
@@ -2389,6 +2403,10 @@ def save(n, note=''):
         '全书章数': chapters_now, '流': _stream_id()}
     if _qy:
         _entry['趋阈'] = _qy
+    # ★2026-09-05·机制总审（八路·流程之缝审第7条）：ZM_FORCE 绕闸原不落痕——台账不记其值，只有旗与免拦。
+    #   今凡以 ZM_FORCE 存之版，其「记因」逐字入台账；无因者不得绕（空串即不算 force）。
+    if force:
+        _entry['ZM_FORCE记因'] = force[:200]
     ledger['版本'].append(_entry)
     open(os.path.join(d, 'v%02d.md' % v), 'w', encoding='utf-8').write(txt)
     json.dump(ledger, open(led, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
@@ -2415,8 +2433,8 @@ def save(n, note=''):
         print(_l)
     _rs, _miss = rounds_state(ledger)
     print('  ══════════════════════════════════════════')
-    print('  【定论】第%d章「%s」存版成功（rc=0）。台账共%d版，真轮%d/10%s'
-          % (n, note, v, len(_rs), '' if not _miss else '，缺 ' + '、'.join('第%d轮' % i for i in _miss)))
+    print('  【定论】第%d章「%s」存版成功（rc=0）。台账共%d版，真轮%d/%d%s'
+          % (n, note, v, len(_rs), ROUNDS, '' if not _miss else '，缺 ' + '、'.join('第%d轮' % i for i in _miss)))
     print('  ══════════════════════════════════════════')
     # 【批111·修】原以"版本数"充"轮数"：而 v01 为封版基线、冷轮／终版回补／定案皆在十轮之外，
     # 故"10版"实为"基线＋9轮"，机器却报十轮已满。改为只数真轮（说明以"第N轮"起者）。
@@ -2490,8 +2508,8 @@ def compare(n):
         print('   ✓末版同时为多数项冠军，累积有效。')
     print('\n  【铁律】择优不是挑一版丢九版。取末版为底，逐项回补其余版之冠军项；')
     print('        任何回补须再跑 --存版 生成新版，且新版硬项须全清。')
-    if len(versions) < 10:
-        print('\n  ⏳尚未满十轮（%d/10），横评仅供中途参考。' % len(versions))
+    if len(versions) < ROUNDS:
+        print('\n  ⏳尚未满%d轮（%d/%d），横评仅供中途参考。' % (ROUNDS, len(versions), ROUNDS))
     return 0
 
 

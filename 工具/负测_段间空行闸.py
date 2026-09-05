@@ -22,12 +22,13 @@ def chk(名, 得, 期):
 spec = importlib.util.spec_from_file_location('_jc', os.path.join(os.path.dirname(os.path.abspath(__file__)), '小说检察官.py'))
 _src = io.open(spec.origin, encoding='utf-8').read()
 新式 = '_bw = new.split' in _src
-chk('①检察官已改为只查白文（不是把闸删了）', 新式 and "re.search(r'[。！？”]" in _src, True)
+# ★2026-09-05·机制总审：式由 [。！？”] 扩为 [。！？”＊]（与 硬闸.py 同式；245 章「＊\n正文」一处实有），此处随之。
+chk('①检察官已改为只查白文（不是把闸删了）', 新式 and "re.search(r'[。！？”＊]" in _src, True)
 chk('①之b 且白文漏空行仍计入 bad（不是降成只报不拦）', 新式 and 'if _lk: bad += 1' in _src, True)
 
 def 判(txt):
     _bw = txt.split('【本章亮点')[0]
-    return bool(re.search(r'[。！？”]\n(?!\n)(?=[^\n])', _bw))
+    return bool(re.search(r'[。！？”＊]\n(?!\n)(?=[^\n])', _bw))
 def 旧判(txt):
     return bool(re.search(r'。\n(?!\n)(?=[^\n])', txt))
 

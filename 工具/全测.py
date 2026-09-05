@@ -98,6 +98,17 @@ def _留字之差(before):
     return changed, added, gone
 
 
+def _器印之头(out, 头, 名):
+    """★2026-09-05·机制总审（八路·陪跑闸审第1、2条之「印错之路」）：run() 只认「崩」；一件器不崩而印错（改了标签／半路 sys.exit／读错档）
+    则七项 hook 只索「⛔」或某数，取不着即绿。★★故各 hook 先索器自印之头（其律§一⑤：绿只及於器自印之项名）——头不在，即「器未出声」，红。
+    返回 None 表示头在；否则返回 (False, 说明)。"""
+    if out is None:
+        return False, '运行失败'
+    if 头 not in (out or ''):
+        return False, '器未出声（无其自印之头「%s」）——%s' % (头, (out or '').strip().split('\n')[-1][:60] or '空印')
+    return None
+
+
 def chk_selftest():
     out = run('检察官自测', ['工具/小说检察官.py', '--selftest'])
     m = re.search(r'规则回归:(\d+)/(\d+)；契约负测:(\d+)/(\d+)；项目接线:(\S+?)；末章硬闸:(\S+)', out)
@@ -404,6 +415,9 @@ def chk_person_ledger():
     out = run('人账闸', ['工具/人账.py'])
     if out is None:
         return False, '运行失败'
+    _h = _器印之头(out, '════ 人账闸', 'chk_person_ledger')
+    if _h:
+        return _h
     import re as _r
     bad = _r.findall(r'⛔ ([^\n]+·[^\n]+)', out or '')
     bad = [x for x in bad if '逾限而无' in x or '逾了自己那个限' in x]
@@ -487,6 +501,9 @@ def chk_big_questions():
     out = run('大问表', ['工具/大问表.py'])
     if out is None:
         return False, '运行失败'
+    _h = _器印之头(out, '════ 大问表', 'chk_big_questions')
+    if _h:
+        return _h
     import re as _r
     m = _r.search(r'逾上限者 (\d+) 样', out or '')
     n = int(m.group(1)) if m else 0
@@ -568,6 +585,8 @@ def chk_object_roll_all():
             continue
         n = int(m.group(1))
         out = run('器物点名%d' % n, ['工具/器物点名.py', str(n)])
+        if out is not None and '器物点名' not in out:
+            return False, '第%d章：器未出声（无其自印之头「器物点名」）' % n
         if out is None or out.startswith('__'):
             return False, '第%d章 运行失败' % n
         if '⛔' in out:
@@ -1115,6 +1134,9 @@ def chk_two_ledger():
     out = run('两册对限', ['工具/两册对限.py'])
     if out is None:
         return False, '运行失败'
+    _h = _器印之头(out, '════ 两册对限', 'chk_two_ledger')
+    if _h:
+        return _h
     import re as _r
     m = _r.search(r'两册认得上者 (\d+) 对', out or '')
     bad = _r.search(r'⛔ 两册不合 (\d+) 笔', out or '')
@@ -1149,6 +1171,9 @@ def chk_duiwei():
     out = run('对位闸', ['工具/对位.py'])
     if out is None:
         return False, '运行失败'
+    _h = _器印之头(out, '════ 对位闸', 'chk_duiwei')
+    if _h:
+        return _h
     import re as _r
     孤 = _r.search(r'⛔ 孤器 (\d+) 件', out or '')
     哑 = len(_r.findall(r'⚠ \S+：\*\*令里有其事而无其命令\*\*', out or ''))
@@ -1182,6 +1207,9 @@ def chk_grand_audit():
     out = run('大审闸', ['工具/大审.py', '--闸'])
     if out is None:
         return False, '运行失败'
+    _h = _器印之头(out, '════ 大审', 'chk_grand_audit')
+    if _h:
+        return _h
     bad = [x.strip() for x in out.splitlines() if x.strip().startswith('⛔')]
     if bad:
         return False, '；'.join(x[:110] for x in bad[:2])
@@ -1341,6 +1369,21 @@ def chk_vague_time_neg():
     if not m:
         return False, '未见其数'
     return m.group(3) == '全通', '模糊时距负测 %s/%s' % (m.group(1), m.group(2))
+
+
+def chk_sentence_reuse_neg():
+    """★整句复述哨负测（2026-09-05·机制总审·八路之覆盖之缺审第9条·见 工具/整句复述哨.py）：
+    ★★其形：P21 整句复述复发7（93复述77火塘原场…），而器只管章内四字串与 N-2 之逐字重出——跨任意前章之照抄无一器读。
+    ★取二组数（令§六①）：**组一·全书 ≥10 字整句与前章逐字同者 357 处／165 章（①）**；**组二·第93章有句源自第77章（②·P21 原案）**。
+    ★★★其回灌（令§六③）：⑤以连读客之窗（N-2）回灌第93章，77之句不在其内；全窗在。**不判红，只上第8轮必答表。**"""
+    out = run('负测·整句复述哨', ['工具/整句复述哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·整句复述哨 (\d+)/(\d+) (全通|有败)', out or '')
+    if not m:
+        return False, '未见自测之印'
+    return m.group(3) == '全通', '%s/%s' % (m.group(1), m.group(2))
 
 
 def chk_threshold_gate():
@@ -1588,6 +1631,10 @@ def chk_huixiu():
                        % os.path.basename(f))
             continue
         out = run('回修', ['工具/回修.py', '--验案', n.group(1)])
+        # ★2026-09-05·机制总审：器不崩而印错（无其自印之头「回修案」）亦须红——旧式只索「禁封版／未办毕」二词，别的印一律算办毕。
+        if out is not None and '回修案' not in out:
+            bad.append('第%s章（器未出声：无其自印之头「回修案」）' % n.group(1))
+            continue
         if out is None or '禁封版' in (out or '') or '未办毕' in (out or ''):
             bad.append('第%s章' % n.group(1))
     if bad:
@@ -2305,6 +2352,7 @@ def main():
         items.append(('负测·数句闸', chk_count_sentence_gate))
         items.append(('负测·必答表', chk_duty_num_neg))
         items.append(('负测·模糊时距', chk_vague_time_neg))
+        items.append(('负测·整句复述哨', chk_sentence_reuse_neg))
         items.append(('负测·吞记闸', chk_swallowed_note_gate))
         items.append(('负测·封版档冷轮口', chk_seal_cold_slot))
         items.append(('负测·棘轮裁', chk_ratchet_verdict))

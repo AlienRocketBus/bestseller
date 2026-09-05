@@ -34,10 +34,30 @@ def run():
     q = _load()
     real_run = q.run
 
-    # ①旧式回灌·以 traceback 之印灌七项（旧式 run 原样返印），须 7/7 绿——证此洞是真的
-    q.run = lambda *a, **k: TB
-    old_green = sum(1 for h in HOOKS if getattr(q, h)()[0])
-    R.append(('①旧式回灌·traceback 灌七项，旧式下绿 %d/7（须7·证洞）' % old_green, old_green == 7))
+    # ①旧式回灌·以改前之 全测.py（钉在 a73c8836：乙一之前末一笔提交，非 HEAD）灌 traceback 之印，七项须 7/7 绿——证此洞是真的
+    #   ★2026-09-05 改：旧断以「今之 hook＋旧之 run」为旧式；而今各 hook 亦已加「器印之头」之验，旧式须整档取旧，方不自绿。
+    import subprocess, tempfile
+    旧源 = subprocess.run(['git', 'show', 'a73c8836:工具/全测.py'], cwd=ROOT, capture_output=True, text=True).stdout
+    旧 = None
+    if 旧源:
+        fd, tmp = tempfile.mkstemp(prefix='quance_old_', suffix='.py', dir=os.path.join(ROOT, '工具'))
+        os.close(fd)
+        io.open(tmp, 'w', encoding='utf-8').write(旧源)
+        try:
+            spec = importlib.util.spec_from_file_location('quance_old', tmp)
+            旧 = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(旧)
+        finally:
+            os.remove(tmp)
+    if 旧 is not None:
+        旧.run = lambda *a, **k: TB
+        old_green = sum(1 for h in HOOKS if getattr(旧, h)()[0])
+        旧.run = lambda *a, **k: '（某器改了标签）一切都好\n'
+        old_green2 = sum(1 for h in HOOKS if getattr(旧, h)()[0])
+    else:
+        old_green = old_green2 = -1
+    R.append(('①旧式回灌·改前（a73c8836）之全测以 traceback 灌七项，绿 %d/7；以无头之印灌，绿 %d/7（须皆7·证二洞）' % (old_green, old_green2),
+              old_green == 7 and old_green2 == 7))
 
     # ②新式·run() 遇子进程 traceback 返 None
     q.run = real_run
@@ -84,6 +104,12 @@ def run():
     _变2, _增2, _失2 = q._留字之差(snap)
     R.append(('⑧留字之查·留一档即报其名（增 %d）；删去归零（%d/%d/%d）' % (len(_增), len(_变2), len(_增2), len(_失2)),
               _增 == ['版本/_负测留字_临时.txt'] and not _变 and not _失 and not (_变2 or _增2 or _失2)))
+
+    # ⑨印错之路（八路·陪跑闸审「治了一半」所指）：器不崩而印错（无其自印之头），七项须 7/7 红——旧式（只索⛔或某数）7/7 绿
+    q.run = lambda *a, **k: '（某器改了标签）一切都好\n'
+    bogus_red = sum(1 for h in HOOKS if not getattr(q, h)()[0])
+    q.run = real_run
+    R.append(('⑨印错之路·无自印之头之印灌七项，红 %d/7（须7）' % bogus_red, bogus_red == 7))
 
     bad = [x for x, o in R if not o]
     for x, o in R:

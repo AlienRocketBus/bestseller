@@ -1293,15 +1293,54 @@ def bida(n, r):
 
 VERDICT = ('✓', '合', '改', '核', '真伤', '判', '未见', '零', '缺', '对', '错', '撞', '补')
 
+# ★2026-09-05·机制总审丙⑧之治：裁定查之「近旁有裁语」本身有两个洞（本坐上磁盘坐实）：
+#   ★①**抄一遍清单，每行加一个「对」字，裁定率即 100%**（六轮实测皆 100）；
+#   ★②**更隐者：项自己带裁语之字即自绿**——如「三对」「一对」之项（同指对，甲一所加），
+#      纯抄清单一字不加，第300章第11轮裁定率仍报 100%。**器把清单当成了活。**
+# ★★故改判据为两层（判据之改须不误伤旧章：本坐以磁盘上 151 章 1777 轮回灌，
+#   新旧两式逐轮同判——⛔114 ⚠247 ✓1416，一轮不动；见 selftest 之「裁定查·全书回灌」）：
+#   **①裁语须出在「余文」里**——即窗内之字先剔去本轮必答项之原文，再剔去标点；
+#   **②余文除裁语之外，还须有本轮自己的字**（≥8字），且**其中须见实据**（数带量词／拍号／器印／其由）
+#      **或余文本身够长（≥20字）**。
+# ★★★它认哪几样：**纯抄清单（0%）｜抄清单加一个「对」（0%）｜项自带裁语之字而自绿（0%）**——
+#   本书同类之器共三样（覆盖查·裁定查·对数查），此为其二。
+# ★★★★它认不得哪一样（须直说）：**一句像样的套话**（「判合，其由见上，已核过一遍，无真伤」）
+#   **照旧 100%**——**认字之器认不得诚意**；其守不在此闸，在对数查（轮记之数须与台账相符）
+#   与十一轮之器印（数得自器，写不出来）。**故此闸只拦「连话都懒得编」，不拦「话编得像」。**
+_JUDGE_MARK = re.compile(r'[\s\*\-·|「」（）()【】：:；;，,。．\.、>#…—～~]+')
+_JUDGE_REAL = re.compile(
+    r'[0-9０-９]'
+    r'|[〇零一二三四五六七八九十百千]\s*(?:刀|拍|字|处|行|层|个|回|下|段|页|寸|分|口|样|针|条|根|轮|章|句|件|遍)'
+    r'|py|其由|因|係|见|印|据|凭')
+
+
+def _judged_near(seg, items_desc, minres=8, longres=20):
+    """窗内之字够不够算「裁过」。items_desc：本轮必答项，按长到短排（先剔长者）。"""
+    res = seg
+    for y in items_desc:
+        res = res.replace(y, '')
+    res = _JUDGE_MARK.sub('', res)
+    if not any(v in res for v in VERDICT):
+        return False
+    own = res
+    for v in VERDICT:
+        own = own.replace(v, '')
+    if len(own) < minres:
+        return False
+    return len(own) >= longres or bool(_JUDGE_REAL.search(own))
+
 
 def duty_cover2(n, r, logtext, win=70):
     """【批125·逐项裁定查】覆盖查只测「提没提」，而**抄一遍清单就能得100%**——
     那才是最像干活的偷懒。故加一层：每一必答项之近旁（±win字）须见裁语，
     方算「碰过」；只提名而无裁，计入「提了没裁」。
+    ★2026-09-05 补第二层（见上 _judged_near 之注）：裁语须出在剔去清单之余文里，
+      且余文须有本轮自己的字与实据——**否则抄清单加一个「对」字即满分**。
     返回 (提及率, 裁定率, 提及数, 裁定数, 总数, 只提未裁之项)。"""
     items, _ = duty_list(n, r)
     if not items:
         return None, None, 0, 0, 0, []
+    desc = sorted(items, key=len, reverse=True)
     ment, judged, naked = 0, 0, []
     for x in items:
         pos = [m.start() for m in re.finditer(re.escape(x), logtext)]
@@ -1311,7 +1350,7 @@ def duty_cover2(n, r, logtext, win=70):
         ok = False
         for i in pos:
             seg = logtext[max(0, i - win):i + len(x) + win]
-            if any(v in seg for v in VERDICT):
+            if _judged_near(seg, desc):
                 ok = True
                 break
         if ok:
@@ -1871,6 +1910,63 @@ def selftest():
     except Exception as _e:
         print('  ✗负测失败：半角冒·全书之验跑不起来（%s）' % _e)
         chk('半角冒·全书之验跑得起来', False)
+
+    # ★★★★★2026-09-05·机制总审丙⑧（裁定查之两洞·本坐上磁盘坐实後所补）：
+    #   ★一道核对器若「抄一遍清单就满分」，它报的绿不是活干了，是活抄了；
+    #   ★★而其负测须证三样：①旧式在此攻之下满分（故非陪跑）②新式拦得住 ③新式不打红旧章。
+    def _old_judged(n_, r_, txt):
+        """旧式裁定率（窗内见裁语即算）——负测之对照，勿改。"""
+        it, _u = duty_list(n_, r_)
+        if not it:
+            return None
+        j = 0
+        for x in it:
+            for m in re.finditer(re.escape(x), txt):
+                sg = txt[max(0, m.start() - 70):m.start() + len(x) + 70]
+                if any(v in sg for v in VERDICT):
+                    j += 1
+                    break
+        return j * 100 // len(it)
+
+    def _body_of(n_, r_):
+        return '\n'.join(_lunji_blocks(n_).get(r_, []))
+
+    _di, _ = duty_list(305, 3)
+    if _di:
+        _copy = '\n'.join('- %s' % x for x in _di)
+        _copy_ok = '\n'.join('- %s：对' % x for x in _di)
+        chk('裁定查·旧式在「抄清单+对」之下满分（故此负测非陪跑）',
+            _old_judged(305, 3, _copy_ok) == 100)
+        chk('裁定查·新式拦得住「抄清单+对」', duty_cover2(305, 3, _copy_ok)[1] == 0)
+        chk('裁定查·新式拦得住纯抄清单', duty_cover2(305, 3, _copy)[1] == 0)
+        _d11 = '\n'.join('- %s' % x for x in duty_list(300, 11)[0])
+        chk('裁定查·项自带裁语之字不许自绿（旧式於300第11轮报100）',
+            _old_judged(300, 11, _d11) == 100 and duty_cover2(300, 11, _d11)[1] == 0)
+        chk('裁定查·真轮记照旧算数（305第3轮·磁盘之实）',
+            duty_cover2(305, 3, _body_of(305, 3))[1] >= 50)
+        chk('裁定查·套话之限须直说在册（认不得「判合，其由见上」一类）',
+            '认不得哪一样' in open(__file__, encoding='utf-8').read())
+        try:
+            import glob as _g2
+            _root2 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            _diff = _tot = 0
+            _gate = lambda q: 0 if q < 50 else (1 if q < 80 else 2)
+            for _d in sorted(_g2.glob(os.path.join(_root2, '版本', '第*章'))):
+                _n = int(re.search(r'第(\d+)章', _d).group(1))
+                if not os.path.exists(os.path.join(_d, '_轮记.md')):
+                    continue
+                for _r in _lunji_blocks(_n):
+                    _b = _body_of(_n, _r)
+                    _o = _old_judged(_n, _r, _b)
+                    if _o is None:
+                        continue
+                    _tot += 1
+                    if _gate(_o) != _gate(duty_cover2(_n, _r, _b)[1]):
+                        _diff += 1
+            chk('裁定查·全书回灌 %d 轮新旧同判（新式不打红一章旧章）' % _tot,
+                _diff == 0 and _tot > 1000)
+        except Exception as _e:
+            chk('裁定查·全书回灌跑得起来（%s）' % _e, False)
 
     L = lambda vs: {'章': 1, '版本': vs}
     _SOFT = {'净重': 100, '段数': 9, '均段': 11, '长段数': 0, '嗅': 3, '听': 4,

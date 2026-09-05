@@ -1102,15 +1102,54 @@ def bida(n, r):
 
 VERDICT = ('✓', '合', '改', '核', '真伤', '判', '未见', '零', '缺', '对', '错', '撞', '补')
 
+# ★2026-09-05·机制总审丙⑧之治：裁定查之「近旁有裁语」本身有两个洞（本坐上磁盘坐实）：
+#   ★①**抄一遍清单，每行加一个「对」字，裁定率即 100%**（六轮实测皆 100）；
+#   ★②**更隐者：项自己带裁语之字即自绿**——如「三对」「一对」之项（同指对，甲一所加），
+#      纯抄清单一字不加，第300章第11轮裁定率仍报 100%。**器把清单当成了活。**
+# ★★故改判据为两层（判据之改须不误伤旧章：本坐以磁盘上 151 章 1777 轮回灌，
+#   新旧两式逐轮同判——⛔114 ⚠247 ✓1416，一轮不动；见 selftest 之「裁定查·全书回灌」）：
+#   **①裁语须出在「余文」里**——即窗内之字先剔去本轮必答项之原文，再剔去标点；
+#   **②余文除裁语之外，还须有本轮自己的字**（≥8字），且**其中须见实据**（数带量词／拍号／器印／其由）
+#      **或余文本身够长（≥20字）**。
+# ★★★它认哪几样：**纯抄清单（0%）｜抄清单加一个「对」（0%）｜项自带裁语之字而自绿（0%）**——
+#   本书同类之器共三样（覆盖查·裁定查·对数查），此为其二。
+# ★★★★它认不得哪一样（须直说）：**一句像样的套话**（「判合，其由见上，已核过一遍，无真伤」）
+#   **照旧 100%**——**认字之器认不得诚意**；其守不在此闸，在对数查（轮记之数须与台账相符）
+#   与十一轮之器印（数得自器，写不出来）。**故此闸只拦「连话都懒得编」，不拦「话编得像」。**
+_JUDGE_MARK = re.compile(r'[\s\*\-·|「」（）()【】：:；;，,。．\.、>#…—～~]+')
+_JUDGE_REAL = re.compile(
+    r'[0-9０-９]'
+    r'|[〇零一二三四五六七八九十百千]\s*(?:刀|拍|字|处|行|层|个|回|下|段|页|寸|分|口|样|针|条|根|轮|章|句|件|遍)'
+    r'|py|其由|因|係|见|印|据|凭')
+
+
+def _judged_near(seg, items_desc, minres=8, longres=20):
+    """窗内之字够不够算「裁过」。items_desc：本轮必答项，按长到短排（先剔长者）。"""
+    res = seg
+    for y in items_desc:
+        res = res.replace(y, '')
+    res = _JUDGE_MARK.sub('', res)
+    if not any(v in res for v in VERDICT):
+        return False
+    own = res
+    for v in VERDICT:
+        own = own.replace(v, '')
+    if len(own) < minres:
+        return False
+    return len(own) >= longres or bool(_JUDGE_REAL.search(own))
+
 
 def duty_cover2(n, r, logtext, win=70):
     """【批125·逐项裁定查】覆盖查只测「提没提」，而**抄一遍清单就能得100%**——
     那才是最像干活的偷懒。故加一层：每一必答项之近旁（±win字）须见裁语，
     方算「碰过」；只提名而无裁，计入「提了没裁」。
+    ★2026-09-05 补第二层（见上 _judged_near 之注）：裁语须出在剔去清单之余文里，
+      且余文须有本轮自己的字与实据——**否则抄清单加一个「对」字即满分**。
     返回 (提及率, 裁定率, 提及数, 裁定数, 总数, 只提未裁之项)。"""
     items, _ = duty_list(n, r)
     if not items:
         return None, None, 0, 0, 0, []
+    desc = sorted(items, key=len, reverse=True)
     ment, judged, naked = 0, 0, []
     for x in items:
         pos = [m.start() for m in re.finditer(re.escape(x), logtext)]
@@ -1120,7 +1159,7 @@ def duty_cover2(n, r, logtext, win=70):
         ok = False
         for i in pos:
             seg = logtext[max(0, i - win):i + len(x) + win]
-            if any(v in seg for v in VERDICT):
+            if _judged_near(seg, desc):
                 ok = True
                 break
         if ok:

@@ -56,7 +56,11 @@ def 章号(p):
 def 线与日(body):
     """返回 (线, 日)。线：主／暗（「我」密度<3/千字为暗，与 第零轮开镜庭.is_dark 同尺）；日：章首四百字内之第N天／第N日，无则 None。"""
     净 = len(re.sub(r'\s', '', body)) or 1
-    线 = '暗' if body.count('我') / 净 * 1000 < 3 else '主'
+    if body.count('我') / 净 * 1000 >= 3:
+        线 = '主'
+    else:
+        # ★2026-09-05：暗线分「她」（沈鸢）与「他」（霍钧／黎东来视角章·无日之标）；日差只算「她」之章
+        线 = '暗' if body.count('她') >= body.count('他') else '他'
     m = re.search(r'第([零〇一二三四五六七八九十百]+)([天日])', body[:400])
     return 线, (cn2i(m.group(1)) if m else None)
 
@@ -72,6 +76,8 @@ def 表(章库):
         if 线 == '主':
             if 日 is not None:
                 上主 = 日
+        elif 线 == '他':
+            pass   # 他视角之章不入二线之历
         else:
             if 日 is not None and 上主 is not None:
                 row['日差'] = 上主 - 日

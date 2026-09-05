@@ -462,7 +462,14 @@ def _line_of(c):
     w = len(re.sub(r'\s', '', bb))
     if not w:
         return None
-    return '暗' if len(re.findall('我', bb)) / w * 1000 < 3 else '主'
+    if len(re.findall('我', bb)) / w * 1000 >= 3:
+        return '主'
+    # ★2026-09-05·机制总审（八路·跨章连贯审第3条）：旧式暗线只一值，霍钧章268、黎东来章277（通篇「他」）被当作沈鸢之同线前章，
+    #   270、279遂被令回指另一条线之收句。今暗线分二值：「她」（沈鸢·第三人称限知）与「他」（霍钧／黎东来之视角章）。
+    #   其尺：她/千 与 他/千 孰大（268：他26.4/她0；270：她38.5/他0.6）。
+    她 = bb.count('她') / w * 1000
+    他 = bb.count('他') / w * 1000
+    return '她' if 她 >= 他 else '他'
 
 
 def _prev_same_line(cur):

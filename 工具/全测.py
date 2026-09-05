@@ -37,14 +37,65 @@ def _测数(out, 兜底):
     return '★未取着·' + 兜底
 
 def run(desc, args, timeout=900):
+    """跑一件器，返其印；**器崩即返 None**。
+
+    ★2026-09-05·机制总审·八路之陪跑闸审所逮（其红在哪一行）：旧式把 stdout＋stderr 原样返回，
+      而 chk_big_questions／chk_person_ledger／chk_two_ledger／chk_grand_audit／chk_huixiu／chk_duiwei／
+      chk_object_roll_all 七项皆只在印里找「⛔」或某个数——**器一崩（traceback／超时），印里既无⛔亦无数，七项齐绿**。
+      ★★实测（负测_全测崩绿.py ①）：以一段 traceback 灌此七项，旧式下 7/7 返 True。
+      ★★★而这七项里有二项是全书唯二守「读者挂着的旧问」与「不出场之人」者——**它们崩了，81 项里照旧一个 ✓。**
+    ★★★★故改二样：①stderr 里见 Traceback 即返 None（凡 hook 皆以 `out is None` 为「运行失败」）；
+      ②超时先送 SIGINT 再 kill——**旧式 SIGKILL 令子进程之 finally 不跑，负测在真仓库上改的档就留在盘上**
+      （同审之第11条·复现：timeout 杀後档留 MUTATED）。
+    ★★★★★而其限（§一⑤）：本函只认「崩」；一件器不崩而印错，仍须各 hook 自验其项名。"""
+    import signal
     try:
-        r = subprocess.run([sys.executable] + args, cwd=ROOT, env=ENV,
-                           capture_output=True, text=True, timeout=timeout)
-        return r.stdout + r.stderr
-    except subprocess.TimeoutExpired:
-        return '__TIMEOUT__'
-    except Exception as e:
-        return '__ERR__%s' % e
+        p = subprocess.Popen([sys.executable] + args, cwd=ROOT, env=ENV,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            out, err = p.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            try:
+                p.send_signal(signal.SIGINT)
+                out, err = p.communicate(timeout=15)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                p.communicate()
+            return None
+        if 'Traceback (most recent call last)' in (err or ''):
+            return None
+        return (out or '') + (err or '')
+    except Exception:
+        return None
+
+
+def _留字快照():
+    """★负测留字之查（2026-09-05·机制总审·八路之陪跑闸审第11条）：
+    十余份负测在真仓库上改档再复原（FS认账改 canon 之 due、两册对限改到期账、器物点名删 _器物.md……），
+    ★而一份负测若中途崩了或被超时杀了，复原那一步不跑，改动就留在盘上——**下一坐拿它当真账。**
+    ★★故全测起手先给 设定／版本／正文 每一档记一个 sha256，跑毕再记一回，二者之差即「留字」。
+    ★★★实测（2026-09-05）：正常一跑 83 项，内容有变之档 0——故此查常态为零，一响即真。"""
+    import hashlib
+    snap = {}
+    for top in ('设定', '版本', '正文'):
+        for dp, dn, fn in os.walk(os.path.join(ROOT, top)):
+            if '__pycache__' in dp or '_可逆库' in dp:
+                continue
+            for x in fn:
+                p = os.path.join(dp, x)
+                try:
+                    snap[os.path.relpath(p, ROOT)] = hashlib.sha256(open(p, 'rb').read()).hexdigest()
+                except Exception:
+                    pass
+    return snap
+
+
+def _留字之差(before):
+    after = _留字快照()
+    changed = sorted(p for p in after if p in before and after[p] != before[p])
+    added = sorted(p for p in after if p not in before)
+    gone = sorted(p for p in before if p not in after)
+    return changed, added, gone
 
 
 def chk_selftest():
@@ -372,6 +423,21 @@ def chk_person_ledger_neg():
     if not m:
         return False, '未见自测之印'
     return m.group(3) == '全通', '%s/%s' % (m.group(1), m.group(2))
+
+
+def chk_crash_green_neg():
+    """★全测崩绿负测（2026-09-05·机制总审·八路之陪跑闸审第1、2、11条·见 工具/负测_全测崩绿.py）：
+    ★★其形：**器一崩即绿**——七项 hook 只在印里找「⛔」或某数，traceback 里二者皆无，遂 True。
+    ★取二组数（令§六①）：**组一·以 traceback 灌七项，旧式 7/7 绿（①）**；**组二·新式 run() 遇 traceback 返 None，七项 7/7 红（③）**。
+    ★★★其回灌（令§六③）：①即旧式回灌；④另验超时先 SIGINT——子进程之 finally 得跑（旧式 SIGKILL 下不跑）。"""
+    out = run('负测·全测崩绿', ['工具/负测_全测崩绿.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
+    if not m:
+        return False, '未见其数'
+    return m.group(3) == '全通', '全测崩绿负测 %s/%s' % (m.group(1), m.group(2))
 
 
 def chk_big_questions():
@@ -2220,6 +2286,7 @@ def main():
         items.append(('大问表', chk_big_questions))
         items.append(('人账闸', chk_person_ledger))
         items.append(('负测·人账闸', chk_person_ledger_neg))
+        items.append(('负测·全测崩绿', chk_crash_green_neg))
         items.append(('负测·大问挂账', chk_bigq_neg))
         items.append(('负测·场景切换闸', chk_scenecut_neg))
         items.append(('两册对限', chk_two_ledger))
@@ -2241,11 +2308,21 @@ def main():
         items.append(('回修案', chk_huixiu))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
+    _快照 = _留字快照()
     for name, fn in items:
         ok, detail = fn()
         print('  %s %-14s %s' % ('✓' if ok else '✗', name, detail))
         if not ok:
             fails.append(name)
+    # ★负测留字之查（2026-09-05）：跑毕再照一回，凡 设定／版本／正文 之内容有变、有增、有失者，即负测留字。
+    _变, _增, _失 = _留字之差(_快照)
+    if _变 or _增 or _失:
+        print('  ✗ %-14s 内容有变 %d｜新增 %d｜消失 %d：%s' % (
+            '负测留字', len(_变), len(_增), len(_失), '、'.join((_变 + _增 + _失)[:6])))
+        print('     ★某份负测改了真仓库之档而未复原（多半是中途崩了或被超时所杀）——先 git diff 看它改了什么，再定复原。')
+        fails.append('负测留字')
+    else:
+        print('  ✓ %-14s 设定／版本／正文 %d 档，跑前跑後 sha256 逐档同' % ('负测留字', len(_快照)))
     if fails:
         print('\n  ⛔全测未过：%s' % '、'.join(fails))
         ok, 语 = 推闸(fails)

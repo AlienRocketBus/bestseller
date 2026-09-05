@@ -321,6 +321,26 @@ def chk_highlight_boundary():
     return True, (ln[0].strip() if ln else '全书绿') + '｜自测 10/10（⑨旧式回灌拿盘上真章作夹具，非造句，故非陪跑）'
 
 
+def chk_breath_day():
+    """息日链（2026-09-05立·见 工具/息日链.py）。
+    ★其立之由：丙㉓ 派席核拆章之账，两席在 113/114 与 115/116 上给了**相反**的判
+    （一席说 114 错、一席说 116 错）。本坐上盘把 109—116 的日子逐章拉出来一比，**两章都错**，
+    ★★且错法一样：114 係 113 拆出、116 係 115 拆出，拆的时候正文分了、那一行息账没跟着走。
+    ★★★这一类人眼查不动：全书三百余章，这一行一章一现，隔着几十章才看得出差一。
+    ★★★★其判只三句：同章两数之差恒 17；拆出之章与源章同数；息日只增不减。"""
+    out = run('息日链·自测', ['工具/息日链.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    if '自测 5/5' not in out:
+        return False, [x.strip() for x in out.split('\n') if '⛔' in x][:1] or '未见其数'
+    out2 = run('息日链·全书', ['工具/息日链.py'])
+    if out2 is None:
+        return False, '全书运行失败'
+    if '⛔' in out2:
+        return False, [x.strip() for x in out2.split('\n') if '⛔' in x][0]
+    return True, '全书息账之日逐章接得上｜自测 5/5（④拿 114 之真案回灌须报红，故非陪跑）'
+
+
 def chk_dup_gate():
     """叠词粘连闸 负测（2026-09-01立·见 工具/负测_叠词闸.py）。
     ★其立之由：检察官那道叠词闸写作 r'(那个|…)\\1'——r-string 里是「反斜杠＋1」两个字面字符，
@@ -2474,6 +2494,7 @@ def main():
         items.append(('负测·硬闸', chk_hard_gate))
         items.append(('负测·叠词闸', chk_dup_gate))
         items.append(('亮点界', chk_highlight_boundary))
+        items.append(('息日链', chk_breath_day))
         items.append(('数闸', chk_num_gate))
         items.append(('负测·回执对账', chk_receipt_recon))
         items.append(('FS沉默闸', chk_fs_silence))

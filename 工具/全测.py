@@ -440,6 +440,36 @@ def chk_crash_green_neg():
     return m.group(3) == '全通', '全测崩绿负测 %s/%s' % (m.group(1), m.group(2))
 
 
+def chk_day_gap():
+    """日差哨（2026-09-05·机制总审·八路之跨章连贯审第1条·本坐上磁盘坐实後立·见 工具/日差哨.py）——**二线之历对不对得上。**
+    ★其红在哪一行：201章「他记的是第四十四天」与她第四十四页同一日（差0）；272主93天／273暗89日之照面係她三天前（86）——**差7**；
+      而其间无一器量它：日差自232之0漂至286之6，九处之变无一处出过声。
+    ★★哨只判「差有没有变」（自306起），差本身归 canon（她漏记了几日，还是二线两本历），须作者点头·回修令§五3；旧章之漂只报。
+    ★★★其限（§一⑤）：只认章首四百字内之「第N天／第N日」；无标者印?不判。"""
+    out = run('日差哨', ['工具/日差哨.py', '--静'])
+    if out is None:
+        return False, '运行失败'
+    if '⛔' in out:
+        return False, out.strip().split('\n')[-1][:120]
+    import re as _r
+    m = _r.search(r'今差 (\d+)', out or '')
+    if not m:
+        return False, '未见其数'
+    return True, '新章无日差之变｜今差 %s（旧章之漂九处只报·见 日差哨.py）' % m.group(1)
+
+
+def chk_day_gap_neg():
+    """负测·日差哨——★其非陪跑之凭：③以旧章235之漂回灌须入漂（改前无此哨，磁盘上九处之漂无一处出过声）；②新章之漂须⛔。"""
+    out = run('负测·日差哨', ['工具/日差哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·日差哨 (\d+)/(\d+) (全通|有败)', out or '')
+    if not m:
+        return False, '未见自测之印'
+    return m.group(3) == '全通', '%s/%s' % (m.group(1), m.group(2))
+
+
 def chk_big_questions():
     """大问表（2026-09-01立·八造2026-09-03改·见 工具/大问表.py）——**可以欠，不可以不认**。
     ★其立之由：机器一处也没在问「读者还在等什么」——到期账258笔 open 0，
@@ -2303,6 +2333,8 @@ def main():
         items.append(('大问表', chk_big_questions))
         items.append(('人账闸', chk_person_ledger))
         items.append(('负测·人账闸', chk_person_ledger_neg))
+        items.append(('日差哨', chk_day_gap))
+        items.append(('负测·日差哨', chk_day_gap_neg))
         items.append(('负测·全测崩绿', chk_crash_green_neg))
         items.append(('负测·大问挂账', chk_bigq_neg))
         items.append(('负测·场景切换闸', chk_scenecut_neg))

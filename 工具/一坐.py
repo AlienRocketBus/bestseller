@@ -412,6 +412,18 @@ def main():
                                                for x in _warn[:3]) or '无'))
     except Exception:
         pass
+    # ★★★★★日差哨（2026-09-05·机制总审所立）：**二线之历对不对得上。**
+    #   ★其红之实：201章钉两本同一日（差0），272主93／273暗89之照面她记86——差7；其间九处之漂无一器看见。
+    #   ★★哨只判「差有没有变」（自306起），差本身归 canon（作者点头）；每坐起手印一行，免得下一坐又拿邻章去补。
+    try:
+        import subprocess as _sp10
+        _r10 = _sp10.run(['python3', os.path.join(ROOT, '工具', '日差哨.py'), '--静'],
+                         capture_output=True, text=True, timeout=90)
+        _l10 = [l.strip() for l in (_r10.stdout or '').split('\n') if l.strip()]
+        out.append('── 日差哨（二线之历：暗线之日差＝前一主线章之天−本章之日）──')
+        out.append('  ' + (_l10[-1] if _l10 else '（哨未出声）'))
+    except Exception:
+        pass
     # ★而旧账须逐坐印在眼前，否则「不回头判红」就成了「不了了之」。
     try:
         import subprocess as _sp3

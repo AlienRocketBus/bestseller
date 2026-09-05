@@ -231,6 +231,16 @@ def main():
 
     # ── ⑥ 提交并复验 ──
     print('── ⑥ 提交并复验 ──')
+    # ★2026-09-05·机制总审（八路·流程之缝审第15条）：封版不清扫轮务状态——55 份 _领轮.json 与 3 份 _拦停.json 留在已封版之章。
+    #   今封版之前：旗在则拒封（其因须人看一眼再销）；_领轮.json 随封版删去（定案／回修之存版不再需其基线）。
+    _flag = os.path.join(ROOT, '版本', '第%d章' % n, '_拦停.json')
+    if os.path.exists(_flag):
+        print('【停】第%d章拦停旗未销（%s）——封版之前须先修其因或以一次成功之补存销旗。' % (n, io.open(_flag, encoding='utf-8').read()[:120].replace('\n', ' ')))
+        return
+    _ling = os.path.join(ROOT, '版本', '第%d章' % n, '_领轮.json')
+    if os.path.exists(_ling):
+        os.remove(_ling)
+        print('    ✓已清扫 _领轮.json（封版之章不再需领轮基线）')
     R('git', 'add', '-A')
     R('git', 'commit', '-q', '-m', 'seal ch%d (auto via 收.py)' % n)
     rc, lg = R('git', 'log', '--oneline', '-1')

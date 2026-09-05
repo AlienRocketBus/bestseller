@@ -1416,6 +1416,31 @@ def chk_anchor_join_neg():
     return m.group(3) == '全通', '%s/%s' % (m.group(1), m.group(2))
 
 
+def _留旗之章(章目录们, 有回执):
+    """纯函数：返回既有回执（已封版）又留着 _拦停.json 之章号列表。"""
+    return [n for n, d in 章目录们 if 有回执(n) and os.path.exists(os.path.join(d, '_拦停.json'))]
+
+
+def chk_sealed_flags():
+    """封版之章不得留旗（2026-09-05·机制总审·八路之流程之缝审第15条）——★旗之义是「那一轮的版没存上」，封了版还留着旗，旗就成了谎。
+    ★★其红在哪一行：161／175／220 三章皆有回执而 _拦停.json 仍在（220 之因係空轮闸而说明为占位串，_flag_stale 永不自销）。★★★今日一次清扫，此後 收.py ⑥ 见旗拒封。"""
+    import glob as _g, re as _r
+    目录 = []
+    for d in _g.glob(os.path.join(ROOT, '版本', '第*章')):
+        m = _r.search(r'第(\d+)章', d)
+        if m:
+            目录.append((int(m.group(1)), d))
+    回执 = set()
+    for f in os.listdir(os.path.join(ROOT, '设定')):
+        m = _r.search(r'回执_\d+_第(\d+)章', f)
+        if m:
+            回执.add(int(m.group(1)))
+    bad = _留旗之章(目录, lambda n: n in 回执)
+    if bad:
+        return False, '已封版而留旗之章：%s（先看其因再销：版本/第N章/_拦停.json）' % '、'.join(str(x) for x in sorted(bad))
+    return True, '已封版之章无一留旗（%d 章有回执）' % len(回执)
+
+
 def chk_threshold_gate():
     """★趋阈闸负测（2026-09-02·291第7轮所立·每次存版必跑）：
     ★★其形：**一个数差一点就够到一条有名之限，而最省的一步是补几个字把它顶过去**；
@@ -2435,6 +2460,7 @@ def main():
         items.append(('负测·器物点名', chk_object_roll))
         items.append(('器物册·逐章回灌', chk_object_roll_all))
         items.append(('负测·拦停旗', chk_stop_flag))
+        items.append(('封版留旗', chk_sealed_flags))
         items.append(('负测·立价查', chk_price_check))
         items.append(('负测·开轮六检', chk_open6_gate))
         items.append(('负测·到期账词表', chk_due_states))

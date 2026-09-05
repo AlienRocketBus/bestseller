@@ -102,6 +102,19 @@ def 跑():
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+    # ⑥封版留旗（2026-09-05·机制总审）：以「已封版而留旗」之形回灌 全测._留旗之章 须报其章；无回执者不报（旧式：全测无此检，三章留旗二十余日无人见）
+    try:
+        import importlib.util as _iu, tempfile as _tf, json as _js
+        _sp = _iu.spec_from_file_location('quance', os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '工具', '全测.py'))
+        _q = _iu.module_from_spec(_sp); _sp.loader.exec_module(_q)
+        _t = _tf.mkdtemp(prefix='zm_flag_')
+        _d = os.path.join(_t, '第7章'); os.makedirs(_d)
+        _js.dump({'因': 'x'}, open(os.path.join(_d, '_拦停.json'), 'w'))
+        chk('⑥已封版而留旗 → 报其章', _q._留旗之章([(7, _d)], lambda n: True), [7])
+        chk('⑥之b 未封版而留旗 → 不报（旗尚有义）', _q._留旗之章([(7, _d)], lambda n: False), [])
+        shutil.rmtree(_t, ignore_errors=True)
+    except Exception as e:
+        chk('⑥封版留旗之验运行', str(e), '')
     坏 = [x for x in 案 if not x[1]]
     for 名, 过, 详 in 案:
         print('  %s %s%s' % ('✓' if 过 else '✗', 名, '' if 过 else '　（%s）' % 详))

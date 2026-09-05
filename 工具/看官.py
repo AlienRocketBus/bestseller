@@ -269,18 +269,44 @@ def 连读客(a, b):
     #   ★★★而其判不止於率：**率只指路，判在逐拍问一句「其後跟不跟着一个新的数」**
     #     （296第10轮所立之尺）——**跟着新数者是「比」，不跟者是「抄」。**
     out.append('   ── 问五「上一章的句子，有没有原样搬过来」──')
-    out.append('     ★其尺：逐对相邻同线之章（N-2→N），逐拍找≥10字逐字重出，报其占比。')
+    out.append('     ★其尺：逐对同线相邻之章（上一同线章→N·以线之三值配对，非硬取N-2），逐拍找≥10字逐字重出，报其占比。')
     out.append('     ★★本书之群（31对·264—296）：中位 2.1%｜顶 13.8%；故 ≥6% ⚠，≥10% ⛔。')
-    for n in range(a + 2, b + 1):
-        r = _重出率(n - 2, n)
+    # ★2026-09-05·机制总审（八路·跨章连贯审第5条）：旧式以 N-2 硬配「同线相邻章」——同线连排时比错对象（283→285 係暗对主，0.0%），
+    #   真正相邻之同线对（284→285）永不比。今以线之三值（主／她／他）取上一同线章。
+    for n in range(a + 1, b + 1):
+        p = _prev_same(n)
+        if p is None or p < a - 2:
+            continue
+        r = _重出率(p, n)
         if r is None:
             continue
         mark = '⛔' if r >= 10 else ('⚠' if r >= 6 else '  ')
-        out.append('     %s %d→%d %.1f%%' % (mark, n - 2, n, r))
+        out.append('     %s %d→%d %.1f%%' % (mark, p, n, r))
         if r >= 10:
             挂.append('连读客·逐字重出：%d→%d 达 %.1f%%（中位2.1%%）——须逐拍问「其後跟不跟着一个新的数」'
-                      % (n - 2, n, r))
+                      % (p, n, r))
     return out, 挂
+
+
+def _线(n):
+    """三值（与 开轮六检._line_of 同尺）：主（我≥3/千）｜她｜他。"""
+    _f, t = 白文(n)
+    if not t:
+        return None
+    w = len(re.sub(r'\s', '', t)) or 1
+    if t.count('我') / w * 1000 >= 3:
+        return '主'
+    return '她' if t.count('她') >= t.count('他') else '他'
+
+
+def _prev_same(n):
+    me = _线(n)
+    if me is None:
+        return None
+    for k in range(n - 1, max(0, n - 13), -1):
+        if _线(k) == me:
+            return k
+    return None
 
 
 def _重出率(x, y):

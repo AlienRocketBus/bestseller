@@ -327,6 +327,26 @@ def chk_highlight_boundary():
                   + '②八字窗逮 80 句 2365 字而「整句逐字相同」只逮 42 句 1236 字，故非陪跑）')
 
 
+def chk_contain_beat():
+    """含拍（2026-09-06立·见 工具/含拍.py）——一拍整段被紧挨着的另一拍含住＝并段之後旧拍没删。
+    ★其立之由：段五 198 之修席报出「85 之全摸长段已逐字含 87／89／91 三拍，係旧段未删」。
+    ★★而全书最重的一处不在段五，在 138：138:87 是并好的长段，138:89—103 八拍逐字就是它拆开的样子，
+    ★★★同一段话前後说了两遍，约二百字，历十六版无人发觉（v01 无，v02 起长短两份一起进来）。
+    ★★★★其判以「隔几拍」分真假，而这条缝是量出来的：并段之伤紧挨着（隔 1—7），
+    　　　引旧话隔得远（隔 35 以上·三处皆以冒号把话引起来），中间 8—34 全书一处也无。"""
+    out = run('含拍', ['工具/含拍.py'])
+    if out is None:
+        return False, '运行失败'
+    if '⛔' in out:
+        return False, [x.strip() for x in out.split('\n') if '⛔' in x][0]
+    neg = run('负测·含拍', ['工具/负测_含拍.py'])
+    if neg is None or '全通' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
+    return True, ('全书无「并段之後旧拍没删」｜负测_含拍 6/6 全通'
+                  '（①拿 832499ed^ 之 138 治前原物回灌须报红；②六章治前逐章报红；'
+                  '③立器之日 邻拍重出 见 138 为 1 拍而整章比不着——该洞已於同日修）')
+
+
 def chk_word_count():
     """字数闸（2026-09-06立·见 工具/字数闸.py）——「他说了『……』，N个字」里那个 N。
     ★其立之由：段五 198 之驳席在同一章逮出两处数错，而同席顺手证了一件更要紧的事——
@@ -2528,6 +2548,7 @@ def main():
         items.append(('亮点界', chk_highlight_boundary))
         items.append(('息日链', chk_breath_day))
         items.append(('字数闸', chk_word_count))
+        items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))
         items.append(('负测·回执对账', chk_receipt_recon))
         items.append(('FS沉默闸', chk_fs_silence))

@@ -355,7 +355,13 @@ def chk_word_count():
     　　正说明那个「对」是本书的规矩，不是巧合；而那六处是伤。**
     ★★★★其群与其不认（令§六④）：只认紧邻式且只在正文段；回指式（「，这N个字」）、
     　　「一个字都听不懂」之成语、亮点段之整段引、markdown 星号——四路皆不认，
-    　　其败因逐条记在 机制总审§二十二。**判不死的就别做成闸。**"""
+    　　其败因逐条记在 机制总审§二十二。**判不死的就别做成闸。**
+    ★★★★★0906 晚补路二·同章冒号立言式（拿 242 一处换来的）：「写的是：X。」独占一行，
+    　　其後八行内「数了一遍字：N」或以「N个字」起头之行。**本书同类共 5 处**
+    　　（230:719／242:745／284:557／286:205／287:465）。242 那一处「从今天起，我先动手」实八字
+    　　而全仓二十处称七——立言与报数隔着一个＊拍，紧邻式一路判绿。
+    　　放宽到「说的是／答的是」＋二十四行，全书得 23 处而报红 11 处，**逐处人眼核过，无一是真的**，
+    　　故不放宽——**一个会喊狼的核对器比没有更糟**。"""
     out = run('字数闸', ['工具/字数闸.py'])
     if out is None:
         return False, '运行失败'
@@ -365,7 +371,30 @@ def chk_word_count():
     if neg is None or '全通' not in neg:
         return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
     ln = [x.strip() for x in out.split('\n') if '✓' in x]
-    return True, (ln[0] if ln else '全绿') + '｜负测_字数闸 5/5 全通（拿立器之日六处未治之原物回灌，逐处逮出；旧式对同一份原物零报）'
+    return True, (ln[0] if ln else '全绿') + '｜负测_字数闸 9/9 全通（拿立器之日六处未治之原物回灌，逐处逮出；旧式对同一份原物零报；路二拿 6d8dee47 之 242 回灌逮出称七实八，而紧邻式对同一份原物零报）'
+
+
+def chk_highlight_present():
+    """亮点在（2026-09-06 晚立·见 工具/亮点在.py）——**骨记在不在**。
+    ★其立之由：246 之修席进场时发现 246 一章根本没有【本章亮点】段，
+    　而 亮点对表 与 起草闸甲层 照样报全绿——三路皆以 `if '【本章亮点】' not in txt: return` 起手，
+    　**无段即无判据，於是无段就是全绿**。此为「绿而不实」之**第五种**：
+    　有位、红得起来、看得见、也接进了「过不过」那一句，
+    　**可遇上「整样东西不在」的时候，它是空过，不是判红**。
+    ★★其群与其不认（令§六④）：认第 109 章以後之章（本书 197 章），骨记须恰一段；
+    　1—108 章共 100 章无骨记，係立式以前之旧稿，**不认**——
+    　若一并判红，此器天天红一百处，就成了没人看的红。那一批记在 机制总审§二十六。
+    ★★★它红在哪一行（令§十三）：立此器之日红四处——280／281／282／283，同日补齐。"""
+    out = run('亮点在', ['工具/亮点在.py'])
+    if out is None:
+        return False, '运行失败'
+    if '⛔' in out:
+        return False, [x.strip() for x in out.split('\n') if '⛔' in x][0]
+    neg = run('负测·亮点在', ['工具/负测_亮点在.py'])
+    if neg is None or '全通' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
+    ln = [x.strip() for x in out.split('\n') if '✓' in x]
+    return True, (ln[0] if ln else '全绿') + '｜负测_亮点在 8/8 全通（拿 6d8dee47 之 280 回灌须判红，而旧式对同一份原物零报）'
 
 
 def chk_breath_day():
@@ -2547,6 +2576,7 @@ def main():
         items.append(('负测·叠词闸', chk_dup_gate))
         items.append(('亮点界', chk_highlight_boundary))
         items.append(('息日链', chk_breath_day))
+        items.append(('亮点在', chk_highlight_present))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

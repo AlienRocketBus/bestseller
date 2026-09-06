@@ -5606,10 +5606,15 @@ def super_main():
         else:
             print('  ✓ 肩位链／日序链／禁回流／必现锚 全过')
         e+=_cerr
+        # ★2026-09-06 补：阅读器未同步此前只印不判——reader 算出来、印在仪表盘上，
+        #   却从未加进 e，而全测判的是 ERROR=0。**於是网页版可以落在旧稿上，全测照样绿、照样推得上去。**
+        #   作者当日问「那个网页那个小说更新了没有」，一查才见此洞。今接进判：未同步即 ERROR。
+        #   （同日第三次逮到同一形：算了、印了，但没接进判——另二为 邻拍重出之视野、含拍之隔窗。）
+        e+=reader
         r=legacy_review_layer(files,None)
         mx=max(files)
         print('─'*46)
-        print(f'  全书仪表盘:ERROR={e}(须0) REVIEW={r}(人工裁定) READER={"通过" if reader==0 else "未同步"}')
+        print(f'  全书仪表盘:ERROR={e}(须0) REVIEW={r}(人工裁定) READER={"通过" if reader==0 else "未同步（已计入ERROR）"}')
         print('  封版状态='+('机器硬闸通过（仍须AI回执）' if e==0 else '未放行'))
         second_gate(f'全书1-{mx}章')
         return 0 if e==0 else 1

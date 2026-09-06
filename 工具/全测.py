@@ -327,6 +327,27 @@ def chk_highlight_boundary():
                   + '②八字窗逮 80 句 2365 字而「整句逐字相同」只逮 42 句 1236 字，故非陪跑）')
 
 
+def chk_word_count():
+    """字数闸（2026-09-06立·见 工具/字数闸.py）——「他说了『……』，N个字」里那个 N。
+    ★其立之由：段五 198 之驳席在同一章逮出两处数错，而同席顺手证了一件更要紧的事——
+    ★★它把 198 一章内十处逐处数过，无一处错；故那两处不是本书另有一套算法，是漏数了一个字。
+    ★★★本坐上盘全书量过：紧邻式 141 处，立器之日红 6 处（4.3%）。**九成五数得对，
+    　　正说明那个「对」是本书的规矩，不是巧合；而那六处是伤。**
+    ★★★★其群与其不认（令§六④）：只认紧邻式且只在正文段；回指式（「，这N个字」）、
+    　　「一个字都听不懂」之成语、亮点段之整段引、markdown 星号——四路皆不认，
+    　　其败因逐条记在 机制总审§二十二。**判不死的就别做成闸。**"""
+    out = run('字数闸', ['工具/字数闸.py'])
+    if out is None:
+        return False, '运行失败'
+    if '⛔' in out:
+        return False, [x.strip() for x in out.split('\n') if '⛔' in x][0]
+    neg = run('负测·字数闸', ['工具/负测_字数闸.py'])
+    if neg is None or '全通' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
+    ln = [x.strip() for x in out.split('\n') if '✓' in x]
+    return True, (ln[0] if ln else '全绿') + '｜负测_字数闸 5/5 全通（拿立器之日六处未治之原物回灌，逐处逮出；旧式对同一份原物零报）'
+
+
 def chk_breath_day():
     """息日链（2026-09-05立·见 工具/息日链.py）。
     ★其立之由：丙㉓ 派席核拆章之账，两席在 113/114 与 115/116 上给了**相反**的判
@@ -2506,6 +2527,7 @@ def main():
         items.append(('负测·叠词闸', chk_dup_gate))
         items.append(('亮点界', chk_highlight_boundary))
         items.append(('息日链', chk_breath_day))
+        items.append(('字数闸', chk_word_count))
         items.append(('数闸', chk_num_gate))
         items.append(('负测·回执对账', chk_receipt_recon))
         items.append(('FS沉默闸', chk_fs_silence))

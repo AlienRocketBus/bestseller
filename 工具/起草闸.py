@@ -154,7 +154,13 @@ def 印(n, 只甲=False):
     print('\n【三】本章所立之令 %d 条——**落笔後回读全章，逐条核有没有自破**' % len(b['令']))
     for i, s in b['令']:
         print('    %4d 行  %s' % (i, s))
-    print('\n【四】三条不许忘的（拿 848 处换来的）：')
+    # ★0908 补【四】外事之度（外事尺.py 之位·令§六④「一个器要答得出谁调它」）
+    print('\n【四】外事之度（只报不判）')
+    _r = subprocess.run([sys.executable, '工具/外事尺.py', '--度', str(n)],
+                        capture_output=True, cwd=根)
+    print(_r.stdout.decode('utf-8', 'replace').rstrip() or '    未取着')
+
+    print('\n【五】三条不许忘的（拿 848 处换来的）：')
     print('    ①改正文必**同笔**改【本章亮点】——骨记未同笔改 120 处，占 14.2%')
     print('    ②改数之前先 `grep -rn` 全仓数它有几处——**一处对八处的时候，那一处才是错的**')
     print('    ③写完先跑本器甲层，再交别人看')

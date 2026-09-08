@@ -129,6 +129,17 @@ def 查(印=True):
                 '乙·席囤灰：工具/席/%s 既不在 一章.js 里被调，也不在 用法.md 里有其位。%s' %
                 (s, ('已挂账：' + 账[s]) if s in 账 else ''))
 
+    # 乙之二·席之 schema 键须尽是 ASCII
+    # ★其立之由（0908·本坐亲犯）：`一章.js` 之 schema 用了中文键，工作流一起手即
+    #   `400 input_schema.properties: Property keys should match pattern '^[a-zA-Z0-9_.-]{1,64}$'`，
+    #   **六个 agent 全崩、一章未写**。这是一条判得死的（正则一跑即知），故做成闸。
+    for f in sorted(glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))):
+        文 = _读(os.path.relpath(f, ROOT))
+        坏 = sorted(set(re.findall(r'([^\x00-\x7F][^\s:]*)\s*:\s*\{\s*type:', 文)))
+        if 坏:
+            红.append('乙之二·%s 之 schema 键非 ASCII：%s——工作流会当场 400，一个 agent 也起不来。'
+                      % (os.path.basename(f), '／'.join(坏[:6])))
+
     # 丙·章
     for d in sorted(glob.glob(os.path.join(ROOT, '版本', '第*章'))):
         m = re.search(r'第(\d+)章', os.path.basename(d))
@@ -216,6 +227,14 @@ def 自测():
 
     # ⑧旧式回灌·席：拿一个不存在于 一章.js 与 用法.md 的席名，须判红
     T('⑧未挂之席须判红', ('无此席.js' not in js) and ('无此席.js' not in _读('工具/席/用法.md')))
+
+    # ⑧之二·旧式回灌·schema 键：拿一段中文键之 schema 灌进正则，须逮出
+    坏 = re.findall(r'([^\x00-\x7F][^\s:]*)\s*:\s*\{\s*type:', '  锁定行: { type: \'string\' },')
+    T('⑧之二 中文 schema 键逮得出', 坏 == ['锁定行'], '实逮 %s' % 坏)
+
+    # ⑧之三·今日之席无中文 schema 键（活格：真有就红）
+    T('⑧之三 今日诸席之 schema 键尽是 ASCII',
+      not any('schema 键非 ASCII' in x for x in 查(印=False)[0]))
 
     # ⑨正文在()须认得出真章（拿三个真章号验；认不出则丙整条是死的）
     T('⑨正文在()认得出 273／305／1', 正文在(273) and 正文在(305) and 正文在(1))

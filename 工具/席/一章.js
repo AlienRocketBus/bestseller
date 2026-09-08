@@ -54,15 +54,16 @@ ${据律}
   { phase: '定位', schema: {
     type: 'object',
     properties: {
-      锁定行: { type: 'string' }, 悬账: { type: 'string' },
-      圣经: { type: 'string' }, canon: { type: 'string' },
-      上章末尾: { type: 'string' }, 本段之势: { type: 'string' },
-      日号: { type: 'string' }, 在役规矩: { type: 'string' },
-      在场: { type: 'string' }, 查不着: { type: 'string' },
+      lock_row: { type: 'string' }, debts: { type: 'string' },
+      bible: { type: 'string' }, canon: { type: 'string' },
+      prev_tail: { type: 'string' }, arc: { type: 'string' },
+      day: { type: 'string' }, rules: { type: 'string' },
+      present: { type: 'string' }, not_found: { type: 'string' },
     },
-    required: ['锁定行', '日号', '上章末尾', '本段之势'],
+    required: ['lock_row', 'day', 'prev_tail', 'arc'],
   } })
 
+if (!位) throw new Error('定位席未交——八段之首崩了，後面全是无据之笔，就此停手')
 const 位文 = JSON.stringify(位, null, 1)
 
 // ═══ 二·三魂竞（三个角度各拟一魂，判官取一） ═══
@@ -100,11 +101,11 @@ ${位文}
   { label: `魂:${a.k}`, phase: '三魂', schema: {
     type: 'object',
     properties: {
-      路: { type: 'string' }, 魂: { type: 'string' }, 怎么量: { type: 'string' },
-      最好那一拍: { type: 'string' }, 五件事: { type: 'string' }, 慢镜头: { type: 'string' },
-      收章句: { type: 'string' }, 接位: { type: 'string' }, 风险: { type: 'string' },
+      lane: { type: 'string' }, soul: { type: 'string' }, measured_by: { type: 'string' },
+      best_beat: { type: 'string' }, five: { type: 'string' }, slow: { type: 'string' },
+      closing: { type: 'string' }, fits: { type: 'string' }, risk: { type: 'string' },
     },
-    required: ['魂', '怎么量', '最好那一拍', '五件事', '收章句'],
+    required: ['soul', 'measured_by', 'best_beat', 'five', 'closing'],
   } }))).then(r => r.filter(Boolean))
 
 const 定魂 = await agent(
@@ -134,14 +135,15 @@ ${JSON.stringify(魂们, null, 1)}
   { phase: '三魂', schema: {
     type: 'object',
     properties: {
-      取哪一路: { type: 'string' }, 摘了什么: { type: 'string' },
-      魂: { type: 'string' }, 怎么量: { type: 'string' }, 最好那一拍: { type: 'string' },
-      五件事: { type: 'string' }, 慢镜头: { type: 'string' }, 收章句: { type: 'string' },
-      本章之忌: { type: 'string' }, 落选之由: { type: 'string' },
+      chosen: { type: 'string' }, borrowed: { type: 'string' },
+      soul: { type: 'string' }, measured_by: { type: 'string' }, best_beat: { type: 'string' },
+      five: { type: 'string' }, slow: { type: 'string' }, closing: { type: 'string' },
+      pitfalls: { type: 'string' }, rejected_why: { type: 'string' },
     },
-    required: ['魂', '怎么量', '最好那一拍', '五件事', '收章句', '本章之忌'],
+    required: ['soul', 'measured_by', 'best_beat', 'five', 'closing', 'pitfalls'],
   } })
 
+if (!定魂) throw new Error('定魂席未交——无魂不许起草（起草令第一部分【3】）')
 const 魂文 = JSON.stringify(定魂, null, 1)
 
 // ═══ 三·起草 ═══
@@ -179,10 +181,10 @@ ${魂文}
   { phase: '起草', schema: {
     type: 'object',
     properties: {
-      档名: { type: 'string' }, 拍数: { type: 'integer' }, 字数: { type: 'integer' },
-      闸: { type: 'string' }, 自陈之弱: { type: 'string' }, 未绿之红: { type: 'string' },
+      file: { type: 'string' }, beats: { type: 'integer' }, words: { type: 'integer' },
+      gates: { type: 'string' }, self_weak: { type: 'string' }, reds: { type: 'string' },
     },
-    required: ['档名', '拍数', '闸'],
+    required: ['file', 'beats', 'gates'],
   } })
 
 // ═══ 四·机闸（红则回改，至多三转） ═══
@@ -192,7 +194,7 @@ for (let i = 1; i <= 3; i++) {
   闸报 = await agent(
 `${令}
 
-你是第 ${N} 章的**机闸席**（第 ${i} 转）。执笔已交稿：${草.档名}。
+你是第 ${N} 章的**机闸席**（第 ${i} 转）。执笔已交稿：${(草 && 草.file) || '（执笔未交交待，自己 `ls 正文/ | tail -3` 找本章之档）'}。
 ${据律}
 
 把这些逐个跑一遍，把**每一个数都印在产它的那条命令旁边**（令§一⑥）：
@@ -216,10 +218,10 @@ ${据律}
     { label: `机闸:${i}`, phase: '机闸', schema: {
       type: 'object',
       properties: {
-        逐器: { type: 'string' }, 本转所改: { type: 'string' },
-        余红: { type: 'string' }, 全绿: { type: 'boolean' },
+        per_tool: { type: 'string' }, fixed_this_pass: { type: 'string' },
+        left_red: { type: 'string' }, all_green: { type: 'boolean' },
       },
-      required: ['逐器', '全绿'],
+      required: ['per_tool', 'all_green'],
     } })
   if (!闸报 || 闸报.全绿) break
   log(`机闸第 ${i} 转未全绿，回改`)
@@ -266,10 +268,10 @@ ${读判}
   { phase: '修席', schema: {
     type: 'object',
     properties: {
-      落: { type: 'string' }, 拒: { type: 'string' },
-      闸: { type: 'string' }, 白卷: { type: 'boolean' },
+      applied: { type: 'string' }, refused: { type: 'string' },
+      gates: { type: 'string' }, blank: { type: 'boolean' },
     },
-    required: ['落', '拒', '闸'],
+    required: ['applied', 'refused', 'gates'],
   } })
 
 // ═══ 七·极限（第12／13轮） ═══
@@ -303,10 +305,10 @@ ${据律}
   { phase: '极限', schema: {
     type: 'object',
     properties: {
-      复问: { type: 'string' }, 判: { type: 'string' }, 哪一拍: { type: 'string' },
-      本轮所动: { type: 'string' }, 闸: { type: 'string' },
+      requestioned: { type: 'string' }, verdict: { type: 'string' }, which_beat: { type: 'string' },
+      changed: { type: 'string' }, gates: { type: 'string' },
     },
-    required: ['复问', '判', '哪一拍', '闸'],
+    required: ['requestioned', 'verdict', 'which_beat', 'gates'],
   } })
 
 // ═══ 八·案席（复核·存版·全测） ═══
@@ -339,7 +341,7 @@ ${据律}
      python3 工具/同步全本阅读器.py
      python3 工具/全测.py
    **全测必须全绿才许交提。**红了：先读它红在哪一行，改那一处，再跑。
-7. **写席记**（不写，囤灰闸当场判红——`python3 工具/囤灰闸.py`）：
+7. **写席记**（不写，囤灰闸当场判红——\`python3 工具/囤灰闸.py\`）：
    建 \`版本/第${N}章/_席记.json\`，式为
    \`{"章":${N},"段":{"定位":"…","三魂":"…","起草":"…","机闸":"…","读席":"…","修席":"…","极限":"…","案席":"…"}}\`，
    每段一句话写**那一段实际干了什么**（不是「已完成」——那样的记等於没记）。
@@ -361,11 +363,11 @@ ${据律}
   { phase: '案席', schema: {
     type: 'object',
     properties: {
-      抽验: { type: 'string' }, 锁定行逐拍: { type: 'string' },
-      全测: { type: 'string' }, sha: { type: 'string' },
-      未了: { type: 'string' }, 已推: { type: 'boolean' },
+      spot_check: { type: 'string' }, lock_row_beats: { type: 'string' },
+      quantest: { type: 'string' }, sha: { type: 'string' },
+      open: { type: 'string' }, pushed: { type: 'boolean' },
     },
-    required: ['抽验', '锁定行逐拍', '全测'],
+    required: ['spot_check', 'lock_row_beats', 'quantest'],
   } })
 
 return { 章: N, 位, 魂: 定魂, 起草: 草, 机闸: 闸报, 读席: 读, 修席: 修, 极限, 案席: 案 }

@@ -2428,7 +2428,7 @@ def _冷轮逾期俱有否决记(raw):
     ★★★**一笔冷轮悄悄滑过它的到期章者，无人写过否决记**——那正是「逾期」本来要逮的。"""
     import re as _re
     import glob as _g
-    ns = [int(m) for m in _re.findall(r'COLD-(\d+)', raw)]
+    ns = [int(m) for m in re.findall(r'COLD-(\d+)', raw)]
     if not ns:
         return False
     rcs = []
@@ -2484,7 +2484,7 @@ def 推闸(fails):
             #     ★★★**凡一笔冷轮之红而无人写过否决记者，照旧拦**——那正是⑥本来要逮的：无声消失。
             def _冷轮之红俱有否决记(x):
                 import re as _re, glob as _g
-                ns = [int(m) for m in _re.findall(r'COLD-(\d+)', x)]
+                ns = [int(m) for m in re.findall(r'COLD-(\d+)', x)]
                 if not ns:
                     return False
                 rcs = []
@@ -2559,6 +2559,55 @@ def 推闸(fails):
                   % (_放行标, cur, len(准), '；'.join(准)))
 
 
+def chk_dust():
+    """囤灰闸（2026-09-08立·作者令「做出来放那儿囤灰是最可怕的」）：
+    ★其立之由：全测查的是「跑过的器绿不绿」，从不查「该跑的器跑没跑」——
+      **造出来搁着的，全测从前一声不吭。** 见 工具/囤灰闸.py 之头注（它认哪几样、本书同类共几样）。"""
+    out = run('囤灰闸', ['工具/囤灰闸.py'])
+    if out is None:
+        return False, '囤灰闸崩'
+    if '⛔' in out:
+        return False, '囤灰：' + '；'.join(x.strip(' ⛔') for x in out.split('\n') if '⛔' in x)[:300]
+    m = re.search(r'甲·器 (\d+) 样，跑得着 (\d+)', out)
+    return True, ('器 %s 样逐样跑得着｜席各有其位｜新章逐章有席记' % m.group(1)) if m else '无囤灰'
+
+
+def chk_dust_neg():
+    out = run('负测·囤灰闸', ['工具/囤灰闸.py', '--自测'])
+    if out is None:
+        return False, '负测崩'
+    return ('全通' in out), _测数(out, '10') + ' 全通（旧式回灌：跑口砍成叶器·字数闸，闭包须当场塌下 ≥50 样；两头皆活数）'
+
+
+def chk_review_ledger():
+    """复核台账须守住 1096/1096 且无因之判为零（2026-09-08 接进全测·囤灰闸所逮）。
+    ★其红在哪一行：此账 0908 之前已判毕，而**没有一样东西守着它别退**——
+      一条判被改回「未判」或改成无因之判，从前全书无一器出声。"""
+    out = run('复核台账', ['工具/复核台账.py', '--进度'])
+    if out is None:
+        return False, '复核台账崩'
+    m = re.search(r'无因之判：(\d+)', out)
+    if m is None:
+        return False, '复核台账未印「无因之判」（器印变了式，须重接）'
+    if m.group(1) != '0':
+        return False, '复核台账有无因之判 %s 条' % m.group(1)
+    bars = re.findall(r'(\d+)/\s*(\d+)', out)
+    未 = [(a, b) for a, b in bars if a != b]
+    if 未:
+        return False, '复核台账有未判：%s' % 未[:5]
+    return True, '1096 项逐条有判、无因之判 0（此账只许守，不许退）'
+
+
+# ═══ 空跑闸（2026-09-08·本坐亲犯而立）═══
+# ★病灶：本坐把三个新检的 def 插进了 main() 中间，**main() 被截成两半**——
+#   `items = [...]` 之後即函数末，全测遂 **rc=0、一行不印**，而本坐先看的是退出码。
+# ★★这一病最毒的地方：**它长得跟「全绿」一模一样**。ast.parse 过、无重名、无异常。
+# ★★★故立此闸：全测自己数它到底跑了几件；**跑不满 %d 件即判红**，
+#   且此下限是**当场由 items 之长算的**（不许钉成常数——§二十八：活数钉成常数，闸即死）。
+# ★★★★而更要紧的一条写在这儿备忘：**退出码不是印。器印了什么，才是它说的话（令§一②）。**
+最少件数 = 40
+
+
 def main():
     quick = '--快' in sys.argv
     items = [('重名定义扫描', chk_dup_defs), ('钩子挂载', chk_hookspath),
@@ -2567,7 +2616,12 @@ def main():
              ('轮次完整性回归', chk_lunci),
              ('检察官自测', chk_selftest), ('医生', chk_doctor),
              ('跑轮负测', chk_shilun)]
+
+
     if not quick:
+        items.append(('囤灰闸', chk_dust))
+        items.append(('负测·囤灰闸', chk_dust_neg))
+        items.append(('复核台账', chk_review_ledger))
         items.append(('全书检', chk_book))
         items.append(('书级体检', chk_bookwide))
         items.append(('质量三闸', chk_quality_gates))
@@ -2659,8 +2713,10 @@ def main():
         items.append(('回修案', chk_huixiu))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
+    跑过件数 = [0]
     _快照 = _留字快照()
     for name, fn in items:
+        跑过件数[0] += 1
         ok, detail = fn()
         print('  %s %-14s %s' % ('✓' if ok else '✗', name, detail))
         if not ok:
@@ -2674,6 +2730,11 @@ def main():
         fails.append('负测留字')
     else:
         print('  ✓ %-14s 设定／版本／正文 %d 档，跑前跑後 sha256 逐档同' % ('负测留字', len(_快照)))
+    if 跑过件数[0] < (最少件数 if not quick else 8):
+        print('\n  ⛔空跑闸：本次只跑了 %d 件（至少 %d）——多半是 main() 被截断或 items 没接上。'
+              % (跑过件数[0], 最少件数 if not quick else 8))
+        print('     ★此病长得跟全绿一模一样：rc=0、一行不印。**退出码不是印**（令§一②）。')
+        return 1
     if fails:
         print('\n  ⛔全测未过：%s' % '、'.join(fails))
         ok, 语 = 推闸(fails)

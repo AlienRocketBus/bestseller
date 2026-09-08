@@ -374,6 +374,30 @@ def chk_word_count():
     return True, (ln[0] if ln else '全绿') + '｜负测_字数闸 9/9 全通（拿立器之日六处未治之原物回灌，逐处逮出；旧式对同一份原物零报；路二拿 6d8dee47 之 242 回灌逮出称七实八，而紧邻式对同一份原物零报）'
 
 
+def chk_net_weight_table():
+    """净重对表（2026-09-08 立·见 工具/净重对表.py）——**施工表锁定行自书之「净重N」，拿尺回去量一遍**。
+    ★其立之由：280 之席所报——`设定/01_…表` 每一行 `| N | 锁定 |` 里自书一个净重，
+    　而**全书没有一道器拿它回正文复量过**。280 之席量得红 7 章；本坐 0908 复量得红 **17 章**，
+    　多出来的十处正是这一程回修改过正文而锁定行没跟着改。
+    　**账上写着一个数，而没有一把尺回去量它**——与「骨记在不在」同族：不是判错，是根本没在量。
+    ★★这个数为什么要紧：本书以净重定章之带（常章 2,500—3,500｜爆章 ≥6,000）。
+    　283 之锁定行自书「净重3,499」，**正压在常章带上限之下一字**，而实数 3,481——
+    　**一章在不在带内，判据眼下靠的是一个漂掉的数。**
+    ★★★其群与其不认（令§六④）：认施工表锁定行内自书净重且正文档在者，今 **26 章**；
+    　回执／圣经／canon／台账里的净重**一律不认**——那几本口径不一（含题／不含题／含骨记），
+    　强行对表即是造假红。**判不死的就别做成闸。**"""
+    out = run('净重对表', ['工具/净重对表.py'])
+    if out is None:
+        return False, '运行失败'
+    if '⛔' in out:
+        return False, [x.strip() for x in out.split('\n') if '⛔' in x][0]
+    neg = run('负测·净重对表', ['工具/负测_净重对表.py'])
+    if neg is None or '全通' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
+    ln = [x.strip() for x in out.split('\n') if '✓' in x]
+    return True, (ln[0] if ln else '全绿') + '｜负测_净重对表 10/10 全通（拿 db520882 之施工表回灌逐行逮出 17 处，而别器无一行同时读「锁定」与「净重」）'
+
+
 def chk_draft_gate_day():
     """起草闸·乙层之日号（2026-09-08 二治·见 工具/负测_起草闸.py）。
     ★这一项守的不是「会不会报红」，是**印给人看的那个数对不对**。
@@ -2600,6 +2624,7 @@ def main():
         items.append(('息日链', chk_breath_day))
         items.append(('亮点在', chk_highlight_present))
         items.append(('起草闸·乙层之日号', chk_draft_gate_day))
+        items.append(('净重对表', chk_net_weight_table))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

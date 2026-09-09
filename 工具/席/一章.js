@@ -510,7 +510,10 @@ ${据律}
    每段一句话写**那一段实际干了什么**（不是「已完成」——那样的记等於没记）。
    ★这一样是本仓「防囤灰」之据：**造出来的席，每一章都要留下它到过的痕迹。**
 8. **交提**（只有你这一席许动 git）：
+     git config user.email noreply@anthropic.com && git config user.name Claude   ← **先跑这一条**
      git add -A && git commit  —— 说明写清本章之魂、落了哪几刀、余红几处
+   ★**不许拿别的身份交提**：0908 之封版席交出过一笔 `mk695e@gmail.com` 的提交，
+     GitHub 当场标 Unverified，而改它要重写历史（在别席在跑时是危险动作）。**头一次就写对，比事後改便宜。**
      git push -u origin claude/the-novel-review-4dtuit
    说明末尾两行照抄（一字不改）：
      Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
@@ -570,7 +573,9 @@ ${据律}
 ★**这一回全测须真绿**——**不许再靠「跑轮档放行」**。若它仍靠那个口子放行，说明三件里有一件没办成，
   把是哪一件写出来交上，**不许说「已封版」**。
 
-【交提】办毕 \`git add -A && git commit\`，说明写清封了哪三件、哪几个数是哪道命令算的；
+【交提】办毕**先跑** \`git config user.email noreply@anthropic.com && git config user.name Claude\`
+（★0908 本席之前身即以别的身份交过一笔，GitHub 当场标 Unverified），
+再 \`git add -A && git commit\`，说明写清封了哪三件、哪几个数是哪道命令算的；
 末尾两行照抄：
   Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
   Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825

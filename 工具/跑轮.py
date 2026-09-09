@@ -537,6 +537,31 @@ def duibiao(n):
     return 0
 
 
+def _补存之基线(base, note):
+    """补存口该往 _领轮.json 里落什么（None＝一个字也不落，且旧基线须销）。
+
+    ★★★★★2026-09-09·307封版之序所逮（**同形第二口·当日治**）：
+      ★0909 早间已治过第一口——`--下一轮` 之「无轮可领仍落 目标轮:null 基线」
+        （见本档 `nextround` 里「无缺轮即不落基线」那一段）；
+      ★★**而补存这一口原样未动**：旧式一律 `base['目标轮'] = _round_of(note)`，
+        **说明里没有「第N轮」时即写下一个 None**——**空值照旧从这一口漏进盘里**。
+    ★★★其实证（逐字，非拟）：307 之 v16 说明作
+      「定案·案席封版（十三轮之外）·判不补·记因：…·补存」（无轮号），
+      於是 `版本/第307章/_领轮.json` 落成 `"目标轮": null`，
+      而 `开轮六检.check9` 正确判它「⛔基线里无「目标轮」（领了轮而没记所领之号）」。
+    ★★★★故照第一口同一条判改：**无轮号即不落领轮之凭**（落一份空的等於领了一个不存在的轮）；
+      ★而说明里没有轮号时，**旧基线里那个真轮号不许被抹掉**——那一轮领了还没用，
+      抹掉它反倒把「领了轮没用」变成「没领过轮」。
+    """
+    b = dict(base or {})
+    b['正文sha'] = b.get('末版sha')
+    r = _round_of(note)
+    if r is not None:
+        b['目标轮'] = r
+    b['补存'] = True
+    return None if b.get('目标轮') is None else b
+
+
 def buccun(n, note):
     """补存：专修「某轮跑了、正文改了、版没存上」。
     与 --存版 之别：本口显式承认基线已偏，故免闸八之「起手即已偏」，其余诸闸照走，
@@ -549,12 +574,19 @@ def buccun(n, note):
             base = json.load(open(lg, encoding='utf-8'))
         except Exception:
             base = {}
-    base['正文sha'] = base.get('末版sha')
-    base['目标轮'] = _round_of(note)
-    base['补存'] = True
+    新 = _补存之基线(base, note)
     os.makedirs(d, exist_ok=True)
-    json.dump(base, open(lg, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-    print('  ℹ补存口：已按末版对齐领轮基线（显式承认此版非当场所存）。')
+    if 新 is None:
+        if os.path.exists(lg):
+            os.remove(lg)
+            print('  ℹ补存口：说明里无「第N轮」——不落领轮基线，并销去旧基线一份'
+                  '（其目标轮为空，係此病之遗）。')
+        else:
+            print('  ℹ补存口：说明里无「第N轮」——不落领轮基线'
+                  '（无轮可领，本就不该有领轮之凭）。')
+    else:
+        json.dump(新, open(lg, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+        print('  ℹ补存口：已按末版对齐领轮基线（显式承认此版非当场所存）。')
     rc = save(n, note + '·补存')
     return rc
 
@@ -2098,6 +2130,61 @@ def selftest():
         chk('补存率·磁盘之实（305须13%·2/15）', _burate(_t.get('版本', [])) == 13)
     except Exception as _e4:
         chk('补存率·磁盘之验跑得起来（%s）' % _e4, False)
+
+    # ★★★★★2026-09-09·307封版之序·补存口之空基线（**同形第二口**·见 `_补存之基线`）。
+    #   ★令§六③：一份在旧式下也全过的测就是陪跑——**故此四条须先证旧式真绿**。
+    #     旧式逐字为：`base['正文sha']=base.get('末版sha'); base['目标轮']=_round_of(note); base['补存']=True`
+    #     ——**一律落盘，说明无轮号时那个键即为 None**。
+    def _旧式补存基线(base, note):
+        b = dict(base or {})
+        b['正文sha'] = b.get('末版sha')
+        b['目标轮'] = _round_of(note)
+        b['补存'] = True
+        return b                       # ★旧式从不返 None：一律落盘
+    _实307 = {'时': '09-09 09:23', '正文sha': '0277a436cd27c821',
+              '末版sha': '0277a436cd27c821', '目标轮': 1, '新章': False}
+    _定案 = '定案·案席封版（十三轮之外）·判不补·记因：本轮之刀不在正文而在册子上'
+    chk('补存基线·①旧式回灌：无轮号之说明把真轮号抹成 null（证此洞是真的）',
+        _旧式补存基线(_实307, _定案).get('目标轮') is None
+        and '目标轮' in _旧式补存基线(_实307, _定案)
+        and _旧式补存基线({}, _定案).get('目标轮') is None)
+    chk('补存基线·②新式：说明无轮号者，旧基线那个真轮号原样留着（1，不抹成 null）',
+        (_补存之基线(_实307, _定案) or {}).get('目标轮') == 1)
+    chk('补存基线·③新式不误伤：说明带轮号者照旧落盘，且其号即说明之号',
+        (_补存之基线(_实307, '第13轮·升华定稿') or {}).get('目标轮') == 13)
+    chk('补存基线·④无轮可记者一个字也不落（返 None·305之遗即此形）',
+        _补存之基线({}, _定案) is None
+        and _补存之基线({'末版sha': 'abc'}, _定案) is None)
+    # ★★而⑤是这一治的真凭：旧式落下的那一份，`开轮六检.check9` 判红；新式那一份判绿。
+    try:
+        import importlib.util as _iu9, tempfile as _tf9, shutil as _sh9
+        _sp9 = _iu9.spec_from_file_location('_lz9', os.path.join(_root, '工具', '开轮六检.py'))
+        _m9 = _iu9.module_from_spec(_sp9)
+        _sp9.loader.exec_module(_m9)
+        _tmp9 = _tf9.mkdtemp(prefix='zm_ling_')
+        _d9 = os.path.join(_tmp9, '版本', '第9章')
+        os.makedirs(_d9)
+        _js.dump({'版本': [{'版': 'v01'}]}, open(os.path.join(_d9, '_台账.json'), 'w',
+                                                encoding='utf-8'))
+        _old9 = _m9.ROOT
+        _m9.ROOT = _tmp9
+        try:
+            _p9 = os.path.join(_d9, '_领轮.json')
+            _js.dump(_旧式补存基线(_实307, _定案), open(_p9, 'w', encoding='utf-8'),
+                     ensure_ascii=False)
+            _红 = not _m9.check9(9)[0][1]
+            _js.dump(_补存之基线(_实307, _定案), open(_p9, 'w', encoding='utf-8'),
+                     ensure_ascii=False)
+            _绿甲 = _m9.check9(9)[0][1]          # 新式·真轮号留着者
+            os.remove(_p9)                        # 新式·无轮可记者一个字不落
+            _绿乙 = _m9.check9(9)[0][1]
+        finally:
+            _m9.ROOT = _old9
+            _sh9.rmtree(_tmp9, ignore_errors=True)
+        chk('补存基线·⑤旧式那一份 check9 判红、新式两局俱绿（非陪跑）',
+            _红 and _绿甲 and _绿乙)
+    except Exception as _e9:
+        chk('补存基线·⑤之验跑得起来（%s）' % _e9, False)
 
     L = lambda vs: {'章': 1, '版本': vs}
     _SOFT = {'净重': 100, '段数': 9, '均段': 11, '长段数': 0, '嗅': 3, '听': 4,

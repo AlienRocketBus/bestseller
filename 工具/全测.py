@@ -170,6 +170,41 @@ def chk_quality_gates():
     return False, '；'.join(bad[:3]) if bad else '未通过'
 
 
+_六检之号 = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛㉜'
+
+
+def _六检之败(_t, _免十四):
+    """把 `开轮六检.py --静` 之印拆成**逐条**之败（2026-09-09·307封版席所逮而立）。
+
+    ★病灶（本日磁盘之实，逐条印过）：`--静` 之印把当日所有之红以「；」串成**一行**
+      （其码：`'；'.join('%s %s' % (n, m) for n, ok, m in rows if not ok)`），
+      ★★而旧式 `_bad` 是逐**行**判的：`if _skip14 and ('⑭' in _x or '已封版' in _x): continue`
+      ——**见行内有⑭即整行跳过**；★★★於是那一行上与⑭同列的每一条红，**一并被吞**。
+    ★★★★其实证：`python3 工具/开轮六检.py 307 --静` 印
+      「⑨·领轮之号 ⛔基线里无「目标轮」…；⑭·已封版之章 ⛔第307章已封版…」（rc=2），
+      而同一日之全测印「✓ 开轮十六检　两头俱过（末章第307章·下章第308章）」——
+      **⑨那一条红从来没有进过 fails，故推闸连开都没开过**：
+      ★这不是「靠跑轮档放行过去的」，是**红在半路上就没了**，比放行更看不见。
+    ★★★★★故改逐**条**判。而不许裸 `split('；')`：**各条自身之文里亦带「；」**
+      （⑭之文即含「而今之末章为第307章；★★★★下一章为第308章。」），
+      故断在「；」而其後紧接一个检号（①…㉜）之处，只跳⑭那一条。
+    """
+    import re as _re
+    _b = []
+    for _ln in (_t or '').splitlines():
+        _x = _ln.strip()
+        if not _x or '开轮十六检通过' in _x:
+            continue
+        for _c in _re.split('；(?=[' + _六检之号 + '])', _x):
+            _c = _c.strip()
+            if not _c:
+                continue
+            if _免十四 and _c.startswith('⑭'):
+                continue
+            _b.append(_c)
+    return _b
+
+
 def chk_open_six():
     """开轮六检（2026-08-16立·见 工具/开轮六检.py）：治近日所逮之六条未治之bug——
     ★③人名计数之误／★★⑤撞号与merged／★★★⑥冷轮逾期／
@@ -214,17 +249,7 @@ def chk_open_six():
     _RAW['开轮十六检'] = (_o1 or '') + '\n' + (_o2 or '')
     if _o1 is None or _o2 is None:
         return False, '运行失败'
-    def _bad(_t, _skip14):
-        _b = []
-        for _ln in (_t or '').splitlines():
-            _x = _ln.strip()
-            if not _x or '开轮十六检通过' in _x:
-                continue
-            if _skip14 and ('⑭' in _x or '已封版' in _x):
-                continue
-            _b.append(_x)
-        return _b
-    _b1, _b2 = _bad(_o1, True), _bad(_o2, False)
+    _b1, _b2 = _六检之败(_o1, True), _六检之败(_o2, False)
     if not _b1 and not _b2:
         return True, '两头俱过（末章第%d章·下章第%d章）' % (_last, _nx)
     _m = []

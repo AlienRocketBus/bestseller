@@ -2559,6 +2559,26 @@ def 推闸(fails):
                   % (_放行标, cur, len(准), '；'.join(准)))
 
 
+def chk_seat_lint():
+    """席法（0909 立·本坐一日之内同形四犯而立）：诸席之 .js 两样写法闸。
+    ★甲·schema 键须 ASCII（写中文则 API 400，**六个席一个也起不来，一个字都没写**）；
+      乙·模板串里拿反引号括命令须转义（外层当场断掉）。
+    ★★而 `node --check` 量不出後者——**断掉之後那一段仍是合法的 JS，只是意思全变了**。"""
+    out = run('席法', ['工具/席法.py'])
+    if out is None:
+        return False, '席法崩'
+    if '⛔' in out:
+        return False, '；'.join(x.strip(' ⛔') for x in out.split('\n') if '⛔' in x)[:200]
+    return True, '诸席俱合（schema 键皆 ASCII｜模板串内无未转义之命令反引号）'
+
+
+def chk_seat_lint_neg():
+    out = run('负测·席法', ['工具/席法.py', '--自测'])
+    if out is None:
+        return False, '负测崩'
+    return ('全通' in out), _测数(out, '7') + ' 全通（旧局回灌：中文 schema 键与未转义之 `python3 皆照旧判红）'
+
+
 def chk_health_neg():
     """负测·机制体检（0909 立·作者令「时不时看一看老机制还有没有用」）。
     ★本器只报不拦（「它还有没有用」判不死，令§十三②），故全测只验其负测——
@@ -2639,6 +2659,8 @@ def main():
 
 
     if not quick:
+        items.append(('席法', chk_seat_lint))
+        items.append(('负测·席法', chk_seat_lint_neg))
         items.append(('负测·机制体检', chk_health_neg))
         items.append(('负测·真轮凭轮记', chk_real_round_neg))
         items.append(('囤灰闸', chk_dust))

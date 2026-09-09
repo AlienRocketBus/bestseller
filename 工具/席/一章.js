@@ -203,7 +203,7 @@ for (let i = 1; i <= 3; i++) {
   闸报 = await agent(
 `${令}
 
-你是第 ${N} 章的**机闸席**（第 ${i} 转）。执笔已交稿：${(草 && 草.file) || '（执笔未交交待，自己 `ls 正文/ | tail -3` 找本章之档）'}。
+你是第 ${N} 章的**机闸席**（第 ${i} 转）。执笔已交稿：${(草 && 草.file) || '（执笔未交交待，自己 \`ls 正文/ | tail -3` 找本章之档）'}。
 ${据律}
 
 把这些逐个跑一遍，把**每一个数都印在产它的那条命令旁边**（令§一⑥）：
@@ -579,7 +579,7 @@ ${据律}
 9. **交提**（只有你这一席许动 git）：
      git config user.email noreply@anthropic.com && git config user.name Claude   ← **先跑这一条**
      git add -A && git commit  —— 说明写清本章之魂、落了哪几刀、余红几处
-   ★**不许拿别的身份交提**：0908 之封版席交出过一笔 `mk695e@gmail.com` 的提交，
+   ★**不许拿别的身份交提**：0908 之封版席交出过一笔 \`mk695e@gmail.com\` 的提交，
      GitHub 当场标 Unverified，而改它要重写历史（在别席在跑时是危险动作）。**头一次就写对，比事後改便宜。**
      git push -u origin claude/the-novel-review-4dtuit
    说明末尾两行照抄（一字不改）：

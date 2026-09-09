@@ -413,6 +413,41 @@ if __name__ == '__main__':
     if '--全书' in sys.argv:
         全书(); sys.exit(0)
     a = [x for x in sys.argv[1:] if not x.startswith('-')]
+    # ★★★★★DEBT-298A（298第12轮立·限307·於307封版之序结清）之口：
+    #   `python3 工具/棘轮预检.py N --项 四字三现·认词`
+    #   ★旧式（四字之窗）照旧管棘轮之判，一行不动；此口只另报一个认词之数，供人裁。
+    #   ★★其由见 `工具/十轮精进.py::rep3_by_word` 之注；其验在 `工具/负测_棘轮认词.py`。
+    if '--项' in sys.argv:
+        i = sys.argv.index('--项')
+        项 = sys.argv[i + 1] if len(sys.argv) > i + 1 else ''
+        if 项 != '四字三现·认词':
+            print('⛔本口只认「四字三现·认词」一项（DEBT-298A 所立）'); sys.exit(2)
+        if not a:
+            print('用法：python3 工具/棘轮预检.py N --项 四字三现·认词'); sys.exit(2)
+        n = int(a[0])
+        import glob as _g
+        vs = sorted(_g.glob(os.path.join(根, '版本', '第%d章' % n, 'v*.md')))
+        src = vs[-1] if vs else None
+        f = (src or 正文路径(n))
+        if not f:
+            print('⛔第%d章之文取不着' % n); sys.exit(2)
+        txt = io.open(f, encoding='utf-8').read()
+        body = body_of(txt)
+        _h, sf = score(txt)
+        import importlib.util as _iu
+        _sp = _iu.spec_from_file_location('_tj', os.path.join(根, '工具', '十轮精进.py'))
+        _tj = _iu.module_from_spec(_sp); _sp.loader.exec_module(_tj)
+        cnt, strs = _tj.rep3_by_word(body)
+        print('════ 四字三现·认词 · 第%d章 ════' % n)
+        print('  其文：%s' % os.path.basename(f))
+        print('  旧式（四字之窗·棘轮所judge者）：%d' % sf.get('四字串三现', -1))
+        print('  新式（认词·以最长可合并之串为身）：%d' % cnt)
+        print('  ── 逐串（新式）──')
+        for x in strs:
+            print('   · %s（%d 次）' % (x, body.count(x)))
+        print('  ★二式之差 %d：一句五个字的重出，旧式算两处；六个字的算三处——'
+              '句子越长它被罚得越重，而它其实只重了一回。' % (sf.get('四字串三现', 0) - cnt))
+        sys.exit(0)
     if not a:
-        print('用法：python3 工具/棘轮预检.py N｜--全书｜--自测'); sys.exit(2)
+        print('用法：python3 工具/棘轮预检.py N｜--全书｜--自测｜N --项 四字三现·认词'); sys.exit(2)
     sys.exit(跑(int(a[0])))

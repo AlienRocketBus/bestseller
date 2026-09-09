@@ -61,6 +61,57 @@ def body_of(txt):
     return re.sub(r'^.*?第.+?章[^\n]*\n', '', prose, count=1, flags=re.S)
 
 
+# ★★★★★DEBT-298A（298第12轮立·限307·於307封版之序结清）
+#   ★其伤逐字（到期账 items::DEBT-298A）：**「棘轮之『四字三现』认的是四字之窗，不是词；
+#     故一句被数两遍」**——298第12轮实数：19样之中「那一圈水印」×3 出「那一圈水」＋「一圈水印」两条、
+#     「门口那只碗」出「门口那只」＋「口那只碗」、「她一回也没」出「她一回也」＋「一回也没」、
+#     「宽的那一半」出「宽的那一」＋「的那一半」——**四句生八条**。
+#   ★★即：**一句五个字的重出，在这把尺上算两处；六个字的算三处**——
+#     **句子越长，它被罚得越重，而它其实只重了一回。**
+#   ★★★而 298 当章一行代码不动此尺（令§六★★★★：不许为了让自己那一笔过去而挖空闸），
+#     故其治拖到 307：**不改旧式，另立一个认词之变式**，二式并存，旧式照旧管棘轮之判。
+#   ★★★★其法（照其档所命）：**以最长可合并之串为身**——
+#     凡四字之窗出现≥3次者，向左右各试着长一个字；只要长出来的那一串仍出现≥3次，就用长的顶掉短的；
+#     末了把「已被别的串整个含住」的那些去掉。**一句只算一处，不论它有几个字。**
+def rep3_by_word(body, 门=3):
+    """四字三现·认词：把重叠之窗合成最长之串，一句只算一处。返回 (处数, [串…])。"""
+    seen = {}
+    for i in range(len(body) - 3):
+        k = body[i:i + 4]
+        if re.match(r'^[\u4e00-\u9fa5]{4}$', k):
+            seen[k] = seen.get(k, 0) + 1
+    cand = {k for k, v in seen.items() if v >= 门}
+    grown = set()
+    for k in cand:
+        cur = k
+        while True:
+            better = None
+            # 向右长一个字
+            for ch in {body[m.end():m.end() + 1]
+                       for m in re.finditer(re.escape(cur), body)}:
+                if ch and re.match(r'^[\u4e00-\u9fa5]$', ch) and body.count(cur + ch) >= 门:
+                    better = cur + ch
+                    break
+            if better is None:
+                # 向左长一个字
+                for ch in {body[max(m.start() - 1, 0):m.start()]
+                           for m in re.finditer(re.escape(cur), body)}:
+                    if ch and re.match(r'^[\u4e00-\u9fa5]$', ch) and body.count(ch + cur) >= 门:
+                        better = ch + cur
+                        break
+            if better is None or better == cur:
+                break
+            cur = better
+        grown.add(cur)
+    # 去掉被别的串整个含住者（「那一圈水」已在「那一圈水印」里，不再另算一处）
+    最长 = sorted(grown, key=len, reverse=True)
+    留 = []
+    for x in 最长:
+        if not any(x in y and x != y for y in 留):
+            留.append(x)
+    return len(留), sorted(留)
+
+
 def score(txt):
     """机器可测之十七项。硬项须为0；量项供横评比对。"""
     body = body_of(txt)

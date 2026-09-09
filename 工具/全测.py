@@ -1427,6 +1427,27 @@ def chk_yishi_jichen():
     return _简测('负测·一事几陈', '工具/负测_一事几陈.py')
 
 
+def chk_ratchet_by_word():
+    """负测·棘轮之四字三现·认词（DEBT-298A·298第12轮立·限307·於307封版之序结清）。
+
+    ★所治之伤：**棘轮之「四字三现」认的是四字之窗，不是词**——
+      一句五个字的重出算两处，六个字的算三处；**句子越长它被罚得越重，而它其实只重了一回。**
+    ★★而 298 当章一行代码不动此尺（不许为了让自己那一笔过去而挖空闸），故其治拖到 307：
+      **不改旧式，另立一个认词之变式**（`十轮精进.py::rep3_by_word`，其口在 `棘轮预检.py --项 四字三现·认词`）。
+    ★★★其头一项断言即其档所命逐字：**以298v38回灌，旧式报20而新式须报15上下（今16），
+      且二者之差须逐条指得出是哪四句被数了两遍**（那一圈水印／门口那只碗／她一回也没／宽的那一半）。
+    ★★★★而其非陪跑之凭：**旧式对同一份原物照旧报20**——新式只报，旧式照旧管棘轮之判。"""
+    out = run('负测·棘轮认词', ['工具/负测_棘轮认词.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·棘轮认词 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = map(int, m.groups())
+    return bad == 0, '%d/%d 全通（旧式对298v38照旧报20，新式报16，其差四句逐句点名）' % (ok, tot)
+
+
 def chk_band_by_form():
     """★比带负测（2026-09-02·293第8轮所立）：**一把带，取错了比的人，就把三处好文判成了伤。**
     ★本坐之实（非设想）：293第5、7、8三轮各逮一「逾带」，**而三处用的是同一把手挑之带**
@@ -2701,6 +2722,7 @@ def main():
         items.append(('负测·亮点闸', chk_highlight_gate))
         items.append(('负测·验收空说明', chk_review_no_note))
         items.append(('负测·比带', chk_band_by_form))
+        items.append(('负测·棘轮认词', chk_ratchet_by_word))
         items.append(('负测·裁毕闸', chk_caibi_gate))
         items.append(('负测·站账闸', chk_station_ledger))
         items.append(('负测·约到期闸', chk_promise_due))

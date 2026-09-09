@@ -966,10 +966,21 @@ def nextround(n):
 
     # 【批120·修】新章起手时正文尚未存在，find_chapter 返回空则基线不落盘，
     #   闸八遂令新章之第1轮永远过不去。故无正文者亦落基线，只是标为新章、免其sha之验。
+    # ★★2026-09-09·306 之封版所逮：**无轮可领时，从前照旧落一份「目标轮: null」的基线**——
+    #   等於领了一个不存在的轮；而 `开轮六检.check9` 正确地判它「领了轮而没记所领之号」⛔。
+    #   ★其形之毒在两头都对：**落基线的那一步没错（它只是照旧落），判红的那一步也没错**，
+    #     错在中间那个 None——**一个谁也不为它负责的空值，被两头当成了各自那一头的正常输入。**
+    #   ★★故改：**无缺轮即不落基线**（无轮可领，本就不该有领轮之凭），并当场说明。
+    if not miss:
+        print('   ✓十三轮已满，无轮可领——**不落领轮基线**（落一份「目标轮: null」等於领了一个不存在的轮）。')
+        if os.path.exists(_ling_path(n)):
+            os.remove(_ling_path(n))
+            print('   ✓并销去旧基线一份（其目标轮为空，係此病之遗）。')
+        return 0
     base = {'时': datetime.datetime.now().strftime('%m-%d %H:%M'),
             '正文sha': _sha(open(src2, encoding='utf-8').read()) if src2 else None,
             '末版sha': _last_snap_sha(n),
-            '目标轮': (miss[0] if miss else None),
+            '目标轮': miss[0],
             '新章': src2 is None}
     os.makedirs(paths(n)[0], exist_ok=True)
     json.dump(base, open(_ling_path(n), 'w', encoding='utf-8'),

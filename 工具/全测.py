@@ -2559,6 +2559,16 @@ def 推闸(fails):
                   % (_放行标, cur, len(准), '；'.join(准)))
 
 
+def chk_health_neg():
+    """负测·机制体检（0909 立·作者令「时不时看一看老机制还有没有用」）。
+    ★本器只报不拦（「它还有没有用」判不死，令§十三②），故全测只验其负测——
+      **验的是它自己没瞎**：三路跑得动、名单当场自源头读、必读之册里的令不入乙路（立器当日之假红）。"""
+    out = run('负测·机制体检', ['工具/机制体检.py', '--自测'])
+    if out is None:
+        return False, '负测崩'
+    return ('全通' in out), _测数(out, '9') + ' 全通（含立器当日之假红：坑①—④住在必读之册，不许报成无人读）'
+
+
 def chk_real_round_neg():
     """负测·真轮凭轮记（2026-09-08·改 _rounds_full 之同日负测·令§六③）。
     ★所守者三样：①只跑三轮之旧局回灌须照旧判红；②有节无实文（一行「已完成」）须判红；
@@ -2629,6 +2639,7 @@ def main():
 
 
     if not quick:
+        items.append(('负测·机制体检', chk_health_neg))
         items.append(('负测·真轮凭轮记', chk_real_round_neg))
         items.append(('囤灰闸', chk_dust))
         items.append(('负测·囤灰闸', chk_dust_neg))

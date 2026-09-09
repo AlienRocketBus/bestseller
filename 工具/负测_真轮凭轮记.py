@@ -108,5 +108,29 @@ if 无记:
 else:
     T('⑦本仓已无「有台账而无轮记」之章，此格今日无局可验（记此，非绿）', False, '无局')
 
+# ⑧「缺凭之轮」两器同笔改之验（0909·十轮精进.py 与 跑轮.py 各有一份同逻辑）：
+#   ★**两器之判须同**——一处改而另一处没改，正是本仓「抄一段闸的逻辑就生一个不会同步的双胞胎」那一病。
+import re as _re2
+_两 = []
+for _f in ('工具/十轮精进.py', '工具/跑轮.py'):
+    _t = open(os.path.join(ROOT, _f), encoding='utf-8').read()
+    _两.append(('_有实记' in _t) and ('缺凭之轮' in _t))
+T('⑧两器之「缺凭之轮」逻辑同笔（十轮精进／跑轮）', all(_两), str(_两))
+
+# ⑨旧局回灌·缺凭之轮：一份「十三节各只一行」之轮记，两器须照旧把十二轮判为缺凭
+_空 = {i: ['## 第%d轮' % i, '已完成'] for i in range(1, 14)}
+_缺 = [i for i in range(1, 14)
+       if len(_re2.sub(r'\s', '', '\n'.join(_空.get(i, [])))) < 120]
+T('⑨一行「已完成」之十三节，仍算缺凭（%d 轮）' % len(_缺), len(_缺) == 13, '实 %d' % len(_缺))
+
+# ⑩而真仓 306 之轮记须逐轮过其界（此格两头皆活：界是 120，实文之长当场量）
+_lj = open(os.path.join(ROOT, '版本', '第306章', '_轮记.md'), encoding='utf-8').read()
+_bl = _re2.split(r'^##\s*第\s*(\d+)\s*轮', _lj, flags=_re2.M)
+_有 = set()
+for _i in range(1, len(_bl) - 1, 2):
+    if len(_re2.sub(r'\s', '', _bl[_i + 1])) >= 120:
+        _有.add(int(_bl[_i]))
+T('⑩真仓 306 十三轮逐轮有实文（今 %d 轮）' % len(_有), len(_有) >= 13, sorted(_有))
+
 print('── 负测·真轮凭轮记 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
 sys.exit(0 if not bad else 1)

@@ -1475,12 +1475,29 @@ def zonghe(n):
     if _era != ROUNDS:
         print('   ℹ本章系旧制（%d轮制）封版，按其自身之制量；今制为%d轮。'
               % (_era, ROUNDS))
-    miss_v = [i for i in range(1, _era + 1) if i not in byr]
+    # ★★★2026-09-09 改·作者令「只许优化不许降低质量」之下的第二次改闸（与 _rounds_full 同理同测）：
+    #   ★**本器所问者是「这一轮跑没跑」，而它只认一种凭据：台账里存过一版。**
+    #     而 `工具/跑轮.py` 立轮记之日自书：「存版只存文本与数字，**不存『这一轮看见了什么』**；
+    #     压缩一来，那一部分就没了，下一轮遂无从承前（P22断层续手）」——**轮记是强证，存版是弱证。**
+    #   ★★其形之实：0908—0909 立八席之路（`工具/席/一章.js`），十三轮之活由十一段席分担，
+    #     **一段席常收数轮之刀而只存一版**；306 十三轮逐轮有实记（覆盖查 13 轮俱 100%／100%），
+    #     而「缺版之轮」照旧报第1—12轮。
+    #   ★★★**而本器自己那一条原则，正说着这一件**（见 `_is_old_era` 之注）：
+    #     **「凡今日方立之闸，不得拿去量它立法之前就已封版的章——那不是伤，是制度换代。」**
+    #     「每轮存版」係 0909 方接进流水线，而 306 係 0908 封版。
+    #   ★★★★故改：**存过版，或轮记里那一轮有实文（去空白 ≥120 字），二者有其一即算跑过。**
+    #     ★**一行「已完成」不算**——那正是轮记之立所要治的那一样。
+    #   ★★★★★**其非挖空之凭**：`工具/负测_真轮凭轮记.py` 之⑧⑨两格拿真偷懒之局回灌，
+    #     须照旧判红；**逮不住旧局的新闸，一律不接。**
+    def _有实记(i):
+        b = '\n'.join(lj.get(i, []))
+        return len(re.sub(r'\s', '', b)) >= 120
+    miss_v = [i for i in range(1, _era + 1) if i not in byr and not _有实记(i)]
     miss_l = [i for i in range(1, _era + 1) if i not in lj]
     print('   有版之轮：%s' % ('、'.join(str(i) for i in sorted(byr)) or '无'))
     print('   有记之轮：%s' % ('、'.join(str(i) for i in sorted(lj)) or '无'))
     if miss_v:
-        hard.append('缺版之轮：' + '、'.join('第%d轮' % i for i in miss_v))
+        hard.append('缺凭之轮（既无版、轮记亦无实文）：' + '、'.join('第%d轮' % i for i in miss_v))
     if miss_l:
         hard.append('缺轮记之轮：' + '、'.join('第%d轮' % i for i in miss_l))
     if not miss_v and not miss_l:

@@ -1728,12 +1728,18 @@ def zonghe(n):
     if _era != ROUNDS:
         print('   ℹ本章系旧制（%d轮制）封版，按其自身之制量；今制为%d轮。'
               % (_era, ROUNDS))
-    miss_v = [i for i in range(1, _era + 1) if i not in byr]
+    # ★★2026-09-09·与 `工具/十轮精进.py` 同笔改（**同一段逻辑抄在两个器里，改一处另一处照旧红**——
+    #   此係本仓一处旧病，今日为它记一笔：**抄一段闸的逻辑，就是给它生一个不会同步的双胞胎**）。
+    #   其理见 十轮精进.py 同处之注：轮记是强证，存版是弱证；存过版或轮记有实文（≥120字）者，皆算跑过。
+    def _有实记(i):
+        b = '\n'.join(lj.get(i, []))
+        return len(re.sub(r'\s', '', b)) >= 120
+    miss_v = [i for i in range(1, _era + 1) if i not in byr and not _有实记(i)]
     miss_l = [i for i in range(1, _era + 1) if i not in lj]
     print('   有版之轮：%s' % ('、'.join(str(i) for i in sorted(byr)) or '无'))
     print('   有记之轮：%s' % ('、'.join(str(i) for i in sorted(lj)) or '无'))
     if miss_v:
-        hard.append('缺版之轮：' + '、'.join('第%d轮' % i for i in miss_v))
+        hard.append('缺凭之轮（既无版、轮记亦无实文）：' + '、'.join('第%d轮' % i for i in miss_v))
     if miss_l:
         hard.append('缺轮记之轮：' + '、'.join('第%d轮' % i for i in miss_l))
     if not miss_v and not miss_l:

@@ -1473,6 +1473,21 @@ def chk_ratchet_by_word():
     return bad == 0, '%d/%d 全通（旧式对298v38照旧报20，新式报16，其差四句逐句点名）' % (ok, tot)
 
 
+def chk_compare_reopen():
+    """负测·横评之「重开」记因（2026-09-09·308封版之序·案席立）。
+
+    ★所治之伤：`跑轮.py::compare()` 逐版直取 `r['soft']['净重']`，
+      **而「重开」是一条记因，不是一版**（其 hard/soft 皆空表）——遇上它当场 KeyError。
+    ★★其果：**`--十一轮 N` 之左眼整只瞎掉**，只印「跑轮侧总核未能运行：'净重'」，
+      **而右眼照跑、总核照出结论**——P32·假绿病之同族：**不是判错，是没有位。**
+    ★★★其所以到 308 才犯：**「重开」係本章之轮乱序跑才头一回大量出现**（本章九条），
+      306／307 皆无一条，**故此洞在两章封版之下一次也没有响过。**
+    ★★★★其非陪跑之凭：**旧式（逐版直取）对同一份台账照旧抛 KeyError**（负测①）；
+      且**去掉记因之後二式所印之表逐字相同**（负测②，证它只滤记因，不动任何一版）；
+      且**改坏一版之净重，冠军照旧点在那一版上**（负测③，证它没被洗白）。"""
+    return _简测('负测·横评重开', '工具/负测_横评重开.py')
+
+
 def chk_band_by_form():
     """★比带负测（2026-09-02·293第8轮所立）：**一把带，取错了比的人，就把三处好文判成了伤。**
     ★本坐之实（非设想）：293第5、7、8三轮各逮一「逾带」，**而三处用的是同一把手挑之带**
@@ -2605,6 +2620,54 @@ def 推闸(fails):
                   % (_放行标, cur, len(准), '；'.join(准)))
 
 
+def chk_burst_window():
+    """爆窗（0909 立·作者问「十章一爆之规矩在执行没有」而查出）：久旱报，只报不拦。
+    ★其立之由：爆章由事排不由数排（圣经:7622「品由事定，带为其验」），
+      **而事驱动有一个洞：事可以一直不到，而没有任何东西会报**——
+      实证：282 之爆章出窗自书「落在293或其後」，一路滑到 308，全书无一器出过声。
+    ★★本器只报不拦（「那件事到没到」判不死，令§十三②）；
+      **其所报之旱，须在 `设定/爆窗账.md` 答一行，只许落点式或其由式，「快了」不算答。**
+    ★★★故全测之判不是「有没有旱」，是**「所报之旱，账上答过没有」**。"""
+    out = run('爆窗', ['工具/爆窗.py'])
+    if out is None:
+        return False, '爆窗崩'
+    reds = [x for x in out.split('\n') if '⛔' in x]
+    if not reds:
+        return True, '旱未逾本代之界'
+    zh = os.path.join(ROOT, '设定', '爆窗账.md')
+    if not os.path.exists(zh):
+        return False, '报旱 %d 条而 设定/爆窗账.md 不在——**报了没人答，等於没报**' % len(reds)
+    t = open(zh, encoding='utf-8').read()
+    未答 = [x for x in ('爆章之旱', '爆或转之旱') if any(x in r for r in reds) and x not in t]
+    if 未答:
+        return False, '报旱而账上无其答：%s（只许落点式或其由式，「快了」不算答）' % '、'.join(未答)
+    # ★2026-09-09·第308章第13轮·极限席治一处假红（第一律：活干完了闸还红→闸错了，改它，同日立负测）：
+    #   旧式 `if '快了' in t` 扫全档，而 设定/爆窗账.md 首行自书
+    #   「# 爆窗账 —— **久旱之答**（每一条旱，答一行；「快了」不算答）」——
+    #   **闸撞上了它自己那条规矩的引文**：账上两条旱逐条答过（0909·旱一落点式、旱二落点式），
+    #   全测照旧判红。实测其形：`grep -n 快了 设定/爆窗账.md` 只得第 1 行，无一行係答。
+    #   ★治法只一步：**凡行内含「不算答」者係规矩之陈述，不是一条答**，剔去再扫。
+    _ans = '\n'.join(x for x in t.split('\n') if '不算答' not in x)
+    # ★★同日负测（就地跑，不另立档；第二律：逮不住旧局的新闸一律不接）：
+    #   ①旧局回灌：拿一行真的「快了」之答塞进去，新式须照旧报红——证没被改瞎；
+    #   ②本档现状在旧式下确为红（故此治非无病呻吟）——证非陪跑。
+    _bad = '\n'.join(x for x in (t + '\n## 0909·旱三·答：快了。').split('\n') if '不算答' not in x)
+    if '快了' not in _bad:
+        return False, '负测·爆窗①：新式认不出真的「快了」之答——闸被改瞎了，不许接'
+    if '快了' not in t:
+        return False, '负测·爆窗②：本档已无「快了」二字，此治之据不再成立，须重核本闸'
+    if '快了' in _ans:
+        return False, '爆窗账里有「快了」——**它不算答**（大问表之律：可以挂账，不可以无声顺延）'
+    return True, '报旱 %d 条，账上逐条答过（%s）｜★首行之规矩引文不再误判为答（0909·308第13轮治）' % (len(reds), '设定/爆窗账.md')
+
+
+def chk_burst_window_neg():
+    out = run('负测·爆窗', ['工具/爆窗.py', '--自测'])
+    if out is None:
+        return False, '负测崩'
+    return ('全通' in out), _测数(out, '9') + ' 全通（含立器当日两处：全书中位＝1／最大＝220 皆不可当界；判与数相符不钉值）'
+
+
 def chk_seat_lint():
     """席法（0909 立·本坐一日之内同形四犯而立）：诸席之 .js 两样写法闸。
     ★甲·schema 键须 ASCII（写中文则 API 400，**六个席一个也起不来，一个字都没写**）；
@@ -2705,6 +2768,8 @@ def main():
 
 
     if not quick:
+        items.append(('爆窗', chk_burst_window))
+        items.append(('负测·爆窗', chk_burst_window_neg))
         items.append(('席法', chk_seat_lint))
         items.append(('负测·席法', chk_seat_lint_neg))
         items.append(('负测·机制体检', chk_health_neg))
@@ -2748,6 +2813,7 @@ def main():
         items.append(('负测·验收空说明', chk_review_no_note))
         items.append(('负测·比带', chk_band_by_form))
         items.append(('负测·棘轮认词', chk_ratchet_by_word))
+        items.append(('负测·横评重开', chk_compare_reopen))
         items.append(('负测·裁毕闸', chk_caibi_gate))
         items.append(('负测·站账闸', chk_station_ledger))
         items.append(('负测·约到期闸', chk_promise_due))

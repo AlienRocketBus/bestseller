@@ -78,7 +78,41 @@ def 硬项(txt):
         '亮点段破折': hl.count('—'),
         '亮点段五逗': sum(1 for s in re.split(r'(?<=[。！？…])', hl) if s.count('，') >= 5),
         '亮点段半角': hl.count(',') + hl.count('"'),
+        # ★2026-09-09·308第13轮立：永禁词旧只扫 body（白文），骨记不扫——
+        #   而 308 骨记②自第1轮起即含机制词「九处」（『治九处，今为零处』），
+        #   十一轮跑遍硬闸皆印「永禁词 0」，直到本轮跑 --全书检 方由检察官逮出（其时全书 ERROR=1，禁封版）。
+        #   ★即：硬闸在此处不是判错，是**没有位**——亮点三格管标点，不管词。今补第四格。
+        #   ★★其群（治毕当日全书亲扫）：**正文 308 章之亮点段，含永禁词者 0 章**——故此格不是假红机。
+        #   ★★★其负测在 工具/负测_硬闸.py::新格须认（拿 308 治前那一句原样回灌，旧式报 0 而新式须报红）。
+        '亮点段永禁': sum(hl.count(w) for w in 永禁词()),
     }
+
+
+_CN = {'零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+
+
+def 章号(path):
+    """由档名取章号（法与 跑轮.py::chap_num 同）。认不出者返 -1。"""
+    m = re.search(r'第([零一二三四五六七八九十百千]+)章', os.path.basename(path))
+    if not m:
+        return -1
+    s, total, num = m.group(1), 0, 0
+    for ch in s:
+        if ch in _CN:
+            num = _CN[ch]
+        elif ch == '十':
+            num = num or 1
+            total += num * 10
+            num = 0
+        elif ch == '百':
+            num = num or 1
+            total += num * 100
+            num = 0
+        elif ch == '千':
+            num = num or 1
+            total += num * 1000
+            num = 0
+    return total + num
 
 
 def 报(txt):
@@ -105,5 +139,20 @@ if __name__ == '__main__':
         for k, v in sorted(红.items(), key=lambda x: -x[1][1]):
             print('  %-12s %3d 章｜%5d 处' % (k, v[0], v[1]))
     else:
-        print(json.dumps(硬项(io.open(sys.argv[1], encoding='utf-8').read()) if len(sys.argv) > 1 else {},
+        # ★0909·机闸席（308第2转）补：此器先前只吃档名，奉令打「硬闸.py 308」者一律 FileNotFoundError。
+        #   307之轮记、308之第1转轮记各记过一回，本转是第三回（第五部分之律：同一坑再涨三处即须涨机器）。
+        #   ★★所补者只是「章号→档名」这一路入口，判据一格未动，故不须放宽任何一格。
+        arg = sys.argv[1] if len(sys.argv) > 1 else None
+        if arg and arg.isdigit() and not os.path.exists(arg):
+            _n = int(arg)
+            _hit = None
+            for _f in sorted(glob.glob(os.path.join(ROOT, '正文', '*.md'))):
+                if 章号(_f) == _n:
+                    _hit = _f
+                    break
+            if _hit is None:
+                print('⛔ 硬闸：正文里找不着第%d章' % _n)
+                sys.exit(2)
+            arg = _hit
+        print(json.dumps(硬项(io.open(arg, encoding='utf-8').read()) if arg else {},
                          ensure_ascii=False, indent=1))

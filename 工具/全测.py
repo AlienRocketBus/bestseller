@@ -2559,6 +2559,16 @@ def 推闸(fails):
                   % (_放行标, cur, len(准), '；'.join(准)))
 
 
+def chk_real_round_neg():
+    """负测·真轮凭轮记（2026-09-08·改 _rounds_full 之同日负测·令§六③）。
+    ★所守者三样：①只跑三轮之旧局回灌须照旧判红；②有节无实文（一行「已完成」）须判红；
+      ③放行之局与只跑三轮之局其判须不同——同判即是把闸洗白了。"""
+    out = run('负测·真轮凭轮记', ['工具/负测_真轮凭轮记.py'])
+    if out is None:
+        return False, '负测崩'
+    return ('全通' in out), _测数(out, '7') + ' 全通（旧局回灌：只跑三轮者照旧红；一行「已完成」之十三节照旧红）'
+
+
 def chk_dust():
     """囤灰闸（2026-09-08立·作者令「做出来放那儿囤灰是最可怕的」）：
     ★其立之由：全测查的是「跑过的器绿不绿」，从不查「该跑的器跑没跑」——
@@ -2619,6 +2629,7 @@ def main():
 
 
     if not quick:
+        items.append(('负测·真轮凭轮记', chk_real_round_neg))
         items.append(('囤灰闸', chk_dust))
         items.append(('负测·囤灰闸', chk_dust_neg))
         items.append(('复核台账', chk_review_ledger))

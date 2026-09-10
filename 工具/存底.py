@@ -16,7 +16,12 @@
   　　★**不碰工作区、不碰索引、不碰 HEAD**——用一份临时索引另起炉灶（`GIT_INDEX_FILE`），
   　　**故席正在写它也照存不误**（这正是它存在的意思）。
   乙·**章标**（`章-N`）：一章封版即打一个标，**标是不动的**，滚动枝坏了它还在。
+  　　★**本仓远端拒推 tag（HTTP 403）**，故「标」落在 `refs/heads/章-N` 上，**且一律不带 --force**：
+  　　不快进即被拒，一样覆不掉。**其不动之凭是「一个 --force 也没有」，不是它叫什么名字。**
   丙·**验**：自云端把存底枝取回来，数它有几章、几字，**不拿本地之数充数**。
+  丁·**演**（0910 补）：**真去克隆一份下来，逐档与本地比大小**——★**没有演过的备份不算备份**。
+  　　★其所以连「正在写而未提交的那一章」也比：**已提交的东西主枝上也有，
+  　　只有没提交的那一份，丢了就是真丢了**——存底枝立起来就是为这一样。
 
 【与主枝之别·写死，免下一坐混淆】
   · 主枝 `claude/the-novel-review-4dtuit`：**成果**。走全测、走钩子，只收已封版之章。
@@ -28,6 +33,7 @@
     python3 工具/存底.py --存 "在写第310章·三庭毕"   # 秒级，随时可跑
     python3 工具/存底.py --标 309                    # 封版之章打一个不动的标
     python3 工具/存底.py --验                        # 自云端取回来数一遍
+    python3 工具/存底.py --演 309                    # ★真克隆下来比一遍（15秒·每收一章跑一回）
     python3 工具/存底.py --自测
 """
 import os
@@ -35,6 +41,7 @@ import re
 import sys
 import time
 import glob
+import shutil
 import tempfile
 import subprocess
 
@@ -111,6 +118,55 @@ def 验(印=True):
     return {'sha': sha[:8], '章': n, '标': len(标们)}
 
 
+def 演(章=None):
+    """★**没有演过的备份不算备份。**
+    本器不看本地、不看远端的账面——**真去克隆一份下来，拿眼睛看里头有没有东西**。
+    甲：克隆存底枝，数它的正文几章、正在写那一章几个字，且与本地工作区**当场比**；
+    乙：克隆一个章标，看它是不是一份跑得动的仓（有正文、有工具、有设定）。
+    ★其所以要连「正在写而未提交的那一章」一起比：**存底枝立起来就是为了这一样**——
+    已提交的东西主枝上也有，只有没提交的那一份，丢了就是真丢了。
+    """
+    tmp = tempfile.mkdtemp(prefix='演存底_')
+    url = _跑('git', 'remote', 'get-url', 'origin').stdout.strip()
+    坏 = []
+    try:
+        d = os.path.join(tmp, '甲')
+        r = _跑('git', 'clone', '-q', '--depth', '1', '--branch', 底枝, url, d)
+        if r.returncode != 0:
+            return 2, '存底枝克隆不下来：' + (r.stderr or '').strip()[:120]
+        章们 = [x for x in os.listdir(os.path.join(d, '正文')) if x.endswith('.md')]
+        本地 = [x for x in os.listdir(os.path.join(ROOT, '正文')) if x.endswith('.md')]
+        if len(章们) < len(本地):
+            坏.append('云端存底 %d 章，本地 %d 章——**少了**' % (len(章们), len(本地)))
+        # ★逐档比大小：只比正文，且以本地为准（本地是那一刻的实）
+        差 = []
+        for x in 本地:
+            a = os.path.join(d, '正文', x)
+            if not os.path.exists(a):
+                差.append(x + '（云端没有）')
+            elif os.path.getsize(a) != os.path.getsize(os.path.join(ROOT, '正文', x)):
+                差.append('%s（%d≠%d）' % (x, os.path.getsize(a),
+                                           os.path.getsize(os.path.join(ROOT, '正文', x))))
+        if 差:
+            坏.append('正文有 %d 档对不上：%s' % (len(差), '、'.join(差[:3])))
+        # 乙·章标
+        if 章 is not None:
+            d2 = os.path.join(tmp, '乙')
+            r2 = _跑('git', 'clone', '-q', '--depth', '1', '--branch', '章-%d' % int(章), url, d2)
+            if r2.returncode != 0:
+                坏.append('章标 章-%s 克隆不下来' % 章)
+            else:
+                缺 = [x for x in ('正文', '设定', '工具') if not os.path.isdir(os.path.join(d2, x))]
+                if 缺:
+                    坏.append('章标 章-%s 里缺 %s——**它不是一份跑得动的仓**' % (章, '、'.join(缺)))
+        if 坏:
+            return 2, '；'.join(坏)
+        return 0, '存底枝克隆下来 %d 章，逐档与本地同（含正在写而未提交的那一章）%s' % (
+            len(章们), ('｜章标 章-%s 亦是一份跑得动的仓' % 章) if 章 is not None else '')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def 自测():
     ok, bad = 0, []
 
@@ -139,6 +195,13 @@ def 自测():
     T('③之二 标之名恒为 章-N（不夹说明、不夹日子）', "名 = '章-%d' % int(n)" in 段标)
     T('④临时索引跑毕即除（不吃盘）', 'os.remove(idx)' in s and 'finally' in s)
     T('⑤存底枝与主枝之名不同，且皆当场自常量取', 底枝 != 主枝 and 底枝.startswith('备份/'))
+    # ⑥★**没有演过的备份不算备份**：本器须有一路真去克隆、真去比的活
+    段演 = s.split('def 演(')[1].split('\ndef ')[0] if 'def 演(' in s else ''
+    T('⑥有一路真去克隆下来比（非只看账面）',
+      "'clone'" in 段演 and 'getsize' in 段演, '演之段 %d 字' % len(段演))
+    T('⑥之二 演所比者含「正在写而未提交的那一章」（存底枝立起来正为这一样）',
+      'ROOT' in 段演 and "'正文'" in 段演)
+    T('⑥之三 演跑毕即除其临时之仓（不吃盘）', 'rmtree' in 段演 and 'finally' in 段演)
     print('── 负测·存底 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 
@@ -156,6 +219,12 @@ if __name__ == '__main__':
         i = a.index('--标')
         rc, m = 标(a[i + 1])
         print('✓章标：%s' % m if rc == 0 else '⛔打标未成：%s' % m)
+        sys.exit(rc)
+    if '--演' in a:
+        i = a.index('--演')
+        章 = a[i + 1] if len(a) > i + 1 and a[i + 1].isdigit() else None
+        rc, m = 演(章)
+        print('✓演过了：%s' % m if rc == 0 else '⛔演不过：%s' % m)
         sys.exit(rc)
     验()
     sys.exit(0)

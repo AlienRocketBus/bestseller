@@ -12,6 +12,12 @@
   ③而填记口未被删——旧史那些占位行还得有路可填；
   ④其语须说得出「只查不存」四字，且给出带说明之写法。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, json, glob, shutil, tempfile, subprocess
 _D = os.path.dirname(os.path.abspath(__file__))
 _R = os.path.dirname(_D)

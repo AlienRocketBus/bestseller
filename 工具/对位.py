@@ -27,6 +27,12 @@
 用法：python3 工具/对位.py         逐器印其位
       python3 工具/对位.py --负测   只印负测覆盖
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os, re, sys, io
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

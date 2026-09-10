@@ -16,6 +16,12 @@
 
 ★★★★而其治照批123之例：补机器之词表，不改账——「清」是本书判账之本字。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io
 import json
 import os

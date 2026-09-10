@@ -4,6 +4,12 @@
 ★所测者一句话：**一章的翻页，问的是它自己的下一章，不是全书的下下一章。**
 ★★而一份在旧式下也全过的测，它就是陪跑（令§六③）——**故其要害在④⑤：以旧式回灌，须坏。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io
 import os
 import re

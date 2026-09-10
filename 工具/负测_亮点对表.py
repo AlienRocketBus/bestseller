@@ -6,6 +6,12 @@
 　　③**非挖空**：现文（v21，已改）须放行，而全书之红率须仍在 1% 上下——
 　　　一道红 20% 的路不作闸（引文路与数路已降为「报而不拦」，其数写在器里）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -21,6 +21,12 @@
     python3 工具/自修.py            # 只诊断，不动手（默认）
     python3 工具/自修.py --修        # 诊断并动手，逐项复验
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob
 import io
 import json

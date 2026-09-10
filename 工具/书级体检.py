@@ -23,6 +23,12 @@
   python3 工具/书级体检.py --存基线    # 跑毕存入 设定/书级基线.json
   python3 工具/书级体检.py --静        # 只报闸之成败（供全测调用）
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import json
 import os
 import re

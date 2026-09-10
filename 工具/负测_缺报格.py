@@ -6,6 +6,12 @@
 ★★★而本闸最险之处不在逮不逮得住，在**误伤**：289一轮拆二十三节，
    **按节数必吐假红**；故⑥⑦专验「按轮号合数」。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob
 import io
 import os

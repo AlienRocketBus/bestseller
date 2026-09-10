@@ -12,6 +12,12 @@
 立法要点：并行十版会丢弃已修好的真伤，故改为串行累积；
 但每轮必存版打分，任何硬项劣于历史最优即棘轮闸拦停，末轮十版横评择优。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import re
 import sys

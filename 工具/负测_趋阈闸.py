@@ -6,6 +6,12 @@
 ★★★而本闸最险之处不在逮不逮得住，在**误伤**：一次真掘出四层而顺带跨了限的版，
    不该与一次「补两个字顶上线」同罪；故⑤专验二者之别。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob
 import importlib.util as _u
 import io

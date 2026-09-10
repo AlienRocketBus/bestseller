@@ -17,6 +17,12 @@
   ⑨**「入」与「出」同指一拍即红**——**一件东西在同一拍上又进来又出去，那不是来去，是没动。**
   ⑩**身上的尺之疑（开集⚠）须印得出来**：把册里提「指头」那一处「」抹掉，⚠即现；**它只提醒，不判**（rc 不变）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import importlib.util as iu, io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

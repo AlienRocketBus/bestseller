@@ -5,6 +5,12 @@
 　　　一个自己另造一把尺的预检，绿了也不作数（§六③之「陪跑」）。
 　★★★故九项之中，④⑤⑥⑦为回灌：拿本坐真撞过棘轮的两版原物灌回去，须逐版报红且所指之串正确。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob, json, tempfile, shutil
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

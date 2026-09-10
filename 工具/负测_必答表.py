@@ -7,6 +7,12 @@
    抽数之式只认 21 样量词，「处」「行」「道」「层」一个也不在其内——305 全章「N处」二十四见，入表者零。
 ★★★★★而一份在旧式下也全过的测就是陪跑（令§六③）——**故其要害在①：以旧式回灌 305，须证其一个「处」也抽不着。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import importlib.util
 import io
 import os

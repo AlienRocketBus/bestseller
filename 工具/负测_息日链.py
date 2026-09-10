@@ -7,6 +7,12 @@
 　　③**非陪跑**：若只问「有没有这两个数」而不问差，同一份原物一处也报不出；
 　　④**非挖空**：现文须全绿，且跑完之後两档逐字原样（此器要改档回灌，改完必须写回）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, hashlib
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

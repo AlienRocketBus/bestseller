@@ -31,6 +31,12 @@
 ★★★其红得起来吗（令§十四③）：`工具/负测_空头签.py` 逐条回灌——
   把 295 之回执改回「以本章之号写六字」即红；改回今文即绿；且以旧式（只数六字有无）回灌须全过。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob, io, os, re, sys
 from importlib.util import spec_from_file_location, module_from_spec
 

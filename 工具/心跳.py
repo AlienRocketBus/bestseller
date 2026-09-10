@@ -20,6 +20,12 @@
     python3 工具/心跳.py --收            # 我干完了，撤锁（下一坐当场可接手，不必等）
     python3 工具/心跳.py --自测
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import re
 import sys

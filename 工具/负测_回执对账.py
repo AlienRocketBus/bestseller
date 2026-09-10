@@ -7,6 +7,12 @@
 ★★★★本测之要害只一条：**把那处旧错灌回去，闸须当场红，且须说出「峰不是起草」**。
 　★一道灌回旧错而不红的闸，就是陪跑。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, sys, importlib.util
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

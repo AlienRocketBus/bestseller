@@ -24,6 +24,12 @@
     python3 工具/云端验.py --快        # 只验甲路（不克隆，秒出）
     python3 工具/云端验.py --自测
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import re
 import sys

@@ -7,6 +7,12 @@
 ★★★★而令§六③曰：改闸必同日立负测，且须以旧式回灌验。
 　★故本测之要害只一条：**下列各句在旧式下全不认，在新式下该认的认、该放的放。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

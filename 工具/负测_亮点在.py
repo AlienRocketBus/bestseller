@@ -12,6 +12,12 @@
 　　　并须证「恰一段者绿」——不是一律判红换来的绿。
 　　④**不吃盘**：此器只读不写，跑完诸档逐字原样。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, sys, subprocess, hashlib
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -6,6 +6,12 @@
    **以改後（v23／今正文）回灌，拍36须只中二词**——
    ★★★**一份在改前改後都印同一个数的测，就是陪跑（令§六③）。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io
 import os
 import re

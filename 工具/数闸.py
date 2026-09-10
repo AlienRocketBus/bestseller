@@ -11,6 +11,12 @@
 　　剥去标点只数汉字，与 N 比。不等即红。
 【不认者】引文含省略号／引文逾三十字／其上无引文者——一律不判，宁可漏，不可诬。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

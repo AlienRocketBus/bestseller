@@ -11,6 +11,12 @@
 　　与 版本/第N章/_台账.json 之 版本[0] / 版本[-1] 逐个比；不等即红。
 【不认者】旧制之章其回执无此式者——报「无此式」，不判红（不许拿今日之尺去量昨日封的章）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob, io, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

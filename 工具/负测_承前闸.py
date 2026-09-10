@@ -12,6 +12,12 @@
 　·★★★而并入此档不另立一份，其由二：**①一个数不许有两把尺，一族测亦不许有两本账**；
 　　**②今日我曾以 cat > 覆盖此档（289所立），落刀之前未走可逆之路**——**其号 R0020，已存**；
 　　**故不但要并回来，还要把这一笔记在这里**。"""
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, re, importlib.util
 
 spec = importlib.util.spec_from_file_location('k', '工具/开轮六检.py')

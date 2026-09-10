@@ -12,6 +12,12 @@
   ④不报轮号之存版不受此拦（与领轮闸同律：说明一空即不认轮）；
   ⑤其向只朝前：全书106篇无亮点段之旧章不再重存，故零假红。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob, importlib.util as iu
 _D = os.path.dirname(os.path.abspath(__file__))
 _R = os.path.dirname(_D)

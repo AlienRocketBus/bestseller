@@ -13,6 +13,12 @@
     python3 工具/下一章.py          # 印下一章之号与其前置
     python3 工具/下一章.py --自测
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import re
 import sys
@@ -96,9 +102,29 @@ def main():
     print('  末章席记：%s %s' % ('✓' if ok else '⚠', 语))
     print('  ★下一章：**第 %d 章**' % 下)
     print()
+    # ★0910·作者令「一定要跑起来」＋「任务流要连贯」：新开一坐，头两件事是问这两句
+    print('  【这一坐从哪儿接·先看这两行】')
+    try:
+        import subprocess as _sp
+        _r = _sp.run(['python3', os.path.join(ROOT, '工具', '续跑.py')],
+                     capture_output=True, text=True, timeout=30)
+        for _l in (_r.stdout or '').strip().split('\n')[-3:]:
+            print('   ' + _l.strip())
+    except Exception:
+        print('   （续跑账读不出——`python3 工具/续跑.py` 自己跑一回看）')
+    try:
+        import subprocess as _sp2
+        _r2 = _sp2.run(['python3', os.path.join(ROOT, '工具', '跑账.py')],
+                       capture_output=True, text=True, timeout=60)
+        for _l in (_r2.stdout or '').strip().split('\n')[:3]:
+            print('   ' + _l.strip())
+    except Exception:
+        pass
+    print()
     print('  【起草之前必办·照次序】')
     print('   1. python3 工具/起草庭.py %d      —— 四层俱过方许起草' % 下)
-    print('   2. python3 工具/囤灰闸.py           —— 该跑的器跑没跑')
+    print('   2. python3 工具/囤灰闸.py           —— 该跑的器**接没接上**（静态可达）')
+    print('      python3 工具/跑账.py             —— 该跑的器**跑没跑过**（真凭实据·两问不同）')
     print('   3. Workflow({scriptPath:\'工具/席/一章.js\', args:{章:%d}})' % 下)
     print('      —— 八段八席自走；每一席都会自己去读 设定/起草令_每章必发.md 与 设定/自判之尺.md')
     print()

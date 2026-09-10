@@ -17,6 +17,12 @@
     ★★★而填记口原只认占位那一串字，**空字串它不认**——那一行遂既补不上、也存不掉。
     ★★★★故空说明须填得进，**而真说明照旧一个字也覆盖不了**（⑩之b 同验）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, sys, json, shutil, tempfile, subprocess
 _D = os.path.dirname(os.path.abspath(__file__))
 _R = os.path.dirname(_D)

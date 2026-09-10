@@ -10,6 +10,12 @@
 ★★★而其治不是把 10 改写成 13，是**去问跑轮它自己有几轮**（`_rounds()`）——一改全改。
 ★★★★而此测之头一项，即令§六④那一行：**它认哪几样，本书同类共几样。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, importlib.util
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

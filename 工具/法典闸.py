@@ -8,6 +8,12 @@
   此闸不新增命令、不新增流程——挂在 跑轮.py --存版 里，每章跑十三回，漏不掉。
 ★★★所机化者，只取「能变成一个数」的那几条；其余在 设定/法典.json 里挂账等着被机化。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import re
 

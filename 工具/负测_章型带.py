@@ -5,6 +5,12 @@
 ★★而一份在旧式下也全过的测，它就是陪跑（令§六③）——**故其要害在③④：以旧式回灌，全书三成四在带外。**
 ★★★而其最险处在误伤：**不许把「事」判为「数」**——故⑨⑩验上位之序②（品由事定，带为其验）仍在册。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob
 import importlib.util as _u
 import io

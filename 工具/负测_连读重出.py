@@ -11,6 +11,12 @@
   中位 2.1%｜均 2.9%｜底 0.0%｜**顶 13.8%（294→296）**；逾6%者4对，逾10%者2对。
   **故取 6% 为⚠、10% 为⛔——非拍脑袋，是自这31对之分布取的。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys
 from importlib.util import spec_from_file_location, module_from_spec
 

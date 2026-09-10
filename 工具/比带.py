@@ -23,6 +23,12 @@
     python3 工具/比带.py 293 --项 90分位
     python3 工具/比带.py 293 --全            ← 逐项皆报
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob, statistics as st
 import importlib.util as _iu
 

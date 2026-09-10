@@ -16,6 +16,12 @@
     故本器只报，不判；判归人，而人须逐条回话。
 用法：python3 工具/立价查.py 292 [最小串长]
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob
 
 # 价之式：(名, 正则, 果之组号)

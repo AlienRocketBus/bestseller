@@ -15,6 +15,12 @@
 　★**它逼的是回话，不是逼数相等**（三本账粒度不同：到期账数十几章之微钩、canon 数十八根中账、
 　　圣经十五笔数全书大账；「三账同屏、任二数不合即⛔」那种闸开机即死，故不立）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob, io, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -12,6 +12,12 @@
   ③其判据係「本章之形」，而形之取法须与 开轮六检::check17 同源（卡为先，词频为退）；
   ④而它不判——只报三条带与本章之落处，不出「须改」二字。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, contextlib
 import importlib.util as iu
 _D = os.path.dirname(os.path.abspath(__file__))

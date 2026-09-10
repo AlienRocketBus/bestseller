@@ -12,6 +12,12 @@
   ③而空轮闸未被挖空：正文与台账末版逐字相同者，照旧拦；
   ④其判以旧式回灌须相反（证非陪跑）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, json, glob, shutil, tempfile
 _D = os.path.dirname(os.path.abspath(__file__))
 案 = []

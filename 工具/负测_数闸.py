@@ -8,6 +8,12 @@
 　★**一道放宽过的闸，须证它还逮得住它本来要逮的东西**（令§六④）。
 【故本测之要害只一条】把今日修好的那些错逐处灌回去，闸须一处不漏地红。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, importlib.util
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

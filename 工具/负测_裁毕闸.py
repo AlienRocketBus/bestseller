@@ -5,6 +5,12 @@
 ★★其要害在③：**以293第9轮之原轮记回灌，须报红**（称21对，写8条）。
    ★★★一份在旧式下也全过的测就是陪跑（令§六③）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io
 import os
 import sys

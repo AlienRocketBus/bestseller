@@ -3,6 +3,12 @@
 ★其立之由：推闸一开，闸即从「全绿才许推」放宽为「跑轮期间可推」；
   ★★而放宽之闸若窗划得不准，等於把闸拆了。
 ★★★故此测专问：那扇窗到底有多窄——凡不该放行者，一样也不许放过去。"""
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, importlib.util, tempfile, os, io
 
 spec = importlib.util.spec_from_file_location('qc', '工具/全测.py')

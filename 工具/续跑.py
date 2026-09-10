@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""续跑——**任务流的断点账**：沙盒挂了，下一坐从哪儿接着干。
+
+【其立之由（2026-09-10·作者亲令，逐字）】
+  「防止就是一个任务流它的时间过长，比如说有时候甚至都能达到这个两三个小时，
+   很有可能会直接挂掉……挂掉之后呢导致之前所做的任务流就没了，
+   那为了完整的保存这个任务流呢就是说在云端你要有一个临时的存储空间。」
+  ★而本仓此前只保得住**东西**（存底枝保住正在写的章），保不住**进度**：
+  一坐跑到第几席、第几轮、下一步该干什么，全在会话的脑子里——**会话一挂，这些就没了**，
+  下一坐只好从头猜。**猜出来的接续，比断掉更坏**（它会把跑过的重跑一遍，把没跑的当成跑过了）。
+
+【它是什么】仓根一档 `_任务流.json`，随 `工具/存底.py --存` 一并推上存底枝——
+  **那就是作者要的「云端临时存储空间」**：不走闸、秒级、连未提交的一起带走。
+
+【三样，写死】
+  ①**只记事实，不记打算**：记「哪一步办完了、其凭是什么」，不记「我打算干什么」——
+   　打算是会变的，办完了的不会变。
+  ②**每一步须带一个可验之凭**（一个 sha、一个档名、一个数）——**没有凭的一步，等於没跑**。
+  ③**不许删旧步**：只许往後接。要看全程，就该看得见全程。
+
+用法：
+    python3 工具/续跑.py --记 "310·五庭毕" --章 310 --凭 "v09·21624字"
+    python3 工具/续跑.py                     # 印：跑到哪儿了、下一步该干什么
+    python3 工具/续跑.py --全                 # 印全程
+    python3 工具/续跑.py --自测
+"""
+import os
+import sys
+import json
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import _账  # noqa: F401
+except Exception:
+    pass
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+档 = os.path.join(ROOT, '_任务流.json')
+段序 = ['定位', '三魂', '起草', '机闸', '三庭', '五庭', '读席', '修席', '极限', '案席', '封版']
+
+
+def _读():
+    try:
+        return json.load(open(档, encoding='utf-8'))
+    except Exception:
+        return {'说明': '任务流断点账·见 工具/续跑.py 头注', '步': []}
+
+
+def _写(d):
+    t = 档 + '.tmp%d' % os.getpid()
+    with open(t, 'w', encoding='utf-8') as f:
+        json.dump(d, f, ensure_ascii=False, indent=1)
+    os.replace(t, 档)
+
+
+def 记(事, 章=None, 凭=''):
+    if not 事:
+        return 2, '一步没有名字，不许记'
+    if not 凭:
+        return 2, '**没有凭的一步等於没跑**——须带一个可验之凭（sha／档名／数）'
+    d = _读()
+    d['步'].append({'时': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()),
+                    '事': 事, '章': 章, '凭': 凭})
+    d['当前'] = d['步'][-1]
+    _写(d)
+    return 0, '第 %d 步已记：%s' % (len(d['步']), 事)
+
+
+def _下一步(一):
+    """★由末一步当场推出下一步。**推不出来就说推不出来**，不许编。"""
+    事 = (一 or {}).get('事', '')
+    for i, 名 in enumerate(段序):
+        if 名 in 事:
+            if i + 1 < len(段序):
+                return '下一段：**%s**（十一段之第 %d）' % (段序[i + 1], i + 2)
+            return '**封版已是末一段**——办毕即开下一章（`python3 工具/下一章.py`）'
+    return '（末一步不在十一段之列，下一步须由人当场定）'
+
+
+def 印(全=False):
+    d = _读()
+    步 = d.get('步', [])
+    print('════ 续跑 ════（共 %d 步）' % len(步))
+    if not 步:
+        print('  账上一步也没有——**这一坐是从头起的**。')
+        return
+    for 一 in (步 if 全 else 步[-5:]):
+        print('  · %s ｜%s%s｜凭：%s' % (一.get('时', '?'), 一.get('事', '?'),
+                                       ('｜第%s章' % 一['章']) if 一.get('章') else '', 一.get('凭', '')))
+    末 = 步[-1]
+    print('  ── 跑到哪儿了 ──')
+    print('   %s%s' % (末.get('事', '?'), ('（第%s章）' % 末['章']) if 末.get('章') else ''))
+    print('   %s' % _下一步(末))
+    print('  ★**本档随 `工具/存底.py --存` 一并推上存底枝**——沙盒挂了，下一坐把它读出来即知接哪儿。')
+
+
+def 自测():
+    ok, bad = 0, []
+
+    def T(x, c, note=''):
+        nonlocal ok
+        if c:
+            ok += 1
+        else:
+            bad.append(x + ('（%s）' % note if note else ''))
+
+    s = open(os.path.join(ROOT, '工具', '续跑.py'), encoding='utf-8').read().split('def 自测')[0]
+    T('①没有凭的一步不许记（无凭即等於没跑）', 记('试', None, '')[0] == 2)
+    T('①之二 没有名字的一步不许记', 记('', None, 'x')[0] == 2)
+    T('②只许往後接，无一处删旧步', '.pop(' not in s and "del d['步']" not in s and 'clear()' not in s)
+    T('③段序当场对得上一章.js 之十一段',
+      段序 == ['定位', '三魂', '起草', '机闸', '三庭', '五庭', '读席', '修席', '极限', '案席', '封版'])
+    # ③之二·真去比一章.js（判据之源律）
+    try:
+        js = open(os.path.join(ROOT, '工具', '席', '一章.js'), encoding='utf-8').read()
+        import re as _re
+        m = _re.search(r'phases:\s*\[(.*?)\]\s*,?\s*\}', js, _re.S)
+        实 = _re.findall(r"title:\s*'([^']+)'", m.group(1)) if m else []
+    except Exception:
+        实 = []
+    T('③之二 段序与 一章.js 之 meta.phases 逐名相同（当场读，不写死）', 实 == 段序, str(实)[:80])
+    T('④下一步是自末一步当场推的，推不出即说推不出（不许编）',
+      '_下一步' in s and '不许编' in s and '须由人当场定' in s)
+    T('⑤写档是原子写（沙盒随时可能挂在半路）', 'os.replace(t, 档)' in s)
+    T('⑥本档落在仓根，随存底枝走（即作者所要之云端临时空间）',
+      "os.path.join(ROOT, '_任务流.json')" in s)
+    print('── 负测·续跑 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
+    return not bad
+
+
+if __name__ == '__main__':
+    a = sys.argv
+    if '--自测' in a:
+        sys.exit(0 if 自测() else 1)
+    if '--记' in a:
+        i = a.index('--记')
+        事 = a[i + 1] if len(a) > i + 1 else ''
+        章 = a[a.index('--章') + 1] if '--章' in a else None
+        凭 = a[a.index('--凭') + 1] if '--凭' in a else ''
+        rc, m = 记(事, 章, 凭)
+        print(('✓' if rc == 0 else '⛔') + m)
+        sys.exit(rc)
+    印('--全' in a)
+    sys.exit(0)

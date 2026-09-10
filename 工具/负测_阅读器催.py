@@ -4,6 +4,12 @@
   三项俱据之报红，遂使每一轮之推送皆被拦一回；而其治只一条命令，难只在「想不起来」。
 ★★故此测专问：它该催的时候催不催，不该催的时候闭不闭嘴，器崩的时候会不会静默。
 ★★★而末一项最要紧：一个「看不懂就当没事」的催，比没有更坏。"""
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, os, types, importlib.util
 
 spec = importlib.util.spec_from_file_location('pl', '工具/跑轮.py')

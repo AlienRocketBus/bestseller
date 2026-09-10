@@ -10,6 +10,12 @@
   ②一轮若正文一字未动且轮记无实，仍须判⚠（不许把闸修成人人皆绿）；
   ③每一轮之绿须印出「凭何而绿」，见得出它是靠轮记之实还是只靠正文动过。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, json, shutil, tempfile, subprocess
 _D = os.path.dirname(os.path.abspath(__file__))
 _R = os.path.dirname(_D)

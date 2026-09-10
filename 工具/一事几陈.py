@@ -23,6 +23,12 @@
     python3 工具/一事几陈.py 293
     python3 工具/一事几陈.py 293 --词 浅,轻,停,手
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io
 import os
 import re

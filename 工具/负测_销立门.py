@@ -11,6 +11,12 @@
   ③未销者不问其立（不许把闸扩成「章章须立新」——那不是立之序所书）；
   ④而其向只朝前：已封之史（155、198、200）不再重封，故本闸於全书零假红。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob, shutil, tempfile, subprocess
 _D = os.path.dirname(os.path.abspath(__file__))
 _R = os.path.dirname(_D)

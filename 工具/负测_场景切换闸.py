@@ -13,6 +13,12 @@
 　③旧式回灌须报红（拿真犯过此项之原物灌回去·令§十四3）。
 ★★★★而本测断的是不变之则，不是今日之天气（第二十八犯之戒）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob, io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

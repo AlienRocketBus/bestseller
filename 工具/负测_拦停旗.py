@@ -15,6 +15,12 @@
   ⑤台账上那一轮之说明是占位或空 → **不销**（一行说不出自己跑了什么的账，不算「有身」）；
   ⑥**旧式回灌**：旧式（无此查）在①之下照旧拒——**故本测非陪跑**（令§六③）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, sys, json, shutil, tempfile, importlib.util as iu
 
 _D = os.path.dirname(os.path.abspath(__file__))

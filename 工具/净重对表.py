@@ -31,6 +31,12 @@
     python3 工具/净重对表.py --补        # 把锁定行之数改成实数（逐行印其改）
     python3 工具/净重对表.py --自测
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

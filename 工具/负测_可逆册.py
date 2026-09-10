@@ -3,6 +3,12 @@
 ★其立之由：作者授权「不可逆之事亦可做」，其条件是它变成可复原的；
   ★★而「可复原」若只是一句话，那这条授权就是白给的。
 ★★★故此测专问三样：①存了真能复原吗 ②库损了它认不认得出 ③认不出的时候它敢不敢拦。"""
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, os, io, json, shutil, tempfile, importlib.util
 
 _旧cwd = os.getcwd()

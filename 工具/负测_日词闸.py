@@ -3,6 +3,12 @@
 ★其立之由（287第1轮所逮）：其式原作 [一二三四五六七八九十百]，不含零／〇，
   ★★遂使凡带零之日号一律漏认，且报的是「0 处」而非报错——静默之误，闸看着在跑而实已失灵。
 ★★★令九·③：写下来的法不生效，只有变成闸才生效。"""
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, importlib.util
 
 spec = importlib.util.spec_from_file_location('q3', '工具/质量三闸.py')

@@ -8,6 +8,12 @@
 ★★★★而一份在旧式下也全过的测就是陪跑（令§六③）——**故其要害在①：旧式回灌须 7/7 绿，方证此洞是真的。**
 ★★★★★另测第11条：旧式超时以 SIGKILL 杀子进程，子进程之 finally 不跑——负测在真仓库上改的档留在盘上。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import importlib.util
 import io
 import os

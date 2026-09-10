@@ -20,6 +20,12 @@
     python3 工具/回修.py --开案 N "为何要改"   # 开一份回修案（落盘·须逐项填）
     python3 工具/回修.py --验案 N            # 验回修案是否办毕（封版闸据此放行）
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import re
 import sys

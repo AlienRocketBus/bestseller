@@ -11,6 +11,12 @@
 　★①旧式（只取窗）与新式（另取二带）在此项上须判得不同——同判者，本带即陪跑；
 　★★②而新式不许把凡「弱」都洗白：三条带俱在中位之下者，新式仍须报「本章在其下」。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, sys, statistics as st, importlib.util
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

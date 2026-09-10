@@ -11,6 +11,12 @@
     python3 工具/质量三闸.py 200          # 单章之查
     python3 工具/质量三闸.py --段 192 200  # 一段之查（每站写满十章后回测用）
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, re, os, glob, json
 
 CN = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10}

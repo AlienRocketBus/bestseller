@@ -18,6 +18,12 @@
 正文修改后先运行 `python3 工具/同步全本阅读器.py`，再运行检察官；检察官本身
 只做阅读器 `--check`，不会自动改 HTML。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, glob, re, os, subprocess, json
 from collections import Counter
 

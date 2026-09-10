@@ -14,6 +14,12 @@
 　　**而其料不再取自今日之活账，由本测自己在沙盘上造一对**——
 　　**造得出、改得动、报得准，方算它逮得住**（旧式回灌之验仍在，见②之旧）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, json, os, sys
 import importlib.util as _iu
 

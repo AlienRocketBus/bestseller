@@ -9,6 +9,12 @@
   ⑤旧式回灌：**若判据不分年代**，②③照旧过，**而④必崩**——**故本测证得出「分代」那一刀有用，非陪跑**
   ⑥还原毕之盘须与测前逐字相同（第二十八犯之处方）
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import importlib.util as iu, io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

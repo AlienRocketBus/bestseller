@@ -16,6 +16,12 @@
 　★★★★**故今补三项（④⑤⑥）**：④限逐章同判｜⑤执逐章同判｜
 　　**⑥以旧式（n+2）回灌须报出相异之章**——**一份在旧式下也全过的测就是陪跑**（令§六③）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob, importlib.util, io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

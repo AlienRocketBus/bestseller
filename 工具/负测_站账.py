@@ -7,6 +7,12 @@
 ★★★★**而另验一样，其位与前者同等要紧**：**此闸不许变成催字数的闸**（令§二）——
    **故⑦验其报文里无「须补至N字」「净重不足」之类语**。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io
 import os
 import sys

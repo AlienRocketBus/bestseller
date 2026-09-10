@@ -12,6 +12,12 @@
   python3 工具/一章到底.py --账单 137          # 到期账列单+重复立账扫描+已付扫描
   python3 工具/一章到底.py --拆点 136          # 三步法拆点测算
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os, re, sys, json, glob, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -10,6 +10,12 @@
 　　　　而以峰为底则 128章/177（72%）——**二组数并列写在此，下一坐不必再量一遍。**
 　　④**假章仍逮得住**：把现文之一处感官字删掉，新式当场报红。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob, json
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

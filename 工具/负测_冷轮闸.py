@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """⑥·冷轮之欠 负测（2026-08-28 立·随「改⑥之闸」同日）。
 ★一个只会说「零」的闸没有价值；故此测专问：它还逮不逮得住真欠。"""
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os, io, sys, glob, tempfile, importlib.util
 
 spec = importlib.util.spec_from_file_location('k6', '工具/开轮六检.py')

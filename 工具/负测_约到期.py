@@ -10,6 +10,12 @@
    立闸当日我试过两回（取实词比字面），**中文不分词，切片切出「了闻／天一／我蹲」，碎片在任一章都撞得上**；
    ★★**故④验其源里没有那条路，且明写弃它之由**。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io
 import os
 import sys

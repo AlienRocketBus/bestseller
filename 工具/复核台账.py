@@ -19,6 +19,12 @@
     python3 工具/复核台账.py --列 未判 近距重复 20
     python3 工具/复核台账.py --判 <id> 判合 "记因"
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import re
 import sys

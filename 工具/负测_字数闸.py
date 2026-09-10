@@ -8,6 +8,12 @@
 　　③**非挖空**：今版须全绿（治毕之後），且其群不得塌（紧邻式仍 ≥130 处）；
 　　④**不吃盘**：此器只读不写，跑完诸档逐字原样。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, subprocess, hashlib
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

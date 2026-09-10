@@ -17,6 +17,12 @@
     python3 工具/可逆.py --验                             # 验全库完好（供全测调用）
     python3 工具/可逆.py --自测                           # 负测（供全测调用）
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, os, json, glob, shutil, hashlib, subprocess, datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

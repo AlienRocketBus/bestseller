@@ -14,6 +14,12 @@
   （`工具/十轮精进.py` 与 `工具/跑轮.py`）——**改了前一份，器照旧印旧数**；
   ★★★★故⑤逐份验其在：**一处判，两份码；而改一份的人以为自己改完了。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

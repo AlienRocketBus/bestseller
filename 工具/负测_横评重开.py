@@ -14,6 +14,12 @@
  ③把一版之净重改坏：**新式照旧在「逐项冠军」里点得出末版未持有其最优**（证它没被洗白）。
  ④一台账若只有「重开」而无一版带量项：**新式须报「没有一版带量项」而非崩**。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, json, os, re, sys, tempfile, importlib.util as _u
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

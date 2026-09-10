@@ -5,6 +5,12 @@
 ★★★故此测专问三样：①旧式所红而新式仍红者，须还在（其防未动）；
   ②新式所松者，须逐章拿得出「其限已明写」之凭据（不是凭空放行）；
   ③一个假章：摆了问而二十拍内一个字也不交代者，新式仍须报红。"""
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import sys, re, importlib.util
 
 spec = importlib.util.spec_from_file_location('k', '工具/开轮六检.py')

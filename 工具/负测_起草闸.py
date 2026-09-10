@@ -18,6 +18,12 @@
   一个会喊狼的核对器比没有更糟；**一个会报错数的告示牌，比没有告示牌更糟——因为人会照它答题。**
   故此器往後凡加「只报不判」之栏，**每一栏都要有一条负测钉住它印的那个数**。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

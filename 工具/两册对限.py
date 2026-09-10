@@ -17,6 +17,12 @@
 　★**故此器只看得见十分之二**——**其余八笔只在一册上，本器一个字也不说**；
 　★★**记此一行是为免把它的绿读成「两册全对上了」**（§一⑤）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

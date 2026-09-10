@@ -8,6 +8,12 @@
 　　★①下列各组在旧式（认号）下认不出「同一拍」，在新式（认白文）下认得出；
 　　★★②同一版回跑十遍，新式仍只算一回——**质检器不许污染它自己质检的账**（第二十九犯所戒）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

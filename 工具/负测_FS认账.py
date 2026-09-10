@@ -12,6 +12,12 @@
   ③其单取自 FS闸 自己那一支，不取自报文（报文里本就没有根号）；
   ④放行只在跑轮档（回执未交时）；回执一交，此口自销。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, importlib.util as iu
 _D = os.path.dirname(os.path.abspath(__file__))
 _R = os.path.dirname(_D)

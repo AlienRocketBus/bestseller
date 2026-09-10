@@ -36,6 +36,12 @@
     python3 工具/存底.py --演 309                    # ★真克隆下来比一遍（15秒·每收一章跑一回）
     python3 工具/存底.py --自测
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import re
 import sys
@@ -74,7 +80,17 @@ def 存(说明=''):
             return 2, 'commit-tree 无果'
         p = _跑('git', 'push', '--no-verify', '-q', '--force',
                 'origin', '%s:refs/heads/%s' % (c, 底枝))
-        return (0, c[:8]) if p.returncode == 0 else (2, (p.stderr or p.stdout).strip()[:160])
+        if p.returncode != 0:
+            return 2, (p.stderr or p.stdout).strip()[:160]
+        # ★存底既已上云，顺手把「任务流跑到哪儿了」也记一步——
+        #   **东西保住了而进度丢了，下一坐仍得从头猜**（作者 0910 令）。
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import 续跑
+            续跑.记(说明 or '存底', None, c[:8])
+        except Exception:
+            pass
+        return 0, c[:8]
     finally:
         if os.path.exists(idx):
             os.remove(idx)
@@ -202,6 +218,8 @@ def 自测():
     T('⑥之二 演所比者含「正在写而未提交的那一章」（存底枝立起来正为这一样）',
       'ROOT' in 段演 and "'正文'" in 段演)
     T('⑥之三 演跑毕即除其临时之仓（不吃盘）', 'rmtree' in 段演 and 'finally' in 段演)
+    T('⑦每存一回，顺手记一步续跑（东西保住而进度丢了仍是断）',
+      'import 续跑' in s and '续跑.记(' in s)
     print('── 负测·存底 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 

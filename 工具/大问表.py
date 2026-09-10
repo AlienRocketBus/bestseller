@@ -17,6 +17,12 @@
 【何以现五席装不下】看官账「席」栏自书：生客只读本章白文／挑刺客本章＋前章／连读客连读数章——
 　★一个只看几章的席位，问什么也问不出「这一样吊了二百章」。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob, io, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -29,6 +29,12 @@
     ★★★**一个闭集只逮得住它自己列过的东西**；故今另开一路**由白文之型认之**（拿X比／拿X量／用X比／用X量／数（了）自己的X），
       **凡所认之X既不在册上，又不在册之全文里被「」提过一回，即印⚠**——**它不判，只逼这一章当场说一句话。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

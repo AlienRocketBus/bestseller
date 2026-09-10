@@ -176,7 +176,7 @@ def 查(印=True):
                   % (len(未注), '、'.join(未注[:6])))
     # 甲·席里点名而账上一笔也没有
     点 = [x for x in 席点之器() if x in 诸]
-    没跑 = [x for x in 点 if x not in 账]
+    没跑 = [x for x in 点 if x not in 账]   # ★`_立账` 不在 点 之列，不必另剔
     # ★★**立账之日以前，本账没有凭据**——那时候它跑没跑过，账上不可能知道。
     #   故须先问一句：**自立账以来，有没有过一次封版？** 有过，才谈得上「该跑而没跑」。
     #   没有过，则只报黄（待观察）——**一个把「我还没看见」说成「它没跑过」的闸，就是会喊狼的闸。**
@@ -189,6 +189,8 @@ def 查(印=True):
     黄 = []
     now = time.time()
     for 名, 一 in 账.items():
+        if 名.startswith('_') or not isinstance(一, dict):
+            continue
         try:
             t = time.mktime(time.strptime(一.get('末跑', ''), '%Y-%m-%d %H:%M:%S'))
         except Exception:
@@ -196,8 +198,9 @@ def 查(印=True):
         if (now - t) > 久 * 86400 and 名 in 点:
             黄.append('%s（末跑 %s）' % (名, 一.get('末跑')))
     if 印:
+        实账 = [k for k in 账 if not k.startswith('_')]
         print('════ 跑账 ════（席点之器 %d 样｜账上有 %d 样｜器共 %d 样）'
-              % (len(点), len(账), len(诸)))
+              % (len(点), len(实账), len(诸)))
         for x in 坏:
             print('  ⛔ ' + x)
         if 黄:
@@ -213,7 +216,9 @@ def 查(印=True):
 
 def 册():
     账 = _读账()
-    xs = sorted(账.items(), key=lambda kv: kv[1].get('末跑', ''), reverse=True)
+    # ★`_立账` 是一个字串不是一笔账——凡 `_` 开头者一律不是器，剔出去
+    xs = sorted([kv for kv in 账.items() if not kv[0].startswith('_')],
+                key=lambda kv: kv[1].get('末跑', ''), reverse=True)
     print('════ 跑账·全册 %d 样 ════' % len(xs))
     for 名, 一 in xs:
         print('  %-24s 末跑 %s ｜跑过 %s 回｜头回 %s'
@@ -263,6 +268,8 @@ def 自测():
     T('⑧甲路须先问「自立账以来封过版没有」（无凭不许判它没跑过）',
       '自立账以来封过版' in s and "账.get('_立账'" in s)
     T('⑧之二 其凭是章标（封版席末一件即打标）', "'/章-'" in s or "'章-'" in s)
+    T('⑨账里 `_` 开头者不是器（`_立账` 是一个字串），三处遍历皆已剔',
+      s.count("startswith('_')") >= 3 and 'isinstance(一, dict)' in s)
     T('⑦丙路只报黄，不入坏（久不跑不等於它坏了）',
       '黄 = []' in s and '坏.append' not in s.split('# 丙·久不跑')[1].split('if 印')[0])
     print('── 负测·跑账 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))

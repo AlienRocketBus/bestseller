@@ -2763,6 +2763,21 @@ def chk_review_ledger():
 最少件数 = 40
 
 
+def chk_paozhang():
+    """★囤灰闸问「接没接上」，本项问「**跑没跑过**」——两问不同，缺一样都不够。
+    ★★其红黄之别由 工具/跑账.py 自己判（立账之日以前无凭者只报黄）；本项只把它的话搬过来。
+    """
+    try:
+        import subprocess
+        r = subprocess.run(['python3', os.path.join(ROOT, '工具', '跑账.py')],
+                           capture_output=True, text=True, timeout=120)
+        末 = [x.strip() for x in (r.stdout or '').strip().split('\n') if x.strip()]
+        语 = 末[1] if len(末) > 1 else (末[0] if 末 else '（跑账无话）')
+        return (r.returncode == 0), 语[:160]
+    except Exception as e:
+        return False, '跑账跑不起来：%s' % e
+
+
 def main():
     quick = '--快' in sys.argv
     items = [('重名定义扫描', chk_dup_defs), ('钩子挂载', chk_hookspath),
@@ -2874,6 +2889,8 @@ def main():
         items.append(('第零轮', chk_round_zero))
         items.append(('核轮', chk_unfinished))
         items.append(('回修案', chk_huixiu))
+    # ★0910·作者令「一定要跑起来」：全测须问一句「席里点名的器，这一章跑没跑过」
+    items.append(('跑账', chk_paozhang))
     print('\n████ 全测 · %d 项 ████' % len(items))
     fails = []
     跑过件数 = [0]

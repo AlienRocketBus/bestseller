@@ -412,13 +412,37 @@ def gates(n, note, ledger, chapters_now, receipts, reopen='', force='', same_as_
     return halt, lines
 
 
-def rounds_state(ledger):
-    """返回 (已跑真轮集合, 缺轮列表)。真轮＝说明以「第N轮」起者。"""
+def rounds_state(ledger, n=None):
+    """返回 (已跑真轮集合, 缺轮列表)。
+
+    真轮＝**说明以「第N轮」起者**，★**或轮记里那一轮有实文（去空白 ≥120 字）**。
+
+    ★★★**後半是 0910 补的，其由是一次实卡（310 第11轮）**：
+    　领轮闸拦下第11轮，说「所领为第1轮」。而查其实：台账十四版、轮记里第 1/3/5/6/7/8/9/11 轮
+    　俱有逐条实文——**十几轮的活真干了，只是它的说明没以「第N轮」起头**。
+    　★其所以不以「第N轮」起头，是**席自己为了不绕闸而选的路**：轮次闸曾因旧误标而拦，
+    　　席不肯改轮号绕它，改以非「第N轮」之说明存版，并把其由逐字记在轮记里（v05—v07、v10、v11、v13）。
+    　★★**於是成了一个自锁的圈**：闸拦→席避开轮号→台账永远认不出那一轮→闸拦得更死。
+    　★★★**而这不是新立一条宽路**：本器自己在覆盖查那一处早就写着同一条——
+    　　「**存过版，或轮记里那一轮有实文（去空白 ≥120 字），二者有其一即算跑过**」
+    　　（见 `_有实记` 之注：一行「已完成」不算）。**今只是把那一条搬到它本该也在的这一处。**
+    　★★★★**其非放水之凭**：`工具/负测_真轮凭轮记.py` 之⑧⑨两格拿真偷懒之局回灌，须照旧判红。
+
+    n 给了才查轮记；不给则照旧只认台账（旧调用一处不必改，其判分毫不变）。
+    """
     rs = set()
     for x in ledger.get('版本', []):
         r = _round_of(x.get('说明', ''))
         if r:
             rs.add(r)
+    if n is not None:
+        try:
+            lj = _lunji_blocks(n)
+            for i, bs in lj.items():
+                if len(re.sub(r'\s', '', '\n'.join(bs))) >= 120:
+                    rs.add(i)
+        except Exception:
+            pass
     return rs, [i for i in range(1, ROUNDS + 1) if i not in rs]
 
 
@@ -509,7 +533,7 @@ def duibiao(n):
             print('    · %s %s 「%s」净重%s'
                   % (x.get('版', ''), x.get('时', ''), x.get('说明', ''),
                      x.get('soft', {}).get('净重', '?')))
-        rs, miss = rounds_state(lg)
+        rs, miss = rounds_state(lg, n)
         print('  真轮：%d/10%s' % (len(rs), '' if not miss else
               '｜缺 ' + '、'.join('第%d轮' % i for i in miss)))
         # 【批112·闸四｜批113修】封版凭据之验，两级判：洞＝硬伤，短＝存疑。
@@ -797,7 +821,7 @@ def nextround(n):
     print(duibiao_brief(n))
     d, led = paths(n)
     lg = json.load(open(led, encoding='utf-8')) if os.path.exists(led) else {'版本': []}
-    rs, miss = rounds_state(lg)
+    rs, miss = rounds_state(lg, n)
     tab = lens_table()
     print('  ── 下一轮 ──')
     if not miss:
@@ -922,7 +946,7 @@ def duibiao_brief(n):
     if os.path.exists(led):
         lg = json.load(open(led, encoding='utf-8'))
         vs = lg.get('版本', [])
-        rs, miss = rounds_state(lg)
+        rs, miss = rounds_state(lg, n)
         last = vs[-1] if vs else {}
         out.append('   台账：共%d版，末版 %s「%s」%s'
                    % (len(vs), last.get('版', ''), last.get('说明', ''), last.get('时', '')))
@@ -1736,7 +1760,7 @@ def yanlun(n):
     if os.path.exists(led):
         lg = json.load(open(led, encoding='utf-8'))
         vs = lg.get('版本', [])
-        rs, miss = rounds_state(lg)
+        rs, miss = rounds_state(lg, n)
         rs = sorted(rs)
         if vs:
             ver = vs[-1].get('版', '')
@@ -1827,6 +1851,28 @@ def selftest():
     chk('验轮须认满%d轮'%ROUNDS, rounds_state(L([v('第%d轮·x' % i) for i in range(1, ROUNDS+1)]))[1] == [])
     chk('验轮须报缺末诸轮', rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == list(range(10,ROUNDS+1)))
     chk('验轮不得把回补当真轮', rounds_state(L([v('终版回补')]))[0] == set())
+    # ★0910 补三格·钉死「真轮亦凭轮记」这一路（其立之由见 rounds_state 之注）
+    chk('真轮·不给章号时照旧只认台账（旧调用之判分毫不变）',
+        rounds_state(L([v('第3轮·x')]))[0] == {3})
+    import tempfile as _tf, os as _os
+    _d = _tf.mkdtemp(prefix='真轮凭轮记_')
+    try:
+        # ⑨之形：轮记里一行「已完成」——**不许算跑过**
+        _os.makedirs(_os.path.join(_d, '版本', '第900章'), exist_ok=True)
+        _lj = _os.path.join(_d, '版本', '第900章', '_轮记.md')
+        open(_lj, 'w', encoding='utf-8').write('# 第900章 · 轮记\n\n## 第7轮·x\n\n已完成。\n')
+        _old = globals()['_lunji_path']
+        globals()['_lunji_path'] = lambda nn: _lj
+        chk('真轮·轮记里一行「已完成」不算跑过（去空白<120字）',
+            7 not in rounds_state(L([]), 900)[0])
+        # ⑧之形：轮记里有逐条实文——算跑过
+        open(_lj, 'w', encoding='utf-8').write(
+            '# 第900章 · 轮记\n\n## 第7轮·x\n\n' + ('本轮所见：逐处抄出来之後看见一样器印不出的事。' * 8) + '\n')
+        chk('真轮·轮记里有实文（≥120字）即算跑过', 7 in rounds_state(L([]), 900)[0])
+        globals()['_lunji_path'] = _old
+    finally:
+        import shutil as _sh
+        _sh.rmtree(_d, ignore_errors=True)
     chk('151实录回放·验轮须报缺末诸轮',
         rounds_state(L([v('第%d轮·x' % i) for i in range(1, 10)]))[1] == list(range(10,ROUNDS+1)))
 

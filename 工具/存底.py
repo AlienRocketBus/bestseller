@@ -69,6 +69,11 @@ def 存(说明=''):
     try:
         env = {'GIT_INDEX_FILE': idx}
         r = _跑('git', 'add', '-A', env=env)
+        # ★两本账在 .gitignore 里（免得主枝永远是脏的），故须**强塞**进这一份临时索引——
+        #   **存底枝要是没有它们，续跑之账就断了**（东西保住而进度丢了，仍是断）。
+        for _档 in ('_跑账.json', '_任务流.json'):
+            if os.path.exists(os.path.join(ROOT, _档)):
+                _跑('git', 'add', '-f', _档, env=env)
         if r.returncode != 0:
             return 2, ('add：' + (r.stderr or r.stdout).strip()[:120])
         t = _跑('git', 'write-tree', env=env).stdout.strip()
@@ -220,6 +225,8 @@ def 自测():
     T('⑥之二 演所比者含「正在写而未提交的那一章」（存底枝立起来正为这一样）',
       'ROOT' in 段演 and "'正文'" in 段演)
     T('⑥之三 演跑毕即除其临时之仓（不吃盘）', 'rmtree' in 段演 and 'finally' in 段演)
+    T('⑧两本账虽在 .gitignore，存底仍强塞进临时索引（少了它们续跑之账就断）',
+      "'add', '-f'" in s and '_跑账.json' in s and '_任务流.json' in s)
     T('⑦每存一回，顺手记一步续跑（东西保住而进度丢了仍是断）',
       'import 续跑' in s and '续跑.记(' in s)
     print('── 负测·存底 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))

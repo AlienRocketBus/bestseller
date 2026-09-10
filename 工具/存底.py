@@ -87,7 +87,9 @@ def 存(说明=''):
         try:
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import 续跑
-            续跑.记(说明 or '存底', None, c[:8])
+            # ★带上前缀：存底之步是**流水**，不是**实事**；
+            #   续跑之印要分得出这两样，否则实事会被一串存底埋掉。
+            续跑.记('存底·' + (说明 or ''), None, c[:8])
         except Exception:
             pass
         return 0, c[:8]

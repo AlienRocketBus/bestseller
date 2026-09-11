@@ -2791,6 +2791,26 @@ def chk_review_ledger():
 最少件数 = 40
 
 
+def chk_jieli():
+    """★0911 立（一次真停摆逼出来的）：**「办完了」与「接上了」是两件事。**
+    0910 21:00 第312章封版撤锁，0911 01:28 第313章才起——四个半钟头一个字没写，
+    而心跳／续跑／存底**三本账一本也没响，且三本都报得对**：它们问的全是上一件事。
+    """
+    try:
+        import subprocess
+        r = subprocess.run(['python3', os.path.join(ROOT, '工具', '接力.py')],
+                           capture_output=True, text=True, timeout=60)
+        末 = [x.strip() for x in (r.stdout or '').strip().split('\n') if x.strip()]
+        语 = 末[-1] if 末 else '（接力无话）'
+        for x in 末:
+            if x.startswith('⛔') or '断流' in x:
+                语 = x
+                break
+        return (r.returncode == 0), 语[:170]
+    except Exception as e:
+        return False, '接力跑不起来：%s' % e
+
+
 def chk_paozhang():
     """★囤灰闸问「接没接上」，本项问「**跑没跑过**」——两问不同，缺一样都不够。
     ★★其红黄之别由 工具/跑账.py 自己判（立账之日以前无凭者只报黄）；本项只把它的话搬过来。
@@ -2919,6 +2939,8 @@ def main():
         items.append(('回修案', chk_huixiu))
     # ★0910·作者令「一定要跑起来」：全测须问一句「席里点名的器，这一章跑没跑过」
     items.append(('跑账', chk_paozhang))
+    # ★0911 立：三本账问的都是「上一件事办完没有」，本项只问「**下一件事起来没有**」
+    items.append(('接力', chk_jieli))
     print('\n████ 全测 · %d 项 ████' % len(items))
     _席凭 = _有席在跑()
     if _席凭:

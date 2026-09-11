@@ -103,7 +103,17 @@ def main():
     print('  ★下一章：**第 %d 章**' % 下)
     print()
     # ★0910·作者令「一定要跑起来」＋「任务流要连贯」：新开一坐，头两件事是问这两句
-    print('  【这一坐从哪儿接·先看这两行】')
+    print('  【这一坐从哪儿接·先看这三行】')
+    # ★0911 立：先问「接上了没有」——0910 之停摆，正是三本账都报得对而书停了四个半钟头
+    try:
+        import subprocess as _sp0
+        _r0 = _sp0.run(['python3', os.path.join(ROOT, '工具', '接力.py')],
+                       capture_output=True, text=True, timeout=60)
+        for _l in (_r0.stdout or '').strip().split('\n')[1:]:
+            if _l.strip():
+                print('   ' + _l.strip())
+    except Exception:
+        print('   （接力读不出——`python3 工具/接力.py` 自己跑一回看）')
     try:
         import subprocess as _sp
         _r = _sp.run(['python3', os.path.join(ROOT, '工具', '续跑.py')],

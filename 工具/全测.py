@@ -1809,6 +1809,25 @@ def chk_hl_table():
     return True, '%d/%d 全通（v20回灌逮出「二十来口气」｜旧式当场漏掉，非陪跑）' % (ok, tot)
 
 
+def chk_verdict_words():
+    """★裁语词表之负测（2026-09-11 立·随 `跑轮.VERDICT` 补「删」「刀」二字同日落）：
+    ★★守两句——**「只删不添」那一类裁须认得**（补之由）；
+      **而补了二字，抄清单仍须不过**（补之限）；
+      ★★★其④格拿旧词表回灌同一段，证本次之补非无病呻吟。"""
+    out = run('负测·裁语词表', ['工具/负测_裁语词表.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（头一格拿315第8轮真局回灌）' % (ok, tot)
+
+
 def chk_cold_void():
     """★冷轮作废之负测（2026-09-11 立·随 `开轮六检._cold_void` 同日落）：
     ★★其守只一句——**废之口只开给「从未立过面」的那一种冷轮**；
@@ -2873,6 +2892,7 @@ def main():
         items.append(('负测·未答闸', chk_unans_gate))
         items.append(('负测·棘轮预检', chk_ratchet_pre))
         items.append(('负测·冷轮作废', chk_cold_void))
+        items.append(('负测·裁语词表', chk_verdict_words))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

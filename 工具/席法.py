@@ -33,6 +33,7 @@ import os
 import re
 import sys
 import glob
+import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -68,19 +69,79 @@ def 查一(t):
     return 键红, sorted(set(引红))
 
 
+def 起得来(f):
+    """★★★★★2026-09-11 立·**本器今日之最大一次假绿，其代价是四个半钟头全书停摆**：
+    `工具/席/一章.js` 里有一整段（103 行）被复制成两份，於是 `const 庭` 重声明，
+    **工作流当场拒：Identifier '庭' has already been declared**——**一章也开不了**；
+    ★而那四个半钟头里，每小时那个自走 Routine 各起过一坐，**每一坐跑到派席那一步都撞同一个错**，
+      **於是每一坐都白起**；★★**而本器那一刻印的是「✓ 诸席俱合」。**
+    ★★★**其病之根一句话**：本器查的是**写法**（schema 键／反引号），**从来没问过一句「它跑得起来吗」**。
+      **一份跑都跑不起来的席，在写法上可以是完美的。**
+    ★★★★故补此路：**拿 `node --check` 真去解析一遍**——**它逮不出的形另有其它路，
+      而它逮得出的这一形（重声明／括号不闭／落了半截），正是「改席」最常摔的那一跤。**
+    ⛔**并记其限，不许含糊**：`node --check` 按 CommonJS 解析，**与工作流那一层的解析不尽同**；
+      **故它过了不等於工作流一定收**——**但它不过，工作流一定不收。**
+      **本路只守後一半：不过即红。**
+    """
+    # ★★★★★★0911 当日立此路时**又栽了一跤，须逐字记下**：
+    #   头一版写的是 `node --check <档>.js`——**而它对今日那份真坏局照旧印绿**。
+    #   ★其由：`.js` 之副档名令 node 按 **CommonJS script** 解析，而工作流那一层按 **ESM** 解析；
+    #     **同名 const 声明两遍这一形，只在 ESM 之下当场报错**。
+    #   ★★即：**头一版的丙路，逮不住那个把全书停摆四个半钟头的东西**——
+    #     **一道照着病立起来而逮不住那个病的闸，比没有更坏（它会让人以为已经防住了）。**
+    #   ★★★故改：拷一份作 `.mjs` 再 check，**与工作流同一种解析**。
+    #     实测：同一档 `--check x.js` 印绿，`--check x.mjs` 当场印
+    #     「const 庭 = [ ^ SyntaxError: Identifier '庭' has already been declared」。
+    # ★★★★★★★而头一版之 .mjs 又立刻栽了第二跤（0911 同日·须一并记下）：
+    #   直接把席当 ESM 去 check，**十份席里十份报红**——其红皆在同一形：`return out.filter(Boolean)`。
+    #   ★其由：**工作流把整份脚本包在一个 async 函数里跑**，故席里写 top-level `return`／`await` 是合法的；
+    #     而裸 ESM 之下二者皆非法。★★**於是那一版丙路把「本来就该这么写」的十份席全判成坏的**——
+    #     **一个会喊狼的核对器比没有更糟**（本仓旧律，今日第三次用上）。
+    #   ★★★故今照工作流那一层之形包一层再 check：`export const meta` → `const meta`，
+    #     其余整份包进 `async function _w(){ … }`——**这才是与它同一种解析**。
+    import shutil
+    import tempfile
+    码 = _读(f)
+    码 = re.sub(r'^export\s+const\s+meta', 'const meta', 码, count=1, flags=re.M)
+    i = 码.find('\n', 码.find('const meta'))
+    # 自 meta 之後整块包起来（meta 之块以第一处 '\n}' 收）
+    j = 码.find('\n}', i)
+    j = (j + 2) if j > 0 else i
+    码 = 码[:j] + '\nasync function _w() {\n' + 码[j:] + '\n}\n'
+    d = tempfile.mkdtemp(prefix='席法check_')
+    m = os.path.join(d, os.path.basename(f).rsplit('.', 1)[0] + '.mjs')
+    try:
+        open(m, 'w', encoding='utf-8').write(码)
+        r = subprocess.run(['node', '--check', m], capture_output=True, text=True)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    if r.returncode == 0:
+        return None
+    语 = (r.stderr or r.stdout).strip().split('\n')
+    要 = [x for x in 语 if x.strip() and not x.strip().startswith('at ')][:3]
+    return ' ｜ '.join(x.strip() for x in 要)[:200]
+
+
 def 查(印=True):
     fs = sorted(glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))
     红 = []
     for f in fs:
         k, b = 查一(_读(f))
         rp = os.path.relpath(f, ROOT)
+        # ★丙路先於甲乙印：**跑不起来这一件，比写法上的任何一处都大**
+        c = 起得来(f)
+        if c:
+            红.append('丙·%s：**node --check 不过**——%s'
+                      '｜★**一份跑不起来的席，写法上可以是完美的**：'
+                      '0911 之 一章.js 即因一整段被复制成两份而重声明，'
+                      '**全书停摆四个半钟头，而本器那时印「诸席俱合」。**' % (rp, c))
         for x in k:
             红.append('甲·%s：schema 键非 ASCII「%s」——API 只收 ^[a-zA-Z0-9_.-]{1,64}$，'
                       '写中文则 400，**诸席一个也起不来**。' % (rp, x))
         for x in b:
             红.append('乙·%s：%s' % (rp, x))
     if 印:
-        print('════ 席法 ════（认 %d 份席·两路：schema键须ASCII／模板串内反引号须转义）' % len(fs))
+        print('════ 席法 ════（认 %d 份席·三路：**跑得起来（node --check）**／schema键须ASCII／模板串内反引号须转义）' % len(fs))
         for x in 红:
             print('  ⛔ ' + x)
         print('  ✓ 诸席俱合。' if not 红 else '  ⛔ %d 处。' % len(红))
@@ -98,6 +159,60 @@ def 自测():
             bad.append(n + ('（%s）' % note if note else ''))
 
     T('①今局诸席俱合', not 查(印=False), '；'.join(查(印=False))[:120])
+
+    # ★★★★★丙路之负测（0911 立·与其路同日）——**拿今日那份真让全书停摆四个半钟头的坏局回灌**
+    #   ★其局之实：`git show 9c7b78a4:工具/席/一章.js` ——其内一整段（103 行）被复制成两份，
+    #     `const 庭` 重声明；★★工作流当场拒「Identifier '庭' has already been declared」，
+    #     **而本器那时印「✓ 诸席俱合」**（甲乙两路皆过：schema 键是 ASCII、反引号也都转义了）。
+    #   ★★★**故这一格问的正是那一句**：**新路逮不逮得住「写法完美而跑不起来」。**
+    import subprocess as _sp
+    import tempfile as _tf
+
+    def _坏(码):
+        d = _tf.mkdtemp(prefix='席法负测_')
+        f = os.path.join(d, 'x.js')
+        open(f, 'w', encoding='utf-8').write(码)
+        try:
+            return 起得来(f)
+        finally:
+            try:
+                os.remove(f)
+                os.rmdir(d)
+            except Exception:
+                pass
+
+    # ④·**今日之真局**：同一个 const 声明两遍（一整段被复制之形）
+    T('④丙路·同名 const 声明两遍（0911 真局之形）须红',
+      bool(_坏("const 庭 = [1]\nconst 庭 = [2]\n")))
+    # ④之二·括号没闭（改席落了半截之形）
+    T('④之二 丙路·括号未闭（改席落了半截）须红', bool(_坏("const a = {\n")))
+    # ④之三·**好局不许红**（不然它就是一个会喊狼的核对器）
+    T('④之三 丙路·好局不许红', not _坏("export const meta = {name:'x',description:'y'}\nconst a = 1\n"))
+    # ④之四·**旧式回灌·证本路非陪跑**：坏局在甲乙两路之下**照旧全过**
+    #   （schema 键是 ASCII、无未转义之反引号）——**即：没有丙路，它就是一次假绿。**
+    _k, _b = 查一("const 庭 = [1]\nconst 庭 = [2]\n")
+    T('④之四 旧式回灌·同一坏局在甲乙两路之下照旧全过（故丙路非陪跑）',
+      not _k and not _b)
+    # ④之六·★★**最要紧的一格·拿 0911 那份真坏局回灌**（`git show 9c7b78a4:工具/席/一章.js`）：
+    #   **它是唯一一份「真的让全书停摆过四个半钟头」的局**——**本路若逮不住它，本路就是白立的。**
+    # ★样本落在 `工具/席/_坏局样本/` 之内，**不落在 `工具/席/` 之下**——
+    #   其由：查之 glob 係 `工具/席/*.js`，样本若与诸席同处，**本器每一回都会把这份标本判红**
+    #   （0911 当日实见，一立即犯）；**一份负测之样本，不许把它守的那道闸自己拌倒。**
+    _真坏 = os.path.join(ROOT, '工具', '席', '_坏局样本', '一章js_0911.js')
+    if os.path.exists(_真坏):
+        T('④之六 真坏局回灌·0911 那份让全书停摆四个半钟头的 一章.js 须红', bool(_坏(_读(_真坏))))
+        _k6, _b6 = 查一(_读(_真坏))
+        T('④之六之二 同一真坏局在甲乙两路之下照旧全过（故丙路非陪跑·此即当日那次假绿）',
+          not _k6 and not _b6)
+    else:
+        bad.append('④之六 真坏局之样本不在（%s）——**没有样本的负测是空话**' % _真坏)
+    # ④之七·**top-level return／await 不许被误判**（0911 同日第二跤：十份席全被判坏）
+    T('④之七 top-level return 不许红（工作流把整份包在 async 函数里跑）',
+      not _坏("export const meta = {name:'x',description:'y'}\nconst a = await f()\nreturn a\n"))
+    # ④之五·**本路之限须写在测里**（§一⑤）：node --check 过不等於工作流一定收
+    _s5 = open(os.path.join(ROOT, '工具', '席法.py'), encoding='utf-8').read().split('def 自测')[0]
+    T('④之五 头注写明其限（过了不等於工作流一定收；不过则工作流一定不收）',
+      '不过即红' in _s5 and '不尽同' in _s5)
     # ②旧局回灌·甲：中文 schema 键须当场逮出（此係 0909 之真局）
     k, _ = 查一("schema: { properties: { 锁定行: { type: 'string' } } }")
     T('②中文 schema 键照旧判红', k == ['锁定行'], str(k))

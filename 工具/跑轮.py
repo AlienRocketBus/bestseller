@@ -2066,8 +2066,16 @@ def selftest():
     # ★★★★★2026-09-05·机制总审丙⑧（裁定查之两洞·本坐上磁盘坐实後所补）：
     #   ★一道核对器若「抄一遍清单就满分」，它报的绿不是活干了，是活抄了；
     #   ★★而其负测须证三样：①旧式在此攻之下满分（故非陪跑）②新式拦得住 ③新式不打红旧章。
+    # ★★★★★2026-09-11 治（315 收口当场自逮·**共用常量之坑**）：
+    #   ★本函自称「旧式·负测之对照，勿改」，**而它读的是 `VERDICT` 这个全局**——
+    #     ★★於是本日给 VERDICT 补「删」「刀」二字，**这个「旧式」也跟着变了**；
+    #     **一个自称不动的对照，随着被它对照的那一样一起动**，其对照遂不成对照。
+    #   ★★★故把旧词表**写死在本函之内**（十三词，即 0905 立第二层那一日之表）。
+    _OLD_VERDICT = ('✓', '合', '改', '核', '真伤', '判', '未见',
+                    '零', '缺', '对', '错', '撞', '补')
+
     def _old_judged(n_, r_, txt):
-        """旧式裁定率（窗内见裁语即算）——负测之对照，勿改。"""
+        """旧式裁定率（窗内见裁语即算）——负测之对照，**其词表写死，不随今日之 VERDICT 动**。"""
         it, _u = duty_list(n_, r_)
         if not it:
             return None
@@ -2075,7 +2083,7 @@ def selftest():
         for x in it:
             for m in re.finditer(re.escape(x), txt):
                 sg = txt[max(0, m.start() - 70):m.start() + len(x) + 70]
-                if any(v in sg for v in VERDICT):
+                if any(v in sg for v in _OLD_VERDICT):
                     j += 1
                     break
         return j * 100 // len(it)
@@ -2101,7 +2109,7 @@ def selftest():
         try:
             import glob as _g2
             _root2 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            _diff = _tot = 0
+            _diff = _tot = _worse = 0
             _gate = lambda q: 0 if q < 50 else (1 if q < 80 else 2)
             for _d in sorted(_g2.glob(os.path.join(_root2, '版本', '第*章'))):
                 _n = int(re.search(r'第(\d+)章', _d).group(1))
@@ -2113,10 +2121,22 @@ def selftest():
                     if _o is None:
                         continue
                     _tot += 1
-                    if _gate(_o) != _gate(duty_cover2(_n, _r, _b)[1]):
+                    _g0, _g1 = _gate(_o), _gate(duty_cover2(_n, _r, _b)[1])
+                    if _g0 != _g1:
                         _diff += 1
-            chk('裁定查·全书回灌 %d 轮新旧同判（新式不打红一章旧章）' % _tot,
-                _diff == 0 and _tot > 1000)
+                    if _g1 < _g0:          # ★新式比旧式更严＝把旧章打红，⛔此係本条所禁
+                        _worse += 1
+            # ★★★★★2026-09-11 照其本意重述（同 `负测_销立门.py` ④之b／④之c 之先例）：
+            #   ★此条原索 `_diff == 0`，**而它所守者其辞自书得明明白白：「新式不打红一章旧章」**
+            #     ——**即：新式不许比旧式更严**。
+            #   ★★而本日给 VERDICT 补「删」「刀」二字之後，**差出来的那几轮全是反方向**：
+            #     **旧式判不出而新式判得出**（「只删不添」那一类裁，旧词表一个词也不命中）——
+            #     **那正是本日之补要办的事**，⛔**拿它来拦，等於拿快照拦住改进。**
+            #   ★★★故判据改为：**新式不许把任何一章由绿打红**（_gate 新 ≥ _gate 旧）；
+            #     **由红转绿者逐轮记其数，报而不拦。**
+            chk('裁定查·全书回灌 %d 轮·新式一章旧章也没有打红（转绿 %d 轮，係补「删」「刀」二字之果）'
+                % (_tot, _diff),
+                _worse == 0 and _tot > 1000)
         except Exception as _e:
             chk('裁定查·全书回灌跑得起来（%s）' % _e, False)
 

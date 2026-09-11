@@ -1809,6 +1809,25 @@ def chk_hl_table():
     return True, '%d/%d 全通（v20回灌逮出「二十来口气」｜旧式当场漏掉，非陪跑）' % (ok, tot)
 
 
+def chk_cold_void():
+    """★冷轮作废之负测（2026-09-11 立·随 `开轮六检._cold_void` 同日落）：
+    ★★其守只一句——**废之口只开给「从未立过面」的那一种冷轮**；
+      ★★★头一格即拿 COLD-310 回灌（有面、有档、限314未到），
+        ⛔纵有人替它写一份作废档，闸亦须照旧判它欠着。"""
+    out = run('负测·冷轮作废', ['工具/负测_冷轮作废.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（头一格拿 COLD-310 真局回灌）' % (ok, tot)
+
+
 def chk_ratchet_pre():
     """★棘轮预检负测（LAW-289C·2026-09-01 立）：
     ★★其要害不在「会不会报红」，在「它报的红与 --存版 之棘轮闸是不是同一个红」——
@@ -2853,6 +2872,7 @@ def main():
         items.append(('负测·承前闸', chk_carry_gate))
         items.append(('负测·未答闸', chk_unans_gate))
         items.append(('负测·棘轮预检', chk_ratchet_pre))
+        items.append(('负测·冷轮作废', chk_cold_void))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

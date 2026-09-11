@@ -207,12 +207,44 @@ def _cold_limit(n):
     return n + 2
 
 
+# ★★★★★2026-09-11 立·**第三种局面：一笔从来没有立过面的冷轮**（313收口·314起席之间）。
+# ★病灶：⑥原只两种局面——**已签核**与**未执**；★★而 COLD-311 属第三种：
+#   `ls 设定/ | grep -c "冷轮_COLD311"` → 0，`grep -rn "COLD-311" 回执_*第311章*.md` → 0 笔，
+#   **311 之回执里连它的面也没有一句**——它之所以被报，是通则按章推出来的，
+#   **不是因为 311 真留下了那样东西**。★★★於是一笔本来就不存在的账，永远拦着推送；
+#   而其窗（312—316）内主线之位只 315 一处且已压四担——**补造其面即是凑**。
+# ★故开一个「说不」的口（与09-02 加否决记同式），⛔**并同日把它焊死**：
+#   **废之口只开给「从未立过面」的那一种**——判据：其号名下**没有一份 `於N补执` 之档**。
+#   ★★即：一笔有面、有档、限未到的冷轮（如 COLD-310），**纵有人替它写一份作废档，照旧判欠**。
+#   其负测：`工具/负测_冷轮作废.py`（头一格即拿 COLD-310 回灌）。
+def _cold_void(n):
+    """★某冷轮是否已judged作废：其号名下有一份「废」档，而**没有任何一份 `於N补执` 之档**。"""
+    fps = glob.glob(os.path.join(ROOT, '设定', '冷轮_COLD%d_*.md' % n))
+    if not fps:
+        return False
+    # ★有面之档（`於N补执`）在，即不许废——废之口只开给从未立过面的那一种。
+    if any(re.search(r'於\d+补执', os.path.basename(f)) for f in fps):
+        return False
+    for f in fps:
+        if '废' not in os.path.basename(f):
+            continue
+        try:
+            tx = open(f, encoding='utf-8', errors='replace').read()
+        except OSError:
+            continue
+        # ★废须有其裁与其由，不许一个空档把账抹了。
+        if '裁者' in tx and '其由' in tx or '何以不补造其面' in tx:
+            return True
+    return False
+
+
 def check6(cur):
     """★冷轮之期取其档自书之「限」，无档者用通则 N+2；
     ★★而全书检虽报，十轮之开轮不报——故此检为开轮之用。"""
     if F:
         cur = min(cur, max(F))  # ★未起草之章不作当章
-    late = [n for n in sorted(F) if n >= 73 and _cold_limit(n) <= cur and not _cold_done(n)]
+    late = [n for n in sorted(F) if n >= 73 and _cold_limit(n) <= cur
+            and not _cold_done(n) and not _cold_void(n)]
     ov = [n for n in late if _cold_limit(n) <= cur - 1]  # ★逾期一章以上
     return [('⑥·冷轮之欠', not late,
              '零' if not late else '★%d笔未执：%s%s' % (

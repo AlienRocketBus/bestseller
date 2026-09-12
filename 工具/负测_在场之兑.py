@@ -1,0 +1,114 @@
+# -*- coding: utf-8 -*-
+"""负测·在场之兑（2026-09-12 立·随 `书级体检._在场` 认「兑」栏同日落）。
+
+★所守者两句：
+　①**一笔真兑过的账，须算它的人在场**（不然本书「不点名」之法与此闸永远相犯）；
+　②**而「兑」那一栏须记章、记拍号、并逐条列其凭——少一样即不认**
+　　（⛔**填不出拍号的账，写一百个「已还」也过不去**）。
+★★头一格拿 CHAR-317A 真局回灌；其反证拿 CHAR-315A（只落其形、人未回场、无「兑」栏）。
+"""
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
+import copy
+import io
+import json
+import os
+import sys
+import importlib.util
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+账路 = os.path.join(ROOT, '设定', '到期账.json')
+
+
+def _mod():
+    spec = importlib.util.spec_from_file_location(
+        '_bk', os.path.join(ROOT, '工具', '书级体检.py'))
+    m = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(m)
+    except SystemExit:
+        pass
+    return m
+
+
+def _账():
+    d = json.load(io.open(账路, encoding='utf-8'))
+    return d if isinstance(d, list) else (d.get('账') or d.get('items') or [])
+
+
+def 跑():
+    m = _mod()
+    过, 败 = 0, []
+
+    def 判(号, 名, 实, 期):
+        nonlocal 过
+        if 实 == 期:
+            过 += 1
+        else:
+            败.append('%s·%s：得 %r，期 %r' % (号, 名, 实, 期))
+
+    xs = _账()
+    a317 = [x for x in xs if x.get('id') == 'CHAR-317A']
+    a315 = [x for x in xs if x.get('id') == 'CHAR-315A']
+    判('①', 'CHAR-317A 在账上', bool(a317), True)
+    判('②', 'CHAR-315A 在账上', bool(a315), True)
+    if not a317:
+        print('⛔ 取不着 CHAR-317A，余格不跑'); return 2
+    x7 = a317[0]
+
+    # ③【头一格·真局】其兑栏三样俱全
+    兑 = x7.get('兑') or {}
+    判('③', 'CHAR-317A 之兑栏记章、记拍、列凭三样俱全',
+       bool(兑.get('章') and 兑.get('拍') and 兑.get('凭')), True)
+    判('④', '其凭逐条不止一条（一条不算逐条）',
+       isinstance(兑.get('凭'), list) and len(兑['凭']) >= 3, True)
+    判('⑤', 'CHAR-317A 已判 done', x7.get('状态') == 'done', True)
+
+    # ⑥【反证·不许连坐】CHAR-315A（只落其形、人未回场）无兑栏，故不入此路
+    if a315:
+        判('⑥', 'CHAR-315A 无兑栏（故其 done 不算在场之凭）',
+           bool((a315[0].get('兑') or {}).get('拍')), False)
+
+    # ⑦⑧⑨【沙盘·三样缺一即不认】
+    fn = getattr(m, 'check_presence', None)
+    判('⑦', '书级体检有在场之函（check_presence）', fn is not None, True)
+    if fn:
+        chs = m.load_chapters()
+        base = copy.deepcopy(xs)
+        # 甲·原样：老头在场之末章须＝319
+        _, _, last = fn(chs, base)
+        判('⑧', '兑栏俱全者，老头判在场於第319章', last.get('老头'), 319)
+        # 乙·抽掉拍号：即不认
+        bad = copy.deepcopy(xs)
+        for y in bad:
+            if y.get('id') == 'CHAR-317A':
+                y['兑'].pop('拍', None)
+        _, _, last2 = fn(chs, bad)
+        判('⑨', '抽掉拍号即不认（老头之末章退回 319 之前）',
+           (last2.get('老头') or 0) < 319, True)
+        # 丙·状态改回 open：即不认
+        bad2 = copy.deepcopy(xs)
+        for y in bad2:
+            if y.get('id') == 'CHAR-317A':
+                y['状态'] = 'open'
+        _, _, last3 = fn(chs, bad2)
+        判('⑩', '状态非 done 即不认',
+           (last3.get('老头') or 0) < 319, True)
+
+    # ⑪ 磁盘未被本测改动
+    判('⑪', '到期账逐字未动', _账() == xs, True)
+
+    print('════ 负测·在场之兑 ════（守：兑须记章记拍列凭，少一样即不认）')
+    for x in 败:
+        print('  ⛔ ' + x)
+    print('  %s %d/%d %s' % ('✓' if not 败 else '⛔', 过, 过 + len(败),
+                             '全通' if not 败 else '有败'))
+    return 0 if not 败 else 2
+
+
+if __name__ == '__main__':
+    sys.exit(跑())

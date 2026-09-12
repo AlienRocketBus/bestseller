@@ -1809,6 +1809,26 @@ def chk_hl_table():
     return True, '%d/%d 全通（v20回灌逮出「二十来口气」｜旧式当场漏掉，非陪跑）' % (ok, tot)
 
 
+def chk_presence_paid():
+    """★在场之兑之负测（2026-09-12 立·随 `书级体检.check_presence` 认「兑」栏同日落）：
+    ★★守两句——**一笔真兑过的账须算它的人在场**（不然本书「不点名」之法与此闸永远相犯）；
+      **而「兑」那一栏须记章、记拍号、并逐条列其凭，少一样即不认**。
+      ★★★三格沙盘各拆一样：抽掉拍号即不认｜状态非done即不认｜
+        CHAR-315A（只落其形、人未回场、无兑栏）故不入此路。"""
+    out = run('负测·在场之兑', ['工具/负测_在场之兑.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（头一格拿 CHAR-317A 真局回灌）' % (ok, tot)
+
+
 def chk_round_law():
     """★轮号之律之负测（2026-09-12 立·315／317／318 三章连栽方立）：
     ★★守一句——**轮号从派工书来，不从台账来**；**台账之版数 ≠ 轮号**（一轮可存多版）。
@@ -2934,6 +2954,7 @@ def main():
         items.append(('负测·冷轮作废', chk_cold_void))
         items.append(('负测·裁语词表', chk_verdict_words))
         items.append(('负测·轮号之律', chk_round_law))
+        items.append(('负测·在场之兑', chk_presence_paid))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

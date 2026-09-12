@@ -59,8 +59,24 @@ def 跑():
         m = _mod(tmp)
         # ①空轮闸之旗＋账上有那一轮之真说明 → 销
         造(tmp, '第6轮·资源庭·器物逐件点名：所改何事')
-        m.raise_flag(999, '⛔空轮闸：正文与末版逐字相同，本轮零改动。', '第6轮·资源庭·器物逐件点名·补存')
-        chk('①旗在（前置）', os.path.exists(m._flag_path(999)), True)
+        # ★★★★★2026-09-12 改前置（321 收口当场自逮·**本测之布景被本坐拆了**）：
+        #   ★本测原以 `raise_flag` 落一面旗作前置，再验它销得掉；
+        #   ★★而同日给 `raise_flag` 补了「**失义即不落新旗**」一路——
+        #     **这一局正是「失义」那一局，於是旗根本不落，前置当场落空，测随即崩。**
+        #   ★★★**而它所钉的那一样一分没变**：**这样的旗不该拦住後续**。
+        #     ⛔**故不改判据，只改布景**：**直接把旗写到盘上**（绕过 `raise_flag` 那一道新口），
+        #     **其後诸格照旧验「失其义／不再拒／当场销去」。**
+        #   ★★★★**并新增一格**（⑩）：**验 `raise_flag` 在这一局确实不落旗**——
+        #     **那正是同日新立的那一路，本测须连它一并钉住。**
+        import json as _j, datetime as _dt
+        _fl = {'时': _dt.datetime.now().strftime('%m-%d %H:%M'),
+               '因': '⛔空轮闸：正文与末版逐字相同，本轮零改动。',
+               '本次说明': '第6轮·资源庭·器物逐件点名·补存', '流': 'T-负测'}
+        os.makedirs(os.path.dirname(m._flag_path(999)), exist_ok=True)
+        io.open(m._flag_path(999), 'w', encoding='utf-8').write(
+            _j.dumps(_fl, ensure_ascii=False, indent=1))
+        chk('①旗在（前置·本测直接落盘，不经 raise_flag 之新口）',
+            os.path.exists(m._flag_path(999)), True)
         失, 由 = m._flag_stale(999, m.read_flag(999))
         chk('①空轮闸之旗＋账上有那一轮之真说明 → 失其义', 失, True)
         chk('①之b 且说得出其事何以不成立', 'v08' in 由 and '第6轮' in 由, True)
@@ -69,7 +85,11 @@ def 跑():
 
         # ⑥旧式回灌：旧式（无此查）在①之下照旧拒
         造(tmp, '第6轮·资源庭·器物逐件点名：所改何事')
-        m.raise_flag(999, '⛔空轮闸：正文与末版逐字相同，本轮零改动。', '第6轮·资源庭·器物逐件点名·补存')
+        # ★同①之改：本格之布景亦係 `raise_flag` 落旗，而同日新口在这一局不落旗——
+        #   ⛔**判据一字未改**（旧式只问「旗在不在」，在①那一局照旧拒），**只改布景**。
+        os.makedirs(os.path.dirname(m._flag_path(999)), exist_ok=True)
+        io.open(m._flag_path(999), 'w', encoding='utf-8').write(
+            _j.dumps(_fl, ensure_ascii=False, indent=1))
         旧式拒 = bool(m.read_flag(999))          # 旧式只问「旗在不在」
         chk('⑥旧式（只问旗在不在）在①之下照旧拒 → 故本测非陪跑', 旧式拒, True)
         m.clear_flag(999)

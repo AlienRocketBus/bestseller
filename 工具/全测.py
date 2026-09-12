@@ -1809,6 +1809,25 @@ def chk_hl_table():
     return True, '%d/%d 全通（v20回灌逮出「二十来口气」｜旧式当场漏掉，非陪跑）' % (ok, tot)
 
 
+def chk_renzhang_paid():
+    """★人账之还之负测（2026-09-12 立·随 `人账._还之验` 同日落）：
+    ★★守三句——**写明还处之章与拍者须判已还**｜**少一样即不认**｜
+      ⛔**「还」不许做成「册上没有这一笔」**（★本坐头一版即如此，
+      遂令那一笔掉进「无挂账」那一路，红辞由「逾限」变成「真欠」——更坏）。"""
+    out = run('负测·人账之还', ['工具/负测_人账之还.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（头一格拿寨老真局回灌）' % (ok, tot)
+
+
 def chk_presence_paid():
     """★在场之兑之负测（2026-09-12 立·随 `书级体检.check_presence` 认「兑」栏同日落）：
     ★★守两句——**一笔真兑过的账须算它的人在场**（不然本书「不点名」之法与此闸永远相犯）；
@@ -2955,6 +2974,7 @@ def main():
         items.append(('负测·裁语词表', chk_verdict_words))
         items.append(('负测·轮号之律', chk_round_law))
         items.append(('负测·在场之兑', chk_presence_paid))
+        items.append(('负测·人账之还', chk_renzhang_paid))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

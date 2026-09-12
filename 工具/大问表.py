@@ -115,6 +115,37 @@ def 量():
     return 末, out
 
 
+def 已还():
+    """★读挂账册上判了「还」的那几样：**须写明其还处之章与拍，少一样即不认**。
+
+    ★★★★★2026-09-12 立（319 推时自逮·本器与 `人账.py` 同洞）：
+      ★`挂()` 只收「状＝挂」者——**於是一笔标了「还」的账，当场从挂账里掉出去**，
+        **落进「逾四十章而无一笔挂账」那一路**；**红辞由「逾限」变成「无挂」——更坏。**
+      ★★其实证：0912 本坐把「寨里那些人」标还（其还处在第318章拍78—85），
+        本器即报「无一样无挂账 得 ['寨里那些人']」。
+      ★★★而补这一路不许宽：**照同日所立「在场之兑」「人账之还」之式**——
+        **须写明其还处之章与拍**；⛔**光写「**还**」二字过不去。**
+      其负测：`工具/负测_大问挂账.py` ⑮—⑰。
+    """
+    if not os.path.exists(挂账档):
+        return {}
+    out = {}
+    for ln in io.open(挂账档, encoding='utf-8'):
+        if not ln.startswith('|'):
+            continue
+        c = [x.strip() for x in ln.strip().strip('|').split('|')]
+        if len(c) < 6:
+            continue
+        状 = c[-1]
+        if not re.search(r'\*\*还\*\*', 状):
+            continue
+        m2 = re.search(r'第\s*(\d+)\s*章拍\s*\d+', 状)
+        if not m2:
+            continue
+        out[c[0]] = int(m2.group(1))
+    return out
+
+
 def 挂():
     """读挂账册：{其样: 限章}。★其律见 设定/大问挂账.md。"""
     if not os.path.exists(挂账档):
@@ -203,6 +234,8 @@ def 报(quiet=False):
     末, rows = 量()
     逾 = [r for r in rows if r['逾']]
     G = 挂()
+    R = 已还()          # ★已还者不入欠（其还处之章与拍须在册上·0912立）
+    逾 = [r for r in 逾 if r['名'] not in R]
     无挂 = [r['名'] for r in 逾 if r['名'] not in G]
     # 挂了账又逾了自己那个限的：末见还在挂账之前，而限已过 → 拦
     逾限 = [(r['名'], G[r['名']]) for r in 逾 if r['名'] in G and 末 > G[r['名']]]

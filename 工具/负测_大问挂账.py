@@ -100,7 +100,11 @@ try:
         写(原)
         chk('③之沙盘之b·跑毕册文逐字复原',
             io.open(档, encoding='utf-8').read() == 原, True)
-        print('  %s %d/%d' % ('✓' if not bad else '⛔', ok, ok + bad))
+        # ★0912 补「全通」二字：**共用之壳 `_简测` 认的是「N/N 全通」那个式**，
+        #   ⛔而本坐写这条沙盘路时只印了「N/N」，全测遂报「未见其数」——
+        #   **不是它判红，是它读不出分数**；★**是我把它的收尾话写岔了，不是闸错。**
+        print('  %s %d/%d %s' % ('✓' if not bad else '⛔', ok, ok + bad,
+                                 '全通' if not bad else '⛔未过'))
         raise SystemExit(0 if not bad else 2)
     行 = [l for l in 原.split('\n') if l.startswith('| ' + 某 + ' ')]
     assert 行, '取不到 %s 之行' % 某

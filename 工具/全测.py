@@ -1809,6 +1809,26 @@ def chk_hl_table():
     return True, '%d/%d 全通（v20回灌逮出「二十来口气」｜旧式当场漏掉，非陪跑）' % (ok, tot)
 
 
+def chk_round_law():
+    """★轮号之律之负测（2026-09-12 立·315／317／318 三章连栽方立）：
+    ★★守一句——**轮号从派工书来，不从台账来**；**台账之版数 ≠ 轮号**（一轮可存多版）。
+      ★★★头一格拿 318 真局回灌（其第3轮一轮占三版），
+        并查 318 之轮记块第6轮、第9轮俱在、无逾十三之号，
+        末二格查此律确写在 一章.js 与 救章.js 之令里（不许只写在册子上）。"""
+    out = run('负测·轮号之律', ['工具/负测_轮号之律.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（头一格拿318真局回灌）' % (ok, tot)
+
+
 def chk_verdict_words():
     """★裁语词表之负测（2026-09-11 立·随 `跑轮.VERDICT` 补「删」「刀」二字同日落）：
     ★★守两句——**「只删不添」那一类裁须认得**（补之由）；
@@ -2913,6 +2933,7 @@ def main():
         items.append(('负测·棘轮预检', chk_ratchet_pre))
         items.append(('负测·冷轮作废', chk_cold_void))
         items.append(('负测·裁语词表', chk_verdict_words))
+        items.append(('负测·轮号之律', chk_round_law))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

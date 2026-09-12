@@ -1830,6 +1830,29 @@ def chk_lineref_true():
     return True, '%d/%d 全通（头一格拿316真局回灌）' % (ok, tot)
 
 
+def chk_station_rows():
+    """★站账逐章行之负测（2026-09-12 立·随 `站账.判三` 同日落）：
+    ★★守一句——**凡一栏之对站记里已有逐章之表，其栏内每一已封版之章须有其行，缺一即红。**
+      其根不在漏记，在**记那一行的时辰没人管**：「E4收後·过渡」那八行是我回头照着
+      `git log` 数出来的，⛔**补得上不是本事，是运气。**
+    ⛔**而本闸落下去当日自栽两回，负测第②④格即其位**：
+      ②把 E4 那份记里「| 段 | 均净重 |」那张别的表认成逐章表（报「缺42行」，一处不实）；
+      ④以正文在不在为准，**起草一落盘就催**——而那时诸轮没跑，那一句「它干了什么」还没定。
+    ★★★第③格证其收窄之後仍有牙：**剥掉 321 那一行，它须当场逮得出。**"""
+    out = run('负测·站账逐章行', ['工具/负测_站账逐章行.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（③剥一行即逮·②④两格钉住当日两处假红）' % (ok, tot)
+
+
 def chk_flag_lifecycle():
     """★旗之销立之负测（2026-09-12 立·随 `跑轮.raise_flag` 同日落）：
     ★★守三句——**拦已失其义者不落新旗**｜**并销去为同一件事落下的旧旗**
@@ -3018,6 +3041,7 @@ def main():
         items.append(('负测·人账之还', chk_renzhang_paid))
         items.append(('负测·旗之销立', chk_flag_lifecycle))
         items.append(('负测·行号引真', chk_lineref_true))
+        items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

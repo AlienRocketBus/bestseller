@@ -1854,6 +1854,31 @@ def chk_station_rows():
     return True, '%d/%d 全通（③剥一行即逮·②④两格钉住当日两处假红）' % (ok, tot)
 
 
+def chk_weight_one():
+    """★净重一处之负测（2026-09-12 立·322 之净重在册上有五个数方立此条）：
+    ★★守一句——**一章之净重，册上凡书之处须同**。
+      其实（323 定位席逮出，而盘上诸器一处没红）：322 之净重，锁定行 1,990｜悬账行 1,945｜
+      开镜卡 1,836｜硬门槛 1,935——**同一章四个数在四处**，
+      ⛔**而 `净重对表.py` 报绿：它只验锁定行那一处。**
+    ★★★其根与 ㊎ 同骨（刀落了而册上的数没跟着走），**而这一回更难见**：
+      **有一处跟着走了，於是器绿了，人也就以为都跟上了。**
+    ⛔本闸落下去当日自栽两回：①`N:数` 之形行引与净重共用（把 322:237 当成净重）；
+      ②收窄到「近处六十字内见『净重』」又一个也认不着（空转）——
+      **其形係「…321:2245、322:1990」，那二字在串首，离得远**；今改看同行。"""
+    out = run('负测·净重一处', ['工具/负测_净重一处.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（⑤格回灌旧局四数，证其非空转）' % (ok, tot)
+
+
 def chk_flag_lifecycle():
     """★旗之销立之负测（2026-09-12 立·随 `跑轮.raise_flag` 同日落）：
     ★★守三句——**拦已失其义者不落新旗**｜**并销去为同一件事落下的旧旗**
@@ -3043,6 +3068,7 @@ def main():
         items.append(('负测·旗之销立', chk_flag_lifecycle))
         items.append(('负测·行号引真', chk_lineref_true))
         items.append(('负测·站账逐章行', chk_station_rows))
+        items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

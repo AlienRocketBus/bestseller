@@ -1809,6 +1809,27 @@ def chk_hl_table():
     return True, '%d/%d 全通（v20回灌逮出「二十来口气」｜旧式当场漏掉，非陪跑）' % (ok, tot)
 
 
+def chk_lineref_true():
+    """★行号引真之负测（2026-09-12 立·四笔行号错引压了三章方立此条）：
+    ★★守一句——**在役之指路档里所引的白文行号，须与其所书之句相符**。
+      其头一格拿 316 之真局回灌：盘上曾以 `316:438` 指「门槛上那只勺」（真处 420）、
+      以 `316:356` 指「八十四页写满了」（真处 332），**两号皆错而三章之席照着往下传**。
+    ⛔**只验在役之档**（圣经·施工表·到期账）；**轮记与回执係案卷，存其当时所见之原样，一字不验**
+      ——第⑩格正是拿这一条反着扣：**318 轮记里那四个旧号一个也不许被抹掉。**"""
+    out = run('负测·行号引真', ['工具/负测_行号引真.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（头一格拿316真局回灌）' % (ok, tot)
+
+
 def chk_flag_lifecycle():
     """★旗之销立之负测（2026-09-12 立·随 `跑轮.raise_flag` 同日落）：
     ★★守三句——**拦已失其义者不落新旗**｜**并销去为同一件事落下的旧旗**
@@ -2996,6 +3017,7 @@ def main():
         items.append(('负测·在场之兑', chk_presence_paid))
         items.append(('负测·人账之还', chk_renzhang_paid))
         items.append(('负测·旗之销立', chk_flag_lifecycle))
+        items.append(('负测·行号引真', chk_lineref_true))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

@@ -1827,7 +1827,8 @@ def chk_lineref_true():
     if 判 != '全通' or ok != tot:
         _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
         return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（头一格拿316真局回灌）' % (ok, tot)
+    return True, ('%d/%d 全通（头一格拿316真局回灌；'
+                  '⑬骨记行冒充白文·⑭汉字形「白文第N行」·⑮证⑭没空转）' % (ok, tot))
 
 
 def chk_station_rows():

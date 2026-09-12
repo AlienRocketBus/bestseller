@@ -16,6 +16,7 @@ try:
 except Exception:
     pass
 import io
+import json
 import os
 import re
 import sys
@@ -171,6 +172,95 @@ def 跑():
            len(中) >= 1, True)
         判('⑫之三', '注不剥则放过（白名之界未被扫没）',
            any(x in 真行[0] for x in 白名), True)
+
+
+    # ⑬【缺口一·指着骨记行冒充白文行】⛔本形非空行，故第⑪格对它全盲。
+    #    ★其实（0912·322 定位席当面逮出，而本闸一笔没逮着）：
+    #      开镜卡与 320 骨记皆书那把铜「三寸」之原场係 `305:552`，
+    #      **而 305 之 `【本章亮点】` 在第 542 行——552 落在它后头，是骨记，不是白文。**
+    #    ★★故立此判：**凡近处称「白文」或「原场」而其行号越过该章亮点线者，即红。**
+    def _亮点线(ch):
+        w = _白文(ch)
+        if not w:
+            return None
+        for i, l in enumerate(w, 1):
+            if '【本章亮点】' in l:
+                return i
+        return None
+
+    _lx = {}
+    越 = []
+    for p2 in _在役:
+        if p2.endswith('.json'):
+            continue
+        for i, ln in enumerate(io.open(p2, encoding='utf-8').read().split('\n'), 1):
+            for mm in re.finditer(r'`(\d{1,3}):(\d{1,4})`', ln):
+                ch, no = int(mm.group(1)), int(mm.group(2))
+                if ch not in _lx:
+                    _lx[ch] = _亮点线(ch)
+                L = _lx[ch]
+                if not L or no <= L:
+                    continue
+                近 = ln[max(0, mm.start() - 40):mm.end() + 40]
+                if ('白文' in 近 or '原场' in 近) and \
+                        not any(x in 近 for x in ('旧号', '旧书', '陈号', '错引', '不实')):
+                    越.append('%s:%d→%d:%d（亮点线在%d）'
+                              % (os.path.basename(p2)[:8], i, ch, no, L))
+    判('⑬', '在役档无「称白文而指到亮点线之后」之引', 越, [])
+
+    # ⑭【缺口二·汉字形「白文第N行逐字『X』」】⛔第⑪格只认反引号之 `N:M`，看不见这一形。
+    #    ★其实：`圣经:7977` 书「第 322 章必须从321之末那一拍（白文第381行…）」，
+    #      **而 321 之真末句在第 389 行**（381 行实印的是另一句）——差八行，
+    #      **而三章之席照着这个号往下接**。
+    #    ★★本格之利在：这一形自带逐字原文，故不必只验空行，**可当场比对那一句在不在那一行**。
+    #    ⛔**只验那一章已封版者**（其回执在）：**未封版之章行号还在动，验它是在跟自己较劲。**
+    import glob as _g
+    汉 = []
+    _验数, _验章 = 0, set()
+    # ⛔**心跳正指着的那一章不验**：**回执在 ≠ 已定稿**——
+    #   322 之席已交回执，而救章席随即又把它掀开重掘，行号当场就动了。
+    #   ★这与站账判三那一回同形：**「走完了没有」这件事，得问最新的那个凭据。**
+    try:
+        _跑中 = int(json.load(io.open(os.path.join(ROOT, '_心跳.json'),
+                                      encoding='utf-8')).get('章') or 0)
+    except Exception:
+        _跑中 = 0
+    # ⛔**章号取「从N之末」那一个，不取句首那一个**：
+    #   `圣经:7977` 之形係「第 322 章必须从321之末那一拍（白文第381行…「…」）」
+    #   ——**那个行号属 321，不属 322**；头一版正则抓走 322（未封版）遂整条跳过，
+    #   **看着绿，其实一个字也没验着**（本日反复栽的那一样，第⑮格即为此立）。
+    _pat = re.compile(
+        r'第\s*(\d{1,4})\s*章[^\n]{0,40}?从\s*(\d{1,4})\s*之末'
+        r'[^\n]{0,40}?白文第\s*(\d{1,4})\s*行[^「]{0,60}「([^」]{4,40})」')
+    for p2 in _在役:
+        if p2.endswith('.json'):
+            continue
+        for ln in io.open(p2, encoding='utf-8').read().split('\n'):
+            for mm in _pat.finditer(ln):
+                ch, no, 句 = (int(mm.group(2)), int(mm.group(3)), mm.group(4))
+                if ch == _跑中:
+                    continue
+                if not _g.glob(os.path.join(ROOT, '设定',
+                                            '回执_*_第%d章作业单.md' % ch)):
+                    continue
+                w = _白文(ch)
+                if not w or no > len(w):
+                    continue
+                _验数 += 1
+                _验章.add(ch)
+                核 = 句.replace('*', '').strip()[:12]
+                if 核 and 核 not in w[no - 1]:
+                    汉.append('%d:%d 所称「%s…」不在其行'
+                              % (ch, no, 核[:10]))
+    判('⑭', '在役档「白文第N行逐字X」之引，逐处对得上', 汉, [])
+
+
+    # ⑮【证第⑭格没有空转·⛔本日之骨】**一道看着绿的闸，先问它验着了几处。**
+    #    ★其由：⑭之头一版正则抓错章号，**扫遍全仓验了零处而报绿**——
+    #      ⛔**零处之绿与全对之绿，在印出来的字面上一模一样。**
+    #    ★★故本格只问一句：**它到底验着了几处**；验着零处即判空转。
+    判('⑮之一', '第⑭格确验着了处（非空转·验着 %d 处）' % _验数, _验数 >= 1, True)
+    判('⑮之二', '其中确含 321 那一笔（圣经:7977 之接写锚）', 321 in _验章, True)
 
     print('════ 负测·行号引真 ════（守：所引之号与所书之句须对得上；案卷不验）')
     for x in 败:

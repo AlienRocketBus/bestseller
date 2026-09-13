@@ -175,13 +175,24 @@ def 旧版残引(n, txt):
         except OSError:
             continue
         旧.append(re.sub(r'\s', '', s.split('【本章亮点】')[0]))
+    # ★★★★★2026-09-13 收窄（324 收口时自逮）：**骨记里明写「原作 X →改後 Y」的改动记录，
+    #   其「原作」那一句本就该是今版正文所无、而旧版逐字有的**——**那正是改动之实，不是残引**。
+    #   ⛔**照旧判据，凡诚实记录自己那一刀的轮记，都会被判成残引**：
+    #   324 之骨记⑳（无伤席·第5轮）逐字「⛔**原作**：……→**删後半**」即当日之红。
+    # ★故只放过「同一行之内已明写 原作／改前／改後／旧作」者；⛔**其余一条不放**
+    #   （301 那三处真伤正是「引了删掉的话而一字未注其为旧」，照旧逮得出——见 `负测_亮点残引.py` 第③格）。
+    _注 = ('原作', '改前', '改後', '改后', '旧作')
     out = []
-    for q in re.findall(r'\*\*([^*\n]{8,60})\*\*', hl):
-        q2 = re.sub(r'[★｜\s]', '', q)
-        if len(q2) < 8 or q2 in body:
-            continue
-        if any(q2 in o for o in 旧):
-            out.append(q2)
+    for _ln in hl.split('\n'):
+        _有注 = any(x in _ln for x in _注)
+        for q in re.findall(r'\*\*([^*\n]{8,60})\*\*', _ln):
+            q2 = re.sub(r'[★｜\s]', '', q)
+            if len(q2) < 8 or q2 in body:
+                continue
+            if _有注:
+                continue
+            if any(q2 in o for o in 旧):
+                out.append(q2)
     return list(dict.fromkeys(out))
 
 

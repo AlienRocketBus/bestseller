@@ -1876,6 +1876,28 @@ def chk_station_rows():
     return True, '%d/%d 全通（③剥一行即逮·②④两格钉住当日两处假红）' % (ok, tot)
 
 
+def chk_hl_residue():
+    """★亮点残引之负测（2026-09-13 立·随 `亮点对表.旧版残引` 之收窄同日落）：
+    ★★守一句——**亮点段引了自己删掉的话即红；而骨记里明写「原作 X →改後 Y」的改动记录不算。**
+      ⛔照旧判据，**凡诚实记录自己那一刀的轮记，都会被判成残引**
+      （324 之骨记⑳逐字「⛔原作：……→删後半」即当日之红）。
+    ★★★第③格证其收窄未磨其牙：**剥掉「原作」二字，它须当场逮得出那一句**；注不剥则放过。
+      ⛔**本格原拟拿 301 立闸当日之原物回灌而走不通**：那三处 0904 治时连正文里的引一并改了
+      （十二版逐版回灌皆得 0，本测第三跑亲印）——**故改拿本章之真局。**"""
+    out = run('负测·亮点残引', ['工具/负测_亮点残引.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（③格剥注即逮·注不剥则放过）' % (ok, tot)
+
+
 def chk_soft_report():
     """★软报不拦之负测（2026-09-13 立·323 推时自逮）：
     ★★守一句——**`开轮六检.py` 自己判「报而不拦」的那几条，不许在推闸上变成红。**
@@ -3121,6 +3143,7 @@ def main():
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))
+        items.append(('负测·亮点残引', chk_hl_residue))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

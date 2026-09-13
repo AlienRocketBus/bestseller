@@ -1946,6 +1946,30 @@ def chk_dashen_hang():
     return True, '%d/%d 全通（④格拿 0913 真局回灌：其由之格之旧限 309 不认）' % (ok, tot)
 
 
+def chk_dashen_kongmuzi():
+    """★大审空模子之负测（2026-09-13 立）：
+    ★★守一句——**一份只造了没填过的册，不算一回大审。**
+    ⛔**其事**：`--立 N` 造出来的空模子照旧叫「大审_至第N章.md」，而 `诸册()` 只认档名
+      ——**於是一份没开过的庭，在账上与开过的一模一样**；
+      ★**319—327 九章之开镜卡与悬账逐章照抄「大审停在第313章，已欠十五章」，
+        实则 `大审_至第324章.md` 248 行、裁定表逐行有裁，大审真正停在 324**
+      ——**一句错的现况，抄了九章**（体检账 ㊧）。
+    ★★★**第四格证其仍有牙**：**真册（裁定表逐行有裁）不许被误判作空模子**
+      ——**一道只会说「不算」的闸，与没有闸是一样的。**"""
+    out = run('负测·大审空模子', ['工具/负测_大审空模子.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（④格：真册不许被误判作空模子）' % (ok, tot)
+
+
 def chk_station_rows():
     """★站账逐章行之负测（2026-09-12 立·随 `站账.判三` 同日落）：
     ★★守一句——**凡一栏之对站记里已有逐章之表，其栏内每一已封版之章须有其行，缺一即红。**
@@ -3258,6 +3282,7 @@ def main():
         items.append(('负测·轮次闸乱序', chk_round_order))
         items.append(('负测·说明闸', chk_note_gate))
         items.append(('负测·大审挂限', chk_dashen_hang))
+        items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))

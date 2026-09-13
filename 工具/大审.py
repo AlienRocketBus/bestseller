@@ -85,12 +85,41 @@ def _末章():
     return max(ns) if ns else 0
 
 
-def 诸册():
+def 空模子(路):
+    """★2026-09-13 立：一份只造了没填过的册，不算一回大审。
+
+    ⛔其事：`大审_至第313章.md` 与 `大审_至第323章.md` 二档皆 42 行、
+    通篇 `第%d—%d章`、裁定表只一行「⛔待裁」——**是 `--立` 造出来的空模子**，
+    而 319—327 九章之开镜卡与悬账逐章照抄「**大审停在第313章，已欠十五章**」，
+    ★**实则 `大审_至第324章.md` 248 行、裁定表逐行有裁，大审真正停在 324。**
+    ⛔**一句错的现况，抄了九章。**（机制体检账 ㊧）
+
+    ★其判只两问，皆字面可数：**模子之记号还在**（`%d` 未被换掉）
+    **或 裁定表一笔裁也没有**。
+    """
+    try:
+        t = io.open(路, encoding='utf-8', errors='replace').read()
+    except Exception:
+        return True
+    if '%d' in t:
+        return True
+    _sec = t.split('## 三·')[-1].split('\n## ')[0] if '## 三·' in t else ''
+    for x in _sec.splitlines():
+        if x.strip().startswith('|') and ('已治' in x or '判驳' in x
+                                          or '判不治' in x or '已挂' in x):
+            return False
+    return True
+
+
+def 诸册(含空=False):
     out = []
     for f in sorted(os.listdir(册目)):
         m = re.match(r'大审_至第(\d+)章\.md$', f)
         if m:
-            out.append((int(m.group(1)), os.path.join(册目, f)))
+            路 = os.path.join(册目, f)
+            if not 含空 and 空模子(路):
+                continue
+            out.append((int(m.group(1)), 路))
     return sorted(out)
 
 

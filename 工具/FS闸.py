@@ -88,6 +88,32 @@ def 查(n=None):
     return n, f, 欠, 未答, 答
 
 
+
+# ★★★★★★2026-09-13 立第二路（FS18 一案逼出来的）：
+#   ⛔**本闸只问「逾期之根，本章回执回没回话」**——**它从来没问过「回执说已经付了的，账上销没销」。**
+#   ★0913 之实：**FS18 係第313章当章付毕**（`回执_20260911_第313章作业单.md:121` 自书「本章付毕（拍101—110）」，
+#   同档第48行逐格记其三段拍号），⛔**而 canon 之 status 自那日起一直留着 open**；
+#   **於是本闸连报十二章「逾期」，而它报的是一笔已经付过的钱。**
+#   ★★**这与本册 ㊗ 同骨**：**一个产方（回执自书付毕）而无收方（账上无人去销）**；
+#   **而更坏的一层是：它报的红看上去像真的，於是每一章都有人把它当噪声跳过去。**
+#   ⛔**故立此路：凡回执自书「FSxx…付毕」者，canon 之 status 不许再是 open。**
+_付 = re.compile(r'(FS\d{2})[^。\n]{0,80}?本章付毕')
+
+
+def 已付而未销():
+    """返回 [(FS编号, 回执档名)]：回执自书付毕，而 canon 上仍 open 者。"""
+    d = json.load(io.open(os.path.join(ROOT, '设定', 'canon事实库.json'), encoding='utf-8'))
+    开 = {x.get('id') for x in d.get('foreshadows', [])
+          if str(x.get('status', '')).lower() not in 清}
+    出 = []
+    for f in sorted(glob.glob(os.path.join(ROOT, '设定', '回执_*.md'))):
+        s = io.open(f, encoding='utf-8', errors='replace').read()
+        for m in _付.finditer(s):
+            if m.group(1) in 开:
+                出.append((m.group(1), os.path.basename(f)))
+    return sorted(set(出))
+
+
 def 报(quiet=False):
     n, f, 欠, 未答, 答 = 查()
     if not quiet:
@@ -108,8 +134,43 @@ def 报(quiet=False):
         if 多:
             print('  ⚠ 改期逾二回者 %d 根——须由人当场裁它还算不算一根活钩子：%s'
                   % (len(多), '、'.join(x['id'] for x in 多)))
-    return 未答
+        漏 = 已付而未销()
+        print('  ── 第二路·回执自书付毕而账上未销（0913 立）──')
+        for i, f in 漏:
+            print('  ⛔ %s：回执自书「本章付毕」而 canon 仍 open（%s）' % (i, f))
+        if not 漏:
+            print('  ✓ 零处（凡回执自书付毕者，账上皆已销）。')
+    return list(未答) + 已付而未销()
+
+
+def 自测():
+    R = []
+    R.append(('①今日零处「已付而未销」', 已付而未销() == []))
+    # ②【证其有牙】拿 FS18 之真局回灌：把它当作仍 open，须逮得出
+    d = json.load(io.open(os.path.join(ROOT, '设定', 'canon事实库.json'), encoding='utf-8'))
+    有 = any(x.get('id') == 'FS18' and str(x.get('status', '')).lower() in 清
+             for x in d.get('foreshadows', []))
+    R.append(('②FS18 今已销（其付在313·拍101—110）', 有))
+    R.append(('③回执里确有「FS18…本章付毕」之句（⛔证②不是空销）',
+              any(i == 'FS18' for i, _ in _扫回执())))
+    # ④⛔「付毕」二字不在同一句者不认（不许拿一句不相干的话当付讫）
+    R.append(('④隔句者不认', _付.search('FS18 之限在313。另有一根本章付毕。') is None))
+    for 名, o in R:
+        print(('  ✓ ' if o else '  ⛔ ') + 名)
+    print('  自测 %d/%d' % (sum(1 for _, o in R if o), len(R)))
+    return all(o for _, o in R)
+
+
+def _扫回执():
+    出 = []
+    for f in sorted(glob.glob(os.path.join(ROOT, '设定', '回执_*.md'))):
+        s = io.open(f, encoding='utf-8', errors='replace').read()
+        for m in _付.finditer(s):
+            出.append((m.group(1), os.path.basename(f)))
+    return 出
 
 
 if __name__ == '__main__':
+    if '--自测' in sys.argv:
+        sys.exit(0 if 自测() else 1)
     sys.exit(1 if 报() else 0)

@@ -1853,6 +1853,28 @@ def chk_lineref_true():
                   '⑬骨记行冒充白文·⑭汉字形「白文第N行」·⑮证⑭没空转）' % (ok, tot))
 
 
+def chk_note_gate():
+    """★说明闸之负测（2026-09-13 立·325 之席三轮连栽，原样报上来的那一条）：
+    ★★守一句——**存版之说明须是一句人看得懂的话；汉字少於四个即当场拒收。**
+    ⛔**其害不在难看**：**台账之说明即轮号之源**——**说明一空，那一版就没有号**，
+      **`--写轮记` 遂拒，而那一轮的刀已经落在正文里了**：**活干了，账上没有它。**
+    ★★★**其局皆真**：325 之 v06／v09 存成「x」、v15 存成空（席自书於台账「重开·记因」）；
+      **并及本坐 0913 拿真器做探针存进的「t」「probe」**。
+    ★★★★**并守其界**：⑤⑥⑦真说明照旧放行｜⑩界在四个汉字｜⑪本闸未把别的闸挤掉。"""
+    out = run('负测·说明闸', ['工具/负测_说明闸.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（①—④拿 325 三轮与本坐探针之真局回灌；⑧⑨force／reopen 皆不免）' % (ok, tot)
+
+
 def chk_dashen_hang():
     """★大审挂限之负测（2026-09-13 立·`大审.py` 自己欠的那一样）：
     ★★守一句——**「已挂」带着限，到期不裁即是逾期，器须报。**
@@ -3184,6 +3206,7 @@ def main():
         items.append(('负测·人账之还', chk_renzhang_paid))
         items.append(('负测·旗之销立', chk_flag_lifecycle))
         items.append(('负测·行号引真', chk_lineref_true))
+        items.append(('负测·说明闸', chk_note_gate))
         items.append(('负测·大审挂限', chk_dashen_hang))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))

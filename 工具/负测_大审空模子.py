@@ -10,6 +10,12 @@
    一·**空模子须逮得出**（真局四样：模子记号未换｜裁定表一笔裁也没有｜档读不出｜两样俱缺）；
    二·⛔**而真册不许被误逮**——**一道只会说「不算」的闸，与没有闸是一样的。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import importlib

@@ -1853,6 +1853,29 @@ def chk_lineref_true():
                   '⑬骨记行冒充白文·⑭汉字形「白文第N行」·⑮证⑭没空转）' % (ok, tot))
 
 
+def chk_round_order():
+    """★轮次闸乱序之负测（2026-09-13 立·体检账 ㊞·325 之五个「洞」係本闸挖的）：
+    ★★守一句——**报一个比末轮小的号：那一轮册上还没有＝补洞，许；已在册上＝重跑，拦。**
+    ⛔**旧式係「比末轮小即拦」**，而十一段席的排法本就不按号走
+      （**第10轮先於第9轮开｜第4轮三路各一席｜无伤席一轮一席**，皆 325 实事）；
+      **於是第2轮、第5轮之席存不上版，照令不肯改号去哄闸，红原样交上**，
+      **`验轮闸` 随後把这几处报成「洞」**——**而那五轮一轮也没丢，`_轮记.md` 逐块俱在。**
+    ★★★**本测同时守两头**：①—③乱序许（皆 325 真局）｜④—⑥重跑照旧拦；
+      **⑩之一／之二拿同一份料照旧式算一遍，证①不是陪跑。**"""
+    out = run('负测·轮次闸乱序', ['工具/负测_轮次闸乱序.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（①—③拿 325 乱序真局；④—⑥重跑照旧拦；⑩旧式回灌证非陪跑）' % (ok, tot)
+
+
 def chk_note_gate():
     """★说明闸之负测（2026-09-13 立·325 之席三轮连栽，原样报上来的那一条）：
     ★★守一句——**存版之说明须是一句人看得懂的话；汉字少於四个即当场拒收。**
@@ -3206,6 +3229,7 @@ def main():
         items.append(('负测·人账之还', chk_renzhang_paid))
         items.append(('负测·旗之销立', chk_flag_lifecycle))
         items.append(('负测·行号引真', chk_lineref_true))
+        items.append(('负测·轮次闸乱序', chk_round_order))
         items.append(('负测·说明闸', chk_note_gate))
         items.append(('负测·大审挂限', chk_dashen_hang))
         items.append(('负测·站账逐章行', chk_station_rows))

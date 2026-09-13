@@ -2059,6 +2059,28 @@ def chk_suspense():
     return True, '%s·三条主账皆在限内' % m.group(0)
 
 
+def chk_zhangjian():
+    """★到期账「一样东西只许一个键名」之负测（2026-09-13 立）：
+    ⛔**其事**：一笔账销了，其章写在哪个键上，盘上曾有三种写法——
+      **`清偿章` 133 笔｜`结账章` 11 笔｜`清账章` 1 笔**；**而 `书级体检::check_due_net` 只读 `清偿章`**。
+      ★**故那十二笔在账上看着已销，在闸眼里从来没有销过**（296／298／301／307／328 皆有）。
+    ★★**其害不在某一笔**：**净额那一条闸量的是「开的线与收的线之差」**——
+      **收的那一头漏掉十二笔，它报出来的红就不是书的红，是键名的红。**
+    ★★★**其牙**：③格拿一笔造出来的销回灌，净额须落一格；④格证别名写法体检当真不认。"""
+    out = run('负测·账键一名', ['工具/负测_账键一名.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（③销落进去净额须落一格·④别名不认）' % (ok, tot)
+
+
 def chk_weight_trend():
     """★净重之趋（2026-09-13 立·本器头一回跑就跑出九十章之实）：
     ★★守一句——**末一段若比上一段跌逾一成半，册上须有一行裁；无裁即拦。**
@@ -3476,6 +3498,7 @@ def main():
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))
         items.append(('净重之趋', chk_weight_trend))
+        items.append(('负测·账键一名', chk_zhangjian))
         items.append(('悬念哨', chk_suspense))
         items.append(('负测·悬念哨', chk_xuannian_neg))
         items.append(('重出之趋', chk_repeat_trend))

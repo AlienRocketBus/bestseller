@@ -59,12 +59,58 @@ t('①之三·旧表 283 自书 3499 且此器逮得着它（今实 %s；实数�
 全码 = io.open(os.path.join(根, '工具', '全测.py'), encoding='utf-8').read().split('\n')
 起 = next(i for i, l in enumerate(全码) if l.startswith('def chk_net_weight_table'))
 止 = next(i for i in range(起 + 1, len(全码)) if 全码[i].startswith('def '))
+# ★★★★2026-09-13 收窄（0913 立 `负测_净重取形` 之後当场报红，其四行皆係器注）：
+#   ⛔**旧式逐行只看字，遂把「器注」也数成了「别器在量」**——
+#   **而本格自己的注早写着「那是本器自己的接线与器注，不算别器」**：
+#   **它只把这一免给了 `全测.py` 里那一函之内，别处的注一概没免。**
+#   ★**今把这一免写成通例**：**注不是量**——
+#   **凡井号之注、凡串之内（模块与函数之说明、多行串里的字），一概不算**；
+#   ⛔**而真码里同时读这两样者，照旧红**（其牙见②之四）。
+#   ★★**其法不靠认字，靠 `ast` 把串与注的行号先标出来**——**认字必再漏。**
+def _注与串之行(路):
+    """返回该档中「井号之注」与「串之内」所占之行号（1 起）。"""
+    import ast as _ast
+    s = io.open(路, encoding='utf-8').read()
+    行 = s.split('\n')
+    出 = set()
+    for i, l in enumerate(行, 1):
+        if l.lstrip().startswith('#'):
+            出.add(i)
+    try:
+        tree = _ast.parse(s)
+    except Exception:
+        return 出
+    # ⛔**立日自栽一回，其局即下头②之四**：**头一版把「凡串之内」一概免了**——
+    #   **而真去量它的那一行，正是拿串在比**（`if '锁定' in 行 and '净重' in 行:`）；
+    #   **於是这一免把牙一并拔了，②之四当场报「得 0 期 1」。**
+    #   ★**今只免「说明之串」（模块／函数／类之首句）与井号之注**——**注不是量，而串是。**
+    for node in _ast.walk(tree):
+        if isinstance(node, (_ast.Module, _ast.FunctionDef,
+                             _ast.AsyncFunctionDef, _ast.ClassDef)):
+            body = getattr(node, 'body', None)
+            if not body:
+                continue
+            first = body[0]
+            if (isinstance(first, _ast.Expr)
+                    and isinstance(getattr(first, 'value', None), _ast.Constant)
+                    and isinstance(first.value.value, str)):
+                a0 = getattr(first, 'lineno', None)
+                b0 = getattr(first, 'end_lineno', a0)
+                if a0:
+                    出.update(range(a0, (b0 or a0) + 1))
+    return 出
+
+
 犯 = []
 for f in sorted(os.listdir(os.path.join(根, '工具'))):
     if not f.endswith('.py') or f in ('净重对表.py', '负测_净重对表.py'):
         continue
-    for i, ln in enumerate(io.open(os.path.join(根, '工具', f), encoding='utf-8'), 1):
+    _p = os.path.join(根, '工具', f)
+    _skip = _注与串之行(_p)
+    for i, ln in enumerate(io.open(_p, encoding='utf-8'), 1):
         if '锁定' in ln and '净重' in ln:
+            if i in _skip:
+                continue        # ★注不是量
             if f == '全测.py' and 起 < i <= 止:
                 continue        # 本器之接线，不算别器
             犯.append('%s:%d' % (f, i))
@@ -75,6 +121,29 @@ t('②之三·而本器之接线确在（不是靠删干净换来的绿）',
 #   非施工表之锁定行；此格证「提过」不等于「量过」。
 全 = io.open(os.path.join(根, '工具', '全测.py'), encoding='utf-8').read()
 t('②之二·全测提过净重（故此非「谁都没提过」，是「提过而没回表量过」）', '净重' in 全, True)
+
+# ②之四⛔证「注不是量」这一免没把牙拔掉：造一份假档，
+#   其注里写一行、其真码里写一行——注那一行须放过，码那一行须逮着。
+import tempfile as _tf
+_假 = '''# -*- coding: utf-8 -*-
+"""本注里提「锁定」与「净重」两样，而它只是注，不是量。"""
+# 此井号之注亦同时提「锁定」与「净重」。
+def 假量(行):
+    if '锁定' in 行 and '净重' in 行:
+        return 1
+    return 0
+'''
+_fd, _tp = _tf.mkstemp(suffix='.py', dir=os.path.join(根, '工具'))
+os.close(_fd)
+io.open(_tp, 'w', encoding='utf-8').write(_假)
+try:
+    _skip2 = _注与串之行(_tp)
+    _hit = [i for i, ln in enumerate(io.open(_tp, encoding='utf-8'), 1)
+            if '锁定' in ln and '净重' in ln and i not in _skip2]
+    t('②之四·注那两行放过、真码那一行照旧逮着（证此免未把牙拔掉）',
+      len(_hit), 1)
+finally:
+    os.unlink(_tp)
 
 # ③非挖空
 红今, 群今 = J.量()

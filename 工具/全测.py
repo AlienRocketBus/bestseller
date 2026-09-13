@@ -1963,6 +1963,66 @@ def chk_xuannian_neg():
     return True, '%d/%d 全通（③限内不报·⑤空口不算·⑦无哨即红）' % (ok, tot)
 
 
+def chk_chongchu_neg():
+    """★重出之趋之负测（2026-09-13 立）：⛔**牙在三处**——
+    **不相干者不报**｜**只比 n−2 不比 n−1**｜**全测之认须带「第N章」或「N·」之形**
+    （⛔**`str(n) in 裁文` 那一式，册上出现过这三个数字就算过，等於没有闸**）。"""
+    out = run('负测·重出之趋', ['工具/负测_重出趋.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（④不相干不报·⑤只比n−2·⑥其认须紧）' % (ok, tot)
+
+
+def chk_repeat_trend():
+    """★逐字重出之趋（2026-09-13 立）：
+    ★★守一句——**逾 10% 之章，其骨记须有「重出之裁」一行；无此一行即红。**
+    ⛔**其事**：`看官.py --连读` 逐对报其数，**而「这一对高不高」与「它在往哪儿走」是两个问题**；
+      ★**0913 头一回跑**：**300—324 中位 2.1%（逾10%者一章）→ 325:14.4｜326:10.0｜327:24.1**——**连三章，末一章逾中位十倍。**
+    ★★★**本格不判哪一拍该删**（逐拍之事已由连读与轮记在办）——**它只逼出一行裁。**
+      **325／326／327 三章已封版，其裁在 `设定/裁_0913_逐字重出之趋_连三章.md`。**"""
+    out = run('重出之趋·自测', ['工具/重出趋.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    import sys as _sys, os as _os, io as _io, importlib as _il, glob as _g
+    _sys.path.insert(0, _os.path.join(ROOT, '工具'))
+    try:
+        趋 = _il.import_module('重出趋')
+        _, 逾 = 趋.判()
+    except Exception as e:
+        return False, '判不出：%s' % e
+    坏 = []
+    裁文 = ''
+    for f in _g.glob(_os.path.join(ROOT, '设定', '*裁*重出*.md')):
+        裁文 += _io.open(f, encoding='utf-8', errors='replace').read()
+    章 = 趋.诸章()
+    for n, r in 逾:
+        # ⛔其认须紧：一是本章骨记自书「重出之裁」一行；
+        #   二是册上那一份裁里，其章之号带着「第N章」或「N·」之形（⛔非全文里出现过这三个数字）。
+        if ('重出之裁' in 章.get(n, '')
+                or ('第%d章' % n) in 裁文 or ('%d·' % n) in 裁文
+                or ('**%d**' % n) in 裁文):
+            continue
+        坏.append('第%d章 %.1f%%' % (n, r))
+    if 坏:
+        return False, '⛔逾界而无一行裁（骨记无「重出之裁」，册上亦无）：%s' % '、'.join(坏)
+    return True, ('%s·逾界 %d 章皆已有裁在册（%s）'
+                  % (m.group(0), len(逾),
+                     '、'.join('%d:%.1f%%' % x for x in 逾)) if 逾
+                  else '%s·无一章逾界' % m.group(0))
+
+
 def chk_suspense(): 
     """★悬念哨（2026-09-13 立）：**三条主账各自之形皆写死「每三章至少一处」，而盘上至今没有一只手在数它。**
     ⛔**0913 头一回跑之实**：**SUS-A·那六天 末见第315章（隔13章）｜SUS-C·照着做 末见第318章（隔10章）。**
@@ -3418,6 +3478,8 @@ def main():
         items.append(('净重之趋', chk_weight_trend))
         items.append(('悬念哨', chk_suspense))
         items.append(('负测·悬念哨', chk_xuannian_neg))
+        items.append(('重出之趋', chk_repeat_trend))
+        items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))

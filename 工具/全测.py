@@ -1946,6 +1946,59 @@ def chk_dashen_hang():
     return True, '%d/%d 全通（④格拿 0913 真局回灌：其由之格之旧限 309 不认）' % (ok, tot)
 
 
+def chk_xuannian_neg():
+    """★悬念哨之负测（2026-09-13 立）：⛔**牙在三处**——
+    **限内不许报**｜**骨记之明报须带据（空口一行不算）**｜**账上挂了哨才算写明卡在哪一条。**"""
+    out = run('负测·悬念哨', ['工具/负测_悬念哨.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（③限内不报·⑤空口不算·⑦无哨即红）' % (ok, tot)
+
+
+def chk_suspense(): 
+    """★悬念哨（2026-09-13 立）：**三条主账各自之形皆写死「每三章至少一处」，而盘上至今没有一只手在数它。**
+    ⛔**0913 头一回跑之实**：**SUS-A·那六天 末见第315章（隔13章）｜SUS-C·照着做 末见第318章（隔10章）。**
+    ★**SUS-C 之难在其形**：**须由格式与工夫排出，不许把「给谁」答死**——**故它本来就不该有一个固定的词**，
+      **任何数词之器都数不着它**；⛔**故哨为它开第二路**：**骨记里明写一行「SUS-C·本章复提：…」并带其据（≥8字）即算一处**
+      （**⛔空口一行不算**·负测⑤格钉住）。
+    ★★**本格之判**：**逾限者，其条须在 `到期账` 里挂一个「哨」之章（改挂到走得到的那一章）**；
+      ⛔**挂了才算写明卡在哪一条**；**一笔逾限而账上无哨，当场红。**"""
+    out = run('悬念哨·自测', ['工具/悬念哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    import sys as _sys, os as _os, importlib as _il
+    _sys.path.insert(0, _os.path.join(ROOT, '工具'))
+    try:
+        哨 = _il.import_module('悬念哨')
+        末, 报 = 哨.判()
+    except Exception as e:
+        return False, '判不出：%s' % e
+    import json as _j, io as _io
+    账 = _j.load(_io.open(_os.path.join(ROOT, '设定', '到期账.json'), encoding='utf-8'))['items']
+    哨章 = dict((x['id'], x.get('哨')) for x in 账)
+    坏 = [k for k, 末见, 距, bad in 报 if bad and not 哨章.get(k)]
+    if 坏:
+        return False, ('⛔逾限而账上无哨（未写明改挂到哪一章）：%s' % '、'.join(坏))
+    逾 = [(k, 距, 哨章.get(k)) for k, 末见, 距, bad in 报 if bad]
+    if 逾:
+        return True, ('%s·逾限 %d 笔皆已挂哨：%s'
+                      % (m.group(0), len(逾),
+                         '、'.join('%s(隔%d章→挂%s)' % x for x in 逾)))
+    return True, '%s·三条主账皆在限内' % m.group(0)
+
+
 def chk_weight_trend():
     """★净重之趋（2026-09-13 立·本器头一回跑就跑出九十章之实）：
     ★★守一句——**末一段若比上一段跌逾一成半，册上须有一行裁；无裁即拦。**
@@ -3363,6 +3416,8 @@ def main():
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))
         items.append(('净重之趋', chk_weight_trend))
+        items.append(('悬念哨', chk_suspense))
+        items.append(('负测·悬念哨', chk_xuannian_neg))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))

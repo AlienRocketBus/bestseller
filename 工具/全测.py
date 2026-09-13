@@ -1946,6 +1946,27 @@ def chk_dashen_hang():
     return True, '%d/%d 全通（④格拿 0913 真局回灌：其由之格之旧限 309 不认）' % (ok, tot)
 
 
+def chk_fs_caiguo():
+    """★FS闸「裁过的不许再催」之负测（2026-09-13 立）：
+    ★★守一句——**同一根＋同一个限，其裁之档上写着，即印「已裁」不印「须裁」。**
+    ⛔**其事**：本器自 0913 起逐坐印「改期逾二回者 3 根——须由人当场裁」，
+      而 0913 本坐当场裁毕（三根俱不废，逐根改挂到它走得到的线上）——**裁完了它照旧每坐催一回**；
+      ★**一道催过之後还催的闸，下一坐只会学着不看它**（与「一盏从 08-27 没灭过的灯」同骨）。
+    ★★★**其牙未拔**：**限一改，其裁即作废，照旧催**（②格）；**没裁过的根照旧催**（③格）。"""
+    out = run('负测·FS裁过', ['工具/负测_FS裁过.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（②限一改即作废·③未裁过者照旧催）' % (ok, tot)
+
+
 def chk_dashen_kongmuzi():
     """★大审空模子之负测（2026-09-13 立）：
     ★★守一句——**一份只造了没填过的册，不算一回大审。**
@@ -3283,6 +3304,7 @@ def main():
         items.append(('负测·说明闸', chk_note_gate))
         items.append(('负测·大审挂限', chk_dashen_hang))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
+        items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))

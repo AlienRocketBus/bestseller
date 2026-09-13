@@ -115,6 +115,45 @@ def 逾期之欠(n):
     return sorted(out, key=lambda y: y[1])
 
 
+def 候时之活():
+    """★2026-09-13 立：印「候」之时，顺手把盘上现成的真活点出来。
+
+    ⛔**其由**：律⑪写着「候不是停，手上须同时办另一件真活」，
+    **而它从来没说是哪一件**——**於是每一回候，都要现想一件**；
+    ★**现想出来的那一件，十有八九是「我看了什么」而不是「我改了什么」**（律⑫：报告不是交付）。
+    ★★**故本器不再只印那一句令，改印盘上此刻真红的那几样**——**逐条带其命令。**
+    ⛔**本器只印，不办；一个字也不写盘。**
+    """
+    out = ['  ── 候时可办之真活（盘上现成，⛔挑一件真办掉，不是看一眼）──']
+    n = 0
+    # 一·到期账：限已到或将到而未清者（⛔数「不在已清词表之内者」，非只数 open·体检账 ㊨）
+    try:
+        import json as _j
+        清 = ('done', 'closed', 'half', '废弃', 'cold', '冷藏', '已清', '清')
+        d = _j.load(io.open(os.path.join(ROOT, '设定', '到期账.json'),
+                            encoding='utf-8'))
+        末 = 末章()
+        欠 = [x for x in d.get('items', [])
+              if x.get('状态') not in 清
+              and isinstance(x.get('到期章'), int)
+              and x['到期章'] <= 末 + 2]
+        for x in 欠[:4]:
+            n += 1
+            out.append('  %d. 到期账 %s（限%s）：%s'
+                       % (n, x.get('id'), x.get('到期章'), (x.get('事') or '')[:46]))
+    except Exception:
+        pass
+    # 二·诸器之红（只点其名与其命令，⛔本器不代跑——跑起来动辄十分钟）
+    for 名, 令 in (('书级体检', 'python3 工具/书级体检.py'),
+                   ('跑账', 'python3 工具/跑账.py'),
+                   ('净重对表', 'python3 工具/净重对表.py'),
+                   ('FS闸', 'python3 工具/FS闸.py')):
+        n += 1
+        out.append('  %d. 跑一回 %s 看它红没红：%s' % (n, 名, 令))
+    out.append('  ★办毕须落到盘上（`git log` 多一笔），⛔否则这一回合等於没有（律⑫）。')
+    return out
+
+
 def 断(印=True):
     """返回 (判, 诸行)。判 ∈ 候／跑／补／救／欠／起。"""
     L, 末 = [], 末章()
@@ -123,6 +162,11 @@ def 断(印=True):
         L.append('  【判】候。第%s章之席在跑（%s 分钟前报到）。' % (ch, 分))
         L.append('  ⛔不许抢锁、不许动盘。★而候不是停：手上须同时有另一件真活')
         L.append('     （治闸／补账／清欠／写下一段之势），办完再跑一回本器。')
+        L.append('  ⛔⛔而席在跑之时，一切动整个工作区的命令一律不许（律⑮）：')
+        L.append('     git stash／git checkout .／git reset --hard／git clean／git add -A')
+        L.append('     ——只许动我自己手上那几条明路径。要比改前改後：git show HEAD:<路径> > /tmp/旧.md')
+        for x in 候时之活():
+            L.append(x)
         L.append('  ── 下一条命令 ──')
         L.append('  python3 工具/续跑.py        # 看它跑到哪一段了')
         return '候', L

@@ -1946,6 +1946,27 @@ def chk_dashen_hang():
     return True, '%d/%d 全通（④格拿 0913 真局回灌：其由之格之旧限 309 不认）' % (ok, tot)
 
 
+def chk_huogua():
+    """★机制体检丙「一行里引着的旧限，不是一笔活挂账」之负测（2026-09-13 立）：
+    ★★守一句——**同一行若已写明它了结了、或引的是旧限、或是在转述别器之印，即不作活挂账论。**
+    ⛔**其事**：本器逐坐报「逾限之挂账 3 笔」，三笔逐行亲读皆係已了之账在讲自己的来历
+      （寨老自书「还……旧书『限315章』」｜大问挂账引「305第12轮印⚠…限306章」）；
+      ★**即把「一句话里出现过的限」当成了「这一笔此刻挂着的限」**。
+    ★★★**其牙未拔**：②格七行素行（无了结之记者）须照旧逐笔报。"""
+    out = run('负测·活挂账', ['工具/负测_活挂账.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（②素行照旧报·③盘上今日丙＝0）' % (ok, tot)
+
+
 def chk_fs_caiguo():
     """★FS闸「裁过的不许再催」之负测（2026-09-13 立）：
     ★★守一句——**同一根＋同一个限，其裁之档上写着，即印「已裁」不印「须裁」。**
@@ -3305,6 +3326,7 @@ def main():
         items.append(('负测·大审挂限', chk_dashen_hang))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
+        items.append(('负测·活挂账', chk_huogua))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))

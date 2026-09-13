@@ -106,8 +106,26 @@ def _有席在跑():
     """
     import glob as _g
     凭 = []
-    if os.path.exists(os.path.join(ROOT, '_心跳.json')):
-        凭.append('心跳锁在')
+    # ⛔**2026-09-13 同 ㊟ 之法再治一盏**：**旧式只问「`_心跳.json` 这个档在不在」**
+    #   ——**而撤锁不删档，它只把「章」写成空**；**故自立心跳之日起，这一凭就一直亮着。**
+    #   ★**今问心跳之实，不问档之在**：**章为空＝已撤锁**｜**逾四十五分钟＝其坐已死**
+    #   （**限之数不在此处写死，自 `工具/心跳.py` 之 `限 = ` 一行现取**——**本册 ㊖：
+    #   判据里不许出现任何「今天才成立」的东西，一个抄来的数也是**）。
+    _hb = os.path.join(ROOT, '_心跳.json')
+    if os.path.exists(_hb):
+        try:
+            import json as _j
+            import re as _re2
+            import time as _t
+            _d = _j.load(open(_hb, encoding='utf-8'))
+            _s = open(os.path.join(ROOT, '工具', '心跳.py'), encoding='utf-8').read()
+            _m = _re2.search(r'^限\s*=\s*(\d+)\s*\*\s*60', _s, _re2.M)
+            _lim = int(_m.group(1)) * 60 if _m else 45 * 60
+            _age = int(_t.time()) - int(_d.get('时', 0))
+            if _d.get('章') is not None and _age <= _lim:
+                凭.append('心跳锁在（%d 分钟前报到）' % (_age // 60))
+        except Exception:
+            凭.append('心跳读不出（作有席论）')
     # ⛔**2026-09-13 去掉「并发指纹在」这一凭**（体检账 ㊟）：
     #   **那一套设施本仓早已自书「建于未经证实之前提，留而不用」**
     #   （`跑轮.py:306`／`十轮精进.py:301` 逐字）——**留而不用，即没有人去清它**；

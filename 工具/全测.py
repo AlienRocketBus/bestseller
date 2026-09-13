@@ -1946,6 +1946,41 @@ def chk_dashen_hang():
     return True, '%d/%d 全通（④格拿 0913 真局回灌：其由之格之旧限 309 不认）' % (ok, tot)
 
 
+def chk_weight_trend():
+    """★净重之趋（2026-09-13 立·本器头一回跑就跑出九十章之实）：
+    ★★守一句——**末一段若比上一段跌逾一成半，册上须有一行裁；无裁即拦。**
+    ⛔**其所以要立**：盘上诸闸皆逐章而问（章型带／棘轮预检／字数闸）
+      ——**而「全书在慢慢变薄」这件事不在任何一章里**：**每章只比上章少一点点，十五章之後就是三成。**
+      ★**0913 之实**：**顶在 223—237（中位 7,076），今 313—327 中位 2,216——九十章落了 68.7%。**
+    ★★★**本器不判该不该**（一站之末在原地量本来就该薄）——**它只逼出一行裁**；
+      ⛔**写不出其由的，就是那一段真的薄了。**"""
+    out = run('净重之趋·自测', ['工具/净重趋.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    # ★末一段若报红，册上须有一行裁（认其段之首章之号）
+    out2 = run('净重之趋', ['工具/净重趋.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    reds = _r.findall(r'⚠ 第(\d+)—(\d+)章', out2)
+    if not reds:
+        return True, '%s·无一段跌逾一成半' % m.group(0)
+    末 = reds[-1]
+    import glob as _g, io as _io, os as _os
+    有裁 = False
+    for f in _g.glob(_os.path.join(ROOT, '设定', '*裁*净重之趋*.md')):
+        t = _io.open(f, encoding='utf-8', errors='replace').read()
+        if 末[0] in t and 末[1] in t:
+            有裁 = True
+    if not 有裁:
+        return False, ('⛔末一段第%s—%s章跌逾一成半而册上无一行裁'
+                       '——写不出其由的，就是那一段真的薄了' % 末)
+    return True, '%s·末段第%s—%s章之跌已有一行裁在册上' % (m.group(0), 末[0], 末[1])
+
+
 def chk_huogua():
     """★机制体检丙「一行里引着的旧限，不是一笔活挂账」之负测（2026-09-13 立）：
     ★★守一句——**同一行若已写明它了结了、或引的是旧限、或是在转述别器之印，即不作活挂账论。**
@@ -3327,6 +3362,7 @@ def main():
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))
+        items.append(('净重之趋', chk_weight_trend))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))

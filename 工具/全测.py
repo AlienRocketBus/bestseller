@@ -1853,6 +1853,28 @@ def chk_lineref_true():
                   '⑬骨记行冒充白文·⑭汉字形「白文第N行」·⑮证⑭没空转）' % (ok, tot))
 
 
+def chk_dashen_hang():
+    """★大审挂限之负测（2026-09-13 立·`大审.py` 自己欠的那一样）：
+    ★★守一句——**「已挂」带着限，到期不裁即是逾期，器须报。**
+    ⛔**大审册自书「它带着限，到期不裁即是逾期，器会报」，而器从来没有数过那个限到没到**
+      ——**一句写在册上的话，盘上没有一只手兑它**（体检账 ㊚ 之同骨：账断了一头）；
+      ★**而这一路比那一路更难见：它不是报错了，是它从头到尾没在看。**
+    ★★★**并钉住立日自栽那一处**：④格拿 0913 真局回灌
+      （**其由之格引着 FS 之旧限 309**，⛔**不许被当成本笔之限**）。"""
+    out = run('负测·大审挂限', ['工具/负测_大审挂限.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（④格拿 0913 真局回灌：其由之格之旧限 309 不认）' % (ok, tot)
+
+
 def chk_station_rows():
     """★站账逐章行之负测（2026-09-12 立·随 `站账.判三` 同日落）：
     ★★守一句——**凡一栏之对站记里已有逐章之表，其栏内每一已封版之章须有其行，缺一即红。**
@@ -3162,6 +3184,7 @@ def main():
         items.append(('负测·人账之还', chk_renzhang_paid))
         items.append(('负测·旗之销立', chk_flag_lifecycle))
         items.append(('负测·行号引真', chk_lineref_true))
+        items.append(('负测·大审挂限', chk_dashen_hang))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))

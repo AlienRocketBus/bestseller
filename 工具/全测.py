@@ -1876,6 +1876,28 @@ def chk_station_rows():
     return True, '%d/%d 全通（③剥一行即逮·②④两格钉住当日两处假红）' % (ok, tot)
 
 
+def chk_weight_shape():
+    """★净重取形之负测（2026-09-13 立·317 之三数一案所逮）：
+    ★★守一句——**锁定行之净重，凡加重号之形（`净重 **1,953**`），器须取得着。**
+      旧式正则 `净重\\s*([\\d,]+)` **星号挡在数前，一概取不着**；
+      而 313 与 317 两章之锁定行只有这一形，**於是这两章的净重从来没有被验过**。
+    ⛔**其害不在漏一章，在那句印**：「42 章逐行相符」——
+      **含的只是它取得着的那 42 章；取不着的两章，它一个字也没说**（本册 ㊓ 之第二变种）。
+    ★放宽之後即 44 章，当场逮出三章真红：317 记1953实2010｜313 记3299实3287｜312 记1960实2012。"""
+    out = run('负测·净重取形', ['工具/负测_净重取形.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
+    if not m:
+        return False, '未见其数'
+    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
+    if 判 != '全通' or ok != tot:
+        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
+        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
+    return True, '%d/%d 全通（③格拿旧式回灌，证其曾漏）' % (ok, tot)
+
+
 def chk_hl_residue():
     """★亮点残引之负测（2026-09-13 立·随 `亮点对表.旧版残引` 之收窄同日落）：
     ★★守一句——**亮点段引了自己删掉的话即红；而骨记里明写「原作 X →改後 Y」的改动记录不算。**
@@ -3144,6 +3166,7 @@ def main():
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))
         items.append(('负测·亮点残引', chk_hl_residue))
+        items.append(('负测·净重取形', chk_weight_shape))
         items.append(('负测·亮点对表', chk_hl_table))
         items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))

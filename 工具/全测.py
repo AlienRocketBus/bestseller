@@ -2023,6 +2023,30 @@ def chk_repeat_trend():
                   else '%s·无一章逾界' % m.group(0))
 
 
+def chk_yaohe():
+    """★咬合哨（2026-09-14 立）：**331 起，每五章之内须有一章其事係「两件事咬在一起」。**
+    ⛔**其所由来**：0913 三把尺指同一处——`净重趋`（顶 7,076→今 2,216）｜`重出趋`（325:14.4／327:24.1）｜
+      `书级体检`②（同型「长」连锁 13 章）——**这一段书太匀了**；
+      ★**其裁已落**（治在事之择不在字数），**而那一条裁立了一日，盘上没有一只手在数它**（㊛ 之骨）。
+    ★★**其认与 `悬念哨` 之第二路同式**：**骨记里明写一行「咬合：…」并带其据（≥8字）**；
+      ⛔**空口一行不算**；⛔**而器不判「咬得好不好」——那只有读的人判得了**，**它只数「有没有一章报过」。**"""
+    out = run('咬合哨·自测', ['工具/咬合哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('咬合哨', ['工具/咬合哨.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    reds = _r.findall(r'⛔ 第(\d+)—(\d+)章五章之内一章也没有报过', out2)
+    if reds:
+        return False, ('⛔满窗空着：%s' % '、'.join('%s—%s' % x for x in reds))
+    return True, ('%s·%s' % (m.group(0),
+                             '未起役（尚未写到331）' if '未起役' in out2 else '无一个满窗空着'))
+
+
 def chk_suspense(): 
     """★悬念哨（2026-09-13 立）：**三条主账各自之形皆写死「每三章至少一处」，而盘上至今没有一只手在数它。**
     ⛔**0913 头一回跑之实**：**SUS-A·那六天 末见第315章（隔13章）｜SUS-C·照着做 末见第318章（隔10章）。**
@@ -3501,6 +3525,7 @@ def main():
         items.append(('负测·账键一名', chk_zhangjian))
         items.append(('悬念哨', chk_suspense))
         items.append(('负测·悬念哨', chk_xuannian_neg))
+        items.append(('咬合哨', chk_yaohe))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))

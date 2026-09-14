@@ -22,7 +22,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 def chk_xuannian():
     R = []
     def one(k, d):
-        return [x for x in 哨.判(d)[1] if x[0] == k][0]
+        # ⛔沙盘之局皆係造出来的章号，其回执不在盘上；
+        #   ★而盘上真局照旧只数已封版之章（0914 立·330 之草稿曾把三条一齐哄绿）。
+        return [x for x in 哨.判(d, 只封版=False)[1] if x[0] == k][0]
     R.append(('①隔十章须报', one('SUS-A-那六天', {10: '那六天', 20: '别'})[3] is True))
     R.append(('②从来没提过者须报', one('SUS-C-照着做', {20: '别'})[3] is True))
     R.append(('③⛔牙·限内不报', one('SUS-B-磨窝', {17: '磨窝', 20: '别'})[3] is False))
@@ -33,8 +35,14 @@ def chk_xuannian():
     import json, io as _io
     p = os.path.join(哨.ROOT, '设定', '到期账.json')
     账 = json.load(_io.open(p, encoding='utf-8'))['items']
-    有哨 = [x['id'] for x in 账 if x.get('哨')]
-    R.append(('⑥盘上逾限二笔皆已挂哨（%s）' % '、'.join(有哨), len(有哨) >= 2))
+    # ★2026-09-14 改其判（⛔非放宽）：旧格钉死「二笔」，而 329 已把 SUS-A 真兑、SUS-B 亦随之在限内
+    #   （其兑之形係骨记明报带据·暗线永禁其词，故第一路本就看不见它）——**挂哨之数是会动的**。
+    #   ★故改问其实：**凡此刻逾限者，逐笔须有其哨**；⛔**一笔逾限而无哨，即当场红。**
+    _, _报 = 哨.判()
+    逾 = [x for x in _报 if x[3]]        # ⛔只取真逾限者（bad），非整张表
+    无哨 = [k for k, 末见, 距, bad in 逾 if not [x for x in 账 if x['id'] == k and x.get('哨')]]
+    R.append(('⑥凡此刻逾限者逐笔有哨（今逾 %d 笔，无哨 %s）'
+              % (len(逾), 无哨 or '零'), not 无哨))
     R.append(('⑦⛔牙·若把哨拔掉，全测那一格须红（其判在 chk_suspense：坏→False）',
               '坏' in _io.open(os.path.join(哨.ROOT, '工具', '全测.py'), encoding='utf-8').read()))
     坏 = [n for n, ok in R if not ok]

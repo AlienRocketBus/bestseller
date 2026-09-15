@@ -2023,6 +2023,31 @@ def chk_repeat_trend():
                   else '%s·无一章逾界' % m.group(0))
 
 
+def chk_fenliang():
+    """★分量闸（2026-09-15 立·执 `F087_分量反向闸`）：**作者立过一条硬线，而盘上没有一样东西在量它。**
+    ⛔**其令逐字**：「新章(≥73章)<2500字＝硬错，施工表『第 N 章短章豁免＋理由』可解……加厚＝补该演没演的慢镜头，⛔禁注水。」
+    ★**而这张卡 `forbid` 係空表、`checker` 亦无**（`无闸之卡账` 上那 19 张之一）——
+      **於是「ERROR 卡正则 430 条命中 0」年年印着，而这一条从来没有人量过。**
+    ★★**0915 逐章亲数**：≥73 章而 <2500 者 **18** 章；其中施工表已出短章豁免者 **5**；⛔**未豁免 13 章**。
+    ★★★**起=334 硬拦，此前只报不拦**：其治係「补该演没演的慢镜头」，**那是十三章真活，不是一道闸能了的**；
+      ⛔**而不许给它们补一张豁免了事——那是把十三笔欠一次抹平。**逐章列名在 `设定/分量欠账.md`。"""
+    out = run('分量闸·自测', ['工具/分量闸.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('分量闸', ['工具/分量闸.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    reds = _r.findall(r'⛔第(\d+)章：净重', out2)
+    olds = _r.findall(r'⚠第(\d+)章：净重', out2)
+    if reds:
+        return False, ('⛔不足而无豁免：第%s章' % '、第'.join(reds))
+    return True, ('%s·新章皆足量（旧章只报不拦 %d 章·其账在 设定/分量欠账.md）' % (m.group(0), len(olds)))
+
+
 def chk_wuzha():
     """★无闸之卡（2026-09-15 立）：**ERROR 之卡，须有一样东西在看着它。**
     ⛔**其所由来**：诸席封版皆印「ERROR 卡 forbid 正则 430 条跑本章白文 → 命中 0」——
@@ -3636,6 +3661,7 @@ def main():
         items.append(('换型令', chk_huanxing))
         items.append(('清偿章哨', chk_qingchang))
         items.append(('无闸之卡', chk_wuzha))
+        items.append(('分量闸', chk_fenliang))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))

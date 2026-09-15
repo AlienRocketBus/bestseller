@@ -2023,6 +2023,32 @@ def chk_repeat_trend():
                   else '%s·无一章逾界' % m.group(0))
 
 
+def chk_huanxing():
+    """★换型令（2026-09-15 立）：**连锁一旦逾限，331 起不许再赖着同一型。**
+    ⛔**其所由来**：0915 查第330章，`书级体检`② 印「长」型连 **14** 章（317—330，限12）；
+      **而那一红不是 330 招的——它开跑之前就已经连了 13 章（317—329）。**
+    ★**两条自立之令在此对顶**：②说「现在就得换」｜`裁_0913` 说「治在事之择不在字数」且排在 331 起。
+    ★★**其判**：**330 係 E4 收站，其事本要长段；均段 69 硬砍到 21 就是「把段砍短」**——
+      **那正是 0913 那一裁点名禁掉的那一样。故不砍 330。**
+    ★★★**而「331 再说」是空话，除非有器在数它**（㊛：册上写着而器没在看）——**故立本器。**
+    ⛔**本器不替 330 说情**：`书级体检`② 照旧红着 330、照旧拦着推，**一寸没松**；
+      **本器只保证那一笔欠到 331 为止，不许欠到 340。**"""
+    out = run('换型令·自测', ['工具/换型令.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('换型令', ['工具/换型令.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    reds = _r.findall(r'⛔第(\d+)章：其前', out2)
+    if reds:
+        return False, ('⛔该换而没换：第%s章' % '、第'.join(reds))
+    return True, ('%s·无该换而没换者' % m.group(0))
+
+
 def chk_jiezuo():
     """★接坐记（2026-09-15 立）：**一章若换过坐（两版之隙逾 12 小时），其轮记须写明哪几版不是本坐落的。**
     ⛔**其所由来**：0914 之席把第330章写到三庭而止，0915 之坐接着从第6轮往下跑，
@@ -3555,6 +3581,7 @@ def main():
         items.append(('负测·悬念哨', chk_xuannian_neg))
         items.append(('咬合哨', chk_yaohe))
         items.append(('接坐记', chk_jiezuo))
+        items.append(('换型令', chk_huanxing))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))

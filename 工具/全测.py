@@ -2023,6 +2023,33 @@ def chk_repeat_trend():
                   else '%s·无一章逾界' % m.group(0))
 
 
+def chk_wuzha():
+    """★无闸之卡（2026-09-15 立）：**ERROR 之卡，须有一样东西在看着它。**
+    ⛔**其所由来**：诸席封版皆印「ERROR 卡 forbid 正则 430 条跑本章白文 → 命中 0」——
+      **那一句是真的，而它没盖住的那一半从来没有人报**：
+      **430 条正则出自 156 张卡；另有 20 张一条正则也没有，其中只有 1 张有 `checker`。**
+      ⛔⛔**余 19 张：既无正则、也无验码，盘上没有任何一样东西在看着它们**——
+      **而那 19 张多係作者亲笔定版之条**（F089 起源定版／F090 血契／F091 玉之本相／F095 沈鸢终局锁定／F097 九鼎名录…）。
+    ★★**本器不冒充能查它们**：其所禁多係事理而非字样，⛔**拿正则去查是假绿，比不查更坏。**
+      **故本器只把「没有闸的那一批」数出来并钉死其数**——**新添一张而不记账即红。**
+    ⛔**并禁一句话**：封版之印不许再只写「正则 430 条命中 0」，**须同写「另有 N 张无闸之卡未验」。**"""
+    out = run('无闸之卡·自测', ['工具/无闸之卡.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('无闸之卡', ['工具/无闸之卡.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    if '⛔' in out2:
+        bad = [l.strip() for l in out2.splitlines() if l.strip().startswith('⛔')]
+        return False, (bad[0][:90] if bad else '账与今数不符')
+    m2 = _r.search(r'无闸者 (\d+) 张', out2)
+    return True, ('%s·无闸 %s 张，账上逐张有名且其数相符' % (m.group(0), m2.group(1) if m2 else '?'))
+
+
 def chk_qingchang():
     """★清偿章哨（2026-09-15 立·㊹）：**一笔账了结了，须当场写明「哪一章清的」。**
     ⛔**其所由来**：`书级体检`③ 印净 +9.0 而 330 该是大清之章——翻账方知五笔皆 `状态=done`
@@ -3608,6 +3635,7 @@ def main():
         items.append(('接坐记', chk_jiezuo))
         items.append(('换型令', chk_huanxing))
         items.append(('清偿章哨', chk_qingchang))
+        items.append(('无闸之卡', chk_wuzha))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))

@@ -2023,6 +2023,32 @@ def chk_repeat_trend():
                   else '%s·无一章逾界' % m.group(0))
 
 
+def chk_gaiqi():
+    """★改期记因哨（2026-09-15 立）：**一笔账往後挪，须当场写明为什麽。**
+    ⛔**其所由来·0915 之实**：333 封版之日 `SUS-A`／`SUS-B`／`SUS-C` 三笔之 `到期章`
+      由 333 挪到 336／334／336，**而三笔之 `改期记因` 一格皆空着**——
+      **其由本是有的**（回执逐字：SUS-A 落拍14｜SUS-C 落拍6—7｜SUS-B 之物在主线柄上，暗线碰即破线），
+      ⛔**而它只在散文里，没有落到那一格上**（㊹ 之族）。
+    ★★**为什麽这一格要紧**：`FS03` 改期十八回、`FS05` 六回——
+      **一笔账烂掉的样子从来不是「有人赖了」，是「每一回都有一个说得过去的由，而没有一处把它们摞在一起」**；
+      **记因那一格就是把它们摞在一起的地方：摞到第四回，人自己就看见了。**
+    ⛔**本器不判该不该改期**（那是人的事），**只判「改了而没写为什麽」**；**一行「因故改期」不算记因。**"""
+    out = run('改期记因哨·自测', ['工具/改期记因哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('改期记因哨', ['工具/改期记因哨.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    reds = _r.findall(r'⛔(\S+?)（其章', out2)
+    if reds:
+        return False, ('⛔改期而无记因：%s' % '、'.join(reds[:6]))
+    return True, ('%s·新账改期皆有其由' % m.group(0))
+
+
 def chk_fenliang():
     """★分量闸（2026-09-15 立·执 `F087_分量反向闸`）：**作者立过一条硬线，而盘上没有一样东西在量它。**
     ⛔**其令逐字**：「新章(≥73章)<2500字＝硬错，施工表『第 N 章短章豁免＋理由』可解……加厚＝补该演没演的慢镜头，⛔禁注水。」
@@ -3662,6 +3688,7 @@ def main():
         items.append(('清偿章哨', chk_qingchang))
         items.append(('无闸之卡', chk_wuzha))
         items.append(('分量闸', chk_fenliang))
+        items.append(('改期记因哨', chk_gaiqi))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))

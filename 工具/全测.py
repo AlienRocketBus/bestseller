@@ -2023,6 +2023,31 @@ def chk_repeat_trend():
                   else '%s·无一章逾界' % m.group(0))
 
 
+def chk_qingchang():
+    """★清偿章哨（2026-09-15 立·㊹）：**一笔账了结了，须当场写明「哪一章清的」。**
+    ⛔**其所由来**：`书级体检`③ 印净 +9.0 而 330 该是大清之章——翻账方知五笔皆 `状态=done`
+      而 `清偿章` 一格空着，**闸看的正是那一格**：只见其立，不见其清。回填毕，330 由 +1 → −4。
+    ★★**而这不是旧事**：**同日 331 还清 `FS03-331`（状态写作 closed），那一格照旧空着**——
+      **立器之日它又空了一回**；⛔**故此病不在旧账，在落笔之序：了结之时没有一只手问「哪一章」。**
+    ★★★**只辖新账（≥331）**：旧账之坐已散，其章号盘上真的没有，**补一个猜的就是替一笔没查过的账签字**；
+      ⛔**而旧者仍逐笔印出来，不许从器里删掉。**"""
+    out = run('清偿章哨·自测', ['工具/清偿章哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('清偿章哨', ['工具/清偿章哨.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    reds = _r.findall(r'⛔(\S+?)（其章', out2)
+    olds = _r.findall(r'⚠(\S+?)（其章', out2)
+    if reds:
+        return False, ('⛔了结而无清偿章：%s' % '、'.join(reds[:6]))
+    return True, ('%s·新账皆有其章（旧账只报不拦 %d 笔）' % (m.group(0), len(olds)))
+
+
 def chk_huanxing():
     """★换型令（2026-09-15 立）：**连锁一旦逾限，331 起不许再赖着同一型。**
     ⛔**其所由来**：0915 查第330章，`书级体检`② 印「长」型连 **14** 章（317—330，限12）；
@@ -3582,6 +3607,7 @@ def main():
         items.append(('咬合哨', chk_yaohe))
         items.append(('接坐记', chk_jiezuo))
         items.append(('换型令', chk_huanxing))
+        items.append(('清偿章哨', chk_qingchang))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))

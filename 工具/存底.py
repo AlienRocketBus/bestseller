@@ -63,8 +63,33 @@ def _跑(*a, env=None, cwd=None):
     return subprocess.run(a, cwd=cwd or ROOT, capture_output=True, text=True, env=e)
 
 
+def _档肿哨():
+    """★存之前先跑一回档肿哨（0916·335 封版席接进此处）。
+
+    ⛔**其所以接在这里，不接在别处**：**档肿哨之职逐字係「下一回再肿，是在存底之前看见，
+      不是在远端拒收之後才猜」**——**而它立出来的那一日没有接进任何一个跑口**，
+      `囤灰闸` 当场判它「造了没人跑」。★**一个写在流程里而从来没跑起来的器，正是作者点名要治的那一样。**
+    ★**其实证（0916 之事）**：`版本/第335章/_轮记.md` 一度肿到 113MB／424,670 行而唯一非空行只 1,385 行，
+      **前二席之 `--存` 两跑皆被远端拒收（`remote: error: See https://gh.io/lfs`），而那两席都不知道自己为什麽推不上去。**
+    ★★**其位只报不拦**：**肿了照旧让它试着推**——**拦住它，等於把一次本来能成的备份也断了**；
+      ⛔**而它若真被远端拒收，这一行印就是那一次拒收的由。**
+    """
+    try:
+        r = _跑(sys.executable, os.path.join(ROOT, '工具', '档肿哨.py'))
+        out = (r.stdout or '').strip().splitlines()
+        if r.returncode != 0:
+            print('  ⛔档肿哨：有档肿到推不上去（存底或被远端拒收）——')
+            for ln in out[-6:]:
+                print('    ' + ln)
+        elif out:
+            print('  ' + out[-1])
+    except Exception as e:                      # ★哨子坏了不许拖累存底
+        print('  ⚠档肿哨跑不动（不拦存底）：%s' % e)
+
+
 def 存(说明=''):
     """★其法之要：另用一份临时索引，故**工作区、索引、HEAD 三样一样不碰**。"""
+    _档肿哨()
     idx = tempfile.mktemp(prefix='存底idx_')
     try:
         env = {'GIT_INDEX_FILE': idx}

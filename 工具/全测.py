@@ -2100,10 +2100,9 @@ def chk_dangzhong():
     out2 = run('档肿哨', ['工具/档肿哨.py'])
     if out2 is None:
         return False, '正路运行失败'
-    reds = [ln.strip()[1:].split('：')[0]
-            for ln in out2.splitlines() if ln.startswith('  \u26d4')]
-    if reds:
-        return False, ('⛔肿到推不上去者：%s' % '、'.join(reds[:5]))
+    好, 末 = 判末行(out2, '档肿哨')
+    if not 好:
+        return False, 末
     return True, ('%s·无肿到推不上去之档' % m.group(0))
 
 
@@ -2132,6 +2131,43 @@ def chk_fenliang():
     return True, ('%s·新章皆足量（旧章只报不拦 %d 章·其账在 设定/分量欠账.md）' % (m.group(0), len(olds)))
 
 
+def 判末行(out, 项名):
+    """★2026-09-16 立：**问那一件器的判语行，不问它印里有没有那一个字。**
+
+    ⛔**其所由来·`chk_wuzha` 之假红**：其判旧作 `if '⛔' in out2`，
+    **而 `无闸之卡.py` 自己的栏目之标里就带着那一个字**
+    （`ERROR 卡 176 张：有正则 156｜无正则而有验码 1｜⛔无正则亦无验码 19`）——
+    **於是它每一回都红，而其末行印的是 `✓ 无闸之卡：无闸者 19 张，账上逐张有名且其数相符`（rc=0）。**
+    ★★**更坏的一层**：旧式红了之後去捡「以⛔起头之行」，**一行也捡不着**（那个字在行中不在行首），
+    **遂回一句 `账与今数不符`——一句它根本没有验过的话。**⛔**假红比假绿更难查，因为它看着像在干活。**
+
+    ★**本函之判只一条**：**取其末一个非空行，须以 `✓<项名>` 起头。**
+    ⛔**不许再拿「印里有没有某个字」去判一件器的成败**——**那个字可能是它栏目的一部分。**
+    """
+    行 = [l.rstrip() for l in (out or '').splitlines() if l.strip()]
+    if not 行:
+        return False, '无印'
+    末 = 行[-1].strip()
+    if 末.startswith('✓' + 项名) or 末.startswith('✓ ' + 项名):
+        return True, 末
+    return False, 末[:90]
+
+
+def chk_moxing_neg():
+    """★负测·末行之判（2026-09-16 立·治 `chk_wuzha` 之假红）：
+    ⛔**旧判作 `if '⛔' in out2`，而 `无闸之卡.py` 自己的栏目之标里就带着那一个字**，
+      **其末行实印 `✓ 无闸之卡：…`（rc=0、自测 12/12）**——**於是它每一回都红。**
+    ★★**更坏的一层**：旧式红了之後去捡「以⛔起头之行」，**一行也捡不着**（那字在行中不在行首），
+      **遂回一句「账与今数不符」——一句它根本没有验过的话。**
+    ⛔**假红比假绿更难查，因为它看着像在干活。**
+    ★**本负测每一格皆同笔跑一遍旧式并验它确实错**——⛔**旧式也过者即陪跑，不算负测。**"""
+    out = run('负测·末行之判', ['工具/负测_末行之判.py'])
+    if out is None:
+        return False, '运行失败'
+    好, 末 = 判末行(out, '负测·末行之判')
+    return (True, 末) if 好 else (False, 末)
+
+
 def chk_wuzha():
     """★无闸之卡（2026-09-15 立）：**ERROR 之卡，须有一样东西在看着它。**
     ⛔**其所由来**：诸席封版皆印「ERROR 卡 forbid 正则 430 条跑本章白文 → 命中 0」——
@@ -2152,9 +2188,9 @@ def chk_wuzha():
     out2 = run('无闸之卡', ['工具/无闸之卡.py'])
     if out2 is None:
         return False, '正路运行失败'
-    if '⛔' in out2:
-        bad = [l.strip() for l in out2.splitlines() if l.strip().startswith('⛔')]
-        return False, (bad[0][:90] if bad else '账与今数不符')
+    好, 末 = 判末行(out2, '无闸之卡')
+    if not 好:
+        return False, 末
     m2 = _r.search(r'无闸者 (\d+) 张', out2)
     return True, ('%s·无闸 %s 张，账上逐张有名且其数相符' % (m.group(0), m2.group(1) if m2 else '?'))
 
@@ -3748,6 +3784,7 @@ def main():
         items.append(('分量闸', chk_fenliang))
         items.append(('改期记因哨', chk_gaiqi))
         items.append(('档肿哨', chk_dangzhong))
+        items.append(('负测·末行之判', chk_moxing_neg))
         items.append(('感官之趋', chk_ganguan))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))

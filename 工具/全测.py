@@ -2023,6 +2023,37 @@ def chk_repeat_trend():
                   else '%s·无一章逾界' % m.group(0))
 
 
+def chk_ganguan():
+    """★感官趋（2026-09-16 立）：**一章之感官由 `比带` 量，而一段之感官没有人数。**
+    ⛔**其所由来**：334 之无伤席逮出「第1轮拿个数答了密度之问，`比带` 一次未跑」；补跑之，
+      三条带皆判「视 1.9 低於其底」。★**本坐追一步去数这一段**：第320—334 章视之密度中位 **3.37**，
+      而同形带之底 **5.70**、中位 8.90——**这一段用眼睛用到全书同形中位的三成八，且连低 8 章。**
+    ★★**其裁已落**（`设定/裁_0916_感官之趋_这一段书只剩一只手.md`）：**一半是事（近处之活本就退眼睛），
+      一半是欠（同一个反射按了八章）**；**其治在事之择，⛔不许撒感官、⛔不许为此改带改底。**
+    ⛔**并记本器头一版自逮之病**：其判原係「中位低 **且** 连低八章」——**而那两条不独立**
+      （十五章里低八章，中位必低）；**且真局红在中位而连只 4 章**，头一版一次也报不出来。**今以中位为判、连只作报。**"""
+    out = run('感官趋·自测', ['工具/感官趋.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('感官趋', ['工具/感官趋.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    import glob as _g, os as _os, io as _io
+    reds = _r.findall(r'⛔「(.)」：末段中位', out2)
+    if reds:
+        有裁 = False
+        for f in _g.glob(_os.path.join(ROOT, '设定', '*裁*感官之趋*.md')):
+            有裁 = True
+        if not 有裁:
+            return False, ('⛔整段低於其底：%s——而册上无一行裁' % '、'.join(reds))
+        return True, ('%s·「%s」整段低於其底，而其裁已在册上' % (m.group(0), '、'.join(reds)))
+    return True, ('%s·末一段无整段低於其底者' % m.group(0))
+
+
 def chk_gaiqi():
     """★改期记因哨（2026-09-15 立）：**一笔账往後挪，须当场写明为什麽。**
     ⛔**其所由来·0915 之实**：333 封版之日 `SUS-A`／`SUS-B`／`SUS-C` 三笔之 `到期章`
@@ -3689,6 +3720,7 @@ def main():
         items.append(('无闸之卡', chk_wuzha))
         items.append(('分量闸', chk_fenliang))
         items.append(('改期记因哨', chk_gaiqi))
+        items.append(('感官之趋', chk_ganguan))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))

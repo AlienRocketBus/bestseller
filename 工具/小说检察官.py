@@ -3141,6 +3141,22 @@ def _cold_done(n):
     return False
 
 
+def _cold_void(n):
+    """★某冷轮是否已判作废——★转调 开轮六检::_cold_void（一处判，不再各写一份码）。
+
+    ⛔**其所以补**（0916·338 之案席当日报出而未代改，今作者当面裁）：
+    **`开轮六检::⑥` 认 `_cold_void`，而本档之 `_auto_cold` 不读它**——
+    **遂对 COLD-333／COLD-334 二笔（各有其「废」档，且从来没有立过面）
+      照通则报其逾期，`--全书检` 当场判 ERROR。**
+    ★**一处判而两份码，改一份的人以为自己改完了**（体检账 ㊸ 之同型，本日第三度）。
+    ⛔**取不着 `开轮六检` 时返 False**——**宁可多催一笔，不可少催一笔。**
+    """
+    _m = _cold_six()
+    if _m is not None and hasattr(_m, '_cold_void'):
+        return _m._cold_void(n)
+    return False
+
+
 def _cold_due(n):
     """冷眼轮之限——★转调 开轮六检::_cold_limit（档自书之限压倒通则）。"""
     _m = _cold_six()
@@ -3158,7 +3174,7 @@ def _auto_cold(files):
     cur=max(files)
     out=[]
     for n in sorted(files):
-        if n < 73 or _cold_done(n):
+        if n < 73 or _cold_done(n) or _cold_void(n):
             continue
         due=_cold_due(n)
         if due <= cur:

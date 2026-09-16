@@ -347,6 +347,19 @@ def drift_of(n, receipts, src, txt):
         '     封版之后的改动须走回补／定案并记因；若系误改，跑 --还原 %d 确认 复原。' % n]
 
 
+def 漂移记因之判(记因):
+    """漂移哨之「记因放行」纯判（⛔可负测）。返回 (放行, 由)。
+
+    ⛔**空即不放**（照旧拦）；⛔**不足八字即不放**（一个词不算记因）。
+    """
+    因 = (记因 or '').strip()
+    if not 因:
+        return False, ''
+    if len(因) < 8:
+        return False, '⛔漂移记因太短（%d字，须八字以上）——⛔一个词不算记因。' % len(因)
+    return True, 因
+
+
 def _receipts_of(n):
     return sorted(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
 
@@ -360,8 +373,44 @@ def _book_chapters():
     return len([p for p in glob.glob(os.path.join(ROOT, '正文', '*.md')) if chap_num(p)])
 
 
+def 新增章号自末次存版(n):
+    """自末次动本章 `_台账.json` 之commit 以来，`正文/` 新出之档之章号。
+
+    ⛔**其用只一处**：章界闸判「所增者是不是尽在本章之後」。
+    ★**取不到即返 None**（⛔**上游照旧拦**——「查不着」不是放行之由）。
+    """
+    import subprocess
+    led = os.path.join(ROOT, '版本', '第%d章' % n, '_台账.json')
+    if not os.path.exists(led):
+        return None
+    try:
+        r = subprocess.run(['git', '-C', ROOT, 'log', '--format=%H', '-1', '--',
+                            os.path.relpath(led, ROOT)],
+                           capture_output=True, text=True, timeout=30)
+        sha = (r.stdout or '').strip()
+        if not sha:
+            return None
+        r2 = subprocess.run(['git', '-C', ROOT, '-c', 'core.quotepath=false',
+                             'ls-tree', '-r', '--name-only', sha, '正文/'],
+                            capture_output=True, text=True, timeout=30)
+        if r2.returncode != 0:
+            return None
+        旧 = set(x.strip().strip('"') for x in (r2.stdout or '').split('\n')
+                 if x.strip().endswith('.md'))
+        if not 旧:
+            return None
+        今 = set(os.path.relpath(f, ROOT)
+                 for f in glob.glob(os.path.join(ROOT, '正文', '*.md')))
+        # ⛔**凡旧档少了一个（改名／并章／删档）——即返 None，让上游拦。**
+        if 旧 - 今:
+            return None
+        return sorted(chap_num(x) for x in (今 - 旧))
+    except Exception:
+        return None
+
+
 def gates(n, note, ledger, chapters_now, receipts, reopen='', force='', same_as_last=False,
-          txt=''):
+          txt='', 新增章号=None):
     """闸一至闸三之纯函数（可负测）。闸四·验轮在 duibiao。返回 (halt, lines)。"""
     lines, halt = [], False
     vs = ledger.get('版本', [])
@@ -441,7 +490,20 @@ def gates(n, note, ledger, chapters_now, receipts, reopen='', force='', same_as_
     #     **凡「章数只增、且所增者尽在本章之後」者，作往前写论**——**报而不拦**；
     #     ⛔**章数减了（并章）、或所增者落在本章之前（拆章）——照旧拦**，
     #     **因为那两样真会动本章之界。**
-    _只增而在後 = (prev_ch is not None and chapters_now > prev_ch and n >= prev_ch)
+    # ★★★★★★2026-09-16 再收窄（336 第二回之实）：
+    #   ⛔**上式之判係 `n >= prev_ch`**——**其意是「本章本来就在书末」**；
+    #   ★**而本闸自书之律係「所增者尽在本章之後」**，**二者不是一回事**：
+    #     **336 之後书往前写了 337、338，所增者皆在 336 之後，而 `336 >= 337` 为假**——
+    #     ⛔**遂照旧拦，一庭仍卡死。即：上一回收窄之码，没有兑现它自己写下的那条律。**
+    #   ★★**故今补一路真凭**：`新增章号`——**自末次存版以来 `正文/` 新出之档，逐档取其章号**
+    #     （**其据係 git：末次动 `_台账.json` 之commit 之档单，与工作区之档单相减**）。
+    #   ★★★**凡「只增、且所增之章号尽大於本章」者，作往前写论**；
+    #     ⛔**章数减、或所增之中有一个号 ≤ 本章——照旧拦**（**那才是拆章并章**）。
+    #   ⛔**其凭取不到时（`新增章号 is None`）照旧拦**——**不许拿「我没查着」当放行之由。**
+    _尽在後 = (新增章号 is not None and len(新增章号) > 0
+               and all(x > n for x in 新增章号))
+    _只增而在後 = (prev_ch is not None and chapters_now > prev_ch
+                   and (n >= prev_ch or _尽在後))
     if prev_ch is not None and chapters_now != prev_ch and not force and _只增而在後:
         lines.append('   ℹ章界闸·报而不拦：上次存版时全书%d章，现为%d章，'
                      '**而所增者尽在第%d章之後**——係书往前写，非拆章并章。'
@@ -2415,6 +2477,44 @@ def selftest():
     chk('章界闸须拦章数增（别路拆章）',
         gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 152, [])[0])
     chk('章界闸须拦章数减', gates(1, '第4轮·甲', L([v('第3轮·乙', ch=152)]), 151, [])[0])
+    # ★漂移哨·记因放行之负测（0916 立·⛔每一局皆验其反面）
+    chk('漂移记因·空者不放（照旧拦）', not 漂移记因之判('')[0])
+    chk('漂移记因·只一个词者不放', not 漂移记因之判('回补')[0])
+    chk('漂移记因·七字不放（界在八字）', not 漂移记因之判('一二三四五六七')[0])
+    chk('漂移记因·八字放', 漂移记因之判('一二三四五六七八')[0])
+    chk('漂移记因·实写者放，且原样交回以挂进说明',
+        漂移记因之判(' 救章席之刀·封版後之回补 ')[1] == '救章席之刀·封版後之回补')
+    chk('漂移记因·不放者须给出其由（非哑拦）',
+        漂移记因之判('回补')[1].startswith('⛔'))
+    # ★★2026-09-16 再收窄之负测（336 第二回之实）：`新增章号` 这一路真凭
+    #   ⛔**每一局皆先跑旧式（不给 `新增章号`）验其仍红**，⛔**旧式也绿者即陪跑。**
+    chk('章界闸·新增之章尽在本章之後者不拦（336 而新增 338）',
+        not gates(336, '终版回补·甲', L([v('第9轮·乙', ch=337)]), 338, [],
+                  新增章号=[338])[0])
+    chk('章界闸·⛔而旧式对同一局判红（证上一局非陪跑）',
+        gates(336, '终版回补·甲', L([v('第9轮·乙', ch=337)]), 338, [])[0])
+    chk('章界闸·新增之中有一号 ≤ 本章者照旧拦（拆章落在本章之前）',
+        gates(336, '终版回补·甲', L([v('第9轮·乙', ch=337)]), 338, [],
+              新增章号=[200])[0])
+    chk('章界闸·新增之中有一号正是本章者照旧拦（拆的就是本章）',
+        gates(336, '终版回补·甲', L([v('第9轮·乙', ch=337)]), 338, [],
+              新增章号=[336])[0])
+    chk('章界闸·凭取不到（None）照旧拦——⛔「查不着」不是放行之由',
+        gates(336, '终版回补·甲', L([v('第9轮·乙', ch=337)]), 338, [],
+              新增章号=None)[0])
+    chk('章界闸·空单（章数增而一档未新出＝改名／拆档）照旧拦',
+        gates(336, '终版回补·甲', L([v('第9轮·乙', ch=337)]), 338, [],
+              新增章号=[])[0])
+    chk('章界闸·章数减者，纵有新增章号亦拦（并章）',
+        gates(336, '终版回补·甲', L([v('第9轮·乙', ch=338)]), 337, [],
+              新增章号=[400])[0])
+    chk('章界闸·报而不拦之印落在新路上',
+        any('章界闸·报而不拦' in x for x in
+            gates(336, '终版回补·甲', L([v('第9轮·乙', ch=337)]), 338, [],
+                  新增章号=[338])[1]))
+    # ★并及 `新增章号自末次存版` 本身：旧档少了一个即返 None（改名／并章／删档）
+    chk('新增章号自末次存版·取不着台账之章返 None',
+        新增章号自末次存版(999999) is None)
     chk('章界闸不得误拦章数不变',
         not gates(1, '第4轮·甲', L([v('第3轮·乙', ch=151)]), 151, [])[0])
     chk('章界闸不得误拦旧台账（无全书章数字段）',
@@ -2738,7 +2838,8 @@ def save(n, note=''):
     same_as_last = bool(_last) and os.path.exists(_last) and \
         open(_last, encoding='utf-8').read().strip() == txt.strip()
     halt, glines = gates(n, note, ledger, chapters_now, receipts,
-                         reopen, force, same_as_last, txt)
+                         reopen, force, same_as_last, txt,
+                         新增章号=新增章号自末次存版(n))
     # 闸十·法典闸（283封版后立）：把「立过而屡犯之法」搬进这条已经卡在路上的闸里。
     #   ★其由：写在轮记散文里的法，一条也没被调起来过（掘层须有身连犯五章）；
     #     而写进闸里的（感官三密度·280第13轮立），立了就没再犯过。
@@ -2809,6 +2910,25 @@ def save(n, note=''):
     drifted, dlines = drift_of(n, receipts, src, txt)
     for l in dlines:
         print(l)
+    # ★★★★★★2026-09-16（336 第二回之实）：**给漂移哨那条处方一条真路**
+    #   ⛔**旧式：本哨一红即拦，而无论如何都拦**——**其处方自书「封版之后的改动
+    #     须走回补／定案并记因」（`:347` 逐字），★而「记因」二字在码里一处也没有兑现。**
+    #   ★**其果**：**已封版之章一旦被救章席改过，正文与 HEAD 必不同，遂再也存不进台账**——
+    #     **改动只能压在盘上，台账永远停在旧版**（0916 之实：336 之刀两次无版可入）。
+    #   ★★**故立 `ZM_DRIFT_WHY` 一路，⛔只放这一哨，别哨一格不动**（⛔**非 `ZM_FORCE`**，
+    #     **那一个会把回执闸／空轮闸／亮点闸一齐放倒**）；
+    #     ⛔**其因须实写（八字以上），且当场记进本版之说明**——**放行即留痕，非豁免。**
+    _漂因 = os.environ.get('ZM_DRIFT_WHY', '').strip()
+    if drifted and not force and _漂因:
+        _放, _由 = 漂移记因之判(_漂因)
+        if not _放:
+            halt = True
+            print('   ' + _由)
+        else:
+            print('   ℹ漂移哨·记因放行：%s' % _由)
+            print('     ★**本版之说明当场挂上此因**；⛔**别哨一格未动。**')
+            note = (note + '｜漂移记因：' + _由) if note else ('漂移记因：' + _由)
+            drifted = False
     if drifted and not force:
         halt = True
     git_found, git_txt = concurrency_check(quiet=True)

@@ -2080,6 +2080,33 @@ def chk_gaiqi():
     return True, ('%s·新账改期皆有其由' % m.group(0))
 
 
+def chk_dangzhong():
+    """★档肿哨（2026-09-16 立）：**一个档肿到推不上去，是在它推之前就该看见的事。**
+    ⛔**其所由来·0916 之实**：335 案席接手之时 `版本/第335章/_轮记.md` 係
+      **113,178,856 字节／424,670 行，而其唯一非空行只 1,385 行**——同一段被追加四十余万行；
+      **其果係前二席之 `存底.py --存` 两跑皆被远端拒收**（`remote: error: See https://gh.io/lfs`），
+      ⛔**而那两席都当它是网路的事**——**「推不上去」与「档肿了」之间隔着一个人去看一眼 `du`。**
+    ★**本器不治那个追加之器**（其处仍在，已交工具席），**只保证下一回再肿是在存底之前看见。**
+    ⛔**其判只两条且两条都只看得见的实数**：①字节逾硬界（推不上去之界，非美观之界）；
+      ②md 之档非空行摞到唯一非空行四倍以上而行数已过千（追加之器空转之形）。
+    ⛔**并及不许学 `chk_wuzha` 之假红**：**不判 `\'⛔\' in out`**——**器自己的栏目之标里就带着那个字。**"""
+    out = run('档肿哨·自测', ['工具/档肿哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('档肿哨', ['工具/档肿哨.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    reds = [ln.strip()[1:].split('：')[0]
+            for ln in out2.splitlines() if ln.startswith('  \u26d4')]
+    if reds:
+        return False, ('⛔肿到推不上去者：%s' % '、'.join(reds[:5]))
+    return True, ('%s·无肿到推不上去之档' % m.group(0))
+
+
 def chk_fenliang():
     """★分量闸（2026-09-15 立·执 `F087_分量反向闸`）：**作者立过一条硬线，而盘上没有一样东西在量它。**
     ⛔**其令逐字**：「新章(≥73章)<2500字＝硬错，施工表『第 N 章短章豁免＋理由』可解……加厚＝补该演没演的慢镜头，⛔禁注水。」
@@ -3720,6 +3747,7 @@ def main():
         items.append(('无闸之卡', chk_wuzha))
         items.append(('分量闸', chk_fenliang))
         items.append(('改期记因哨', chk_gaiqi))
+        items.append(('档肿哨', chk_dangzhong))
         items.append(('感官之趋', chk_ganguan))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))

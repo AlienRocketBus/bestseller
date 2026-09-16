@@ -2194,6 +2194,30 @@ def chk_shiyilun():
     return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
 
 
+def chk_sichufang():
+    """★死处方哨（2026-09-16 立·体检账 七十二之器化）：**一道闸的处方里点名的器，盘上须有那个器。**
+
+    ⛔**其所由来·0916 一日之内同族五例**：四处係「律与码不符」
+      （`章界闸`／`漂移哨`／`销立门`／`书级体检::在场之衰`），★**而第五例是这一器要逮的那一种**：
+      **`自走.py` 印给下一坐的那一条立卡之命，其器名末字与盘上不符**——**照它跑，当场取不着那个器**。
+    ★★**其所以非机化不可**：**那一行自己的注写着「器名以磁盘为准」**——
+      **写注的人知道这一条要对盘，而他没有对**；⛔**故此事靠不住人记，只能靠器扫。**
+    ★★★**其口极窄**：⛔**只判「所点之器在不在」，不判其参数对不对**（那要真跑一回，不在其职）；
+      ⛔**亦不扫 `设定/*.md`**（文书之引另有其哨）。"""
+    out = run('死处方哨·自测', ['工具/死处方哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'(\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('死处方哨', ['工具/死处方哨.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    好, 末 = 判末行(out2, '死处方哨')
+    return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
+
+
 def chk_piaoyi_all():
     """★漂移·全书（2026-09-16 立）：**漂移哨看得见，而从来没有人拿它去看别的章。**
     ⛔**其所由来·0916 之实**：337 之席在跑之时，**335 之正文被改了两处**
@@ -3862,6 +3886,7 @@ def main():
         items.append(('档肿哨', chk_dangzhong))
         items.append(('负测·末行之判', chk_moxing_neg))
         items.append(('十一轮哨', chk_shiyilun))
+        items.append(('死处方哨', chk_sichufang))
         items.append(('漂移全书', chk_piaoyi_all))
         items.append(('看官欠哨', chk_kanguan_qian))
         items.append(('感官之趋', chk_ganguan))

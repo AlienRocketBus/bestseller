@@ -54,7 +54,8 @@ const out = await agent(
   python3 工具/全测.py            # ★须真绿
 ★若仍红，**把红在哪几条、各自何解写出来交上，不许说「已办毕」**。
   git config user.email noreply\`anthropic.com && git config user.name Claude
-  git add -A && git commit   （说明写清办了哪几件、哪几个数是哪道命令算的；末尾两行照抄）
+  git add <逐条明路径> && git commit   （说明写清办了哪几件、哪几个数是哪道命令算的；末尾两行照抄）
+  ⛔**不许 \`git add -A\`**（作者常令·0916 补）：**两席同盘之时，\`-A\` 会把别席写到一半的正文卷进来——那是替别人签字。**
   Co-Authored-By: Claude Opus 5 <noreply\`anthropic.com>
   Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825
   git push -u origin claude/the-novel-review-4dtuit

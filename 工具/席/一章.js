@@ -718,7 +718,8 @@ ${续律}
    ★这一样是本仓「防囤灰」之据：**造出来的席，每一章都要留下它到过的痕迹。**
 9. **交提**（只有你这一席许动 git）：
      git config user.email noreply@anthropic.com && git config user.name Claude   ← **先跑这一条**
-     git add -A && git commit  —— 说明写清本章之魂、落了哪几刀、余红几处
+     git add <逐条明路径> && git commit  —— 说明写清本章之魂、落了哪几刀、余红几处
+     ⛔**不许 \`git add -A\`**（作者常令·0916 补）：**两席同盘之时，\`-A\` 会把别席写到一半的正文卷进来。**
    ★**不许拿别的身份交提**：0908 之封版席交出过一笔 \`mk695e@gmail.com\` 的提交，
      GitHub 当场标 Unverified，而改它要重写历史（在别席在跑时是危险动作）。**头一次就写对，比事後改便宜。**
      git push -u origin claude/the-novel-review-4dtuit
@@ -828,11 +829,24 @@ ${续律}
 
 【交提】办毕**先跑** \`git config user.email noreply@anthropic.com && git config user.name Claude\`
 （★0908 本席之前身即以别的身份交过一笔，GitHub 当场标 Unverified），
-再 \`git add -A && git commit\`，说明写清封了哪三件、哪几个数是哪道命令算的；
+再 **以明路径** \`git add <逐条路径> && git commit\`，说明写清封了哪三件、哪几个数是哪道命令算的；
+⛔**不许 \`git add -A\`**（作者常令·0916 补）：**本仓常有两席同时在盘上**，
+\`-A\` 会把**别席写到一半的正文与版本**一并卷进这一笔——**那是替别人签字**。
 末尾两行照抄：
   Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
   Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825
 然後 \`git push -u origin claude/the-novel-review-4dtuit\`。
+
+【⛔收口·最後一条命令，一条也不许省·0916 立】
+  python3 工具/心跳.py --收 ${N}
+★**其所由来·0916 之实**：335 与 336 两章之席**十一段全走完、封版五件俱交**，
+⛔**而这一条不在本令里**——**於是锁原样挂着**：\`自走.py\` 照旧印「候」，
+**而其实那一席早就没了**；**若无人去看一眼 \`续跑\`，它要挂满 45 分钟才自动过期**。
+★★**一章之间白丢三刻钟，而律⑰正是为「席一收，头一件事是派下一席」而立的**——
+**锁不撤，那一条律就够不着它要管的那一刻。**
+⛔**故此条落在最後**：**推完、验完、存底完，撤锁**；**撤锁即是把接力棒递出去。**
+（★\`自走.py\` 今已能自 \`_任务流.json\` 末笔认出「办毕而锁未撤」并当场印「起」——
+**那是一道补网，⛔不是本条可以不办的理由。**）
 
 ★★**末一句**：**一份没走过那一庭而被写成「已办」的回执，比不封版坏得多**——
 不封版只是欠着，写假回执是把欠条撕了。`,

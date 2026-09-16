@@ -2168,6 +2168,32 @@ def chk_moxing_neg():
     return (True, 末) if 好 else (False, 末)
 
 
+def chk_shiyilun():
+    """★十一轮哨（2026-09-16 立）：**「册上写着已封版」与「那一庭真走过」是两件事。**
+    ⛔**其所由来·0916 之实，且係 336 封版席自己报上来的**：**336 之第十一轮当日两跑两不过**，
+      **而其回执照交、正文照落盘、337 之开镜卡照立**——**於是 `_已封版()`（其判逐字
+      「回执已交即视为已封版」）当场认它已封版，推闸亦照此认，而那一庭从来没有走过。**
+      ★**那一席自己把这一句写下来了**：「**这一章在册上写着『已封版』，而它那一庭从来没有走过。**」
+    ★★**本闸只问一样**：**回执已交而 `版本/第N章/_十一轮.json` 不在者，红**；
+      ⛔**不读其内容、不判其过不过**（那是检察官与跑轮的事）。
+    ★★★**起＝153 係亲跑得出**：已交回执 262 章、无此档者 79 章，**而其中 78 章尽在 152 之前**
+      （持此档之最小章係 153，即此制立起之章）；**153—335 一章不缺**。**今日红者恰一章：336。**
+    ⛔**其治係 `工具/席/救章.js`，不是补一份 `_十一轮.json`**——**补一份凭据而不去走那一庭，
+      正是本闸要逮的那一样。**"""
+    out = run('十一轮哨·自测', ['工具/十一轮哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('十一轮哨', ['工具/十一轮哨.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    好, 末 = 判末行(out2, '十一轮哨')
+    return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
+
+
 def chk_wuzha():
     """★无闸之卡（2026-09-15 立）：**ERROR 之卡，须有一样东西在看着它。**
     ⛔**其所由来**：诸席封版皆印「ERROR 卡 forbid 正则 430 条跑本章白文 → 命中 0」——
@@ -3785,6 +3811,7 @@ def main():
         items.append(('改期记因哨', chk_gaiqi))
         items.append(('档肿哨', chk_dangzhong))
         items.append(('负测·末行之判', chk_moxing_neg))
+        items.append(('十一轮哨', chk_shiyilun))
         items.append(('感官之趋', chk_ganguan))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))

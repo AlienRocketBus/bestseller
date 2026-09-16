@@ -2220,6 +2220,30 @@ def chk_piaoyi_all():
     return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
 
 
+def chk_kanguan_qian():
+    """★看官欠哨（2026-09-16 立）：**一条律写着「封版时据此拦」，而盘上十一天没有一样东西在拦。**
+    ⛔**其所由来·非本坐所发现，是本仓自己记了十一天的一笔**：`工具/一坐.py:446` 逐字
+      （2026-09-05·机制总审）——「**看官账律③「封那一章时全测据此拦」而全测无一处读其 open／限**」，
+      其治自书「见 机制总审 丙」。**十一天过去，那只器没有立起来。**
+    ★**其数·0916 亲跑**：`看官账.json` 总 240 笔｜open 228 笔｜**而限已在末章之前者 225 笔**。
+    ★★**故其判分两层**（与 `分量闸`／`改期记因哨` 同法·㊮：**一只新闸红二百二十五笔，
+      多半是闸错了，不是账错了**）：**旧账（限 ≤337）⚠只报不拦而其数钉死**；**新账（限 ≥338）⛔红**。
+    ⛔**本闸不判那一笔该不该清**——**它只问「过了限而没有人碰过它」**；
+      **并写死：挪一个限不算治，挪限须带记因**（与 `改期记因哨` 同法）。"""
+    out = run('看官欠哨·自测', ['工具/看官欠哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('看官欠哨', ['工具/看官欠哨.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    好, 末 = 判末行(out2, '看官欠哨')
+    return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
+
+
 def chk_wuzha():
     """★无闸之卡（2026-09-15 立）：**ERROR 之卡，须有一样东西在看着它。**
     ⛔**其所由来**：诸席封版皆印「ERROR 卡 forbid 正则 430 条跑本章白文 → 命中 0」——
@@ -3839,6 +3863,7 @@ def main():
         items.append(('负测·末行之判', chk_moxing_neg))
         items.append(('十一轮哨', chk_shiyilun))
         items.append(('漂移全书', chk_piaoyi_all))
+        items.append(('看官欠哨', chk_kanguan_qian))
         items.append(('感官之趋', chk_ganguan))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))

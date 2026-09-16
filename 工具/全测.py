@@ -2194,6 +2194,32 @@ def chk_shiyilun():
     return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
 
 
+def chk_piaoyi_all():
+    """★漂移·全书（2026-09-16 立）：**漂移哨看得见，而从来没有人拿它去看别的章。**
+    ⛔**其所由来·0916 之实**：337 之席在跑之时，**335 之正文被改了两处**
+      （`蹲下去`→`跪下去`、`两个膝头并拢`→`两个膝头分开一点`），**而 335 早已封版。**
+      ★**其改之由是真的**（337 第7轮逮出跨章之相犯：337 倚着两个膝印，而 `335:29` 作「蹲下去」，
+      蹲者土上留不下两个膝印），**而读席当日明书「⛔只报不代改，交封版席与作者当面了断」。**
+    ★★**其要害在「谁去看」**：`十轮精进.py::drift_of` **本来就看得见**——
+      ⛔**而其八处跑口，`n` 一律是「此刻正在跑的那一章」**：**跑 337 之时它查的是 337，没有一处去查 335。**
+      **即：这只哨不是瞎的，是从来没有人带它去别的屋子看一眼。**
+    ★★★**本闸只把它拿去逐章跑一遍**（凡已交回执者）；⛔**不判对错，只逼一个记因**——
+      **封版之後的改动本来就许走「回补／定案并记因」；红着不等於改错了，红着等於「还没有人写下为什么」。**
+    ⛔**并及**：**正在写的那一章尚无回执，`drift_of` 自会放它过去**——**不许拿本闸去拦一个正在写的人。**"""
+    out = run('漂移全书·自测', ['工具/漂移全书.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('漂移全书', ['工具/漂移全书.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    好, 末 = 判末行(out2, '漂移全书')
+    return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
+
+
 def chk_wuzha():
     """★无闸之卡（2026-09-15 立）：**ERROR 之卡，须有一样东西在看着它。**
     ⛔**其所由来**：诸席封版皆印「ERROR 卡 forbid 正则 430 条跑本章白文 → 命中 0」——
@@ -3812,6 +3838,7 @@ def main():
         items.append(('档肿哨', chk_dangzhong))
         items.append(('负测·末行之判', chk_moxing_neg))
         items.append(('十一轮哨', chk_shiyilun))
+        items.append(('漂移全书', chk_piaoyi_all))
         items.append(('感官之趋', chk_ganguan))
         items.append(('重出之趋', chk_repeat_trend))
         items.append(('负测·重出之趋', chk_chongchu_neg))

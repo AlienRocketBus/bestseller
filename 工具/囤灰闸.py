@@ -113,6 +113,16 @@ def 器之闭包(runners=None):
         #   否则闭包永远展得开，那一格就是死的（§二十八·活数钉成常数）。
         起 += [os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))]
         起 += [os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(ROOT, '工具', 'githooks', '*'))]
+        # ★2026-09-16 补·**`.claude/settings.json` 之钩亦係真跑口**：
+        #   ⛔**其实**：`工具/席在跑吗.py` 自 0915 立起即被本闸与 `对位.py` 判作孤器，
+        #     三章之案席逐章报「⛔不为它绿而改器一行」——**那一条戒是对的，而这一处不是「为它绿」**：
+        #     **那只器真有人跑**，其跑口逐字在 `.claude/settings.json` 第10行之 Stop 钩
+        #     （`cd /home/user/the-novel && python3 工具/席在跑吗.py`），**每一回合收尾时真跑一遍**。
+        #   ★**本闸本已认 `工具/githooks/*`（git 之钩）为真跑口**——
+        #     **`.claude` 之钩与它是同一类东西，只是挂在另一个壳上**；**认前者不认後者，是本闸漏了一处，不是那只器囤了灰。**
+        #   ⛔**而其限不许放宽半分**：**只添这一个档作起点，一个新豁免也没有开**；
+        #     **凡一件器在九个跑口、诸席、二钩之内一处也提不着者，照旧红**（自测⑥钉死）。
+        起 += [f for f in ['.claude/settings.json'] if os.path.isfile(os.path.join(ROOT, f))]
     起 = [p for p in 起 if os.path.isfile(os.path.join(ROOT, p))]
     reach = set(os.path.basename(p) for p in 起 if p.endswith('.py'))
     work = list(起)
@@ -237,6 +247,31 @@ def 自测():
 
     # ④挂账须读得出（拿一行假账灌进去验其正则）
     m = re.match(r'\s*[·*-]\s*(\S+?)\s*(?:——|--)\s*(.+)', '· 某器.py —— 其由（限：第 999 章前接上）')
+    # ⑦★2026-09-16 立：**`.claude/settings.json` 之钩係真跑口，而真孤器照旧红**
+    #   ⛔其所由来：`工具/席在跑吗.py` 三章被判孤器，而它真有人跑——
+    #   其跑口在 `.claude/settings.json` 第10行之 Stop 钩，**每一回合收尾时真跑一遍**；
+    #   本闸本已认 `工具/githooks/*`，**`.claude` 之钩与它同类，只是挂在另一个壳上**。
+    _reach7, _tools7 = 器之闭包()
+    T('⑦席在跑吗.py 今自 .claude 之钩展得着', '席在跑吗.py' in _reach7)
+    # ⑦之二⛔**而一个谁也没提过的器照旧展不着**——**只添一个起点，一个豁免也没有开**
+    # ⛔**其名须当场拼出来，不许在本档里写成一个整串**：
+    #   ⭑本坐头一版把那个样器之名整串写在此处（连注里那一处也算），**而本档自己就在闭包之内**——
+    #   **那一串一写下去，样器当场就「被人提过」了，於是本格自己把自己证伪。**
+    #   ★**与 `chk_wuzha` 之假红同族**：**器自己的文字，也是它所量的那一片盘的一部分。**
+    _名 = '_负测' + '孤器' + '样.py'
+    _样 = os.path.join(ROOT, '工具', _名)
+    try:
+        with open(_样, 'w', encoding='utf-8') as _f:
+            _f.write('# 无人提及之器\n')
+        _r7, _t7 = 器之闭包()
+        T('⑦之二 真孤器照旧展不着（只添起点，未开豁免）', _名 not in _r7)
+    finally:
+        if os.path.exists(_样):
+            os.remove(_样)
+    # ⑦之三⛔**其起点须係一个真在盘上的档**（不在即不添，免得凭空多一个起点）
+    _src7 = open(os.path.join(ROOT, '工具', '囤灰闸.py'), encoding='utf-8').read()
+    T('⑦之三 其起点带 os.path.isfile 之验', "'.claude/settings.json'] if os.path.isfile" in _src7)
+
     T('④挂账一行读得出', bool(m) and m.group(1) == '某器.py')
 
     # ⑤丙只管起用章及其後（拿一个旧章号验其不判）

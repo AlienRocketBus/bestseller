@@ -505,6 +505,28 @@ def chk_net_weight_table():
     return True, (ln[0] if ln else '全绿') + '｜负测_净重对表 10/10 全通（拿 db520882 之施工表回灌逐行逮出 17 处，而别器无一行同时读「锁定」与「净重」）'
 
 
+def chk_version_fingerprint():
+    """版档指纹（2026-09-17 立·见 工具/版档指纹.py／机制体检账 七十八）——
+    **台账自书之 `soft.净重` 对 `vNN.md` 实算**。
+    ★与 `净重对表` 同族而更重一层：**那一道量的是人手写进施工表的数，
+    　这一道量的是器当场算出来又自己存下的数**——**器算的与器存的对不上，其事更重。**
+    ★★⛔**本项只报不拦**，其由逐条在器之档首：
+    　`save()` 之形係 `hard, soft = score(txt)` 而後写 `vNN.md`——**存版当场绝无可能不符**；
+    　**而版档之 git 史看不见**（一章诸版档尽在其封版席那一个提交里头一回落地），
+    　**故「几时分的家」今日答不出**；**且不知该信哪一样**（档是回退之据，数是轮记之据）。
+    　**判不死的就别做成闸**——交 `MECH-345-版档指纹` 当面裁。
+    ★★★⛔**故本项之红只有一样：那个器自己坏了**（自测不过／跑不起来）。
+    　⛔**不许拿「今日不符几处」当判据**——**今日是二十五，明日不是**（㊸）。"""
+    neg = run('版档指纹·自测', ['工具/版档指纹.py', '--自测'])
+    if neg is None or '8/8' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '自测运行失败'
+    out = run('版档指纹', ['工具/版档指纹.py'])
+    if out is None:
+        return False, '运行失败'
+    ln = [x.strip() for x in out.split('\n') if '可比版档' in x]
+    return True, (ln[0] if ln else '已跑') + '｜⛔只报不拦（交 MECH-345-版档指纹 裁）｜自测 8/8'
+
+
 def chk_draft_gate_day():
     """起草闸·乙层之日号（2026-09-08 二治·见 工具/负测_起草闸.py）。
     ★这一项守的不是「会不会报红」，是**印给人看的那个数对不对**。
@@ -3949,6 +3971,7 @@ def main():
         items.append(('亮点在', chk_highlight_present))
         items.append(('起草闸·乙层之日号', chk_draft_gate_day))
         items.append(('净重对表', chk_net_weight_table))
+        items.append(('版档指纹', chk_version_fingerprint))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

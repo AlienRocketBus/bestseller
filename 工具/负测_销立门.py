@@ -131,24 +131,34 @@ chk('④之c4 明裁那一格之门只认逐字之式（337、338 皆在，而 3
     (337 in _明裁, 338 in _明裁, 317 in _明裁), (True, True, False))
 chk('④之c5 ⛔明裁不能把史上那三笔放走（155／198／200 皆未写那一式）',
     [x for x in (155, 198, 200) if x in _明裁], [])
-# ⑯⛔**本坐当场回头验自己那一改，免它变成一个白开的口**（0916）：
+# ⑯⛔**本坐当场回头验自己那一改，免它变成一个白开的口**（0916 立·0917 重写）：
 #   ★**问**：**337 既「明裁不立」，那它那一笔冷轮是不是就此没人催了？**
-#   ★★**答：没有。两件事是两路，各走各的**——
+#   ★★**答：没有。两件事各走各路**——
 #     **`销立门` 问的是「销了一笔，有没有另立一份 `冷轮_COLDN.md`」**；
-#     **而 `小说检察官::_auto_cold` 照通则 N+2 自动派生一笔 `COLD-337`（限339），
-#       ⛔它不问那一章想不想立，只问它签核了没有。**
-#   ★★★**当场亲跑为凭**：`_auto_cold` 印 `[('COLD-337', 339)]`，
-#     `_cold_done(337)=False`／`_cold_void(337)=False`——**那一笔正欠着，且已在 339 头上**
-#     （`开轮十六检` 今日亦对 339 与 340 各报一次「⑥·冷轮之欠 ★1笔未执：COLD-337」）。
-#   ⛔**故「明裁不立」那一口放走的只是「另立一份档」这一样，⛔一笔欠账也没有放走。**
+#     **而 `小说检察官::_auto_cold` 照通则 N+2 自动派生一笔，⛔它不问那一章想不想立，
+#       只问它签核了没有。**
+#   ⛔★★★**而本格 0916 初版之写法，正是本坐当日自己记下的那个病（㊸·一张快照钉进一条常令）**：
+#     **它把「COLD-337 此刻正欠着」这一件当时的实情，钉成了一条常令**；
+#     **0917 之夜 339 封版、其回执把那一笔签掉，此格当场翻红**——
+#     **而那一笔被签掉正是它该有的下场，不是伤。**
+#   ★★★★**故今改以沙盘证其理，⛔不再钉任何一章此刻之状**。
 import importlib.util as _iu2
-_sp2 = _iu2.spec_from_file_location('_jcg2', os.path.join(_R, '工具', '小说检察官.py'))
+_sp2 = _iu2.spec_from_file_location('_jcg2', os.path.join(_R, "工具", "小说检察官.py"))
 _jcg2 = _iu2.module_from_spec(_sp2)
 _sp2.loader.exec_module(_jcg2)
-chk('④之c6 ⛔明裁不立者，其自动派生之冷轮照旧欠着（337 之笔仍在报单上）',
-    ('COLD-337' in {x['id'] for x in _jcg2._auto_cold(list(range(73, 340)))},
-     _jcg2._cold_done(337), _jcg2._cold_void(337)),
-    (True, False, False))
+_真done2, _真void2 = _jcg2._cold_done, _jcg2._cold_void
+try:
+    # 沙盘：造一章「明裁不立」而其冷轮未签核者，看 _auto_cold 催不催它
+    _jcg2._cold_done = lambda n: False if n == 337 else _真done2(n)
+    _jcg2._cold_void = lambda n: False if n == 337 else _真void2(n)
+    _催 = {x['id'] for x in _jcg2._auto_cold(list(range(73, 340)))}
+finally:
+    _jcg2._cold_done, _jcg2._cold_void = _真done2, _真void2
+chk('④之c6 沙盘·明裁不立者，其自动派生之冷轮照旧被催（⛔那一口没放走欠账）',
+    'COLD-337' in _催, True)
+chk('④之c7 ⛔而它一旦真被签核，即当离开报单（此係其该有的下场，非伤）',
+    'COLD-337' in {x['id'] for x in _jcg2._auto_cold(list(range(73, 340)))},
+    _真done2(337) is False)
 
 print('     ★④之d 之实（当场自磁盘取，不钉章号）：史 %s｜真犯 %s｜位已满 %s'
       % (史, _真犯, _位已满))

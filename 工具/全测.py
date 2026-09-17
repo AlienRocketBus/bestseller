@@ -527,6 +527,39 @@ def chk_line_limit():
                   if bad else '凡自书其线者，其限皆落在到得了的章上') + '｜自测 8/8'
 
 
+def chk_presc_flag():
+    """处方旗哨（2026-09-17 立·见 工具/处方旗哨.py）——**处方里点名的「--旗」，那个器认不认得。**
+    ★与 `死处方哨` 同族而不同路：那一道问「器在不在」，本器问「旗认不认得」。
+    ★★**其害之别**：器不在，跑起来当场报错，人看得见；
+    　⛔**而旗不认多半不报错**——那个器把它当作一个多余的字，照它自己的默认路子走；
+    　**默认那一条路要是写口，就落盘了**（0917 本坐以 `--dry-run` 当场栽过一回，其记在器之档首）。
+    ⛔**本项只报不拦**：旗不认之轻重须人读那一条默认路方判得出；其红只有「那个器自己坏了」。"""
+    neg = run('处方旗哨·自测', ['工具/处方旗哨.py', '--自测'])
+    if neg is None or '8/8' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '自测运行失败'
+    out = run('处方旗哨', ['工具/处方旗哨.py'])
+    if out is None:
+        return False, '运行失败'
+    ln = [x.strip() for x in out.split('\n') if '处方里点名之旗' in x]
+    return True, (ln[0] if ln else '已跑') + '｜⛔只报不拦｜自测 8/8'
+
+
+def chk_zhenshang_dao():
+    """负测·真伤认刀（2026-09-17 立·见 工具/负测_真伤认刀.py·MECH-343-真伤之词 之治）——
+    **守：`跑轮::总核` 之「无真伤之轮」须认那一刀落过没有，⛔不认「真伤」那两个字。**
+    ★其据（0917 亲跑 325—341·四百七十轮）：**照批134写那一行者 26 轮（5.5%）**，
+    　**而其文里看得出落过刀者 431 轮（91.7%）**——**它数的是那两个字出现过没有，不是那一刀落过没有。**
+    ⛔**本测之要害二条**：**抄了那两个字而无一处可指之刀者须判无刀**｜**「真伤」二字本身不算一刀**。
+    ★★**并及本测自己的守**：**其判据自 `跑轮.py` 之码里当场取回，⛔不另抄一份**——
+    　**抄一份即成两把尺，改了一头另一头照旧**（本仓「一处判两份码」之旧伤，其注在 `跑轮.py` 2134 行）。"""
+    out = run('负测·真伤认刀', ['工具/负测_真伤认刀.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, [x.strip() for x in out.split('\n') if '⛔' in x][:1] or ['未过']
+    return True, [x.strip() for x in out.split('\n') if '负测·真伤认刀' in x][-1]
+
+
 def chk_version_fingerprint():
     """版档指纹（2026-09-17 立·见 工具/版档指纹.py／机制体检账 七十八）——
     **台账自书之 `soft.净重` 对 `vNN.md` 实算**。
@@ -3995,6 +4028,8 @@ def main():
         items.append(('净重对表', chk_net_weight_table))
         items.append(('版档指纹', chk_version_fingerprint))
         items.append(('线限哨', chk_line_limit))
+        items.append(('处方旗哨', chk_presc_flag))
+        items.append(('负测·真伤认刀', chk_zhenshang_dao))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

@@ -560,6 +560,26 @@ def chk_zhenshang_dao():
     return True, [x.strip() for x in out.split('\n') if '负测·真伤认刀' in x][-1]
 
 
+def chk_xiang_kou():
+    """负测·⑲之卡口（2026-09-17 立·见 工具/负测_向之口.py·其裁在
+    `设定/裁_0917_开轮六检⑲_卡之口只验有没有那四个字.md`）——
+    **守：⑲ 给开镜卡开的那个口，须读「本章之向」後头的值，且其值须与「近三章同朝之那一个」不同。**
+    ★其由（0917 之印）：⛔**旧式只问那四个字在不在卡上，而那四个字正是开镜卡模子自己印的格名**
+    　（其模在 `工具/第零轮开镜庭.py`）——**故凡有卡之章，那条逃路一律开着**
+    　（当日亲数：有卡 142 份，含那四个字者 **117 份**）。
+    ★★**其当日之实**：342 之卡明写「往内」而 340／341／342 三章逐个作往内，
+    　而 ⑲ 印出来的是「前三章皆朝往内，而本章之开镜卡**已明写换向 ✓**」——
+    　**同一行字里前半句说三章皆往内，後半句说已明写换向。**
+    ⛔**本测係先立而後治**（立於 0917 午後，其时红着；其码同日无席之窗方落），
+    　★**故其三局之义**：①值＝top 须红｜②只有格名无值须红｜③值≠top 须绿。"""
+    out = run('负测·⑲卡口', ['工具/负测_向之口.py'])
+    if out is None:
+        return False, '运行失败'
+    if '三局 3/3' not in out:
+        return False, [x.strip() for x in out.split('\n') if '⛔' in x][:1] or ['未过']
+    return True, '三局 3/3（①值＝top判红｜②只有格名无值判红｜③值≠top判绿）'
+
+
 def chk_version_fingerprint():
     """版档指纹（2026-09-17 立·见 工具/版档指纹.py／机制体检账 七十八）——
     **台账自书之 `soft.净重` 对 `vNN.md` 实算**。
@@ -4030,6 +4050,7 @@ def main():
         items.append(('线限哨', chk_line_limit))
         items.append(('处方旗哨', chk_presc_flag))
         items.append(('负测·真伤认刀', chk_zhenshang_dao))
+        items.append(('负测·⑲卡口', chk_xiang_kou))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

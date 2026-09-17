@@ -2471,6 +2471,31 @@ def chk_jiezuo():
     return True, ('%s·无换坐未声明者（旧章只报不拦 %d 章）' % (m.group(0), len(olds)))
 
 
+def chk_yingtiao():
+    """★硬条哨（2026-09-17 立·0917 封版席於 344 接进本跑口）：
+    **一条写在纸上的硬条，到期有没有人回话？**
+    ⛔**其所以要接进来**：**该器立於 0917 而九个真跑口一个也展不到它**——
+      `囤灰闸` 当日即报「造了没人跑」；★**而它自己的立器之由写着**：
+      「**一条没有送到手里的法，与一条不存在的法，在盘上一模一样，分别只在它还会被拿来罚人。**」
+      ★★**器自己囤在灰里，正是它立来治的那一样**（`体检账 ㊮` 之通例：同一形第二回出现，即不许再当它是那一处的事）。
+    ⛔**本闸不判那一条硬条办成没办成**（那要读正文，机器判不了·㊓），**只判「有没有人回过话」。**"""
+    out = run('硬条哨·自测', ['工具/硬条哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('硬条哨', ['工具/硬条哨.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    reds = [l.strip() for l in out2.split('\n') if l.strip().startswith('⛔ 第')]
+    if reds:
+        return False, ('⛔硬条未回话：%s' % '；'.join(reds)[:200])
+    m2 = _r.search(r'盘上硬条档 \d+ 份｜其条共 \d+ 条｜已起草之章里未回话者 \d+ 章', out2)
+    return True, ('%s·%s' % (m.group(0), m2.group(0) if m2 else '已起草之章里硬条逐条有人回过话'))
+
+
 def chk_yaohe():
     """★咬合哨（2026-09-14 立）：**331 起，每五章之内须有一章其事係「两件事咬在一起」。**
     ⛔**其所由来**：0913 三把尺指同一处——`净重趋`（顶 7,076→今 2,216）｜`重出趋`（325:14.4／327:24.1）｜
@@ -3974,6 +3999,7 @@ def main():
         items.append(('悬念哨', chk_suspense))
         items.append(('负测·悬念哨', chk_xuannian_neg))
         items.append(('咬合哨', chk_yaohe))
+        items.append(('硬条哨', chk_yingtiao))
         items.append(('接坐记', chk_jiezuo))
         items.append(('换型令', chk_huanxing))
         items.append(('清偿章哨', chk_qingchang))

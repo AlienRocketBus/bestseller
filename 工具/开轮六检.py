@@ -227,9 +227,38 @@ def _cold_void(n):
     fps = glob.glob(os.path.join(ROOT, '设定', '冷轮_COLD%d_*.md' % n))
     if not fps:
         return False
-    # ★有面之档（`於N补执`）在，即不许废——废之口只开给从未立过面的那一种。
-    if any(re.search(r'於\d+补执', os.path.basename(f)) for f in fps):
+    # ★★★★★2026-09-17 补第二种可废之局（其裁在 `设定/裁_0917_COLD336_书把它走过去了.md`）：
+    #   ⛔**旧式一句「有 `於N补执` 之档即不许废」，其向是反的**——
+    #     **凡有人试过而没执成的冷轮，都会留下一份 `於N补执` 之档**；
+    #     ★**於是「人试过而执不成」的那一种，永远废不掉**——**而那一种正是最可能真该废的。**
+    #   ⛔**其实（0917·COLD-336）**：其面真、其档真、其五条硬条真，
+    #     **而其物在 332—338 那一站的屋里，队已离站**；
+    #     **`总纲:272/274/276/278` 与 361—405 之丁表逐段读过，本书往前走，一处也没有回那一站**
+    #     ——★**即：其执之条（其档 §二 自书「只得是别人进了那间屋子，看见了它」）永远不会到。**
+    #     **341 执不成、342 执不成、343 係暗线到不着**，**而它每一日都在拦着每一次推。**
+    #   ★★**故今开第二个口，⛔而其限比头一个更紧**（**要废得难，不要废得易**）：
+    #     **一份废档若要盖过一份 `於N补执` 之档，须在其文里逐样写明四件**：
+    #     ①**「盖过」二字与其所盖之档名**（⛔须指名，不许说「那些旧档」）；
+    #     ②**其物在哪儿、本书还回不回那个地方，并带其据之行号**；
+    #     ③**其魂移到哪一样还在手边的物上**（⛔**一笔废账不许连它要问的那件事一并扔掉**）；
+    #     ④**裁者与其由**（与头一个口同）。
+    #   ⛔**四件缺一，照旧判欠**；其负测在 `工具/负测_冷轮作废.py` 与 `工具/负测_冷轮盖过.py`。
+    _盖 = []
+    for f in fps:
+        if '废' not in os.path.basename(f):
+            continue
+        try:
+            _tx = open(f, encoding='utf-8', errors='replace').read()
+        except OSError:
+            continue
+        if ('盖过' in _tx and re.search(r'冷轮_COLD%d_[^\s`）)]*於\d+补执' % n, _tx)
+                and '还回不回' in _tx and '其魂移' in _tx
+                and '裁者' in _tx and '其由' in _tx):
+            _盖.append(f)
+    if any(re.search(r'於\d+补执', os.path.basename(f)) for f in fps) and not _盖:
         return False
+    if _盖:
+        return True
     for f in fps:
         if '废' not in os.path.basename(f):
             continue

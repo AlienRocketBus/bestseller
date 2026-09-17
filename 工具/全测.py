@@ -580,6 +580,24 @@ def chk_xiang_kou():
     return True, '三局 3/3（①值＝top判红｜②只有格名无值判红｜③值≠top判绿）'
 
 
+def chk_xingchain_neg():
+    """负测·章型连锁之「相对之型」（2026-09-17 立·见 工具/负测_章型连锁.py）——
+    **守：②章型连锁改作相对之判之後，它还咬不咬得动。**
+    ★其由：⛔**「段」这个单位本书自 332 前後换过一回**（从前一拍之内分数段，今一拍即一段），
+    　**而四档之数（15／18／21）是照「段」刻的**——**於是自 332 起章章判「长」，
+    　连锁必逾十二，且此後永远如此**：⛔**一条永远清不掉的红**（与 COLD-336 同形）。
+    ★★其治非把四档往上挪（拿闸就今日之数·㊸），非放宽连锁之限（0822 之订自书「那是把闸调松」），
+    　**係把「型」改作相对之判**（本章之均段落在近十二章之第几档）。
+    ⛔**而本测之要害三格**：**①均段章章一样须逐章同型｜②一路单调往上亦须同型｜
+    　③有起有伏则其型须多於一种**——**一道分类若怎么排都不报，那是把闸拆了，不是修好。**"""
+    out = run('负测·章型连锁', ['工具/负测_章型连锁.py'])
+    if out is None:
+        return False, '运行失败'
+    if '全通' not in out:
+        return False, ([x.strip() for x in out.split('\n') if '⛔' in x][:1] or ['未过'])[0]
+    return True, [x.strip() for x in out.split('\n') if '/' in x and ('全通' in x)][-1]
+
+
 def chk_version_fingerprint():
     """版档指纹（2026-09-17 立·见 工具/版档指纹.py／机制体检账 七十八）——
     **台账自书之 `soft.净重` 对 `vNN.md` 实算**。
@@ -4077,6 +4095,7 @@ def main():
         items.append(('处方旗哨', chk_presc_flag))
         items.append(('负测·真伤认刀', chk_zhenshang_dao))
         items.append(('负测·⑲卡口', chk_xiang_kou))
+        items.append(('负测·章型连锁', chk_xingchain_neg))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

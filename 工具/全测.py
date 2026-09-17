@@ -505,6 +505,28 @@ def chk_net_weight_table():
     return True, (ln[0] if ln else '全绿') + '｜负测_净重对表 10/10 全通（拿 db520882 之施工表回灌逐行逮出 17 处，而别器无一行同时读「锁定」与「净重」）'
 
 
+def chk_line_limit():
+    """线限哨（2026-09-17 立·见 工具/线限哨.py）——**一笔账之限，落在它那条线到不了的章上。**
+    ★其立之由：本书两线相间而行，而到期账之「到期章」係按章号排的，**没有一处问过那一章在哪条线上**；
+    　**於是一笔挂在主线之物上的账，其限可以落在一个暗线之章**——**那一章碰它即破线**
+    　（第333章之席逐字判过：「其物係他那一头柄上之器，**暗线之章碰它即破线**」），
+    　**故那个限从头一天起就办不到。**
+    ★★**0917 之实**：自书其线者三笔，**三笔之限尽落在暗线之章**（341／345／345）。
+    　⛔**其中 CHAR-332A 最见其必要**：**334 之席已就同一形判过一回**（「三三五碰他即破线」），
+    　**而其限後来改挂的是 345——仍是一个暗线之章**；今其账面自书「第九度顺延」。
+    ★★★⛔**本项只报不拦**：**改一笔账之限是一庭的事，不是一道器的事**；
+    　**其红只有一样：那个器自己坏了**（自测不过／跑不起来）。"""
+    neg = run('线限哨·自测', ['工具/线限哨.py', '--自测'])
+    if neg is None or '8/8' not in neg:
+        return False, (neg or '').strip().split('\n')[-1] or '自测运行失败'
+    out = run('线限哨', ['工具/线限哨.py'])
+    if out is None:
+        return False, '运行失败'
+    bad = [x.strip() for x in out.split('\n') if '⛔' in x and '限' in x and '本器' not in x]
+    return True, ('自书其线者之限，今有 %d 笔落在到不了的章上（只报不拦，交其庭）' % len(bad)
+                  if bad else '凡自书其线者，其限皆落在到得了的章上') + '｜自测 8/8'
+
+
 def chk_version_fingerprint():
     """版档指纹（2026-09-17 立·见 工具/版档指纹.py／机制体检账 七十八）——
     **台账自书之 `soft.净重` 对 `vNN.md` 实算**。
@@ -3972,6 +3994,7 @@ def main():
         items.append(('起草闸·乙层之日号', chk_draft_gate_day))
         items.append(('净重对表', chk_net_weight_table))
         items.append(('版档指纹', chk_version_fingerprint))
+        items.append(('线限哨', chk_line_limit))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

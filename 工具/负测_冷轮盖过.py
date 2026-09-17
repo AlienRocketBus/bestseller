@@ -16,6 +16,12 @@
 用法：
     python3 工具/负测_冷轮盖过.py
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import importlib.util as _iu
 import io, os, shutil, sys, tempfile
 

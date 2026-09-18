@@ -580,6 +580,44 @@ def chk_xiang_kou():
     return True, '三局 3/3（①值＝top判红｜②只有格名无值判红｜③值≠top判绿）'
 
 
+def _负测四器(名, 档, 凭):
+    """★2026-09-18 立·**把本日新立之四样负测接进跑口**（⛔囤灰闸当日报「造了没人跑」）。
+    ⛔**其由（囤灰闸自书）**：**一样器若自九个真跑口都展不到，它就是造了没人跑**——
+    **而一道没人跑的负测，与没有那道负测，在盘上长得一模一样。**
+    ★**本日四样皆係随改随立，而立完一样也没有接进来**——**囤灰闸逮得对。**
+    """
+    out = run(名, [档])
+    if out is None:
+        return False, '运行失败'
+    if 凭 not in out:
+        return False, ([x.strip() for x in out.split('\n') if '⛔' in x][:1] or ['未过'])[0]
+    return True, ([x.strip() for x in out.split('\n') if '──' in x and '/' in x][-1:] or [凭])[0]
+
+
+def chk_canon_forbid_neg():
+    """负测·canon禁式之量界（0918·见 工具/负测_canon禁式之界.py）——
+    **守：forbid 只跑白文之後，白文里真犯一条照旧红，骨记里引了禁式只印不计。**"""
+    return _负测四器('负测·canon禁式之界', '工具/负测_canon禁式之界.py', '4/4')
+
+
+def chk_fenliang_neg():
+    """负测·分量闸取数之口径（0918·见 工具/负测_分量闸取正文.py）——
+    **守：本闸问的是「这一章有多厚」，故取正文亲算，⛔不取台账。**"""
+    return _负测四器('负测·分量闸取正文', '工具/负测_分量闸取正文.py', '6/6')
+
+
+def chk_bandang_neg():
+    """负测·版档指纹之当场对档（0918·见 工具/负测_版档指纹当场对档.py）——
+    **守：档写毕当场再量一回与将落台账之数逐项对，量法自 `score` 取回不另抄一份。**"""
+    return _负测四器('负测·版档当场对档', '工具/负测_版档指纹当场对档.py', '6/6')
+
+
+def chk_fs_fuyu_neg():
+    """负测·FS闸之付语与期对线（0918·见 工具/负测_FS闸付语与期.py）——
+    **守：五样付语逐样认得｜窗不许跨隔号｜报不合之句不许当成付｜付一期 ≠ 销一账。**"""
+    return _负测四器('负测·FS闸付语与期', '工具/负测_FS闸付语与期.py', '15/15')
+
+
 def chk_xingchain_neg():
     """负测·章型连锁之「相对之型」（2026-09-17 立·见 工具/负测_章型连锁.py）——
     **守：②章型连锁改作相对之判之後，它还咬不咬得动。**
@@ -4096,6 +4134,11 @@ def main():
         items.append(('负测·真伤认刀', chk_zhenshang_dao))
         items.append(('负测·⑲卡口', chk_xiang_kou))
         items.append(('负测·章型连锁', chk_xingchain_neg))
+        # ★0918·本日新立之四样负测，一并接进跑口（囤灰闸当日报「造了没人跑」，逮得对）
+        items.append(('负测·canon禁式之界', chk_canon_forbid_neg))
+        items.append(('负测·分量闸取正文', chk_fenliang_neg))
+        items.append(('负测·版档当场对档', chk_bandang_neg))
+        items.append(('负测·FS闸付语与期', chk_fs_fuyu_neg))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

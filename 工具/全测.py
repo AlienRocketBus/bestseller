@@ -594,6 +594,12 @@ def _负测四器(名, 档, 凭):
     return True, ([x.strip() for x in out.split('\n') if '──' in x and '/' in x][-1:] or [凭])[0]
 
 
+def chk_cold_sign_neg():
+    """负测·冷眼轮签核之认（0918·见 工具/负测_冷轮签核之认.py）——
+    **守：一处「说起它」不许当成一笔「签了它」；而其治不许扫着旧账那二十七笔。**"""
+    return _负测四器('负测·冷轮签核之认', '工具/负测_冷轮签核之认.py', '11/11')
+
+
 def chk_canon_forbid_neg():
     """负测·canon禁式之量界（0918·见 工具/负测_canon禁式之界.py）——
     **守：forbid 只跑白文之後，白文里真犯一条照旧红，骨记里引了禁式只印不计。**"""
@@ -4139,6 +4145,7 @@ def main():
         items.append(('负测·分量闸取正文', chk_fenliang_neg))
         items.append(('负测·版档当场对档', chk_bandang_neg))
         items.append(('负测·FS闸付语与期', chk_fs_fuyu_neg))
+        items.append(('负测·冷轮签核之认', chk_cold_sign_neg))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

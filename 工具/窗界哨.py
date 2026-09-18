@@ -41,31 +41,63 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _窗 = re.compile(r"\[\^([^\]]{1,24})\]\{0,(\d+)\}")
 
 
+def 键(f, cls, n, i):
+    """★**一处窗之名**：⛔**不许拿行号作名。**
+    ★**其由（0918·本坐当场自逮）**：`设定/窗界账.md` 立时逐行钉的是**行号**，
+    　**而本坐同日又改过 `小说检察官.py`，其行整体往下走了十二行**——
+    　**一日之内，账上那十七行「⏳ 3912行」指的已经不是当初那一处窗了。**
+    ⛔**其害不在指不着（指不着看得见），在它照旧指得着另一处**：
+    　**一行 ✅「判对」会挪到一处没有人看过的窗上，而盘上一处红也没有**
+    　（**此係本哨立时所书之「说起它被当成签了它」同一族，只是这一回犯在本哨自己的账上**）。
+    ★**故改以其形作名**：**档名＋其界＋其长＋同形第几处**——
+    　**只要那一处窗本身不改，它挪到哪一行都还是它；⛔而它一旦改了，其名即变，账上那一行当场对不上，须重看。**
+    """
+    return '%s ‖ [^%s]{0,%d} ‖ #%d' % (f, cls, n, i)
+
+
 def 扫():
-    """回 [(档, 行, 其界, 其长, 缺哪一样)]；⛔只数形，不判对错。"""
+    """回 [(档, 行, 其界, 其长, 缺哪一样, 其名)]；⛔只数形，不判对错。"""
     出 = []
     for f in sorted(glob.glob(os.path.join(ROOT, '工具', '*.py'))):
         if os.path.basename(f) == '窗界哨.py':
             continue
         src = io.open(f, encoding='utf-8', errors='replace').read()
+        _计 = {}
         for m in _窗.finditer(src):
             cls, n = m.group(1), int(m.group(2))
+            _k = (cls, n)
+            _计[_k] = _计.get(_k, 0) + 1
             缺 = []
             if '。' not in cls:
                 缺.append('。')
             if '\\n' not in cls and '\n' not in cls:
                 缺.append('换行')
             if 缺:
-                出.append((os.path.basename(f), src[:m.start()].count('\n') + 1,
-                           cls, n, '＋'.join(缺)))
+                b = os.path.basename(f)
+                出.append((b, src[:m.start()].count('\n') + 1,
+                           cls, n, '＋'.join(缺), 键(b, cls, n, _计[_k])))
     return 出
+
+
+def 对档(txt, rows):
+    """★**拿账上打了勾的那几行之名，去对此刻真在盘上的窗**；回 (答过之数, 孤签之名)。
+    ⛔**单立一函，是为着它须自己挨一顿负测**——**一道只在 `报()` 里顺手算出来的数，没有人能从外头推它一把。**
+    """
+    _活 = {r[5] for r in rows}
+    _签 = set(re.findall(r'^\|\s*✅[^\n]*?`([^`\n]+ ‖ [^`\n]+)`', txt, re.M))
+    return len(_签 & _活), sorted(_签 - _活)
 
 
 def 报(quiet=False):
     rows = 扫()
     zh = os.path.join(ROOT, '设定', '窗界账.md')
     txt = io.open(zh, encoding='utf-8', errors='replace').read() if os.path.exists(zh) else ''
-    答 = len(re.findall(r'^\|\s*✅', txt, re.M))
+    # ★0918 改判（⛔非放宽·此係本哨自己身上那一处伤之治）：
+    #   ⛔**旧法係 `len(re.findall(r'^\|\s*✅', txt))`——它数的是「账上有几行打了勾」，
+    #     **不是「有几处窗被人看过」**；**一行 ✅ 指着一处已经不在了的窗，它照旧算一条。**
+    #   ★**今改为拿其名对档**：**答过者，须是此刻真在盘上的那一处窗**；
+    #     **而一行 ✅ 若对不着任何一处活窗，即「孤签」，⛔当场另印一行，不许混进「答过」之数。**
+    答, 孤 = 对档(txt, rows)
     if not quiet:
         print('════ 窗界哨 · 只报不拦 ════')
         print('  【何以立】0918 一日之内同一个形咬了四回；其重者係「说起它」被当成「签了它」，')
@@ -75,12 +107,18 @@ def 报(quiet=False):
                                          for f in glob.glob(os.path.join(ROOT, '工具', '*.py'))))),
                  len(rows)))
         by = {}
-        for f, ln, cls, n, 缺 in rows:
+        for f, ln, cls, n, 缺, _k in rows:
             by.setdefault(f, []).append((ln, cls, n, 缺))
         for f in sorted(by, key=lambda x: -len(by[x]))[:10]:
             print('   %-26s %2d 处｜%s' % (f, len(by[f]),
                                           '、'.join('%d行(缺%s)' % (a, d) for a, _c, _n, d in by[f][:4])))
-        print('  ── 答过 %d 条（`设定/窗界账.md` 之 ✅）｜未答 %d 条 ──' % (答, len(rows) - 答))
+        print('  ── 答过 %d 条（`设定/窗界账.md` 之 ✅·⛔以其名对档，非数打了几个勾）｜未答 %d 条 ──'
+              % (答, len(rows) - 答))
+        if 孤:
+            print('  ⛔ 孤签 %d 条——**账上打了勾，而盘上已无此窗**（其式改过，或整行挪走）：' % len(孤))
+            for k in 孤[:6]:
+                print('     ·%s' % k)
+            print('     ★**孤签不算答过**：⛔**一处窗改了形，先前那一句「判对」就不再是对它说的。**')
         if not os.path.exists(zh):
             print('  ⛔ `设定/窗界账.md` 不在——**报了没人答，等於没报**。')
         print('  ★⛔而入报单不等於它错了：**只在一行之内找东西的窗，不挡句号是对的；**')

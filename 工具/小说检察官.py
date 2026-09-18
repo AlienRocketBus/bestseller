@@ -5310,11 +5310,23 @@ def _validate_master_contract(master_text, latest, next_ch):
         master_text, re.M)
     if not written or int(written.group(1))!=latest:
         raise ValueError(f'唯一总圣经“已写 1—{latest} 章”末章锚未同步')
-    next_anchor=re.search(
+    # ★★★★★2026-09-18·**一个锚是锚，两个锚是叫人猜**（契约负测③当日报「假全绿，未拒绝」）：
+    #   ⛔**旧式用 `re.search`——只问「有没有一个」**；
+    #   ★**而 0918 之实**：`总圣经` 之「## 第 347 章之条」**同一节之内立了两个 348 之锚**，
+    #     其一接 `346:133` 之逐字，其二作「他看着……那个不是数的字」，**二者所指同而所写不同**；
+    #     ⛔**契约负测把其中一个改坏，另一个照旧配得上，於是闸判绿**——
+    #     **即：这一处闸从立它那天起，就只挡得住「一个锚也没有」，挡不住「两个锚打架」。**
+    #   ★★**而两个锚比没有锚更坏**：**没有锚，下一席会来问；两个锚，它自己挑一个就走了。**
+    #   ★★★**故今改 `findall`，且**⛔**多於一个照旧判红**。
+    _anchors=re.findall(
         rf'第\s*{next_ch}\s*章必须从[^\n。]{{1,160}}接写',
         master_text)
-    if not next_anchor:
+    if not _anchors:
         raise ValueError(f'唯一总圣经缺少第 {next_ch} 章“必须从…接写”锚')
+    if len(_anchors)>1:
+        raise ValueError(
+            f'唯一总圣经有 {len(_anchors)} 个第 {next_ch} 章“必须从…接写”锚——'
+            '⛔一个锚是锚，两个锚是叫下一席自己去猜哪一条管用')
 
 
 def _validate_open_brief_contract(raw, latest, next_ch):

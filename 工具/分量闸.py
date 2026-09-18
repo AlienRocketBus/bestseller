@@ -73,6 +73,27 @@ def 豁免之章():
                                           io.open(表, encoding='utf-8').read()))
 
 
+
+def _章号(名):
+    """自档名取章号（⛔汉数字·与 `外声闸` 同法）。取不出者回 0。"""
+    _cn = {'零': 0, '〇': 0, '一': 1, '二': 2, '三': 3, '四': 4,
+           '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+    m = re.search(r'第([零〇一二三四五六七八九十百千]+)章', 名)
+    if not m:
+        return 0
+    tot = cur = 0
+    for ch in m.group(1):
+        if ch in _cn:
+            cur = _cn[ch]
+        elif ch == '十':
+            tot += (cur or 1) * 10; cur = 0
+        elif ch == '百':
+            tot += (cur or 1) * 100; cur = 0
+        elif ch == '千':
+            tot += (cur or 1) * 1000; cur = 0
+    return tot + cur
+
+
 def 诸章之净重():
     出 = {}
     for d in sorted(glob.glob(os.path.join(ROOT, '版本', '第*章'))):
@@ -88,6 +109,39 @@ def 诸章之净重():
             w = vs[-1].get('soft', {}).get('净重')
             if isinstance(w, int) and w > 0:
                 出[int(m.group(1))] = w
+    # ★★★★★2026-09-18·**本闸量错了地方**（346 回修庭之验席当场逮着，⛔非本坐自查·体检账 九十四之②）：
+    #   ⛔**旧式只取 `台账末版.soft.净重`**——**而本闸所问者是「这一章够不够厚」，
+    #     **那是一件关於 `正文/` 的事，不是一件关於台账的事。**
+    #   ★**其红之实**：0918 之 346，台账末版记 2113，而正文实算 **2503**——
+    #     **本闸照印「净重 2113 ＜ 2500，且施工表无短章豁免」，⛔报了一道假红。**
+    #     ★★**而那一日正文比台账新，只因一庭回修的刀落在存版之前**——
+    #     **这不是罕事，是每一次回修庭的常态。**
+    #   ★★★**故今改取正文亲算**（⛔**量之法自 `跑轮.score` 取回，不另抄一份**——
+    #     **抄一份即又成两把尺，改了一头另一头照旧**）；
+    #     **台账那一个数仍留作对照，二者不合即当场印出来**（⛔只印不拦：
+    #     **其治在 `跑轮.py::save` 之当场对档，不在本闸**）。
+    try:
+        import sys as _sy
+        _sy.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import 跑轮 as _pl
+        _漂 = []
+        for _f in glob.glob(os.path.join(ROOT, '正文', '*.md')):
+            _m = _章号(os.path.basename(_f))
+            if not _m:
+                continue
+            try:
+                _w = _pl.score(io.open(_f, encoding='utf-8').read())[1]['净重']
+            except Exception:
+                continue
+            if isinstance(_w, int) and _w > 0:
+                if 出.get(_m) not in (None, _w):
+                    _漂.append((_m, 出[_m], _w))
+                出[_m] = _w            # ⛔正文为准：本闸问的是这一章有多厚
+        if _漂:
+            print('  ℹ台账与正文不合 %d 章（⛔本闸取正文，台账那一个数只作对照·只印不拦）：%s'
+                  % (len(_漂), '｜'.join('%d 账%d→文%d' % x for x in _漂[:8])))
+    except Exception as _e:
+        print('  ⛔分量闸·正文亲算取不回来（%s）——**本闸退回取台账，其数可能已旧**。' % _e)
     return 出
 
 

@@ -14,6 +14,12 @@
 　③⛔**量之法须自 `score` 取回，不另抄一份**——
 　　**抄一份即又成两把尺，改了一头另一头照旧**（本测即以「改 score 之後本测须跟着动」证之）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

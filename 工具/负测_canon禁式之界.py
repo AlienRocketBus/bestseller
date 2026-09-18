@@ -19,6 +19,12 @@
 　③白文与骨记各命中一处 → 红一处、印一格（⛔不许把两处并作一处，亦不许拿骨记那一处充数）
 　④档内无 `【本章亮点】` 者（如草稿）→ 全档皆作白文（⛔不许因无分界而整档放过）
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

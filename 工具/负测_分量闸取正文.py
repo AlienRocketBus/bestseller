@@ -17,6 +17,10 @@
 import io, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import 分量闸 as _fl
 
 

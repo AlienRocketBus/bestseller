@@ -594,6 +594,12 @@ def _负测四器(名, 档, 凭):
     return True, ([x.strip() for x in out.split('\n') if '──' in x and '/' in x][-1:] or [凭])[0]
 
 
+def chk_inout_mirror_neg():
+    """负测·「入出同拍」之镜（0918·见 工具/负测_入出同拍之镜.py）——
+    **守：裸之入出同拍照旧红；写明去处者不红；⛔空写「去处:」不算。**"""
+    return _负测四器('负测·入出同拍之镜', '工具/负测_入出同拍之镜.py', '9/9')
+
+
 def chk_win_bound_neg():
     """负测·窗界哨（0918·见 工具/负测_窗界哨.py）。"""
     return _负测四器('负测·窗界哨', '工具/负测_窗界哨.py', '9/9')
@@ -4163,6 +4169,7 @@ def main():
         items.append(('负测·FS闸付语与期', chk_fs_fuyu_neg))
         items.append(('负测·冷轮签核之认', chk_cold_sign_neg))
         items.append(('负测·窗界哨', chk_win_bound_neg))
+        items.append(('负测·入出同拍之镜', chk_inout_mirror_neg))
         items.append(('窗界哨', chk_win_bound))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))

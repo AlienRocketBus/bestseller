@@ -4882,9 +4882,25 @@ def priority_one(files,focus,lib):
         for n in tg:
             if n in exc or n < fa.get('from_ch',1) or (only and n not in only): continue
             t=files[n][2]
+            # ★★★★★2026-09-18·346 之实（`裁_0918_硬条346其一…` 同日之第二件）：
+            #   ⛔**旧式把 forbid 正则跑在整个档上——而档里有两层**：
+            #     **白文（读者读的那一层）＋【本章亮点】之後的骨记（本席自己的工作记录）。**
+            #   ★**其红之实样**（346 行168）：骨记那一节正在**自证它守住了 F034**，
+            #     其文引圣经 2468「只有公输后人认得」，隔一句又引 692「不给钱满…」——
+            #     ⛔**两句引文之间跨了一个句号，而 F034 之第三式 `(公输|鲁班)…(后人)…钱满`
+            #        的字符窗正好把两段引文缝在一处**。
+            #   ★★**即：一个章因为写下「本章没有犯这一条」而被判犯了这一条。**
+            #     ⛔**这样的闸不是严，是量错了地方**——**读者一辈子读不到骨记一个字。**
+            #   ★★★**故今只改其量之界：forbid 只跑白文。**
+            #     ⛔**而骨记那一层不许静悄悄放过**：其命中当场印出来，作 `ℹ` 一格（⛔不计 ERROR），
+            #     **使「骨记里引了禁式」这件事日後仍看得见，只是不再拿它挡封版。**
+            _bai = t.split('【本章亮点】')[0]
+            _liang = t[len(_bai):]
             for p in fa['forbid']:
-                for m in re.finditer(p,t):
-                    ERR+=1; print(f'  ✗第{n}章 [{fa["id"]}]行{_ln(t,m.start())}: …{t[max(0,m.start()-14):m.end()+22]}…'.replace(chr(10),'␤'))
+                for m in re.finditer(p,_bai):
+                    ERR+=1; print(f'  ✗第{n}章 [{fa["id"]}]行{_ln(_bai,m.start())}: …{_bai[max(0,m.start()-14):m.end()+22]}…'.replace(chr(10),'␤'))
+                for m in re.finditer(p,_liang):
+                    print(f'  ℹ第{n}章 [{fa["id"]}]亮点层命中（⛔不计ERROR·读者读不到这一层）: …{_liang[max(0,m.start()-14):m.end()+22]}…'.replace(chr(10),'␤'))
             if fa.get('checker')=='whole_jade_after_merge':
                 for pos,sent in _whole_jade_violations(t):
                     ERR+=1

@@ -27,13 +27,30 @@ def chk(名, 得, 期):
 _src = io.open(os.path.join(_D, '跑轮.py'), encoding='utf-8').read()
 
 # ①快照之写与台账之写须相邻（其间不许再有 return）
-_i = _src.find("open(os.path.join(d, 'v%02d.md' % v), 'w', encoding='utf-8').write(txt)")
+# ★★★★★2026-09-18 改其认之法（⛔而其所守之律一格未动）：
+#   ⛔**旧式以一整行原文去找那一处写**
+#   （`open(os.path.join(d, 'v%02d.md' % v), 'w', …).write(txt)`）——
+#   **而 0918 那一改把路径提成了 `_snap` 一个名**（其由：写毕须照同一条路把它读回来对档），
+#   **於是这一行原文一个字也对不上，本测印「得0 期1」。**
+#   ★**本测那一红逮着了两样，一真一假**：
+#     **真的那一样**——**本坐把二十五行对档之码插在了二者之间，把「同落」那一步撑开了**（已移到二者之後）；
+#     **假的那一样**——**「快照之写」这件事还在，只是不长那个样子了。**
+#   ★★**故今以式认之，不以一行原文认之**；⛔**而「只此一处」「须相邻」「其间不许有 return」三问一字未改。**
+#   ★★★**并补一问，係旧式测不出来而新式非测不可的那一样**：
+#     **写下去那条路，与读回来那条路，须是同一个名**——
+#     ⛔**二者若是两个名，对的就不是它自己那一档了。**
+import re as _re
+_m = list(_re.finditer(r"open\((_snap|os\.path\.join\(d, 'v%02d\.md' % v\)), 'w', encoding='utf-8'\)\.write\(txt\)", _src))
+_i = _m[0].start() if _m else -1
 _j = _src.find("json.dump(ledger, open(led, 'w', encoding='utf-8')")
-chk('①快照之写在·且只此一处',
-    _src.count("open(os.path.join(d, 'v%02d.md' % v), 'w', encoding='utf-8').write(txt)"), 1)
+chk('①快照之写在·且只此一处（⛔以式认之，不以一行原文认之）', len(_m), 1)
 chk('①之b 快照之写须在台账之写之前一步（二者同落）', 0 < _j - _i < 200, True)
 chk('①之c 而其间不许再有 return（有则又是一个孤版）',
     'return' in _src[_i:_j], False)
+# ①之d（0918 新补）：写下去那条路与读回来那条路须同名
+_名 = _m[0].group(1) if _m else ''
+chk('①之d 写与读回来须是同一个名（⛔两个名即对的不是它自己那一档）',
+    (_名 != '_snap') or ("open(_snap, encoding='utf-8').read()" in _src), True)
 
 # ②空轮闸之比，须取台账所记之末版
 chk('②空轮闸比的是台账之末版，不是磁盘之末档',

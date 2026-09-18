@@ -594,6 +594,22 @@ def _负测四器(名, 档, 凭):
     return True, ([x.strip() for x in out.split('\n') if '──' in x and '/' in x][-1:] or [凭])[0]
 
 
+def chk_win_bound_neg():
+    """负测·窗界哨（0918·见 工具/负测_窗界哨.py）。"""
+    return _负测四器('负测·窗界哨', '工具/负测_窗界哨.py', '9/9')
+
+
+def chk_win_bound():
+    """窗界哨·⛔只报不拦，而其报须有人答（承 体检账 九十一）——
+    **此处只印其「答过几条／未答几条」，⛔不以未答者挡推**；
+    **其限 358，到期未答者当场升硬项（`设定/窗界账.md` 自书）。**"""
+    out = run('窗界哨', ['工具/窗界哨.py'])
+    if out is None:
+        return False, '运行失败'
+    ln = [x.strip() for x in out.split('\n') if '答过' in x]
+    return True, (ln[-1] if ln else '已跑')
+
+
 def chk_cold_sign_neg():
     """负测·冷眼轮签核之认（0918·见 工具/负测_冷轮签核之认.py）——
     **守：一处「说起它」不许当成一笔「签了它」；而其治不许扫着旧账那二十七笔。**"""
@@ -4146,6 +4162,8 @@ def main():
         items.append(('负测·版档当场对档', chk_bandang_neg))
         items.append(('负测·FS闸付语与期', chk_fs_fuyu_neg))
         items.append(('负测·冷轮签核之认', chk_cold_sign_neg))
+        items.append(('负测·窗界哨', chk_win_bound_neg))
+        items.append(('窗界哨', chk_win_bound))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))

@@ -7,6 +7,12 @@
   ②⛔**无明裁者照旧入欠**（⛔此係本改之价——**不是把这一格废掉，是把它换了一个问法**）；
   ③⛔**有档者一律照旧走老路**（签核／废档），**本改一个字也没有碰它们**。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io
 import os
 import re

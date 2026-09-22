@@ -6,6 +6,12 @@
   ——於是 `开轮六检⑥` 印绿，而 `--doctor` 照旧印「⛔[COLD-350]……到期3项」并据之判 ERROR。
 ★★**本器逐格皆拿真盘之局跑**，⛔**并含一格旧式回灌**（证其非陪跑）。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import importlib.util as u
 import os
 import sys

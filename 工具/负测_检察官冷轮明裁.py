@@ -54,7 +54,9 @@ def 自测():
         R.append(('⑨真跑 `_auto_cold`：COLD-350 已不在其内', 'COLD-350' not in ids))
     for 名, o in R:
         print(('  ✓ ' if o else '  ⛔ ') + 名)
-    print('  ── 负测·检察官冷轮明裁 %d/%d ──' % (sum(1 for _, o in R if o), len(R)))
+    _过 = sum(1 for _, o in R if o)
+    print('  ── 负测·检察官冷轮明裁 %d/%d %s ──'
+          % (_过, len(R), '全通' if _过 == len(R) else '⛔未过'))
     return all(o for _, o in R)
 
 

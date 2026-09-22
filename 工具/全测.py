@@ -1189,8 +1189,12 @@ def chk_cold_明裁():
         out = run(名, [路])
         if out is None:
             return False, '%s 运行失败' % 名
-        if '⛔' in out:
-            return False, '%s：%s' % (名, out.strip().split('\n')[-1])
+        # ⛔**不许拿「出现过 ⛔ 三个字」当判红之据**——**格名里本就带 ⛔**
+        #   （0922 立此闸之日即栽过一回：二器俱 11/11、8/8 全通，而本闸印红）。
+        #   ★**只认末一行那一句**：全通者方绿。
+        尾 = out.strip().split('\n')[-1]
+        if '全通' not in 尾:
+            return False, '%s：%s' % (名, 尾.strip())
     return True, '二器俱全通（开轮六检一头＋到期账一头·%s 起）' % 底
 
 

@@ -3382,13 +3382,35 @@ def _cold_due(n):
     return n + 2
 
 
+def _cold_无面而明裁(n):
+    """★第n章之冷轮：盘上无档，而其回执里有一句立／不立之明裁——**即不凭空记一笔欠**。
+
+    ★★2026-09-22 立（⛔**此非新令，是把本日那一裁补进第二处码**·
+      其裁在 `设定/裁_0922_冷轮之令_无档者不凭空记一笔欠.md`）：
+      **当日只改了 `开轮六检::check6` 一处**，⛔**而本档之 `_auto_cold` 是第二处判同一件事的码**
+      ——**於是 `开轮六检⑥` 已不再催 `COLD-350`，而 `--doctor` 之到期账照旧把它印作到期，
+        并据之判 `ERROR`**（0922 本坐亲见：医生印「到期3项……⛔[COLD-350]」而 350 之回执 §九
+      逐字写着「**销而不立**……**本章不立新冷轮·明裁·⛔非无声跳过**」）。
+    ★★★**此正是 `体检账 ㊸`／`_cold_void` 那一注所说的同型**：**一处判而两份码，改一份的人以为自己改完了。**
+      ⛔**本坐今日不把这一条再抄一遍，只转调 `开轮六检` 那两个判**——**一处判。**
+    ⛔**取不着 `开轮六检` 时返 False**——**宁可多催一笔，不可少催一笔。**
+    """
+    _m = _cold_six()
+    if _m is None or not hasattr(_m, '_cold_有档') or not hasattr(_m, '_cold_明裁'):
+        return False
+    try:
+        return (not _m._cold_有档(n)) and bool(_m._cold_明裁(n))
+    except Exception:
+        return False
+
+
 def _auto_cold(files):
     """冷轮自动派生：其限由 开轮六检::_cold_limit 定（档自书之限压倒通则 N+2）。"""
     if not files: return []
     cur=max(files)
     out=[]
     for n in sorted(files):
-        if n < 73 or _cold_done(n) or _cold_void(n):
+        if n < 73 or _cold_done(n) or _cold_void(n) or _cold_无面而明裁(n):
             continue
         due=_cold_due(n)
         if due <= cur:

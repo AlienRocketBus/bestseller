@@ -6,6 +6,12 @@
 ⛔其两格係裁档 §四③ 逐字所命之局：
   **拿 349 与 347 回灌，器须单列出那八串；拿 348 与 350 回灌（348→350 仅 3.8%），器须一串不列。**
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os
 import sys
 import importlib.util

@@ -1177,6 +1177,22 @@ def chk_cold_agree():
     return True, _测数(out, '3/3') + ' 全通（二器同用一处 _cold_done）'
 
 
+def chk_起手哨():
+    """起手哨：连着几章拿日号起手（2026-09-22 立·见 `工具/起手哨.py`）。
+
+    ★**其所以入册**：`起手账` 自 0919 起全靠人手逐章转交「327—351 连 25 章」这个数——
+    ⛔**盘上没有一道器在数它**；**352 之治落地之後，更无一道器看着它别再回去。**
+    """
+    out = run('起手哨', ['工具/起手哨.py'])
+    if out is None:
+        return False, '运行失败'
+    for l in out.split('\n'):
+        if l.strip().startswith('⛔'):
+            return False, l.strip()
+    尾 = [l.strip() for l in out.split('\n') if l.strip().startswith('✓')]
+    return True, (尾[0] if 尾 else '过') + '（日起手係本书常式 89.9%，本器只看串之长）'
+
+
 def chk_cold_明裁():
     """冷轮之令「无档者不凭空记一笔欠」二器负测（2026-09-22 立）。
 
@@ -4225,6 +4241,7 @@ def main():
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('负测·冷轮明裁', chk_cold_明裁))
+        items.append(('起手哨', chk_起手哨))
         items.append(('负测·器物点名', chk_object_roll))
         items.append(('器物册·逐章回灌', chk_object_roll_all))
         items.append(('负测·拦停旗', chk_stop_flag))

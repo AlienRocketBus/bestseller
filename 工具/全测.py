@@ -1177,6 +1177,23 @@ def chk_cold_agree():
     return True, _测数(out, '3/3') + ' 全通（二器同用一处 _cold_done）'
 
 
+def chk_cold_明裁():
+    """冷轮之令「无档者不凭空记一笔欠」二器负测（2026-09-22 立）。
+
+    ★**其所以入册**：本日立此二器而**未接进全测**——**一条没人跑的负测，等於没立**。
+    **甲**：`负测_冷轮明裁.py`（开轮六检⑥ 那一头）｜**乙**：`负测_检察官冷轮明裁.py`（到期账那一头）。
+    ⛔**二器并列，正是因为这一条令有两处码**（`体检账 56`）。
+    """
+    for 名, 路, 底 in (('负测·冷轮明裁', '工具/负测_冷轮明裁.py', '11/11'),
+                       ('负测·检察官冷轮明裁', '工具/负测_检察官冷轮明裁.py', '8/8')):
+        out = run(名, [路])
+        if out is None:
+            return False, '%s 运行失败' % 名
+        if '⛔' in out:
+            return False, '%s：%s' % (名, out.strip().split('\n')[-1])
+    return True, '二器俱全通（开轮六检一头＋到期账一头·%s 起）' % 底
+
+
 def chk_reader_nag():
     """存版·阅读器过期即报 负测（2026-09-01立·见 工具/负测_阅读器催.py）。
     ★其立之由：每轮改文之后阅读器即过期，而医生／检察官自测／全书检三项俱据之报红，
@@ -4203,6 +4220,7 @@ def main():
         items.append(('负测·两册对限', chk_two_ledger_neg))
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
+        items.append(('负测·冷轮明裁', chk_cold_明裁))
         items.append(('负测·器物点名', chk_object_roll))
         items.append(('器物册·逐章回灌', chk_object_roll_all))
         items.append(('负测·拦停旗', chk_stop_flag))

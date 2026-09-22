@@ -68,6 +68,15 @@ EXPECTED_ACTIVE_INPUTS = [
 # required_state_cards 自行取消应有的人物／道具／证据／进度类别。
 # 写完下一章后，必须在这里同步新的开拍契约，否则 doctor 拒绝放行。
 OPEN_BRIEF_CARD_SCHEMA = {
+    # ★2026-09-19·第351章封版之序（案席·末一道、352起草之前那一道）插：
+    #   ★照320案席所立之取法「两条线各取其末见」，⛔不预判下一章之线：
+    #     主线末见＝350（苏衍·路上·第一百三十三天·`总纲:256` 亲印 `| 350 | 主·133 |`），
+    #     暗线末见＝351（沈鸢·门槛与屋里·第一百二十七日·133−6，二线之差恒六）。
+    #   ★★**351之卡名照 349 之式作「门槛与屋里」**：其场自拍1 屋里之勺碗、拍3 门槛外那一处，
+    #     至拍31 退回门槛里头，通篇未出院（案席亲印）。
+    #   ★★★**352之线已由 `总纲:258` 钉死作「主·134」**——而卡只记两条线此刻各在哪儿，
+    #     ⛔**不记下一章走哪一条，亦不代裁其形与其向**（其形其向须由 `开轮六检.py 352` 当场定）。
+    352: ('苏衍·第350章路上即时状态', '沈鸢·第351章门槛与屋里即时状态', 'E4·巴蜀水下开站三数'),
     # ★2026-09-19·第350章封版之序（案席·末一道、351起草之前那一道）插：
     #   ★照320案席所立之取法「两条线各取其末见」，⛔不预判下一章之线：
     #     主线末见＝350（苏衍·路上·第一百三十三天·`总纲:256` 亲印 `| 350 | 主·133 |`），
@@ -2923,15 +2932,28 @@ def _short_ch_exempt(n):
         except OSError: _BUILD_CACHE['txt']=''
     return bool(re.search(rf'第\s*{n}\s*章短章豁免',_BUILD_CACHE['txt']))
 
-def _receipt_ok(n):
-    """回执闸:第73章起,当章检察官回执须已归档(设定/回执_*.md 含本章标记+五钩+伏笔)。"""
+def _receipt_files(n):
+    """★体检账 九十九／一〇〇 之治（限351·本章落地）：以**档名**认它是谁的回执。
+    ⛔不许再拿「文书里提到过第N章」当凭——一份讲闸的文书曾替第73、74两章过了回执闸。"""
+    out=[]
     for fp in glob.glob(os.path.join(REPO_ROOT,'设定','回执_*.md')):
-        try: tx=open(fp,encoding='utf-8').read()
+        if re.search(rf'第\s*{n}\s*章',os.path.basename(fp)): out.append(fp)
+    return out
+
+def _receipt_ok(n):
+    """回执闸:第73章起,当章检察官回执须已归档(档名认章 + 五钩+伏笔+逐项)。"""
+    tx=''
+    for fp in _receipt_files(n):   # 一章之回执可分数档（作业单／封版席），合而查之
+        try: tx+=open(fp,encoding='utf-8').read()
         except OSError: continue
-        if (re.search(rf'第\s*{n}\s*[章《]',tx) and '五钩' in tx and '伏笔' in tx
+    if True:
+        if ('五钩' in tx and '伏笔' in tx
                 and (n<76 or '新锚' in tx) and (n<78 or ('病历' in tx and '清单' in tx and '原场' in tx))
                 and (n<81 or '到期账' in tx)
-                and (n<82 or ('章魂' in tx and '生死检' in tx and '改动闸' in tx))):
+                and (n<82 or ('章魂' in tx and '生死检' in tx and '改动闸' in tx))
+                # ★体检账 九十九 之治（限351）：把「本章之失」那一行接回回执之链。
+                #   ⛔自 351 起索之——往回不追溯，免得拿新索去红两个月前的旧章。
+                and (n<351 or '本章之失' in tx)):
             return True
     return False
 
@@ -3018,10 +3040,9 @@ _TEN_COURTS = ['①硬伤庭','②越权庭','③回声庭','④资源庭','⑤�
 def _courts_used(n):
     """读取该章回执，看已开过哪几庭（用于轮换指派）。"""
     used=set()
-    for fp in glob.glob(os.path.join(REPO_ROOT,'设定','回执_*.md')):
+    for fp in _receipt_files(n):   # ★体检账 一〇一 之治（限351）：以档名认章，⛔不认「文书里提到过第N章」
         try: tx=open(fp,encoding='utf-8').read()
         except OSError: continue
-        if not re.search(rf'第\s*{n}\s*[章《]',tx): continue
         for k in _TEN_COURTS:
             if k in tx or k[1:] in tx: used.add(k)
     return used
@@ -3305,11 +3326,9 @@ def _cold_done(n):
     _m = _cold_six()
     if _m is not None and hasattr(_m, '_cold_done'):
         return _m._cold_done(n)
-    for fp in glob.glob(os.path.join(REPO_ROOT,'设定','回执_*.md')):
-        try: tx=open(fp,encoding='utf-8').read()
-        except OSError: continue
-        if f'{n}章冷眼轮' in tx: return True
-    return False
+    # ★体检账 一〇一 之治（限351）：⛔不许再留一条会悄悄变坏的退路。
+    #   模块取不着即当场报红并停——报红会吵，而悄悄放行会签掉真账。
+    raise RuntimeError('⛔冷轮判定之器取不着：开轮六检::_cold_done 不在。⛔不许以旧退路蒙混放行（体检账 一〇一·限351 之治）。')
 
 
 def _cold_void(n):

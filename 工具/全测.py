@@ -3857,8 +3857,43 @@ def chk_lunci():
     return not bad, ('；'.join(bad) if bad else '正测3/负测23 全通')
 
 
+def chk_gou_lu():
+    """负测·钩路（2026-09-23·限361 立）——**守那道守着所有闸的闸**。
+
+    ⛔**其所以要立**：`对位.py` 印「赤手无负测者 67（38%）」，`chk_hookspath` 在其列；
+      ★**而它不是寻常一项**：`core.hooksPath` 指不对，`pre-push` 就不跑；
+      **`pre-push` 不跑，全测不跑，於是本仓所有的闸一齐失效而无人知道。**
+    ★★**并当面报其一弱**：`chk_hookspath` 在路不对之时自己挂回去而後 `return True`——
+      ⛔**即它永远红不了**。**自愈是对的**（容器每次重建后 .git 皆新），
+      ⛔**而「自愈过」与「本来就挂着」在报文里须分得开**；本测⑥格守这一句。
+    ⛔**本测不改它**（0923 本坐之界：此处非「读错」，係「治法之择」），
+      **只把它做得到与做不到的事逐格钉死**，**并在⑬格把其限写进码里**：
+      **一份全绿的全测，⛔证不了「这一跑之前钩子一直挂着」，只证得了「跑完之後它挂着」。**
+    """
+    out = run('负测·钩路', ['工具/负测_钩路.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·钩路：(\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_hookspath():
-    """钩子须挂上：容器每次重建后 .git 皆新，故 hooksPath 须指向受版本管理之目录。"""
+    """钩子须挂上：容器每次重建后 .git 皆新，故 hooksPath 须指向受版本管理之目录。
+
+    ★**其负测在 `工具/负测_钩路.py`（2026-09-23·限361 立·13 格）**——
+      ⛔**此项不是寻常一项**：`core.hooksPath` 指不对，`pre-push` 就不跑；
+      **`pre-push` 不跑，全测不跑，於是本仓所有的闸一齐失效而无人知道。**
+    ⛔**并把本项之限写在这儿，⛔叫读它的人先看见**：
+      **本项在路不对之时自己挂回去而後 `return True`——即它永远红不了**（自愈之故）。
+      ★**自愈是对的治法**，⛔**而其价是**：**一份全绿的全测，证不了「这一跑之前钩子一直挂着」**，
+      **它只证得了「这一跑跑完之後钩子是挂着的」**（`负测_钩路.py` ⑬格把这一句钉在码里）。
+    ★★**唯一红得起来的一路**：**`工具/githooks/pre-push` 不在盘上**（其负测①②格）。
+    """
     want = '工具/githooks'
     try:
         r = subprocess.run(['git', 'config', '--get', 'core.hooksPath'],
@@ -4356,6 +4391,7 @@ def main():
         items.append(('认领哨·自测', chk_renling))
         items.append(('负测·摆问之嵌', chk_baiwen))
         items.append(('负测·回执三名', chk_huizhi_sanming))
+        items.append(('负测·钩路', chk_gou_lu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

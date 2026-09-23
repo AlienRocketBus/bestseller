@@ -2468,6 +2468,27 @@ def chk_renling():
                   % (m.group(0), _m2.group(1) if _m2 else '?', _m2.group(2) if _m2 else '?'))
 
 
+def chk_baiwen():
+    """负测·摆问之嵌（2026-09-23·限359 立·随 `开轮六检::check20` 补嵌式同日）。
+    ★守一句——**⑳ 所数的那个「问」，是不是真的一个问。**
+    ⛔**其立之由**：旧式只看「疑问词＋。／？」，而中文里疑问词嵌在陈述句中极常见
+      （「黑到看不出底在哪儿。」「放平了看它离缝那两边各多少。」「我知道他想问的是什么。」）——
+      **三句皆无一问，而旧式逐句判作「摆了一问」**；全书亲扫：**嵌者 279 处分布 161 章，真摆问 289 处。**
+    ⛔⛔**本测头一格所守者不是「新式对不对」，是「本坐动它之时它正拦着本坐的推」**——
+      **①格以全书回灌钉死其误伤之广（≥100 章），证此改非自赦；②③格守其不许放松。**
+    """
+    out = run('负测·摆问之嵌', ['工具/负测_摆问之嵌.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if int(m.group(3)):
+        return False, '%s/%s ⛔坏 %s' % (m.group(2), m.group(1), m.group(3))
+    return True, '%s/%s 全通' % (m.group(2), m.group(1))
+
+
 def _分量之判(out2):
     """★把 `分量闸` 正路之印读成一个判：(过否, 其语)。⛔**单拆出来，好教负测拿得住它**
     （`工具/负测_分量闸之读.py`·2026-09-23·限359 同日立）。"""
@@ -4292,6 +4313,7 @@ def main():
         items.append(('负测·看官问三之窗', chk_kanguan_win))
         items.append(('合玉闸', chk_heyu))
         items.append(('认领哨·自测', chk_renling))
+        items.append(('负测·摆问之嵌', chk_baiwen))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

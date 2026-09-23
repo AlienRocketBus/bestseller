@@ -2378,6 +2378,26 @@ def chk_fenliang_read():
     return True, '%s/%s 全通' % (m.group(2), m.group(1))
 
 
+def chk_jiaceng_read():
+    """负测·甲层之读（2026-09-23·限359 立·随 `书级体检::check_loss` 正其缩排同日）。
+    ★守一句——**一章有两三份回执之时，「本章之失」那一行找不找得着。**
+    ⛔**其立之由**：旧式那一个 `break` 缩排错了一级（在 `for f` 之内、`if m` 之外），
+      **只看 `glob` 回来的头一份**；而一章之回执常有两三份，那一行只写在作业单上。
+      ★**於是本器印「甲层未记 12／12 章·没有人判过一章」，而实情是「判过了，本器没看见」**——
+      ⛔**一个看不见的器，比一个不存在的器更坏：它每跑一回都在替一件办过的事作证说没办。**
+    """
+    out = run('负测·甲层之读', ['工具/负测_甲层之读.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if int(m.group(3)):
+        return False, '%s/%s ⛔坏 %s' % (m.group(2), m.group(1), m.group(3))
+    return True, '%s/%s 全通' % (m.group(2), m.group(1))
+
+
 def _分量之判(out2):
     """★把 `分量闸` 正路之印读成一个判：(过否, 其语)。⛔**单拆出来，好教负测拿得住它**
     （`工具/负测_分量闸之读.py`·2026-09-23·限359 同日立）。"""
@@ -4198,6 +4218,7 @@ def main():
         items.append(('负测·大审挂限', chk_dashen_hang))
         items.append(('负测·大审收方', chk_dashen_shoufang))
         items.append(('负测·分量闸之读', chk_fenliang_read))
+        items.append(('负测·甲层之读', chk_jiaceng_read))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

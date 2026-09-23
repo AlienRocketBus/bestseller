@@ -464,12 +464,24 @@ def check_loss(chs):
     import glob as _g
     for c in range(max(1, cur - 11), cur + 1):
         rec = '未记'
-        for f in _g.glob(os.path.join(ROOT, '设定', '回执_*第%d章*' % c)):
+        # ⛔★★★★★2026-09-23·限359（本坐照 `自走` 之【候】跑本器时所逮）：
+        #   ★**旧式那一个 `break` 缩排错了一级**：**它在 `for f` 之内、`if m` 之外**，
+        #     **於是它只看 `glob` 回来的头一份回执，看完即走**。
+        #   ⛔**而一章之回执常有两三份**（作业单／封版席／冷轮明裁），**`本章之失` 只写在作业单上**；
+        #     **`glob` 之序又不由人定**——**351 头一份是「冷轮明裁」，352 头一份是「封版席」**，
+        #     **二者皆无那一行，遂皆判「未记」。**
+        #   ★★**其实 351、352 两份作业单上那一行逐字都在**
+        #     （351：「一处——拍22—29 之间『指背比指腹宽』只以『在里头／在外头』报……」）。
+        #   ★★★**故本器自书的那一句红说反了**：**它印「没有人判过一章」，
+        #     而实情是「判过了，本器没看见」**——⛔**一个看不见的器，比一个不存在的器更坏：
+        #     它每跑一回都在替一件办过的事作证说没办。**
+        #   ⛔**今只改其一格缩排**（`break` 移进 `if m` 之内），**一条判据未动、一个数未动。**
+        for f in sorted(_g.glob(os.path.join(ROOT, '设定', '回执_*第%d章*' % c))):
             with open(f, encoding='utf-8', errors='replace') as fh:
                 m = re.search(r'\*\*本章之失\*\*[：:]\s*(.+)', fh.read())
             if m:
                 rec = m.group(1).strip().strip('*').strip()
-            break
+                break
         b = chs.get(c, '')
         bad = sum(b.count(w) for w in BAD_W)
         good = sum(b.count(w) for w in GOOD_W)

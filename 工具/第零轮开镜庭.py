@@ -132,6 +132,55 @@ def q2_jing(c):
     for w, ln, gap, rule in rows[:5]:
         out.append(('   · %s' % w, True,
                     '末见第%s章｜距 %d 章｜%s' % (ln if ln else '—', gap, rule[:42])))
+    # ★★★★★2026-09-23·限359（三笔逾 356 之裁·`设定/大问挂账.md` §0923 同日）：
+    #   ⛔**本格旧式只把诸问按其距排，逐样印一行 ✓**——**而一行 ✓ 的意思是「这里没事」。**
+    #   ★**於是一笔挂了二百三十四章的账，填卡的人逐回看见它、逐回不必动它**；
+    #     **前八笔逐笔写着「再逾即当场判死」「不许再挪第八笔」，而逐笔都逾了**——
+    #     ⛔**其根不在下判的人不狠，在那一笔只活在一本账上。**
+    #   ★★**今补一格**：**凡挂账之限 ≤ 本章之号者，当场判红，逐字带其形与其限。**
+    #     ⛔**而它不叫人「加一笔」**：**其形栏原文照抄**（如血图之「比出来的不合，
+    #     其不合须是一个具体的数或方位」），**治在事之择，⛔不在添一段。**
+    #   ★★★**与本日 `分量闸::须厚` 同一个治法**：**把一条只会回头红的令，改成一句填卡时当面说的话。**
+    try:
+        import importlib.util as _iu2
+        _s2 = _iu2.spec_from_file_location(
+            '_dw', os.path.join(os.path.dirname(os.path.abspath(__file__)), '大问表.py'))
+        _dw = _iu2.module_from_spec(_s2)
+        _s2.loader.exec_module(_dw)
+        _挂 = _dw.挂()
+        _形 = {}
+        for _ln2 in io.open(_dw.挂账档, encoding='utf-8'):
+            if not _ln2.startswith('|'):
+                continue
+            _cc = [x.strip() for x in _ln2.strip().strip('|').split('|')]
+            if len(_cc) >= 6 and _cc[-1] == '挂':
+                _形[_dw._名(_cc[0])] = _cc[-2]
+        # ⛔★2026-09-23·**本格立起来当场自逮一回，写在这里**：
+        #   ★本坐头一版之判係 `v <= c` ——**只问「限到了没有」，不问「它还欠不欠」。**
+        #   ⛔**於是 `听针`（限354）当场入红，而它 356 白文里亲数有一处**——**那一笔早还了，册上只是没改状。**
+        #   ★★**一道把还过的账再催一回的闸，比不催更坏**：**它教人把红当噪声。**
+        #   ★★★**故照 `大问表::报` 自己那一式**：**须同时「其样确在逾四十章之列」「未还」「未判废」**，
+        #     **限方才算数**——⛔**不另写一式，免得两处各判各的。**
+        _末, _rows2 = _dw.量()
+        _欠 = set(r['名'] for r in _rows2 if r['逾'])
+        _已还 = set(_dw.已还())
+        _废 = set(_dw.判废())
+        _逾 = sorted([(k, v) for k, v in _挂.items()
+                      if v <= c and k in _欠 and k not in _已还 and k not in _废],
+                     key=lambda x: x[1])
+        if _逾:
+            out.append(('二之b·⛔非还不可（其限已到或已过）', False,
+                        '%d 样：%s' % (len(_逾),
+                                     '、'.join('%s(限%d)' % (k, v) for k, v in _逾))))
+            for _k, _v in _逾:
+                out.append(('   ⛔ %s' % _k, False,
+                            '限%d｜其形（照挂账册原文，⛔不许改其形去就本章）：%s'
+                            % (_v, (_形.get(_k) or '—')[:120])))
+        else:
+            out.append(('二之b·非还不可', True, '今无一样到限'))
+    except Exception as _e2:
+        out.append(('二之b·非还不可', False,
+                    '⛔挂账之限读不出（%s）——⛔不许当作「无一样到限」，须手跑 `python3 工具/大问表.py`' % _e2))
     return out
 
 

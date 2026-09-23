@@ -2398,6 +2398,26 @@ def chk_jiaceng_read():
     return True, '%s/%s 全通' % (m.group(2), m.group(1))
 
 
+def chk_kanguan_win():
+    """负测·看官问三之窗（2026-09-23·限359 立·随 `看官.py::问三` 不取跨句之窗同日）。
+    ★守一句——**数「有没有一样东西说得太多」的那个窗，不许跨句。**
+    ⛔**其立之由**：旧式之窗跨句而取，357 之报头一行遂印作「**。她把指**」11回——
+      **那一点句号是上一句的尾巴，不是这一样东西的名字**；
+      ★**而一个带着句号的窗只数得着句首那几个字，落在段中的同一个词它一个也数不着**——
+      **它报的数比实数小，而它印得像个实数**；★★**且它还占着榜位，把真说得太多的那一样挤下去。**
+    """
+    out = run('负测·看官问三之窗', ['工具/负测_看官问三之窗.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if int(m.group(3)):
+        return False, '%s/%s ⛔坏 %s' % (m.group(2), m.group(1), m.group(3))
+    return True, '%s/%s 全通' % (m.group(2), m.group(1))
+
+
 def _分量之判(out2):
     """★把 `分量闸` 正路之印读成一个判：(过否, 其语)。⛔**单拆出来，好教负测拿得住它**
     （`工具/负测_分量闸之读.py`·2026-09-23·限359 同日立）。"""
@@ -4219,6 +4239,7 @@ def main():
         items.append(('负测·大审收方', chk_dashen_shoufang))
         items.append(('负测·分量闸之读', chk_fenliang_read))
         items.append(('负测·甲层之读', chk_jiaceng_read))
+        items.append(('负测·看官问三之窗', chk_kanguan_win))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

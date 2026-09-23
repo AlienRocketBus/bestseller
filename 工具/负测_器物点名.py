@@ -29,13 +29,56 @@ except Exception:
 import importlib.util as iu, io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-P = os.path.join(ROOT, '版本', '第295章', '_器物.md')
+
+# ⛔★★★★★2026-09-23·限361（第359章封版之日当场所逮·**本日第二把同形之器**）：
+#   ★**旧式把一份真册直接写在盘上的真路径上**（`版本/第295章/_器物.md`），
+#     **造完变体再於 `finally` 里写回去**。
+#   ⛔**而本测今日在盘上留了一行**：`版本/第295章/_器物.md` 末多出一条
+#     「★ 测·注｜拍20（我把手抽出来，指甲里）」——**与其上一行逐字相同，白白多一条。**
+#   ★★**其机理狠在这儿**：**`原` 係本测开跑那一刻自盘上读的**；
+#     **若上一回跑到一半被砍（全测逾时、容器重启、Ctrl-C），`finally` 没跑成，脏的那一版就留在盘上**；
+#     **下一回本测开跑，把那一版当作「原」读进来，还原毕逐字相同——⑦那一格照绿。**
+#     ⛔**即：本测自带的那一格「还原毕须与测前逐字相同」，对这一种脏一个字也说不出来。**
+#   ★★★**故今改沙盘**：**造一份影盘（只把本测要动的那几档拷进去），把器之 `ROOT` 指过去**；
+#     ⛔**本测此後一个字也不写真盘**——**被砍在半路也一样。**
+#   ★★★★**并与 0923 前一把同治**（`负测_销立门` 之「拿真档作料」）：**同形第二回**（㊮）。
+_沙 = None
+_真P = os.path.join(ROOT, '版本', '第295章', '_器物.md')
+
+
+def _立沙():
+    """★造影盘：正文全拷（小），版本只拷各章之 `_器物.md`（本器只读这一档）。"""
+    global _沙
+    if _沙:
+        return _沙
+    import tempfile
+    import shutil
+    _沙 = tempfile.mkdtemp(prefix='负测_器物点名_')
+    os.makedirs(os.path.join(_沙, '工具'), exist_ok=True)
+    shutil.copytree(os.path.join(ROOT, '正文'), os.path.join(_沙, '正文'))
+    # 一坐.py：`器物点名::正文` 会去加载它
+    for _n in ('一坐.py', '器物点名.py'):
+        _f = os.path.join(ROOT, '工具', _n)
+        if os.path.exists(_f):
+            shutil.copy2(_f, os.path.join(_沙, '工具', _n))
+    import glob as _g
+    for d in _g.glob(os.path.join(ROOT, '版本', '第*章')):
+        f = os.path.join(d, '_器物.md')
+        if os.path.exists(f):
+            t = os.path.join(_沙, '版本', os.path.basename(d))
+            os.makedirs(t, exist_ok=True)
+            shutil.copy2(f, os.path.join(t, '_器物.md'))
+    return _沙
+
+
+P = None          # ⛔沙盘内之路径，`跑()` 开手时落定
 
 
 def _mod():
     sp = iu.spec_from_file_location('_qw', os.path.join(ROOT, '工具', '器物点名.py'))
     m = iu.module_from_spec(sp)
     sp.loader.exec_module(m)
+    m.ROOT = _立沙()          # ⛔把器之根指进影盘——此後它读的写的皆在影盘
     return m
 
 
@@ -49,6 +92,20 @@ def _跑(m, 文):
 
 
 def 跑():
+    global P
+    _s_ = _立沙()
+    P = os.path.join(_s_, '版本', '第295章', '_器物.md')
+    # ★★㉑㉒·沙盘之验（2026-09-23·限361 立·⛔与本测之新头同日）
+    #   ⛔**此二格所守者**：**本测此後一个字也不许写真盘**——**被砍在半路也一样。**
+    #   ★**其非陪跑之处**：**旧式之 `P` 正是真盘那一档**（`_真P`），
+    #     **㉑只要一句「P 不在真盘上」就把旧式当场判掉**；
+    #     **㉒再拿真档之 sha 跑前跑後对一回，把「写了又写回去」那一路也堵死。**
+    import hashlib as _h
+    _sha前 = (_h.sha256(io.open(_真P, 'rb').read()).hexdigest()
+              if os.path.exists(_真P) else None)
+    _沙验 = []
+    if os.path.abspath(P) == os.path.abspath(_真P):
+        _沙验.append('★㉑本测之 P 仍指着真盘那一档——旧式即栽在此')
     if not os.path.exists(P):
         print('✗ 负测·器物点名 ⛔前置不在：%s' % P)
         return 1
@@ -189,7 +246,7 @@ def 跑():
             if rc != 0 and '没有「笔」三字' not in o and '拍号是抄的' in o:
                 坏.append('★⑬别名之格未被认：其红仍以本名去验，而别名一格写着「笔」')
         # ⑭旧式回灌：以本名验之旧法，跑 303 之册须逐格报红（故此改非陪跑）
-        _P303 = os.path.join(ROOT, '版本', '第303章', '_器物.md')
+        _P303 = os.path.join(_s_, '版本', '第303章', '_器物.md')   # ⛔沙盘，非真盘
         if os.path.exists(_P303):
             _册 = io.open(_P303, encoding='utf-8').read()
             _旧 = re.sub(r'^([^｜\n#★]+?)（[^）]+）｜', r'\1｜', _册, flags=re.M)
@@ -201,14 +258,14 @@ def 跑():
                 try:
                     io.open(_P303, 'w', encoding='utf-8').write(_旧)
                     r = subprocess.run([sys.executable,
-                                        os.path.join(ROOT, '工具', '器物点名.py'), '303'],
+                                        os.path.join(_s_, '工具', '器物点名.py'), '303'],
                                        capture_output=True, text=True)
                     if '无其名' not in r.stdout:
                         坏.append('★⑭旧式（无别名）回灌303之册而它没红——故此改係陪跑')
                 finally:
                     io.open(_P303, 'w', encoding='utf-8').write(_bak)
                 r2 = subprocess.run([sys.executable,
-                                     os.path.join(ROOT, '工具', '器物点名.py'), '303'],
+                                     os.path.join(_s_, '工具', '器物点名.py'), '303'],
                                     capture_output=True, text=True)
                 if '3 件俱全' not in r2.stdout:
                     坏.append('★⑮新式跑303之册而它未判「俱全」')
@@ -217,6 +274,12 @@ def 跑():
     # ★还原毕须与测前逐字相同（第二十八犯之处方）
     if io.open(P, encoding='utf-8').read() != 原:
         坏.append('★⑦还原毕之册与测前不同——本测改坏了它所读的盘')
+    # ⛔㉒真盘那一档跑前跑後须逐字相同（⑦只看沙盘，看不见真盘之伤）
+    _sha後 = (_h.sha256(io.open(_真P, 'rb').read()).hexdigest()
+              if os.path.exists(_真P) else None)
+    if _sha前 != _sha後:
+        _沙验.append('★㉒真盘之 版本/第295章/_器物.md 跑前跑後不同——本测动了真盘')
+    坏 += _沙验
     # ★2026-09-05·机制总审丙①：跨章之比（纯函数 比()，不碰盘）
     try:
         prev = [{'名': '铜听针', '验名': '针', '入': 48, '用': 87, '出': 135, '主': '钱满'},
@@ -244,12 +307,12 @@ def 跑():
     except Exception as e:
         坏.append('★⑯至⑳跨章之比运行失败：%s' % e)
     if 坏:
-        print('✗ 负测·器物点名 %d/22 ⛔未过' % (22 - len(坏)))
+        print('✗ 负测·器物点名 %d/24 ⛔未过' % (24 - len(坏)))
         for x in 坏:
             print('   ⛔ ' + x)
         return 1
-    print('✓ 负测·器物点名 22/22 全通（②③④三条在旧式「只数行数」之下俱过；⑯至⑳跨章之比：换主⛔·同主不⛔·已出又入无句⚠·在手无声⚠·旧式无主=一声不响；'
-          '⑧在旧式「不验序」之下亦过；⑭以旧式（无别名）回灌303之册逐格报红——故本测非陪跑）')
+    print('✓ 负测·器物点名 24/24 全通（②③④三条在旧式「只数行数」之下俱过；⑯至⑳跨章之比：换主⛔·同主不⛔·已出又入无句⚠·在手无声⚠·旧式无主=一声不响；'
+          '⑧在旧式「不验序」之下亦过；⑭以旧式（无别名）回灌303之册逐格报红；㉑㉒沙盘之验：P 不在真盘上、真盘之档跑前跑後 sha 逐字相同——故本测非陪跑）')
     return 0
 
 

@@ -1963,9 +1963,37 @@ def _留旗之章(章目录们, 有回执):
     return [n for n, d in 章目录们 if 有回执(n) and os.path.exists(os.path.join(d, '_拦停.json'))]
 
 
+def chk_fengban_liuqi():
+    """负测·封版留旗（2026-09-23·限361 立·见 工具/负测_封版留旗.py）。
+
+    ⛔**其所治者**：**一面留在已封版之章上的拦停旗，是一道没人认领的红。**
+    ★**其位**：`册_0923_赤手无负测之拆数.md` 拆「赤手 66」得「甲·真赤手」二十项，
+      **荐先补者三，此係其首**——**其由逐字：「它绿着，别处就没人再看那一件事。」**
+    """
+    out = run('负测·封版留旗', ['工具/负测_封版留旗.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·封版留旗：(\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_sealed_flags():
     """封版之章不得留旗（2026-09-05·机制总审·八路之流程之缝审第15条）——★旗之义是「那一轮的版没存上」，封了版还留着旗，旗就成了谎。
-    ★★其红在哪一行：161／175／220 三章皆有回执而 _拦停.json 仍在（220 之因係空轮闸而说明为占位串，_flag_stale 永不自销）。★★★今日一次清扫，此後 收.py ⑥ 见旗拒封。"""
+    ★★其红在哪一行：161／175／220 三章皆有回执而 _拦停.json 仍在（220 之因係空轮闸而说明为占位串，_flag_stale 永不自销）。★★★今日一次清扫，此後 收.py ⑥ 见旗拒封。
+
+    ★**其负测在 `工具/负测_封版留旗.py`（2026-09-23·限361 立·12 格）**——
+      ★★**其⑥格验反面**：**旧式（只问封没封版，不问旗）对同一份沙盘报两章**，故新式非陪跑；
+      ★★★**其③格守一条极要紧的不许**：**未封版而留旗者不报**——
+      **一章正在跑，那面旗是真的**；⛔**报它即是逼人把一面真旗销掉。**
+    ⛔**并把本项之限写在这儿**：**本项之判係「有回执且有 `_拦停.json`」**，
+      **它认不得「旗之因」**——**一面旗是真拦停还是一串占位（220 之实），本器一概当作旗。**
+      ★**此係治法之择，非读错**：**宁可多报一面旗，不可漏一面**；**负测⑨格把这一句钉在码里。**
+    """
     import glob as _g, re as _r
     目录 = []
     for d in _g.glob(os.path.join(ROOT, '版本', '第*章')):
@@ -4392,6 +4420,7 @@ def main():
         items.append(('负测·摆问之嵌', chk_baiwen))
         items.append(('负测·回执三名', chk_huizhi_sanming))
         items.append(('负测·钩路', chk_gou_lu))
+        items.append(('负测·封版留旗', chk_fengban_liuqi))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

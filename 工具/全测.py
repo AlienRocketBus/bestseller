@@ -2155,6 +2155,27 @@ def chk_note_gate():
     return True, '%d/%d 全通（①—④拿 325 三轮与本坐探针之真局回灌；⑧⑨force／reopen 皆不免）' % (ok, tot)
 
 
+def chk_dashen_shoufang():
+    """负测·大审收方（2026-09-23·限359 立·随 `大审.py::收` 补「半治·半驳」「留痕·不裁」二名同日）。
+    ★守一句——**一册之裁定表，几行算「有人收」。**
+    ⛔**其立之由**：本坐填「至第357章」一册时落了两样旧式不认的真判，
+      **旧式各算一行「没人收」**，**於是本器逼着填册的人把它们改写成假的「已治」或「判驳」**——
+      ★**一道闸若逼着人为过它而改判，那道闸就是在教人说谎**（同 `收.py::④之五` 之律）。
+    ★★**而本测之重不在「新名认不认得」，在「口开宽了之後，空模子还拦不拦得住」**。
+    """
+    out = run('负测·大审收方', ['工具/负测_大审收方.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
+    if not m:
+        return False, '未见其数'
+    tot, ok, bad = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if bad:
+        return False, '%d/%d ⛔坏 %d' % (ok, tot, bad)
+    return True, '%d/%d 全通' % (ok, tot)
+
+
 def chk_dashen_hang():
     """★大审挂限之负测（2026-09-13 立·`大审.py` 自己欠的那一样）：
     ★★守一句——**「已挂」带着限，到期不裁即是逾期，器须报。**
@@ -4125,6 +4146,7 @@ def main():
         items.append(('负测·轮次闸乱序', chk_round_order))
         items.append(('负测·说明闸', chk_note_gate))
         items.append(('负测·大审挂限', chk_dashen_hang))
+        items.append(('负测·大审收方', chk_dashen_shoufang))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

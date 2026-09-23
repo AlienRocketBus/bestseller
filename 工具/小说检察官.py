@@ -5427,7 +5427,9 @@ def _receipt_filed(n):
     逼得每一轮推送都要绕行，绕行成常态则闸失效（批122之审计当日即被撞满12次而硬拒）。
     故凡「是否该受封版闸约束」一律用本函数，不用 _receipt_ok。"""
     try:
-        return bool(glob.glob(os.path.join(REPO_ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
+        # ⛔认三种，不只认作业单（限360·其详在 全测.py::_已封版）
+        return any(glob.glob(os.path.join(REPO_ROOT, '设定', '回执_*_第%d章%s.md' % (n, k)))
+                   for k in ('作业单', '案席', '封版席'))
     except Exception:
         return False
 

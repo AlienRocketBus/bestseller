@@ -52,7 +52,9 @@ def 末章():
 
 
 def 有回执(n):
-    return bool(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
+    # ⛔认三种，不只认作业单（限360·其详在 全测.py::_已封版）
+    return any(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章%s.md' % (n, k)))
+               for k in ('作业单', '案席', '封版席'))
 
 
 def 新动(n):

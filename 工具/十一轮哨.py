@@ -32,10 +32,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def 已交回执之章():
     out = set()
-    for f in glob.glob(os.path.join(ROOT, '设定', '回执_*_第*章作业单.md')):
-        m = re.search(r'第(\d+)章', os.path.basename(f))
-        if m:
-            out.add(int(m.group(1)))
+    # ⛔认三种，不只认作业单（限360·其详在 全测.py::_已封版）
+    for k in ('作业单', '案席', '封版席'):
+        for f in glob.glob(os.path.join(ROOT, '设定', '回执_*_第*章%s.md' % k)):
+            m = re.search(r'第(\d+)章', os.path.basename(f))
+            if m:
+                out.add(int(m.group(1)))
     return out
 
 

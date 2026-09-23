@@ -343,7 +343,9 @@ def drift_of(n, receipts, src, txt):
 
 
 def _receipts_of(n):
-    return sorted(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章作业单.md' % n)))
+    # ⛔认三种，不只认作业单（限360·其详在 全测.py::_已封版）
+    return sorted(f for k in ('作业单', '案席', '封版席')
+                    for f in glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章%s.md' % (n, k))))
 
 
 def _round_of(note):

@@ -120,7 +120,9 @@ def main():
 
     # ── ⓪ 回执（须在同步之前；无回执则末章判为前一章，进位必报红）──
     import glob as _g
-    _r=_g.glob(os.path.join(ROOT,'设定','回执_*_第%d章作业单.md'%n))
+    # ⛔认三种，不只认作业单（限360·其详在 全测.py::_已封版）
+    _r=[f for k in ('作业单','案席','封版席')
+          for f in _g.glob(os.path.join(ROOT,'设定','回执_*_第%d章%s.md'%(n,k)))]
     print('')
     print('── 0 回执 ──')
     if _r:

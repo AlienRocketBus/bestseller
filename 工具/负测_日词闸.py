@@ -9,7 +9,7 @@ try:
     import _账  # 跑账·自记（工具/跑账.py）
 except Exception:
     pass
-import sys, importlib.util
+import sys, re, importlib.util
 
 spec = importlib.util.spec_from_file_location('q3', '工具/质量三闸.py')
 m = importlib.util.module_from_spec(spec)
@@ -35,18 +35,33 @@ def 造(*日):
 
 
 案 = []
+
+
+def _数(语):
+    """★只取其所报之处数，不锁其措辞。
+    ★★其立之由（2026-09-23·限359所逮）：器之语後添了「章首」二字（起手哨同日所改），
+      ★★★而此测原以整个 (ok, 语) 对等相比，遂十一项尽坏——坏的是测的措辞，不是闸。
+      ⛔而不许改作「语中含『1 处』」了事：那样「11 处」也含「1 处」，闸失灵而测仍绿。
+      故取整数相比——措辞可漂，处数不可漂。"""
+    m = re.search(r'(\d+)\s*处', 语 or '')
+    return int(m.group(1)) if m else None
+
+
 def chk(名, 实, 期):
-    案.append((名, 实 == 期, '实=%r 期=%r' % (实, 期)))
+    ok, 语 = 实
+    期ok, 期数 = 期
+    过 = (ok == 期ok) and (_数(语) == 期数)
+    案.append((名, 过, '实=%r（处数 %r） 期=(%r, %r 处)' % (实, _数(语), 期ok, 期数)))
 
 for s in ['第一百天。', '第九十九天，天没亮我就醒了。', '第九十四日，她先去灶上。',
           '第一百零一天。', '第一百零九天。', '第二百零五天。', '第一百一十天。']:
-    chk('①单日须认得：%s' % s.rstrip('。')[:8], 跑(造(s)), (True, '1 处'))
+    chk('①单日须认得：%s' % s.rstrip('。')[:8], 跑(造(s)), (True, 1))
 
 for a, b in [('第一百天。', '第一百零一天。'), ('第一百零一天。', '第一百零二天。'),
              ('第九十九天。', '第一百天。')]:
-    chk('②一章二日须拦：%s＋%s' % (a.rstrip('。'), b.rstrip('。')), 跑(造(a, b)), (False, '2 处'))
+    chk('②一章二日须拦：%s＋%s' % (a.rstrip('。'), b.rstrip('。')), 跑(造(a, b)), (False, 2))
 
-chk('③无日词须拦', 跑(造('天没亮。')), (False, '0 处'))
+chk('③无日词须拦', 跑(造('天没亮。')), (False, 0))
 
 坏 = [x for x in 案 if not x[1]]
 for 名, 过, 详 in 案:

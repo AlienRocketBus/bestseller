@@ -275,6 +275,22 @@ def _品报(c):
         _基 += ('\n  ' + _语) if _须 else ('\n  ' + _语)
     except Exception as _e:
         _基 += '\n  ⚠「须厚」之判跑不出（%s）——⛔不许当作「不须厚」，须手跑 `python3 工具/分量闸.py`。' % _e
+    # ★★★★★2026-09-23·限359·**同笔接进「须换型」**（其由与「须厚」同·见 `换型令::须换型`）：
+    #   ⛔**354／355／356／357 四章连红，链长 23、24、25、26，一章未治**——
+    #     **`换型令::查` 係回望之判，非到封了版不开口，於是逐回落在已封之章上。**
+    #   ★**而这一条链与本日大审之得係同一样东西**：
+    #     「**可以自动地写下去正是它此刻最大的险**」——**二十六章不换一回段之呼吸，就是那一句话的数。**
+    try:
+        import importlib.util as _iu3
+        _s3 = _iu3.spec_from_file_location(
+            '_hx', os.path.join(os.path.dirname(os.path.abspath(__file__)), '换型令.py'))
+        _hx = _iu3.module_from_spec(_s3)
+        _s3.loader.exec_module(_hx)
+        _换, _换语 = _hx.须换型(c)
+        _基 += '\n  ' + _换语
+    except Exception as _e3:
+        _基 += ('\n  ⚠「须换型」之判跑不出（%s）——⛔不许当作「不须换」，'
+                '须手跑 `python3 工具/换型令.py`。' % _e3)
     return _基
 
 

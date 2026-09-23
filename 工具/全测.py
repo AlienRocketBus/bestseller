@@ -3916,6 +3916,31 @@ def chk_lunci():
     return not bad, ('；'.join(bad) if bad else '正测3/负测23 全通')
 
 
+def chk_fengban_tuiwei():
+    """负测·封版须推位（2026-09-23·限362 立·见 工具/负测_封版须推位.py）。
+
+    ⛔**其所由来**：**361 封版席自己交上来的第⑦条红**：
+      「`open_brief` 第六回靠人记得·盘上四把器无一把写它（355／357／358／359／360／361）
+       ——⛔须立一把器去写它」。
+    ★**而本坐判其所指为真、其所求之治不可取**：**五格之中只有 `for_ch` 是机械的**，
+      **其余四格皆係判**；⛔**器自己把数推上去而料照旧，闸转绿而料是旧的，比不推更坏。**
+    ★★**那道闸其实早已有**（`小说检察官.py:4733`），**缝在「几时查」**——
+      **它只在下一章开跑之时才出声，於是这一笔永远落在下一坐头上。**
+    ★★★**故所立者不是写它的器，是把那一条已有之令挪到它该咬住的那一刻**：
+      **`收.py` 封版之前问一句，推不上去就不许封。**⛔**此改令闸更硬，不更软。**
+    """
+    out = run('负测·封版须推位', ['工具/负测_封版须推位.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·封版须推位：(\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_gou_lu():
     """负测·钩路（2026-09-23·限361 立）——**守那道守着所有闸的闸**。
 
@@ -4453,6 +4478,7 @@ def main():
         items.append(('负测·钩路', chk_gou_lu))
         items.append(('负测·封版留旗', chk_fengban_liuqi))
         items.append(('负测·开镜卡带三条', chk_kaijing_sanqiao))
+        items.append(('负测·封版须推位', chk_fengban_tuiwei))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

@@ -2445,6 +2445,29 @@ def chk_heyu():
     return True, '%s·%s 处逐处有裁且无一处判犯' % (m.group(0), _m2.group(1) if _m2 else '?')
 
 
+def chk_renling():
+    """认领哨（2026-09-23·限359 立）——**凡判一笔红「不是本章的」，须当场说出它是谁的。**
+    ★**其律⛔不是本坐所立**：**第357章封版席自己写在回执里**（`:264` 逐字）——
+      「**本席逐条分其真假与其属**（⛔**不许一句「皆非本章之事」带过**）」；
+      **本器只是把它变成闸**（令九·③：写下来的法不生效，只有变成闸才生效）。
+    ⛔**其立之实**：`回执_20260918_第349章作业单.md:147` 把 `重出之趋` 判作「全书级旧账」，
+      **而那个数（41.2%）是 349 自己与 347 比出来的，且係全书 59 章可比之顶。**
+    ⛔**今只报不拦**（旧账 4 处逐处在册）：**其自测须满格，而全书之红暂不入拦**——
+      **拦它即是拿今日之律去红两个月前的旧章**（同 `_receipt_ok` 之「自351起索，往回不追溯」）。
+    """
+    out = run('认领哨·自测', ['工具/认领哨.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('认领哨', ['工具/认领哨.py'])
+    _m2 = _r.search(r'已认领 (\d+)｜⛔未认领 (\d+)', out2 or '')
+    return True, ('%s｜全书：已认领 %s、未认领 %s（⛔旧章只报不拦·其账在裁_0923）'
+                  % (m.group(0), _m2.group(1) if _m2 else '?', _m2.group(2) if _m2 else '?'))
+
+
 def _分量之判(out2):
     """★把 `分量闸` 正路之印读成一个判：(过否, 其语)。⛔**单拆出来，好教负测拿得住它**
     （`工具/负测_分量闸之读.py`·2026-09-23·限359 同日立）。"""
@@ -4268,6 +4291,7 @@ def main():
         items.append(('负测·甲层之读', chk_jiaceng_read))
         items.append(('负测·看官问三之窗', chk_kanguan_win))
         items.append(('合玉闸', chk_heyu))
+        items.append(('认领哨·自测', chk_renling))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

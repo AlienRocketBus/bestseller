@@ -1669,6 +1669,29 @@ def chk_scenecut_neg():
     return _简测('负测·场景切换闸', '工具/负测_场景切换闸.py')
 
 
+def chk_duiwei_sanlu():
+    """负测·对位之三路（2026-09-23·限362 立·见 工具/负测_对位之三路.py）。
+
+    ⛔**其所治者**：**`对位.py` 是数「谁没有负测」的那一把尺，而它自己没有负测。**
+    ★**一把量别人有没有防线的尺，自己没有防线**——
+      **此係本坐今日所荐三项之第三项**（`设定/册_0923_赤手无负测之拆数.md` §五）。
+    ★★**所问只三句**：①孤器认不认得出｜②有撑／赤手之分对不对｜
+      ⛔③**它印的那个数，与它自己列出来的那一单，须一样长。**
+    ⛔**并及本测之限**（其⑬格钉在码里）：**它数得出「有没有负测」，⛔数不出「那一份负测硬不硬」**
+      （丙堆三十八项之限，其详在那一册 §二）。
+    """
+    out = run('负测·对位之三路', ['工具/负测_对位之三路.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·对位之三路：(\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_duiwei():
     """对位闸（八造·2026-09-03 立·见 工具/对位.py）——**所有的机制都得跑起来**（作者令）。
 
@@ -1677,7 +1700,11 @@ def chk_duiwei():
     ★★其红在哪一行（2026-09-03 上磁盘核）：`pageturn`（五钩·本书唯一一件量「读者翻不翻页」之器）
     全仓只有一个调用点，在 `ai_homework` 之内，而 `ai_homework` 只在 `--封版` 之下——
     **十三轮无一轮调得着它**；且 `--封版 293` 实跑，其「收尾三段」印的是封版台账，不是小说的结尾。
-    """
+
+    ★**其负测在 `工具/负测_对位之三路.py`（2026-09-23·限362 立·13 格）**——
+      ⛔**其所以要立**：**本器是数「谁没有负测」的那一把尺，而它自己没有负测**；
+      **一把量别人有没有防线的尺，自己没有防线。**
+    ⛔**并及那一测之限**：**它数得出「有没有负测」，⛔数不出「那一份负测硬不硬」。**"""
     out = run('对位闸', ['工具/对位.py'])
     if out is None:
         return False, '运行失败'
@@ -4479,6 +4506,7 @@ def main():
         items.append(('负测·封版留旗', chk_fengban_liuqi))
         items.append(('负测·开镜卡带三条', chk_kaijing_sanqiao))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))
+        items.append(('负测·对位之三路', chk_duiwei_sanlu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

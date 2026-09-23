@@ -209,9 +209,24 @@ def _品报(c):
     #     它会一直印「逾常章带者N章」，而新表说3,600不逾（六造§六④所治之形）。
     #   ★★★故此行今日虽未动，仍属令四之带所辖：**日後改带，必回来核它。**
     非常 = [x for x in ws if x[1] > 3500]
-    return ('近%d章净重 %s；其中逾常章带者 %d 章%s'
-            % (len(ws), '、'.join('%d:%d' % x for x in ws), len(非常),
-               '（%s）' % '、'.join(str(x[0]) for x in 非常) if 非常 else ''))
+    _基 = ('近%d章净重 %s；其中逾常章带者 %d 章%s'
+           % (len(ws), '、'.join('%d:%d' % x for x in ws), len(非常),
+              '（%s）' % '、'.join(str(x[0]) for x in 非常) if 非常 else ''))
+    # ★★★★★2026-09-23·限359：**把「每五章暗线须有一章 ≥2,900」那一条从「回头红」改成「当面说」。**
+    #   ⛔**此格原只印近十章之数**，**而那一条令只写在卡文里作一段劝**——
+    #     **劝了五回，349／351／353／355／357 五篇连薄，一篇也没治。**
+    #   ★**今於此处当场跑 `分量闸::须厚(c)`**：**凡本章係那一窗末一篇能交账者，即在卡上印死一行「非厚不可」。**
+    #   ⛔**而它印的仍不是一个字数**：**其语逐字写明「治在事之择，不在字数」**（其文在 `分量闸::须厚`）。
+    try:
+        import importlib.util as _iu
+        _sp = _iu.spec_from_file_location('_fl', os.path.join(os.path.dirname(os.path.abspath(__file__)), '分量闸.py'))
+        _fl = _iu.module_from_spec(_sp)
+        _sp.loader.exec_module(_fl)
+        _须, _语 = _fl.须厚(c, _fl.诸章之净重(), _fl._线之表())
+        _基 += ('\n  ' + _语) if _须 else ('\n  ' + _语)
+    except Exception as _e:
+        _基 += '\n  ⚠「须厚」之判跑不出（%s）——⛔不许当作「不须厚」，须手跑 `python3 工具/分量闸.py`。' % _e
+    return _基
 
 
 def _起草庭模():

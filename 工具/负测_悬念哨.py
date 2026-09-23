@@ -8,6 +8,7 @@
    二·⛔**牙不许拔**：**限内不许报**｜**骨记之明报须带据（空口一行不算）**｜
       **账上挂了哨才算写明——一笔逾限而账上无哨，全测那一格须红。**
 """
+import json as _j
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
 try:
@@ -45,6 +46,20 @@ def chk_xuannian():
               % (len(逾), 无哨 or '零'), not 无哨))
     R.append(('⑦⛔牙·若把哨拔掉，全测那一格须红（其判在 chk_suspense：坏→False）',
               '坏' in _io.open(os.path.join(哨.ROOT, '工具', '全测.py'), encoding='utf-8').read()))
+    # ⛔★★★★★2026-09-23·限362 补二格（随 `全测::chk_suspense` 之第二问同日）：
+    #   ★**其所治**：**一个已经过去的哨不是哨，是碑**——
+    #     **今日之实：SUS-A→哨344｜SUS-B→哨350｜SUS-C→哨330，三个哨俱在末章(362)之前，而本格照旧绿。**
+    #   ⛔**故补：⑦验新式逮得着「哨已朽」｜⑧验旧式对同一份料一声不响（故⑦非陪跑）。**
+    _源 = _io.open(os.path.join(哨.ROOT, '工具', '全测.py'), encoding='utf-8').read()
+    R.append(('⑧新式已问第二问（哨须落在末章之後·`哨 > 末`）',
+              '哨已朽' in _源 and '<= 末' in _源))
+    R.append(('⛔⑨而旧式只问「挂没挂哨」——其辞「逾限而账上无哨」原样仍在，二问并存，故⑧非陪跑',
+              '逾限而账上无哨' in _源))
+    R.append(('⑩真盘之实：三条之哨今皆落在末章之後（⛔本格读盘只作报，其判在⑧⑨）',
+              all(int((x.get('哨') or 0)) > max(哨.诸章())
+                  for x in _j.load(_io.open(os.path.join(哨.ROOT, '设定', '到期账.json'),
+                                            encoding='utf-8'))['items']
+                  if str(x.get('id', '')).startswith('SUS-'))))
     坏 = [n for n, ok in R if not ok]
     print('════ 负测·悬念哨 ════ %d/%d %s'
           % (len(R) - len(坏), len(R), '全通' if not 坏 else '有败'))

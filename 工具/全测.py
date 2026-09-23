@@ -2418,6 +2418,33 @@ def chk_kanguan_win():
     return True, '%s/%s 全通' % (m.group(2), m.group(1))
 
 
+def chk_heyu():
+    """合玉闸（2026-09-23·限359 立）——**`F026_合玉后完整态` 那一张卡之验码，今日方才有。**
+    ⛔**其卡自书 `checker=whole_jade_after_merge`，而本坐 `grep` 全仓亲数：那段码一处也没有。**
+      ★`设定/无闸之卡账.md` §五记作「诸席历来只跑正则，未跑此码」——**而实情比那一记更重**：
+      **不是「没人跑那段码」，是「那段码从来没有被写出来」。**
+      ★★**一张卡写着「由某某守卫检查」而那个守卫不存在**——**这比无闸更难发觉**：
+      **无闸之卡账上它不算无闸（它有 `checker` 之名），而盘上它一格也没被查过。**
+    ★**其判不是事理**：本器只数出白文里玉字所系之「半」，**逐处须在 `设定/合玉闸账.md` 上有一行裁**；
+      **未裁即红，裁作「犯」亦红**——**即它判的是「这一处有没有人看过」。**
+    """
+    out = run('合玉闸·自测', ['工具/合玉闸.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
+    out2 = run('合玉闸', ['工具/合玉闸.py'])
+    if out2 is None:
+        return False, '正路运行失败'
+    if '⛔ 合玉闸：' in out2:
+        _l = [x.strip() for x in out2.splitlines() if '⛔未裁' in x or '⛔判犯' in x]
+        return False, '；'.join(_l[:2]) or '未裁或判犯'
+    _m2 = _r.search(r'✓ 合玉闸：(\d+) 处逐处有裁', out2)
+    return True, '%s·%s 处逐处有裁且无一处判犯' % (m.group(0), _m2.group(1) if _m2 else '?')
+
+
 def _分量之判(out2):
     """★把 `分量闸` 正路之印读成一个判：(过否, 其语)。⛔**单拆出来，好教负测拿得住它**
     （`工具/负测_分量闸之读.py`·2026-09-23·限359 同日立）。"""
@@ -4240,6 +4267,7 @@ def main():
         items.append(('负测·分量闸之读', chk_fenliang_read))
         items.append(('负测·甲层之读', chk_jiaceng_read))
         items.append(('负测·看官问三之窗', chk_kanguan_win))
+        items.append(('合玉闸', chk_heyu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
         items.append(('负测·活挂账', chk_huogua))

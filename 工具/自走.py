@@ -430,6 +430,35 @@ def 报():
         _m9 = _u9.module_from_spec(_s9)
         _s9.loader.exec_module(_m9)
         _m9.报()
+        # ★★★★★2026-09-24 接·**自进化环在最前**（作者令「须有时刻运营之自我进化与纠错机制」）：
+        #   ⛔**它与上面那道哨之别**：**哨只会报，环会自己修**——
+        #     L0 存底枝逾 30 分未更新即**自存一回**；L1 主枝落後即**自推一回**（走闸不绕）；
+        #     **同一因连两回修不好即判卡死，⛔当面报作者，不许默默往下写**；
+        #     L3 **同族病逮到第二回而无器管它即红**（其账在 `设定/病族账.md`）。
+        #   ★**本环每跑一回落一行 `设定/自进化环.log`**——**逾两钟头没跑过，即本环自己停了**。
+        #   ⛔**此处只跑 L0／L1／L3（快）**；L2（尺之校＋自省哨）在下面各自跑，免重跑。
+        _s6 = _u9.spec_from_file_location(
+            '自进化环', _o9.path.join(_o9.path.dirname(_o9.path.abspath(__file__)),
+                                      '自进化环.py'))
+        _m6 = _u9.module_from_spec(_s6)
+        _s6.loader.exec_module(_m6)
+        for _层 in (_m6.L0, _m6.L1, _m6.L3):
+            try:
+                _ok6, _语6 = _层()
+                for _l6 in _语6:
+                    print('  ' + _l6)
+            except Exception as _e6:
+                print('  ⛔自进化环一层跑不起来：%s' % _e6)
+        try:
+            import time as _t6
+            with open(_m6.日志, 'a', encoding='utf-8') as _fh6:
+                _fh6.write('%s｜自走头·L0L1L3\n' % _t6.strftime('%Y-%m-%d %H:%M'))
+        except Exception:
+            pass
+        _卡6 = [(k, v) for k, v in _m6._读挂().items() if v.get('回', 0) >= _m6.卡死之回]
+        if _卡6:
+            print('  ⛔⛔⛔ **卡死 %d 处——⛔须当面报作者，不许默默往下写**：%s'
+                  % (len(_卡6), '；'.join(k for k, _ in _卡6)))
         # ★★★★★2026-09-24 接·**尺之校在未上库哨之下**（律⑰）：
         #   ⛔0924 之实：一条清不掉的红堵了推六天，而其真身是一把尺瞎了六十章。
         _s8 = _u9.spec_from_file_location(

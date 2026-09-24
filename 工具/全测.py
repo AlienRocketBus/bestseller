@@ -3775,6 +3775,26 @@ def chk_zixing():
     return True, '负测 %s/%s｜三格俱绿' % m.groups()
 
 
+def chk_zijinhua():
+    """负测·自进化环（2026-09-24 立·作者令「须有时刻运营之自我进化与纠错机制」）。
+
+    ⛔**其所验者：这一环自己会不会也变成「只会报」或「量错东西」的那一道。**
+    ★头一格係旧式回灌：0924 之未上库哨旧式只量主枝，真盘报「未上库 205 笔」；
+      新式先量存底枝，判「书在云端，安全」——二判确实不同。
+    ★其余：挂账连两回即卡死／修好即销｜L3 器之族例2无器即红、书之族例3方红｜L1 走闸不绕。
+    """
+    out = run('负测·自进化环', ['工具/负测_自进化环.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·自进化环 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4873,6 +4893,7 @@ def main():
         items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·封版之凭', chk_seal_proof))
         items.append(('自省哨', chk_zixing))
+        items.append(('负测·自进化环', chk_zijinhua))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))

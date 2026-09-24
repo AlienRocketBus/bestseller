@@ -98,7 +98,9 @@ def score(txt):
     hard = _硬项(txt)
 
     soft = {
-        '净重': len(re.sub(r'\s', '', body)),
+        # ★0924·第三把尺同之：换场符「＊」不是字（检察官 _weight_stats／净重对表 已同）——
+        #   365 回修後三器报 2349／2296／2296，分量闸取的正是这一把多数＊的，遂假绿。
+        '净重': sum(len(re.sub(r'\s', '', x)) for x in body.split('\n') if x.strip() != '＊'),
         '段数': len(paras),
         '均段': sum(lens) // max(len(lens), 1),
         '最长段': max(lens),

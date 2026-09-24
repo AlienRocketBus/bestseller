@@ -3569,6 +3569,27 @@ def chk_kaijing_sanqiao():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_gauge_gear():
+    """负测·公开量表格（2026-09-24·大审第4笔之价·见 工具/负测_公开量表格.py）。
+
+    ⛔**其所治者**：**353 之答本该是 0，而当日盘上没有一处在问它**——
+      **她线唯一的公开量表在那一章上一分不动，而那一章照旧过了开镜庭、照旧封了版。**
+    ★**其价之所以写成闸而不只写成条**：令九·③——**写下来的法不生效，只有变成闸才生效。**
+    ⛔**并及本测之限**：**它证得了「答 0 者当场红」，⛔证不了「那个数抄得对不对」**
+      ——**只有对着两章白文数的人判得了。**
+    """
+    out = run('负测·公开量表格', ['工具/负测_公开量表格.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·公开量表格 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4649,6 +4670,7 @@ def main():
         items.append(('负测·钩路', chk_gou_lu))
         items.append(('负测·封版留旗', chk_fengban_liuqi))
         items.append(('负测·开镜卡带三条', chk_kaijing_sanqiao))
+        items.append(('负测·公开量表格', chk_gauge_gear))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))
         items.append(('负测·对位之三路', chk_duiwei_sanlu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))

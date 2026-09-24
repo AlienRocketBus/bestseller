@@ -442,7 +442,7 @@ def 报():
                                       '自进化环.py'))
         _m6 = _u9.module_from_spec(_s6)
         _s6.loader.exec_module(_m6)
-        for _层 in (_m6.L0, _m6.L1, _m6.L3):
+        for _层 in (_m6.L4, _m6.L0, _m6.L1, _m6.L3):  # ⭐L4 书之进化列最前
             try:
                 _ok6, _语6 = _层()
                 for _l6 in _语6:

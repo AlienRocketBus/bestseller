@@ -3813,6 +3813,22 @@ def chk_jinhualian():
                   ('%s 环·有守 %s·无守 %s' % m2.groups()) if m2 else '链已写'))
 
 
+def chk_shangyin():
+    """⭐负测·上瘾四问（2026-09-24 立·作者令「小说之质是最高优先，⛔不能有任何妥协」）。
+    ★头几格以大审（至357）读者席真判过之处作旧式回灌：357 读者的理由迟至拍四｜356 之钩 357 不接｜
+      353 一线不多｜十章开十八结二｜兑现藏在拍腹——**旧式一律放行，开镜卡上根本没有这几问。**"""
+    out = run('负测·上瘾四问', ['工具/负测_上瘾四问.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·上瘾四问 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4913,6 +4929,7 @@ def main():
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))
         items.append(('进化链', chk_jinhualian))
+        items.append(('负测·上瘾四问', chk_shangyin))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))

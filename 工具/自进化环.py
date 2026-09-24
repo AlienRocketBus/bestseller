@@ -288,6 +288,56 @@ def L3():
     return True, 语
 
 
+# ═══════════ L4 书之进化：读者之判有没有流进落笔之前 ═══════════
+书之账 = os.path.join(ROOT, '设定', '书之进化账.md')
+书棘轮 = os.path.join(ROOT, '设定', '书之进化_棘轮.json')
+
+
+def L4():
+    """⭐**最高优先之层**（作者令「小说之质是最高优先，⛔不能有任何妥协」）。
+    ★**读者席（大审）判出的每一处「让人放下书」，须流进落笔之前的开镜卡**；
+    ⛔**所登之问须在开镜卡模子里逐字在**（登了而模子里没有，等於没落）；
+    ★**「未落卡」之数只许往下走（棘轮）。**"""
+    语 = []
+    if not os.path.exists(书之账):
+        return False, ['⛔L4 书之进化：书之进化账不在——⛔**读不着不是绿**']
+    模 = io.open(os.path.join(ROOT, '工具', '第零轮开镜庭.py'), encoding='utf-8').read()
+    模 = 模.split('def make_card')[1].split('def check0')[0]
+    行们 = []
+    for l in io.open(书之账, encoding='utf-8'):
+        m = re.match(r'\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$', l)
+        if m and m.group(1) not in ('读者席',) and not m.group(1).startswith('---'):
+            行们.append((m.group(1), m.group(2), m.group(3)))
+    未落 = [x for x in 行们 if '未落卡' in x[2]]
+    假落 = []
+    for 席, 判, 问 in 行们:
+        for q in re.findall(r'`([^`]+)`', 问):
+            if q not in 模:
+                假落.append('%s→%s' % (席, q))
+    if 假落:
+        语.append('⛔L4 书之进化：%d 席所登之问，开镜卡模子里并没有：%s——**登了而模子里没有，等於没落**'
+                 % (len(假落), '、'.join(假落[:4])))
+        return False, 语
+    try:
+        底 = json.load(io.open(书棘轮, encoding='utf-8'))['未落卡之底']
+    except Exception:
+        底 = len(未落)
+        io.open(书棘轮, 'w', encoding='utf-8').write(
+            json.dumps({'未落卡之底': 底, '立於': '2026-09-24'}, ensure_ascii=False))
+    if len(未落) > 底:
+        语.append('⛔L4 书之进化：读者之判未落卡 %d ＞ 底 %d——**新的读者之判没流进落笔之前**'
+                 % (len(未落), 底))
+        return False, 语
+    if len(未落) < 底:
+        io.open(书棘轮, 'w', encoding='utf-8').write(
+            json.dumps({'未落卡之底': len(未落), '下移': '%d→%d' % (底, len(未落))}, ensure_ascii=False))
+        语.append('★L4 书之进化：棘轮下移 %d → %d（又有读者之判流进了落笔之前——**这就是书在进化**）'
+                 % (底, len(未落)))
+    语.append('✓L4 书之进化：读者之判 %d 席｜已落卡 %d｜未落卡 %d（底 %d）'
+             % (len(行们), sum(1 for x in 行们 if '`' in x[2]), len(未落), min(底, len(未落))))
+    return True, 语
+
+
 # ═══════════ 本环自己：它停没停 ═══════════
 def 环之脉():
     try:
@@ -305,7 +355,8 @@ def 跑(自修=True):
         print('  ⛔**本环上一回跑在 %.1f 钟头前（限 %d）——这一环自己停过**；'
               '⛔**一个会停而没人知道的环，就是又一道祝福**' % (时, 环停之限时))
     诸 = []
-    for 名, f in (('L0', lambda: L0(自修)), ('L1', lambda: L1(自修)),
+    # ⭐L4 列在最前——**它是最高优先**（作者令）；L0 保命係其前提，其次
+    for 名, f in (('L4', L4), ('L0', lambda: L0(自修)), ('L1', lambda: L1(自修)),
                   ('L2', L2), ('L3', L3)):
         try:
             ok, 语 = f()

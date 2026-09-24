@@ -3657,6 +3657,28 @@ def chk_qishao_neg():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_helun_neg():
+    """负测·核轮（2026-09-24 立·见 工具/负测_核轮.py）。
+
+    ⛔**其所以补**：`核轮::judge` 被治过一回（**第102批**），**而那一回治的正是「其义反了」**
+      ——旧式作 `not is_last`，**遂令末章一到十轮满即判未竟，十三轮制下每章必红三轮**。
+    ★**一个被治反过一回的判，最该有一份负测钉着它**：⛔**不然下一坐再把它反回去，盘上照旧全绿。**
+    ★★**本测所钉者四样**：封版之判｜十轮满之判（末章放、非末章拦）｜未起轮不拦｜
+      非末章而轮未满者须拦；其②之三係**真的旧式回灌**（同一份状，旧式拦而新式放）。
+    ⛔**并及本测之限**：它证得了这一判没被反回去，⛔**证不了「十一轮制」本身该不该是十一轮**。
+    """
+    out = run('负测·核轮', ['工具/负测_核轮.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·核轮 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4741,6 +4763,7 @@ def main():
         items.append(('负测·逾期之账同硬', chk_overdue_hard))
         items.append(('负测·本章之失两式', chk_loss_two_forms))
         items.append(('负测·起手哨', chk_qishao_neg))
+        items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))
         items.append(('负测·对位之三路', chk_duiwei_sanlu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))

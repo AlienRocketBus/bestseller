@@ -3842,6 +3842,18 @@ def chk_xiling_jin():
     return True, '%s/%s 全通（十二份席令逐份带禁令）' % m.groups()
 
 
+def chk_buccun_desc():
+    """负测·补存说明（0924 立）：--补存 之说明短於八字者拒存（通例一〇二之第二回·本坐复犯）。"""
+    out = run('负测·补存说明', ['工具/负测_补存说明.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·补存说明 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '%s' % (('%s/%s ⛔有坏' % m.groups()) if m else '未见其数')
+    return True, '%s/%s 全通' % m.groups()
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4944,6 +4956,7 @@ def main():
         items.append(('进化链', chk_jinhualian))
         items.append(('负测·上瘾四问', chk_shangyin))
         items.append(('席令之禁', chk_xiling_jin))
+        items.append(('负测·补存说明', chk_buccun_desc))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))

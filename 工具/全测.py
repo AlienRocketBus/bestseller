@@ -666,6 +666,18 @@ def _负测四器(名, 档, 凭):
     return True, ([x.strip() for x in out.split('\n') if '──' in x and '/' in x][-1:] or [凭])[0]
 
 
+def chk_sanchi_neg():
+    """负测·三尺同量（0924·见 工具/负测_三尺同量.py·守 裁_0924_365差四字）——
+    **守：跑轮／检察官／净重对表三把尺逐章同数，换场符「＊」不计字。**"""
+    return _负测四器('负测·三尺同量', '工具/负测_三尺同量.py', '4/4')
+
+
+def chk_baozhang_neg():
+    """负测·薄章之禁（0924·见 工具/负测_薄章之禁.py·守 裁_0924_364与365之薄_换事不凑字）——
+    **守：⛔事後补短章豁免｜⛔改界、改认欠额、往额破已裁里添章。**"""
+    return _负测四器('负测·薄章之禁', '工具/负测_薄章之禁.py', '7/7')
+
+
 def chk_waisheng_neg():
     """负测·外声之三式（0918·见 工具/负测_外声三式.py）——
     **守：「…」＋说 须认得；⛔而「引纸上的字」照旧不算说话。**"""
@@ -5057,6 +5069,8 @@ def main():
         items.append(('负测·窗界哨', chk_win_bound_neg))
         items.append(('负测·入出同拍之镜', chk_inout_mirror_neg))
         items.append(('负测·外声三式', chk_waisheng_neg))
+        items.append(('负测·三尺同量', chk_sanchi_neg))
+        items.append(('负测·薄章之禁', chk_baozhang_neg))
         items.append(('窗界哨', chk_win_bound))
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))

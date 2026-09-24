@@ -430,6 +430,15 @@ def 报():
         _m9 = _u9.module_from_spec(_s9)
         _s9.loader.exec_module(_m9)
         _m9.报()
+        # ★★★★★2026-09-24 接·**尺之校在未上库哨之下**（律⑰）：
+        #   ⛔0924 之实：一条清不掉的红堵了推六天，而其真身是一把尺瞎了六十章。
+        _s8 = _u9.spec_from_file_location(
+            '尺之校', _o9.path.join(_o9.path.dirname(_o9.path.abspath(__file__)),
+                                    '尺之校.py'))
+        _m8 = _u9.module_from_spec(_s8)
+        _s8.loader.exec_module(_m8)
+        if not _m8.报():
+            print('⛔★上列诸处：**先校那把尺，⛔不要先治那几章**（律⑰）。')
     except Exception as _e9:                                  # pragma: no cover
         print('⛔未上库哨跑不起来（%s）——⛔**跑不起来不是绿**，须当面查。' % _e9)
     print('════ 自走 · 此刻该干哪一件 ════')

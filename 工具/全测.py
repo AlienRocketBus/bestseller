@@ -3841,6 +3841,19 @@ def chk_shangyin():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_caishengxiao():
+    """裁之生效（2026-09-24 作者令立）：做了的决定须有器守、且那器真在跑。
+    ⛔其由：作者当面问「做出来的决定没有生效，那做它的意义是什么？」——只写在纸上的裁不算裁。"""
+    out = run('裁之生效·自测', ['工具/裁之生效.py', '--自测'])
+    if out is None or '全通' not in out:
+        return False, '自测未过'
+    out2 = run('裁之生效', ['工具/裁之生效.py'])
+    if out2 is None or '⛔' in out2:
+        import re as _r
+        return False, ' '.join(l.strip() for l in (out2 or '').split('\n') if '⛔' in l or '·' in l)[:400]
+    return True, '0924 以後之裁份份有器在守；旧裁未生效只许降（棘轮）'
+
+
 def chk_xiling_jin():
     """席令之禁（2026-09-24 立）：每一份席令须带「席在跑时不许动整个工作区」之禁。
     ⛔其由：363 救章一席误跑 git checkout——**律⑮只印在自走里，从没走到真正动手的席令里。**"""
@@ -4968,6 +4981,7 @@ def main():
         items.append(('进化链', chk_jinhualian))
         items.append(('负测·上瘾四问', chk_shangyin))
         items.append(('席令之禁', chk_xiling_jin))
+        items.append(('裁之生效', chk_caishengxiao))
         items.append(('负测·补存说明', chk_buccun_desc))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))

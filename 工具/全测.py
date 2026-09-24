@@ -3702,6 +3702,28 @@ def chk_bookcheck_neg():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_huanxing_ruler():
+    """负测·换型令之尺（2026-09-24 立·见 工具/负测_换型令之尺.py）。
+
+    ⛔**其所验者，正是本坐今日最须被人盯着的那一改**：
+      **把 `换型令` 之尺由绝对四档换成相对之型，而那一换令十五条红当场消失，
+      并解开了一道拦了本坐六天的推闸。**
+    ★**故本测头一件事不是证它绿，是证它不是一路放绿**：
+      ①旧尺回灌（真盘红 21 章）｜②造一本真的一成不变之局，新尺照旧红｜
+      ③限由 12 收紧到 6｜④旧尺一个字未删（窗不足八章之退路）。
+    """
+    out = run('负测·换型令之尺', ['工具/负测_换型令之尺.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·换型令之尺 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4786,6 +4808,7 @@ def main():
         items.append(('负测·逾期之账同硬', chk_overdue_hard))
         items.append(('负测·本章之失两式', chk_loss_two_forms))
         items.append(('负测·起手哨', chk_qishao_neg))
+        items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))

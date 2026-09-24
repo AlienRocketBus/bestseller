@@ -3590,6 +3590,28 @@ def chk_gauge_gear():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_overdue_hard():
+    """负测·逾期之账同硬（2026-09-24 立·见 工具/负测_逾期之账同硬.py）。
+
+    ⛔**其所治者**：`小说检察官::round11_audit` 检二旧式——
+      **限本章者 hard（拦封版）｜已逾期者 soft（不拦）**：
+      **一笔账只要撑过它的到期那一章，它就从硬变软，此後永不再拦。**
+    ★**而账之所以立，正是为「到期要还」**——**逾期之账比刚到期的账更该拦，不是更不该。**
+    ⛔**并及本测之限**：它证得了「逾期者落 hard」，⛔**证不了那一笔账真清了没有**——
+      **清没清只有对着白文数的人判得了。**
+    """
+    out = run('负测·逾期之账同硬', ['工具/负测_逾期之账同硬.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·逾期之账同硬 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4671,6 +4693,7 @@ def main():
         items.append(('负测·封版留旗', chk_fengban_liuqi))
         items.append(('负测·开镜卡带三条', chk_kaijing_sanqiao))
         items.append(('负测·公开量表格', chk_gauge_gear))
+        items.append(('负测·逾期之账同硬', chk_overdue_hard))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))
         items.append(('负测·对位之三路', chk_duiwei_sanlu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))

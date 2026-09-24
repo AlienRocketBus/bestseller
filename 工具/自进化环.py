@@ -158,7 +158,8 @@ def L0(自修=True):
     if not 自修:
         return False, 语
     # ★自修：存一回
-    rc, msg = 底.存('自进化环·L0 自修：%s' % 因)
+    # ⛔**续心跳=False**：L0 不是一个在跑的席，⛔不许替任何一把锁续命（0924·本环曾令 363 之死锁永活）
+    rc, msg = 底.存('自进化环·L0 自修：%s' % 因, 续心跳=False)
     v2 = 底.验(印=False)
     好 = (rc == 0 and v2 is not None and v2['章'] >= 本)
     语.append(('  ★已自修：存底一回（%s）→ 云端今 %d 章' % (msg, v2['章'] if v2 else -1))

@@ -162,8 +162,13 @@ def 自测():
     章 = 诸章()
     n = 305
     t = io.open(章[n], encoding='utf-8').read().split('【本章亮点】')[0]
-    手 = len(re.sub(r'\s', '', re.sub(r'^.*?第.+?章[^\n]*\n', '', t, count=1, flags=re.S)))
-    R.append(('③净重之式手算复核（305 章）', 净重(章[n]) == 手))
+    # ★0924 改：手算之式旧含「＊」（净重同尺之後即成两尺）——今直取铁底闸所用之尺（检察官 _weight_stats）逐章比，
+    #   ⛔并验 363（13 个＊·两尺曾差 13 之章）：二尺之差若复现即红
+    import importlib.util as _u
+    _s = _u.spec_from_file_location('_检', os.path.join(os.path.dirname(os.path.abspath(__file__)), '小说检察官.py'))
+    _检 = _u.module_from_spec(_s); _s.loader.exec_module(_检)
+    _差 = [k for k in (305, 363) if k in 章 and 净重(章[k]) != _检._weight_stats(io.open(章[k], encoding='utf-8').read())[0]]
+    R.append(('③净重与铁底闸同尺（305、363 逐章比·今相差：%s）' % (_差 or '无'), not _差))
     # ④假盘：把一行之数改坏，须逮出
     文 = io.open(表, encoding='utf-8').read()
     坏 = None

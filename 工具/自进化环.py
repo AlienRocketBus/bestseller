@@ -99,6 +99,19 @@ def 挂(层, 因, 修得了):
     return x['回']
 
 
+def _缺碑():
+    """→ [已封版（309 起）而云端无 `章-N` 碑之章]。⛔**309 係章标之制立起之章，其前不追。**"""
+    r = _跑('git', 'ls-remote', '--heads', 'origin', timeout=60)
+    有 = set(int(x) for x in re.findall(r'refs/heads/章-(\d+)', r.stdout or ''))
+    封 = set()
+    for f in (glob.glob(os.path.join(ROOT, '设定', '回执_*第*章封版席*.md'))
+              + glob.glob(os.path.join(ROOT, '设定', '回执_*第*章作业单*.md'))):
+        m = re.search(r'第(\d+)章', os.path.basename(f))
+        if m:
+            封.add(int(m.group(1)))
+    return sorted(n for n in 封 if n >= 309 and n not in 有)
+
+
 # ═══════════ L0 保命：云端有没有这本书 ═══════════
 def L0(自修=True):
     """→ (安否, 诸语)。★**先量存底枝（保命那一层），不是主枝**——
@@ -113,11 +126,30 @@ def L0(自修=True):
         if r.stdout.strip().isdigit():
             旧分 = (time.time() - int(r.stdout.strip())) / 60.0
     缺 = (v is None) or (v['章'] < 本) or (旧分 is None) or (旧分 > 存底之限分)
-    if not 缺:
-        语.append('✓L0 保命：云端存底枝 %d 章（本地 %d）｜%.0f 分钟前存过｜章标 %d 个'
+    # ★★★★★2026-09-24 补·**缺碑之查与自补**（作者查问「是不是都保存了」之日逐块核出）：
+    #   ⛔**七章封了版而没立碑**（324／325／330／348／350／351／361）——
+    #     **书本身不缺（存底枝里全有），而「一章一块覆不掉的碑」这一层有洞**；
+    #   ★**其族係「封版之序有一步没人管」**——故 L0 自己查、自己补，⛔不再靠有人想起来。
+    缺碑 = _缺碑()
+    if 缺碑 and 自修:
+        底2 = 底
+        补 = []
+        for n in 缺碑:
+            rc, msg = 底2.标(n)
+            if rc == 0:
+                补.append(n)
+        语.append('  ★已自修：补碑 %d 块（%s）' % (len(补), '、'.join(str(x) for x in 补)))
+        缺碑 = [n for n in 缺碑 if n not in 补]
+    if 缺碑:
+        语.append('⚠L0 保命：已封版而无碑 %d 章：%s' % (len(缺碑), 缺碑[:10]))
+    if not 缺 and not 缺碑:
+        语.append('✓L0 保命：云端存底枝 %d 章（本地 %d）｜%.0f 分钟前存过｜章标 %d 个｜封版之章无一缺碑'
                  % (v['章'], 本, 旧分, v['标']))
         挂('L0', '存底', True)
         return True, 语
+    if not 缺:
+        回 = 挂('L0', '缺碑', False)
+        return False, 语
     因 = ('存底枝不在云端' if v is None else
           ('云端 %d 章 < 本地 %d 章' % (v['章'], 本) if v['章'] < 本 else
            '存底枝 %.0f 分钟未更新（限 %d）' % (旧分 or -1, 存底之限分)))
@@ -238,6 +270,21 @@ def L3():
             语.append('⛔L3 自进化：%d 族所登之器盘上不在：%s' % (len(器不在), '、'.join(器不在)))
         return False, 语
     语.append('✓L3 自进化：病族 %d 族，逮到二回以上者皆有器管它' % len(族))
+    # ★★★★★2026-09-24 补·**进化链之棘轮**（作者令「要一个完整的进化链，犯过的错不能再犯」）：
+    #   **犯过的每一个错，今天有没有一道器在守着；「无守」之数只许往下走。**
+    try:
+        import contextlib
+        链 = _器('进化链')
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            ok = 链.跑()
+        行 = [l.strip() for l in buf.getvalue().split('\n') if '共 ' in l or '棘轮' in l]
+        语.append(('✓' if ok else '⛔') + 'L3 进化链：' + '｜'.join(行)[:150])
+        if not ok:
+            return False, 语
+    except Exception as e:
+        语.append('⛔L3 进化链跑不起来：%s' % e)
+        return False, 语
     return True, 语
 
 

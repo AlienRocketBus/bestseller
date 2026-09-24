@@ -3795,6 +3795,24 @@ def chk_zijinhua():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_jinhualian():
+    """进化链＋其棘轮（2026-09-24 立·作者令「完整的进化链，犯过的错不能再犯」）。
+    ⛔**「无守之环」（只写在纸上、无器守着的教训）之数只许往下走**——新添教训而不配器即红。"""
+    out = run('进化链·自测', ['工具/进化链.py', '--自测'])
+    if out is None:
+        return False, '自测运行失败'
+    import re as _r
+    m = _r.search(r'进化链·自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '自测 %s' % (('%s/%s' % m.groups()) if m else '未见其数')
+    out2 = run('进化链', ['工具/进化链.py'])
+    if out2 is None or '棘轮红' in out2:
+        return False, '⛔棘轮红：新添了教训而没配器'
+    m2 = _r.search(r'共 (\d+) 环｜有守 (\d+)｜⛔无守（只写在纸上）(\d+)', out2 or '')
+    return True, ('自测 %s/%s｜%s' % (m.group(1), m.group(2),
+                  ('%s 环·有守 %s·无守 %s' % m2.groups()) if m2 else '链已写'))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4894,6 +4912,7 @@ def main():
         items.append(('负测·封版之凭', chk_seal_proof))
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))
+        items.append(('进化链', chk_jinhualian))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))

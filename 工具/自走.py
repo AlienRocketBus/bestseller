@@ -417,6 +417,21 @@ def 断(印=True):
 
 def 报():
     判, L = 断()
+    # ★★★★★2026-09-24 接·**未上库哨在头一行**（作者当面令）：
+    #   ⛔**今日之实**：远端末笔 09-18，而今 09-24——**350—363 十四章 GitHub 上一个字也没有**；
+    #   ★**而本坐六天里每天跑本器，本器每天印「接着办下一件」**，
+    #     **一次也没有把「还没进库」顶到作者面前。**
+    #   ★★**故它落在这一行之前**：**在「此刻该干哪一件」之前，先问「丢了没有」。**
+    try:
+        import importlib.util as _u9, os as _o9
+        _s9 = _u9.spec_from_file_location(
+            '未上库哨', _o9.path.join(_o9.path.dirname(_o9.path.abspath(__file__)),
+                                      '未上库哨.py'))
+        _m9 = _u9.module_from_spec(_s9)
+        _s9.loader.exec_module(_m9)
+        _m9.报()
+    except Exception as _e9:                                  # pragma: no cover
+        print('⛔未上库哨跑不起来（%s）——⛔**跑不起来不是绿**，须当面查。' % _e9)
     print('════ 自走 · 此刻该干哪一件 ════')
     for x in L:
         print(x)

@@ -19,6 +19,7 @@ import os, sys, io, glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 标 = '律⑮·动盘之禁'
+标20 = '律⑳·总编辑之权'
 五样 = ('git checkout', 'git stash', 'git reset --hard', 'git clean', 'git add -A')
 
 
@@ -35,6 +36,9 @@ def 查(档们=None):
         缺 = [x for x in 五样 if x not in 段]
         if 缺:
             坏.append((os.path.basename(f), '禁令缺：' + '、'.join(缺)))
+        # ★0924 补：律⑳（总编辑之权：不许「交作者裁」而停）须逐份在——⛔此段一抽，席又会停下来等作者
+        if 标20 not in t:
+            坏.append((os.path.basename(f), '无律⑳·总编辑之权'))
     return 坏
 
 
@@ -64,8 +68,13 @@ def 自测():
                   bool(r) and 'git checkout' in r[0][1]))
         全 = os.path.join(d, '全.js')
         io.open(全, 'w', encoding='utf-8').write(
-            '`%s：%s`\n' % (标, '／'.join('\\`%s\\`' % x for x in 五样)))
+            '`%s：%s`\n%s\n' % (标, '／'.join('\\`%s\\`' % x for x in 五样), 标20))
         R.append(('③五样俱在者过（⛔证本器不是一律判否）', 查([全]) == []))
+        无20 = os.path.join(d, '无20.js')
+        io.open(无20, 'w', encoding='utf-8').write(
+            '`%s：%s`\n' % (标, '／'.join('\\`%s\\`' % x for x in 五样)))
+        R.append(('③之二·缺律⑳者红（⛔抽掉它，席又会停下来等作者）',
+                  any('律⑳' in x[1] for x in 查([无20]))))
     finally:
         shutil.rmtree(d, ignore_errors=True)
     R.append(('④真盘·十二份席令逐份过', 查() == []))

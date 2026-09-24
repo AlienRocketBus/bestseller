@@ -1321,7 +1321,8 @@ def chk_起手哨():
     return True, ('自测 %s/%s｜' % (_m.group(1), _m.group(2))
                   + (尾[0] if 尾 else '过')
                   + '（日起手係本书常式 89.9%，本器只看串之长；'
-                    '⛔而跑得过它自己那十格，不等於它测着了什么——它至今无一份负测）')
+                    '★其负测 2026-09-24 已立：`工具/负测_起手哨.py` 19/19，'
+                    '钉着串之算、日词须在句首、自352门18係写死之数）')
 
 
 def chk_cold_明裁():
@@ -3633,6 +3634,29 @@ def chk_loss_two_forms():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_qishao_neg():
+    """负测·起手哨（2026-09-24 立·见 工具/负测_起手哨.py）。
+
+    ⛔**其所以补**：`对位闸` 与本器当面印过一句——
+      「**跑得过它自己那十格，不等於它测着了什么——它至今无一份负测**」。
+    ★**自测与负测所问的不是同一件事**：**自测问「今日之盘上这几样对不对」**，
+      **负测问「把它弄坏，它红不红」**。
+    ★★**本测所钉者三样**：**串怎么数**｜**日词须在句首**｜**其自 352、其门 18 係写死之数**。
+    ⛔**并及本测之限**：它证得了「这把尺没走形」，⛔**证不了「连着以日号起手」是不是一件该拦的事**
+      ——**那是 0922 那一裁判的，不是本测判的。**
+    """
+    out = run('负测·起手哨', ['工具/负测_起手哨.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·起手哨 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4716,6 +4740,7 @@ def main():
         items.append(('负测·公开量表格', chk_gauge_gear))
         items.append(('负测·逾期之账同硬', chk_overdue_hard))
         items.append(('负测·本章之失两式', chk_loss_two_forms))
+        items.append(('负测·起手哨', chk_qishao_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))
         items.append(('负测·对位之三路', chk_duiwei_sanlu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))

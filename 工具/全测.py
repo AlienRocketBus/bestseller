@@ -3612,6 +3612,27 @@ def chk_overdue_hard():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_loss_two_forms():
+    """负测·本章之失两式（2026-09-24 立·见 工具/负测_本章之失两式.py）。
+
+    ⛔**其所治者**：`书级体检::check_loss` 只认行内那一式（`**本章之失**：…`），
+      **而 359、360、361 三份案席写成一节**（`### 11 · 本章之失`），**三章皆被判「未记」**。
+    ★**其形与 0923 那个缩排之病同族**（同一处第二回）：**判过了，器没看见**——
+      **一个看不见的器，比一个不存在的器更坏：它每跑一回都在替一件办过的事作证说没办。**
+    ⛔**并及本测之限**：它证得了「两式俱认」，⛔**证不了那一条失判得对不对**。
+    """
+    out = run('负测·本章之失两式', ['工具/负测_本章之失两式.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·本章之失两式 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4694,6 +4715,7 @@ def main():
         items.append(('负测·开镜卡带三条', chk_kaijing_sanqiao))
         items.append(('负测·公开量表格', chk_gauge_gear))
         items.append(('负测·逾期之账同硬', chk_overdue_hard))
+        items.append(('负测·本章之失两式', chk_loss_two_forms))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))
         items.append(('负测·对位之三路', chk_duiwei_sanlu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))

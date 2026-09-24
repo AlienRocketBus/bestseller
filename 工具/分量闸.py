@@ -69,8 +69,11 @@ def _硬之界(n, 线表):
 def 豁免之章():
     if not os.path.exists(表):
         return set()
-    return set(int(m) for m in re.findall(r'第\s*(\d+)\s*章短章豁免',
-                                          io.open(表, encoding='utf-8').read()))
+    # ★0924 补：引號／反引號裹著的「第N章短章豁免」是引其文、不是立豁免——364 悬账行引了这一句，闸遂假绿
+    t = io.open(表, encoding='utf-8').read()
+    return set(int(m.group(1)) for m in re.finditer(r'第\s*(\d+)\s*章短章豁免', t)
+               if t[max(0, m.start() - 1):m.start()] not in ('「', '`', '“', '"')
+               and t[m.end():m.end() + 1] not in ('」', '`', '”', '"'))
 
 
 

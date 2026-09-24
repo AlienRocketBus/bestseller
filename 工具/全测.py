@@ -89,6 +89,10 @@ def _留字快照():
                 continue
             for x in fn:
                 p = os.path.join(dp, x)
+                # ★0924：自进化环之脉（每时由自走／环自写·非负测所改）不入留字之照——
+                #   ⛔只免这三档之名，别档一字之变照旧红（推闸 0924 晚被这两档之「留字」拦过一回）
+                if os.path.relpath(p, ROOT) in ('设定/自进化环.log', '设定/自进化环_挂账.json', '设定/_自进化环_推.out'):
+                    continue
                 try:
                     snap[os.path.relpath(p, ROOT)] = hashlib.sha256(open(p, 'rb').read()).hexdigest()
                 except Exception:

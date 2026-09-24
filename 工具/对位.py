@@ -48,6 +48,9 @@ T = os.path.join(ROOT, '工具')
     '预检.py': '每一刀之前',
     '可逆.py': '不可逆之事之前',
     '第零轮开镜庭.py': '开章·立卡',
+    '自走.py': '每时·自走 Routine 唯一之令（2026-09-24 补入：自进化环／尺之校／未上库哨皆由它调）',
+    '席/一章.js': '每章·十一段席之 Workflow（2026-09-24 补入：封版段调存底包）',
+    '席/收尾.js': '收尾席之 Workflow（2026-09-24 补入）',
     '自动.py': '（旧制遗留·不在今日之路上）',
     '一章到底.py': '（旧制遗留·不在今日之路上）',
     '十轮精进.py': '（旧制之驱动·今由跑轮.py代）',
@@ -86,6 +89,10 @@ def _tools():
         if f.startswith('负测_'):
             continue
         out.append(f)
+    # ★0924 补：席之 Workflow（js）亦是调器之路——旧式只扫 .py，存底包等由席调者遂判孤器
+    _x = os.path.join(T, '席')
+    if os.path.isdir(_x):
+        out += ['席/' + f for f in sorted(os.listdir(_x)) if f.endswith('.js')]
     return out
 
 
@@ -96,7 +103,9 @@ def _callers(name, tools):
     for t in tools:
         if t == name:
             continue
-        if key in _src(t):
+        _s = _src(t)
+        # ★0924 补：自走.py 以 importlib 按档名载器（`'未上库哨.py'`），不书 `工具/` 之前缀——旧式遂看不见
+        if key in _s or ("'%s'" % name) in _s:
             cs.append(t)
     return cs
 
@@ -141,6 +150,8 @@ def main():
         ling = _ling()
         孤, 哑 = [], []
         for f in tools:
+            if f.endswith('.js') and f not in 入口:   # js 只作调器之路，不作被查之器
+                continue
             if f in 入口:
                 continue
             got = _reach(f, tools)

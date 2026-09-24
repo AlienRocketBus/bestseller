@@ -11,6 +11,7 @@ const out = await agent(
 【据律·凡引必印】凡写「原场为 X:N『Y』」，**先 \`awk 'NR==N' 档名\` 印一遍**（坑㉕）。数目亲手数。据不够就停手（坑㉗）。
 
 工作目录 /home/user/the-novel。你是第 ${N} 章之**收尾席**——**总核已过、十一轮已过，而全测仍红**的那一道。
+⛔【律⑮·动盘之禁·0924 补进每一份席令】**你在跑之时，旁边可能还有别的席、别的器正在写盘**——**一律不许跑动整个工作区的命令**：\`git checkout\`（含 \`checkout .\`／\`checkout -- 档\`）／\`git stash\`／\`git reset --hard\`／\`git clean\`／\`git add -A\`。**要看改前改後**：\`git show HEAD:<路径> > /tmp/旧.md\` 再比；**要复原你自己改坏的一档**：从 \`版本/第N章/vNN.md\` 抄回来，⛔不许 checkout。（其由：0924·363 救章，一席误跑 \`git checkout\` 把正文退回 HEAD，幸当场自 v20 复原。）
 **先跑一遍看今日之实，一条也不许凭本令**：
   python3 工具/全测.py 2>&1 | tail -14
   python3 工具/开轮六检.py ${N}

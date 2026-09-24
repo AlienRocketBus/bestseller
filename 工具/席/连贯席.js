@@ -37,6 +37,7 @@ const out = await parallel(段.map(([a, b]) => () => agent(
 `【第一律】**只许优化，不许降低质量。**质量是第一优先级。
 **半成品不许交**：交白卷比交一刀假的强；**把红原样交上来，比把红压下去强。**
 工作目录 /home/user/the-novel。
+⛔【律⑮·动盘之禁·0924 补进每一份席令】**你在跑之时，旁边可能还有别的席、别的器正在写盘**——**一律不许跑动整个工作区的命令**：\`git checkout\`（含 \`checkout .\`／\`checkout -- 档\`）／\`git stash\`／\`git reset --hard\`／\`git clean\`／\`git add -A\`。**要看改前改後**：\`git show HEAD:<路径> > /tmp/旧.md\` 再比；**要复原你自己改坏的一档**：从 \`版本/第N章/vNN.md\` 抄回来，⛔不许 checkout。（其由：0924·363 救章，一席误跑 \`git checkout\` 把正文退回 HEAD，幸当场自 v20 复原。）
 
 你是《镇冢秘术》**第 ${a} 至 ${b} 章之连贯席**。
 

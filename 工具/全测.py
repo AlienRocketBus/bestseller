@@ -3829,6 +3829,19 @@ def chk_shangyin():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_xiling_jin():
+    """席令之禁（2026-09-24 立）：每一份席令须带「席在跑时不许动整个工作区」之禁。
+    ⛔其由：363 救章一席误跑 git checkout——**律⑮只印在自走里，从没走到真正动手的席令里。**"""
+    out = run('席令之禁', ['工具/席令之禁.py', '--自测'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'席令之禁·自测 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, '%s' % (('%s/%s ⛔有坏' % m.groups()) if m else '未见其数')
+    return True, '%s/%s 全通（十二份席令逐份带禁令）' % m.groups()
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4930,6 +4943,7 @@ def main():
         items.append(('负测·自进化环', chk_zijinhua))
         items.append(('进化链', chk_jinhualian))
         items.append(('负测·上瘾四问', chk_shangyin))
+        items.append(('席令之禁', chk_xiling_jin))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))

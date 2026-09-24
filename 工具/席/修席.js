@@ -23,6 +23,7 @@ const SCHEMA = {
 
 const 律 = `
 【本仓之律】工作目录 /home/user/the-novel。正文在 正文/镇冢秘术_第N章_*.md；每章末一段【本章亮点】是骨记。
+⛔【律⑮·动盘之禁·0924 补进每一份席令】**你在跑之时，旁边可能还有别的席、别的器正在写盘**——**一律不许跑动整个工作区的命令**：\`git checkout\`（含 \`checkout .\`／\`checkout -- 档\`）／\`git stash\`／\`git reset --hard\`／\`git clean\`／\`git add -A\`。**要看改前改後**：\`git show HEAD:<路径> > /tmp/旧.md\` 再比；**要复原你自己改坏的一档**：从 \`版本/第N章/vNN.md\` 抄回来，⛔不许 checkout。（其由：0924·363 救章，一席误跑 \`git checkout\` 把正文退回 HEAD，幸当场自 v20 复原。）
 白文以「＊」分拍。**改法：python3 精确整句 replace，改前 assert 出现次数==1；不许 sed 正则。**
 **不许 git stash／checkout／restore／reset／add／commit**（别席在跑，且提交是本坐的活）。
 

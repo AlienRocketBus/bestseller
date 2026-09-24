@@ -31,32 +31,29 @@ def 跑():
 
     # ①真盘：三格今日皆绿
     待, 未登, 逾限, 末 = m.甲()
-    R.append(('①真盘·甲格：码里 %d 句待验，逐笔在账且未逾限' % len(待),
+    R.append(('①真盘·甲格：码里明标 %d 笔，无一逾限' % len(待),
               not 未登 and not 逾限))
     不合, 总 = m.乙()
     R.append(('②真盘·乙格：换型令与书级体检逐章同判（%d 章）' % 总, not 不合))
     R.append(('③真盘·丙格：无「每条出路都写死 True」之 chk', not m.丙()))
 
-    # ④⛔造局·把账拿掉：甲格当场红（⛔证它不是一路放绿）
-    老 = m.待验账
-    m.待验账 = os.path.join(tempfile.mkdtemp(prefix='无账_'), '无.md')
+    # ④⛔造局·**说起待验的话不是一笔待验**（自进化环头一回真跑即逮出本格旧式之误报）
+    R.append(('④⛔旧式回灌：旧式认字面「待验」，**自进化环.py:11 那一句描述当场被判作一笔**',
+              '待验' in '②**报了而无人读**：「待验」写在注里'))
+    R.append(('④之二·新式只认明标：同一句描述⛔不算',
+              not m.明标.search('②**报了而无人读**：「待验」写在注里')))
+    # ⑤⛔造局·明标之限已过：甲格当场红
+    import types
+    老诸 = m.诸待验
+    m.诸待验 = lambda: [('造局.py', 1, '# 【待验·限100】某治之效待验')]
     try:
-        _, 未2, _, _ = m.甲()
-        R.append(('④⛔造局·账不在，甲格当场报「未登」（%d 器）' % len(未2), bool(未2)))
+        _, _, 逾3, _ = m.甲()
+        R.append(('⑤⛔造局·明标限 100 而今第%d章，甲格当场报逾限' % 末, bool(逾3)))
+        m.诸待验 = lambda: [('造局.py', 1, '# 【待验·限999】某治之效待验')]
+        _, _, 逾4, _ = m.甲()
+        R.append(('⑤之二·明标限 999 者未逾（⛔证⑤非一律判否）', not 逾4))
     finally:
-        m.待验账 = 老
-
-    # ⑤⛔造局·账上之限已过：甲格当场红
-    d = tempfile.mkdtemp(prefix='旧账_')
-    p = os.path.join(d, '旧.md')
-    io.open(p, 'w', encoding='utf-8').write('| `全测.py` | x | 限1 |\n')
-    m.待验账 = p
-    try:
-        _, 未3, 逾3, _ = m.甲()
-        R.append(('⑤⛔造局·账上之限係 1 而今第%d章，甲格当场报「逾限」' % 末, bool(逾3)))
-    finally:
-        m.待验账 = 老
-        shutil.rmtree(d, ignore_errors=True)
+        m.诸待验 = 老诸
 
     # ⑥⛔丙格之牙：造一个「每条出路都写死 True」之 chk，须被逮着
     码 = 'def chk_祝福():\n    if 1:\n        return True, "好"\n    return True, "也好"\n'
@@ -84,9 +81,8 @@ def 跑():
     R.append(('⑧⛔乙格只验今日已知之一对，且其注明写「⛔不泛化」', '⛔不泛化' in src))
 
     # ⑨真盘·待验账在盘上且带限章
-    R.append(('⑨真盘·`设定/待验账.md` 在，且其笔带「限N」',
-              os.path.exists(os.path.join(ROOT, '设定', '待验账.md'))
-              and bool(m.账上之笔())))
+    R.append(('⑨真盘·`设定/待验账.md` 在（其律与销账之记在那里）',
+              os.path.exists(os.path.join(ROOT, '设定', '待验账.md'))))
 
     for 名, o in R:
         print(('  ✓ ' if o else '  ⛔ ') + 名)

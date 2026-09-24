@@ -439,6 +439,15 @@ def 报():
         _s8.loader.exec_module(_m8)
         if not _m8.报():
             print('⛔★上列诸处：**先校那把尺，⛔不要先治那几章**（律⑰）。')
+        # ★★★★★2026-09-24 接·**自省哨在尺之校之下**（律⑱·作者令「须有自我纠错与进化之机制」）：
+        #   ⛔其所问只一样：**器上写着的话，有没有一道器在读它。**
+        _s7 = _u9.spec_from_file_location(
+            '自省哨', _o9.path.join(_o9.path.dirname(_o9.path.abspath(__file__)),
+                                    '自省哨.py'))
+        _m7 = _u9.module_from_spec(_s7)
+        _s7.loader.exec_module(_m7)
+        if not _m7.报():
+            print('⛔★上列诸处：**器上写着的话没有人在读它**——**这一族病今日逮到六处**（律⑱）。')
     except Exception as _e9:                                  # pragma: no cover
         print('⛔未上库哨跑不起来（%s）——⛔**跑不起来不是绿**，须当面查。' % _e9)
     print('════ 自走 · 此刻该干哪一件 ════')

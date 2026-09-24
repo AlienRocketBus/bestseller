@@ -3747,6 +3747,34 @@ def chk_seal_proof():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_zixing():
+    """自省哨＋其负测（2026-09-24 立·作者令「须有自我纠错与进化之机制」）。
+
+    ⛔**其所以立·0924 一日之内逮到六处同族之病**：
+      换型令用着一把 332 起就瞎的尺（0917 只换一器）｜「案席」令 363 冒充封版
+      （0923 自书「待验」而无人读）｜书级体检⑦只认一种写法｜chk_hookspath 永不可能红｜
+      悬念三哨皆指过去之章而闸绿着｜七器之自测写了而全测不跑。
+    ★★**一句话**：⛔**器上写着的话，没有一道器在读它。**
+    ★★★**故本哨问三样**：甲·待验之账（须登账带限）｜乙·同源二判（二器读同一样而判相反）｜
+      丙·永不可能红者（每条出路都写死 True）。⛔**它不改任何一处，只把它们摆到台面上。**
+    """
+    out = run('自省哨·负测', ['工具/负测_自省哨.py'])
+    if out is None:
+        return False, '负测运行失败'
+    import re as _r
+    m = _r.search(r'负测·自省哨 (\d+)/(\d+)', out)
+    if not m or m.group(1) != m.group(2):
+        return False, ('负测 %s' % (('%s/%s' % m.groups()) if m else '未见其数'))
+    out2 = run('自省哨', ['工具/自省哨.py'])
+    if out2 is None:
+        return False, '自省哨运行失败'
+    if '⛔' in (out2 or '').split('════')[-1]:
+        坏 = [l.strip() for l in out2.split('\n') if l.strip().startswith('⛔')
+              or '⛔**' in l]
+        return False, (坏[0][:90] if 坏 else '自省哨报红')
+    return True, '负测 %s/%s｜三格俱绿' % m.groups()
+
+
 def chk_round_zero():
     """第零轮·开镜庭（2026-08-16立·见 工具/第零轮开镜庭.py）：起草之前问三事——
     ★①本章之位（主线还是暗线）／★★②本章之镜（若为暗线，是谁）／★★★③本章之一事。
@@ -4844,6 +4872,7 @@ def main():
         items.append(('负测·起手哨', chk_qishao_neg))
         items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·封版之凭', chk_seal_proof))
+        items.append(('自省哨', chk_zixing))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))
         items.append(('负测·封版须推位', chk_fengban_tuiwei))

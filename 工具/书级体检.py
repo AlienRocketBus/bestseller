@@ -506,7 +506,7 @@ def check_loss(chs):
         #   **那两样都不是判，是判外头的包装。**
         if rec == '未记':
             for raw in _raws:
-                m2 = re.search(r'^#{2,4}\s*[^\n]*本章之失[^\n]*$', raw, re.M)
+                m2 = re.search(r'^(?:#{2,4}\s*[^\n]*本章之失[^\n]*|\*\*[^\n*]*本章之失[^\n*]*\*\*\s*)$', raw, re.M)  # 0924：363 案席作整行粗体之题「**11·本章之失（…）**」——第三式
                 if not m2:
                     continue
                 for l in raw[m2.end():].split('\n'):

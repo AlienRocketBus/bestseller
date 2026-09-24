@@ -57,7 +57,8 @@ from 亮点对表 import 诸章  # noqa: E402
 def 净重(路):
     t = io.open(路, encoding='utf-8').read().split('【本章亮点】')[0]
     b = re.sub(r'^.*?第.+?章[^\n]*\n', '', t, count=1, flags=re.S)
-    return len(re.sub(r'\s', '', b))
+    # 0924：与检察官 _weight_stats 同尺——换场符「＊」不是字（363 两尺差 13 即此）
+    return sum(len(re.sub(r'\s', '', x)) for x in b.split('\n') if x.strip() != '＊')
 
 
 

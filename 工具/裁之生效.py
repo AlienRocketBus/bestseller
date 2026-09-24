@@ -12,6 +12,12 @@
 ★旧裁以棘轮守（同 `进化链.py`）：**未生效之裁数只许降、不许升**；
   0924（含）以後所立之裁，一份也不许未生效——立裁之日须同日配器。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import io, os, re, sys, glob, json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

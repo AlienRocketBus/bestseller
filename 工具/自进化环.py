@@ -47,6 +47,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 主枝之限笔 = 3         # 主枝落後逾此笔 → 自修（推一回）
 卡死之回 = 2           # 同一原因连此回不变 → 判卡死，当面报作者
 环停之限时 = 2         # 本环逾此钟头没跑过 → 本环自己停了
+推之间隔分 = 50        # L1 两回发起推之最短间隔（⛔每回推跑一整套全测约二十分钟）
 
 
 def _器(名):
@@ -186,13 +187,29 @@ def L1(自修=True):
     if not 自修:
         return False, 语
     # ★自修：推一回（⛔走闸，不绕；推闸之判即其判）——放在後台，免本环被卡二十分钟
+    # ⛔★★★★★2026-09-24 补·**本层头一版每跑一回就发起一回推**（本坐当日逐层计时所逮）：
+    #   **每回推跑一整套全测（约二十分钟）**，而 `自走` 每小时一回、手动又可随时跑——
+    #   ⛔**几回全测叠在一起抢机器，并互相撞「负测留字」**（通例六九）。
+    #   ★**故加二闸**：①**已有一回推在跑，不再起**；②**距上一回发起不足 `推之间隔分` 分钟，不再起**。
     记 = os.path.join(ROOT, '设定', '_自进化环_推.out')
+    在跑 = _跑('pgrep', '-f', 'git push -u origin').stdout.strip()
     try:
-        subprocess.Popen('git push -u origin %s > "%s" 2>&1' % (主枝, 记),
-                         cwd=ROOT, shell=True)
-        语.append('  ★已自修：发起一回推（後台·走闸不绕·其印落 设定/_自进化环_推.out）')
-    except Exception as e:
-        语.append('  ⛔发起推不成：%s' % e)
+        上回分 = (time.time() - os.path.getmtime(记)) / 60.0
+    except Exception:
+        上回分 = 1e9
+    if 在跑:
+        语.append('  ★已有一回推在跑（⛔不再起第二回·免全测叠跑）')
+    elif 上回分 < 推之间隔分:
+        语.append('  ★上一回推发起於 %.0f 分钟前（限 %d）——⛔不再起' % (上回分, 推之间隔分))
+    else:
+        try:
+            subprocess.Popen('git push -u origin %s > "%s" 2>&1' % (主枝, 记),
+                             cwd=ROOT, shell=True, start_new_session=True,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             stdin=subprocess.DEVNULL)
+            语.append('  ★已自修：发起一回推（後台·走闸不绕·其印落 设定/_自进化环_推.out）')
+        except Exception as e:
+            语.append('  ⛔发起推不成：%s' % e)
     # ★上一回推之果：若仍被拦，读出其「点名之红」作因
     因 = '主枝落後'
     try:
@@ -384,8 +401,10 @@ def 跑(自修=True):
 
 def 自测():
     R = []
-    R.append(('①诸限写死（30分／3笔／2回／2时）',
-              (存底之限分, 主枝之限笔, 卡死之回, 环停之限时) == (30, 3, 2, 2)))
+    R.append(('①诸限写死（30分／3笔／2回／2时／推间50分）',
+              (存底之限分, 主枝之限笔, 卡死之回, 环停之限时, 推之间隔分) == (30, 3, 2, 2, 50)))
+    R.append(('①之二·⛔L1 已有推在跑即不再起（免全测叠跑·0924 逐层计时所逮）',
+              "pgrep', '-f', 'git push -u origin'" in io.open(__file__, encoding='utf-8').read()))
     # ②⛔挂账：同一因连两回即卡死，修好即销
     老 = dict(_读挂())
     try:

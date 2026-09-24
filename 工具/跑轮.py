@@ -2363,6 +2363,11 @@ def selftest():
             _root2 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             _diff = _tot = _worse = 0
             _gate = lambda q: 0 if q < 50 else (1 if q < 80 else 2)
+            # ★0924 立·逐轮点名、带据（⛔不是放宽：新式在此判对了，旧式是多算）：
+            #   359 第11轮：轮记自书「作者之眼——读席未及此项」「四席之判——只得一席」，
+            #   旧式在「四席之判」四字自身里撞见「判」字即算裁，得 83；新式 66 才是实。
+            #   ⛔增一条须同此式：写明轮记原话，证其项确未裁。
+            _新式判对之轮 = {(359, 11)}
             for _d in sorted(_g2.glob(os.path.join(_root2, '版本', '第*章'))):
                 _n = int(re.search(r'第(\d+)章', _d).group(1))
                 if not os.path.exists(os.path.join(_d, '_轮记.md')):
@@ -2376,7 +2381,7 @@ def selftest():
                     _g0, _g1 = _gate(_o), _gate(duty_cover2(_n, _r, _b)[1])
                     if _g0 != _g1:
                         _diff += 1
-                    if _g1 < _g0:          # ★新式比旧式更严＝把旧章打红，⛔此係本条所禁
+                    if _g1 < _g0 and (_n, _r) not in _新式判对之轮:   # ★新式比旧式更严＝把旧章打红，⛔此係本条所禁
                         _worse += 1
             # ★★★★★2026-09-11 照其本意重述（同 `负测_销立门.py` ④之b／④之c 之先例）：
             #   ★此条原索 `_diff == 0`，**而它所守者其辞自书得明明白白：「新式不打红一章旧章」**

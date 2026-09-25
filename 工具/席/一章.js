@@ -804,11 +804,12 @@ const 盲读题 = (回, 样) => `${令}
 **这一章放进这本书里，配不配得上一本中国第一的小说？**——pass（true／false），拿不准即 false。
 凭你自己的眼光判，⛔不照任何清单打勾。
 若 false：说出你读着哪里不对（引原句），并给**一刀**——你觉得最能让它变好的那一件。⛔不许开空方。
+另答 happened：**用一句话说你读到这一章发生了什么**（谁怎样了）——⛔照你读到的说，不猜作者之意。
 ⛔你不许改正文一个字。`
 const 盲读式 = { type: 'object', properties: {
   pass: { type: 'boolean' }, weakest: { type: 'string' }, best: { type: 'string' },
-  forced: { type: 'string' }, one_cut: { type: 'string' } },
-  required: ['pass', 'weakest', 'best', 'forced', 'one_cut'] }
+  forced: { type: 'string' }, one_cut: { type: 'string' }, happened: { type: 'string' } },
+  required: ['pass', 'weakest', 'best', 'forced', 'one_cut', 'happened'] }
 const 一轮盲读 = async (回) => (await parallel(读者样.map((样, k) => () =>
   agent(盲读题(回, 样), { phase: '极限', label: '盲读·' + 回 + '·' + (k + 1), schema: 盲读式 })))).filter(Boolean)
 const 过了没 = (群) => 群.length >= 4 && 群.filter(r => r.pass).length >= 4
@@ -833,6 +834,23 @@ ${众见}
 交：动了哪几拍、为什么、诸器绿红。`, { phase: '极限', label: '重锻·' + 回 })
   盲读 = await 一轮盲读(回 + 1)
   盲读记.push(盲读)
+}
+// ★0925 之教训：367 五人皆过，而五人皆读成「床上那人死了」——作者之意是骨节不回（水肿），369 还要接第八骨节。
+//   读者读到的事与作者写的事不同，于读者即是剧情崩坏。故另派一席：拿五人之 happened 对开镜卡之一事，不合即回写。
+const 读误 = await agent(`你是第 ${N} 章之**读误席**。读 \`版本/第${N}章/_开镜卡.md\`（本章要写的事）与 \`设定/人物状态册.json\`，
+再看五位盲读者各自一句「读到发生了什么」：
+${盲读.map((r, k) => '读者' + (k + 1) + '：' + r.happened).join('\n')}
+问：有没有**两位以上读者读到的事，与本章要写的事、或与状态册（谁生谁死）相抵**？（例：作者写病重，读者读成死了）
+有，则 misread=true，写明哪一处白文致误（引原句）、该怎样以一个动作让读者读对（⛔不许加说明句）。⛔你不许改任何档。`,
+  { phase: '极限', label: '读误', schema: { type: 'object', properties: { misread: { type: 'boolean' }, where: { type: 'string' }, fix: { type: 'string' } }, required: ['misread', 'where', 'fix'] } })
+if (读误 && 读误.misread) {
+  await agent(`${令}
+
+你是第 ${N} 章之**读误回写席**。${据律}
+${续律}
+多位盲读者把本章读错了：${读误.where}
+治法：${读误.fix}
+⛔只许加一个动作或改一处措辞让读者读对，⛔不许加解释句；改後过 \`python3 工具/崩坏闸.py ${N}\`、\`python3 工具/起草闸.py ${N}\`，存一版，轮记起一节「## 读误回写」。`, { phase: '极限', label: '读误回写' })
 }
 const 盲读过 = 过了没(盲读)
 log(盲读过 ? `盲读之关过（${盲读记.length} 轮·末轮 ${盲读.filter(r => r.pass).length}/${盲读.length}）` : '⛔盲读之关二回重锻仍不足四过——案席不许封版')

@@ -3756,6 +3756,36 @@ def chk_kexi():
     last = [l for l in r.stdout.splitlines() if '刻意之疲' in l or '收尾同式' in l]
     return r.returncode == 0, ' ｜'.join(x.strip() for x in last[-2:])[:300]
 
+
+def chk_chaoxi():
+    """抄袭闸（2026-09-25 立·作者令「千万不要抄之前的章节，後果不堪设想」）：
+    凡 0925 以後新封之章，与前 30 章逐字重合 ≥12% 即红；旧章之欠在 设定/抄袭回修账.md，按其限治。"""
+    import json as _j, subprocess as _sp
+    try:
+        底 = _j.load(open(os.path.join(ROOT, '设定', '抄袭回修账.json'), encoding='utf-8'))
+    except Exception:
+        return False, '抄袭回修账.json 读不得'
+    旧欠 = set(底.get('旧欠', []))
+    自 = 底.get('自章', 367)
+    import glob as _g, re as _re
+    sys.path.insert(0, os.path.join(ROOT, '工具'))
+    import importlib.util as _u
+    sp = _u.spec_from_file_location('cx', os.path.join(ROOT, '工具', '抄袭闸.py')); m = _u.module_from_spec(sp); sp.loader.exec_module(m)
+    章 = m.诸章()
+    _ls = _sp.run(['git', '-c', 'core.quotepath=off', 'ls-files', '正文'], cwd=ROOT, capture_output=True, text=True).stdout
+    封 = [n for n, f in 章.items() if n >= 自 and os.path.relpath(f, ROOT) in _ls]   # 只判已入库者，写到一半的不算
+    红 = []
+    for n in sorted(set(封) | 旧欠):
+        if n not in 章:
+            continue
+        ok, r = m.查(n, 印=False)
+        if not ok and n not in 旧欠:
+            红.append('第%d章 %.1f%%' % (n, r))
+    还欠 = [n for n in 旧欠 if n in 章 and not m.查(n, 印=False)[0]]
+    if 红:
+        return False, '⛔新章照抄：' + '、'.join(红)
+    return True, '新章无照抄；旧欠 %d 章待回修（账在 设定/抄袭回修账.md）' % len(还欠)
+
 def chk_blind_read():
     """负测·盲读之关（2026-09-25 立·见 工具/负测_盲读之关.py）：每章须过一个不读任何席之说的读者，
     二回重锻仍不肯接着翻，就不许封版。守其牙不被拔。"""
@@ -5011,6 +5041,7 @@ def main():
         items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·封版之凭', chk_seal_proof))
         items.append(('负测·盲读之关', chk_blind_read))
+        items.append(('抄袭闸', chk_chaoxi))
         items.append(('刻意之疲', chk_kexi))
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))

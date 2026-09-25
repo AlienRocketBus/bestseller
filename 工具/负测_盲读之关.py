@@ -30,6 +30,11 @@ chk('⑪写章令不另立刻意之规（刻意之疲只照镜不入令）', '�
 _q = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '全测.py'), encoding='utf-8').read()
 _z = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '自走.py'), encoding='utf-8').read()
 chk('⑫刻意之疲接进全测与自走（造了就要跑）', "('刻意之疲', chk_kexi)" in _q and '刻意之疲.py' in _z)
+chk('⑬起草後另派抄袭之关亲跑（不靠自报），红则重写', '三之二·抄袭之关' in s and "抄.red && k <= 2" in s)
+chk('⑭起草令首立「起草是最重要的一关·绝不许抄」', '起草是最重要的一关' in s and '绝不许抄前面的章节' in s)
+_c = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '起草闸.py'), encoding='utf-8').read()
+chk('⑮抄袭闸在起草闸甲层', "('抄袭闸', ['工具/抄袭闸.py'" in _c)
+chk('⑯全测接抄袭闸', "('抄袭闸', chk_chaoxi)" in _q)
 坏 = [x for x in 案 if not x[1]]
 print('════ 负测·盲读之关 ════')
 for 名, 过 in 案:

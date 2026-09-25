@@ -75,6 +75,19 @@ def 立(何, 由, 档们):
     return 号
 
 
+def 补登(号, 提交们):
+    """事後补登：已立之单点名其所覆之提交（该提交当时未写单号）。⛔补登也须先 --立（有其由、有备份）。"""
+    d = 读()
+    for x in d['单']:
+        if x['号'] == 号:
+            x.setdefault('覆', []).extend(提交们)
+            写(d)
+            with open(清单, 'a', encoding='utf-8') as f:
+                f.write('- **%s 补登**：覆提交 %s（当时未写单号，事後补登）\n' % (号, '、'.join(提交们)))
+            print('✓%s 补登覆 %s' % (号, '、'.join(提交们))); return True
+    print('⛔无此单：%s' % 号); return False
+
+
 def 毕(号, 句):
     d = 读()
     for x in d['单']:
@@ -94,10 +107,13 @@ def 查(印=True):
                               '--name-only', '--format=@@%h %s%n%b'], cwd=ROOT, capture_output=True, text=True).stdout
     except Exception:
         out = ''
+    覆 = {c for x in 读()['单'] for c in x.get('覆', [])}   # 补登：事後立单、点名所覆之提交（须有其由，入修改清单）
     for 块 in out.split('@@')[1:]:
         行 = 块.strip().split('\n')
         头 = 行[0]; 文 = '\n'.join(行)
         档 = [l for l in 行[1:] if 管.match(l)]
+        if 档 and any(头.startswith(c[:7]) for c in 覆):
+            continue
         if 档 and '改单#' not in 文 and '封版#' not in 文:   # 新章封版之追记（圣经入册、状态册同步、锁定行）係添不係改，标「封版#N」
             坏.append('%s 改了 %s 而无改单' % (头[:40], '、'.join(档[:3])))
     for x in 读()['单']:
@@ -145,6 +161,8 @@ if __name__ == '__main__':
         sys.exit(0 if 查()[0] else 1)
     if '--立' in a:
         i = a.index('--立'); sys.exit(0 if 立(a[i + 1], a[i + 2], a[i + 3:]) else 1)
+    if '--补登' in a:
+        i = a.index('--补登'); sys.exit(0 if 补登(a[i + 1], a[i + 2:]) else 1)
     if '--毕' in a:
         i = a.index('--毕'); sys.exit(0 if 毕(a[i + 1], a[i + 2]) else 1)
     for x in 读()['单']:

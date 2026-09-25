@@ -3746,6 +3746,21 @@ def chk_huanxing_ruler():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+
+def chk_blind_read():
+    """负测·盲读之关（2026-09-25 立·见 工具/负测_盲读之关.py）：每章须过一个不读任何席之说的读者，
+    二回重锻仍不肯接着翻，就不许封版。守其牙不被拔。"""
+    out = run('负测·盲读之关', ['工具/负测_盲读之关.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·盲读之关 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
 def chk_seal_proof():
     """负测·封版之凭（2026-09-24 立·见 工具/负测_封版之凭.py）。
 
@@ -4986,6 +5001,7 @@ def main():
         items.append(('负测·起手哨', chk_qishao_neg))
         items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·封版之凭', chk_seal_proof))
+        items.append(('负测·盲读之关', chk_blind_read))
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))
         items.append(('进化链', chk_jinhualian))

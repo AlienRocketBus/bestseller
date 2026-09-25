@@ -3786,6 +3786,14 @@ def chk_chaoxi():
         return False, '⛔新章照抄：' + '、'.join(红)
     return True, '新章无照抄；旧欠 %d 章待回修（账在 设定/抄袭回修账.md）' % len(还欠)
 
+
+def chk_zongbian():
+    """总编辑复核（2026-09-25 立·作者令「你是总话事人；规矩是死的人是活的；此机制一定要行使起来」）：
+    甲·48 小时内须有一裁（权须行使）；乙·裁「废」之规不许仍挂全测（裁须生效）。"""
+    import subprocess as _sp
+    r = _sp.run([sys.executable, '工具/总编辑复核.py', '--查'], cwd=ROOT, capture_output=True, text=True)
+    return r.returncode == 0, ' ｜'.join(l.strip() for l in r.stdout.splitlines() if l.strip())[:300]
+
 def chk_blind_read():
     """负测·盲读之关（2026-09-25 立·见 工具/负测_盲读之关.py）：每章须过一个不读任何席之说的读者，
     二回重锻仍不肯接着翻，就不许封版。守其牙不被拔。"""
@@ -5041,6 +5049,7 @@ def main():
         items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·封版之凭', chk_seal_proof))
         items.append(('负测·盲读之关', chk_blind_read))
+        items.append(('总编辑复核', chk_zongbian))
         items.append(('抄袭闸', chk_chaoxi))
         items.append(('刻意之疲', chk_kexi))
         items.append(('自省哨', chk_zixing))

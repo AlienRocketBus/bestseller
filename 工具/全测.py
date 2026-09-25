@@ -3794,6 +3794,14 @@ def chk_zongbian():
     r = _sp.run([sys.executable, '工具/总编辑复核.py', '--查'], cwd=ROOT, capture_output=True, text=True)
     return r.returncode == 0, ' ｜'.join(l.strip() for l in r.stdout.splitlines() if l.strip())[:300]
 
+
+def chk_gaidan():
+    """改单（2026-09-25 立·作者令「一切皆可改，改的前提是让小说更好；每改必有清单与备份，可追溯核查」）：
+    凡改已有之正文章或圣经／canon／状态册之提交，说明里须有「改单#」。"""
+    import subprocess as _sp
+    r = _sp.run([sys.executable, '工具/改单.py', '--查'], cwd=ROOT, capture_output=True, text=True)
+    return r.returncode == 0, ' ｜'.join(l.strip() for l in r.stdout.splitlines() if l.strip())[:300]
+
 def chk_blind_read():
     """负测·盲读之关（2026-09-25 立·见 工具/负测_盲读之关.py）：每章须过一个不读任何席之说的读者，
     二回重锻仍不肯接着翻，就不许封版。守其牙不被拔。"""
@@ -5049,6 +5057,7 @@ def main():
         items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·封版之凭', chk_seal_proof))
         items.append(('负测·盲读之关', chk_blind_read))
+        items.append(('改单', chk_gaidan))
         items.append(('总编辑复核', chk_zongbian))
         items.append(('抄袭闸', chk_chaoxi))
         items.append(('刻意之疲', chk_kexi))

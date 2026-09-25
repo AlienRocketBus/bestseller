@@ -433,6 +433,8 @@ def 报():
         _sp20.run([sys.executable, _os20.path.join(_os20.path.dirname(_os20.path.abspath(__file__)), '总编辑复核.py')], timeout=60)
     except Exception as _e22:
         print('  ⛔总编辑复核跑不起来：%s' % _e22)
+    print('⭐【一切皆可改】圣经、设定、已写之章，皆可改——唯一前提：改了之後书更好（说得出好在哪）；'
+          '每改必 `python3 工具/改单.py --立` 立单、备份改前原文、提交写「改单#」；说不出更好在哪，不改。')
     print('⭐【写章唯一之规】无招胜有招：每一章尽全力写到质量最高——何谓最高，即诸章合起来，这本书是中国第一的小说。'
           '⛔不立刻意之规去绑一章怎么写。')
     try:

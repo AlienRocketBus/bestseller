@@ -35,6 +35,12 @@ chk('⑭起草令首立「起草是最重要的一关·绝不许抄」', '起草
 _c = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '起草闸.py'), encoding='utf-8').read()
 chk('⑮抄袭闸在起草闸甲层', "('抄袭闸', ['工具/抄袭闸.py'" in _c)
 chk('⑯全测接抄袭闸', "('抄袭闸', chk_chaoxi)" in _q)
+chk('⑰起草三稿各写（三位执笔·入口不同·同一魂）', "const 入口们 = [" in s and "执笔·' + x.名" in s)
+chk('⑱动笔前须读前两章白文全文', '白文全文从头读到尾' in s)
+chk('⑲写完自当读者读一遍、跑抄袭闸', '你自己当读者，从头到尾读一遍你写的' in s and '抄袭闸.py --档' in s)
+chk('⑳五位盲读者比三稿，看多数择优', "label: '比稿·'" in s and '哪一稿放进这本书里最好' in s)
+chk('㉑合稿只许嫁接多数所点之拍', '只许嫁接至少两位读者同点的他稿之拍' in s)
+chk('㉒合稿令里无未定义之 JS 变量（0925 当场逮过 body.slice）', 'body.slice' not in s)
 坏 = [x for x in 案 if not x[1]]
 print('════ 负测·盲读之关 ════')
 for 名, 过 in 案:

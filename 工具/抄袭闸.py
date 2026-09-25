@@ -12,6 +12,7 @@
 【判】≥12% 红（⛔起草不许交，须重写——不是改几个字躲过去，是换写法、写新的）；9%—12% 黄；并印重合最长的五串与其出处。
 
 用法：python3 工具/抄袭闸.py N      # 查第 N 章
+      python3 工具/抄袭闸.py --档 <草稿路径> N   # 查第 N 章之草稿（未入正文者）
       python3 工具/抄袭闸.py --段 A B # 逐章印 A—B 之率
       python3 工具/抄袭闸.py --自测
 """
@@ -76,12 +77,12 @@ def 量(本, 旧们):
     return (100.0 * sum(盖) / max(1, len(本))), 串们[:5]
 
 
-def 查(N, 印=True):
+def 查(N, 印=True, 档=None):
     章 = 诸章()
-    if N not in 章:
+    if 档 is None and N not in 章:
         print('⛔抄袭闸：第%d章之档不在' % N); return False, 0
     旧们 = [(m, 白文(章[m])) for m in range(max(1, N - 前), N) if m in 章]
-    率, 串们 = 量(白文(章[N]), 旧们)
+    率, 串们 = 量(白文(档 or 章[N]), 旧们)
     if 印:
         print('════ 抄袭闸 ════ 第%d章与前%d章逐字重合（≥%d字之串）：%.1f%%（红线 %.0f%%·常例 0.5—9%%）'
               % (N, len(旧们), K, 率, 红))
@@ -121,4 +122,7 @@ if __name__ == '__main__':
             ok, r = 查(n, 印=False)
             print('  %s 第%d章 %.1f%%' % ('⛔' if not ok else ('⚠' if r >= 黄 else '✓'), n, r))
         sys.exit(0)
+    if '--档' in a:   # 查草稿：python3 工具/抄袭闸.py --档 <路径> N（起草三稿用）
+        i = a.index('--档')
+        sys.exit(0 if 查(int(a[i + 2]), 档=a[i + 1])[0] else 1)
     sys.exit(0 if 查(int(a[0]))[0] else 1)

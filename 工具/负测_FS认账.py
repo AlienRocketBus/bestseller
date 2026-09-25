@@ -72,6 +72,7 @@ _判前 = f('')
 #   ★★★★**其判准（令§六④）**：**改後它还逮不逮得住它本来要逮的东西？**
 #     ——①一根逾期而无人写「未兑」者照旧拦｜②少认一根即拦；**二者皆由本测自造之根验得动。**
 _rc = None
+_rcs = []   # ★0925·367 起一章可有两份回执（封版席＋案席）；只挪头一份，FS闸 读着第二份即判「已答」，窗口造不出——须逐份挪开
 _canon = os.path.join(_R, '设定', 'canon事实库.json')
 _canon_orig = None
 _synth = None
@@ -80,7 +81,9 @@ if not _ids:
     _cand = _g.glob(os.path.join(_R, '设定', '回执_*_第%d章*.md' % _n))
     if _cand:
         _rc = _cand[0]
-        os.rename(_rc, _rc + '.负测暂移')
+        _rcs = list(_cand)
+        for _p in _rcs:
+            os.rename(_p, _p + '.负测暂移')
 
     def _再查():
         _sf2 = iu.spec_from_file_location('_fs2', os.path.join(_D, 'FS闸.py'))
@@ -176,8 +179,8 @@ finally:
 #     ★**一份靠「盘上恰好没有那几个字」才过的测，就是陪跑**（令§六③）。
 #   ★★★★★**故治：把回执之还原提到①之b 之前**——**「复原毕」就该是四样全复原**。
 #     ⛔**不放松任何一格**：①②两组之判据一字未动；②之c／②之d 照旧在其後复验。
-if _rc:
-    os.rename(_rc + '.负测暂移', _rc)
+for _p in _rcs:
+    os.rename(_p + '.负测暂移', _p)
 chk('①之b 复原毕·其判与测前同（证本测未把账改坏）', f(''), _判前)
 if _synth:
     chk('②之e 自造之根已还原（测不许留下一笔自己挪过的账）',
@@ -185,7 +188,7 @@ if _synth:
     chk('②之f 自造之认账已抹（轮记须与测前逐字相同）',
         io.open(_lj, encoding='utf-8').read() == _真orig, True)
 if _rc:
-    chk('②之c 回执已还原（测不许留下一件挪走的档）', os.path.exists(_rc), True)
+    chk('②之c 回执已还原（测不许留下一件挪走的档）', all(os.path.exists(_p) for _p in _rcs), True)
     chk('②之d 还原毕·此口自销（回执一交即不走跑轮档之放行）', f('') is False, True)
 
 坏 = [x for x in 案 if not x[1]]

@@ -12,5 +12,18 @@
         ]
       }
     ]
-  }
+  },
+  "permissions": {
+    "allow": [
+      "Workflow",
+      "Bash",
+      "Edit",
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
+      "Agent"
+    ]
+  },
+  "_说明_权": "作者令（0925）：派席之 Workflow 与诸常用器一律免问，不许再停在「Allow once」上等作者点。"
 }

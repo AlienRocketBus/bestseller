@@ -3747,6 +3747,15 @@ def chk_huanxing_ruler():
 
 
 
+
+def chk_kexi():
+    """刻意之疲（2026-09-25 立·作者令「最怕刻意：每章都吊胃口，读者审美疲劳、全书割裂」）：
+    按段看章尾——吊式收尾成套、或最新一章又落进收尾之模子，即红。见 工具/刻意之疲.py。"""
+    import subprocess as _sp
+    r = _sp.run([sys.executable, '工具/刻意之疲.py'], cwd=ROOT, capture_output=True, text=True)
+    last = [l for l in r.stdout.splitlines() if '刻意之疲' in l or '收尾同式' in l]
+    return r.returncode == 0, ' ｜'.join(x.strip() for x in last[-2:])[:300]
+
 def chk_blind_read():
     """负测·盲读之关（2026-09-25 立·见 工具/负测_盲读之关.py）：每章须过一个不读任何席之说的读者，
     二回重锻仍不肯接着翻，就不许封版。守其牙不被拔。"""
@@ -5002,6 +5011,7 @@ def main():
         items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·封版之凭', chk_seal_proof))
         items.append(('负测·盲读之关', chk_blind_read))
+        items.append(('刻意之疲', chk_kexi))
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))
         items.append(('进化链', chk_jinhualian))

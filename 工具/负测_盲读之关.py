@@ -26,6 +26,11 @@ chk('③不过则封版席不派', "const 封 = !盲读过 ?" in s)
 chk('③之b 案席令明写不许封版', '本章不许封版' in s)
 chk('④结果随工作流交回', '盲读: 盲读记, 盲读过' in s)
 chk('⑤拿不准即 false（宁严勿松）', '拿不准即 false' in s)
+chk('⑩写章令不再逼「每章踢进下一章」', '把读者踢进下一章的那一脚' not in s and '把读者往下一章推不推' not in s)
+chk('⑪起草先跑刻意之疲、不许落进收尾同式', '工具/刻意之疲.py' in s)
+_q = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '全测.py'), encoding='utf-8').read()
+_z = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '自走.py'), encoding='utf-8').read()
+chk('⑫刻意之疲接进全测与自走（造了就要跑）', "('刻意之疲', chk_kexi)" in _q and '刻意之疲.py' in _z)
 坏 = [x for x in 案 if not x[1]]
 print('════ 负测·盲读之关 ════')
 for 名, 过 in 案:

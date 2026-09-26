@@ -623,7 +623,9 @@ def _末拍(n):
         _s.loader.exec_module(_m)
         _, t = _m.白文(n)
         拍 = _m.拍(t) if t else []
-        return re.sub(r'\s', '', 拍[-1]) if 拍 else ''
+        # ★0926·376 封版席治：比对之另一边（接钩之引）去掉「」“”"，而此边只去空白——
+        #   末拍自带「」者（375:85「「腿」那一行後面……」），逐字照抄之引亦判红。两边同去，⛔判据未松。
+        return re.sub(r'[\s「」“”"]', '', 拍[-1]) if 拍 else ''
     except Exception:
         return ''
 

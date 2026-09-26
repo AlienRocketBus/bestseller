@@ -3748,6 +3748,15 @@ def chk_huanxing_ruler():
 
 
 
+def chk_dashi():
+    """大师之关（2026-09-26 立·作者令「必须得执行起来，别弄出来不执行」）：
+    自 377 起封版之章，三执笔构思／行家评（含合稿逐条回话）／创作记录六节／进化账之条，缺一即红。见 工具/大师之关.py。"""
+    import subprocess as _sp
+    a = _sp.run([sys.executable, '工具/大师之关.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    r = _sp.run([sys.executable, '工具/大师之关.py'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+
+
 def chk_kexi():
     """刻意之疲（2026-09-25 立·作者令「最怕刻意：每章都吊胃口，读者审美疲劳、全书割裂」）：
     按段看章尾——吊式收尾成套、或最新一章又落进收尾之模子，即红。见 工具/刻意之疲.py。"""
@@ -5061,6 +5070,7 @@ def main():
         items.append(('总编辑复核', chk_zongbian))
         items.append(('抄袭闸', chk_chaoxi))
         items.append(('刻意之疲', chk_kexi))
+        items.append(('大师之关', chk_dashi))
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))
         items.append(('进化链', chk_jinhualian))

@@ -14,7 +14,7 @@
 import os, re, sys, json, glob, tempfile, shutil
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-语 = re.compile(r'书名[之的]?许诺|冲着书名|书名之字|扣题|冢／墓／术|冢墓术|书名.{0,6}缺席')
+语 = re.compile(r'书名[之的]?许诺|冲着书名|书名之字|扣题|冢／墓／术|冢墓术|书名.{0,6}缺席|只带书名|读书名|切题|对题')
 免 = ('书名不绑.py', '负测_书名不绑.py')
 
 

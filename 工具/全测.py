@@ -3748,6 +3748,16 @@ def chk_huanxing_ruler():
 
 
 
+def chk_shengjing_yin():
+    """圣经引号（2026-09-27·圣经大修⑥·改单#G0927-10 立）：在役诸档之 `圣经:NNNN` 逐条对圣经今行，
+    条号之引（以「律·」为名者）须在圣经有其条；空／离题之数只许降不许升（基线 工具/圣经引号_基线.json）。
+    ⛔旧引之漂只印不判——本项之 ✓ 只说「没有新漂、条号俱在」，不说「旧引皆对」：其数原样印在项尾。见 工具/圣经引号.py。"""
+    import subprocess as _sp
+    a = _sp.run([sys.executable, '工具/圣经引号.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    r = _sp.run([sys.executable, '工具/圣经引号.py', '--静'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip().split('\n')[-1])[:300]
+
+
 def chk_shuming():
     """书名不绑（2026-09-27 立·作者令「书名只是定向，⛔不许把书名元素硬塞进正文」）：见 工具/书名不绑.py。"""
     import subprocess as _sp
@@ -5080,6 +5090,7 @@ def main():
         items.append(('刻意之疲', chk_kexi))
         items.append(('大师之关', chk_dashi))
         items.append(('书名不绑', chk_shuming))
+        items.append(('圣经引号', chk_shengjing_yin))
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))
         items.append(('进化链', chk_jinhualian))

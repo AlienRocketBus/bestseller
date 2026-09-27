@@ -5602,7 +5602,7 @@ def _validate_master_contract(master_text, latest, next_ch):
     if not latest:
         return
     written=re.search(
-        r'^## 十一、已写 1—(\d+) 章的唯一事件链[ \t]*$',
+        r'^## 十一、已写 1—(\d+) 章·事件链（[^\n]*）[ \t]*$',  # 0927 大修⑦正名（改单#G0927-11）
         master_text, re.M)
     if not written or int(written.group(1))!=latest:
         raise ValueError(f'唯一总圣经“已写 1—{latest} 章”末章锚未同步')
@@ -5805,7 +5805,7 @@ def contract_negative_selftest(files):
     required=shrunk.get('open_brief',{}).get('required_state_cards',[])
     shrunk['open_brief']['required_state_cards']=required[:1]
     stale_count,count_hits=re.subn(
-        rf'(^## 十一、已写 1—){latest}( 章的唯一事件链[ \t]*$)',
+        rf'(^## 十一、已写 1—){latest}( 章·事件链（[^\n]*）[ \t]*$)',
         lambda match: match.group(1)+str(max(0,latest-1))+match.group(2),
         master_text,count=1,flags=re.M)
     stale_next,next_hits=re.subn(

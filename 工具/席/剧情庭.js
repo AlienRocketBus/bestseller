@@ -29,24 +29,25 @@ const 席 = [
 ]
 
 const 案式 = { type: 'object', properties: {
-  判现文: { type: 'string' }, 现文好看: { type: 'number' }, 现文立得住: { type: 'number' },
-  守原: { type: 'boolean' }, 守原之由: { type: 'string' },
-  案: { type: 'array', items: { type: 'object', properties: {
-    名: { type: 'string' }, 方案: { type: 'string' }, 为何比现文更好: { type: 'string' },
-    立得住之据: { type: 'string' }, 改文之价: { type: 'string' } },
-    required: ['名', '方案', '为何比现文更好', '立得住之据'] } } },
-  required: ['判现文', '现文好看', '现文立得住', '守原', '案'] }
+  current_judgement: { type: 'string' }, current_appeal: { type: 'number' }, current_sound: { type: 'number' },
+  keep: { type: 'boolean' }, keep_reason: { type: 'string' },
+  proposals: { type: 'array', items: { type: 'object', properties: {
+    name: { type: 'string' }, plan: { type: 'string' }, why_better: { type: 'string' },
+    soundness: { type: 'string' }, rewrite_cost: { type: 'string' } },
+    required: ['name', 'plan', 'why_better', 'soundness'] } } },
+  required: ['current_judgement', 'current_appeal', 'current_sound', 'keep', 'proposals'] }
 
 phase('独立出案')
 const 一 = await parallel(席.map(s => () => agent(`${底}
 
-你是【${s.身}】（剧情庭·${s.k}席）。⛔独立：你看不到也不许揣测他席。你看：${s.看}。
+你是【${s.身}】（剧情庭·${s.k}席）。⛔独立：你看不到也不许揣测他席。（输出字段：current_*＝对现文之判；keep＝守原；proposals＝你的案，各含 name/plan/why_better/soundness/rewrite_cost）你看：${s.看}。
 先判「现文」（题档所列之现行剧情；若是新想之题，则判题档所列之既定方向）：好看、立得住各 0—10，长短。
 ${守原}
 ${式 === '改' ? '若要改，最多三案，每案都须过上面之律。' : ''}`, { label: `出案·${s.k}`, phase: '独立出案', schema: 案式, effort: 'max' })))
 const 池 = []
-一.forEach((r, i) => { if (r) (r.案 || []).forEach((a, j) => 池.push({ id: `${席[i].k}${j + 1}`, 出: 席[i].k, ...a })) })
-const 守原数 = 一.filter(r => r && r.守原).length
+一.forEach((r, i) => { if (r) (r.proposals || []).forEach((a, j) => 池.push({ id: `${席[i].k}${j + 1}`, by: 席[i].k, ...a })) })
+if (一.some(r => !r)) throw new Error('出案之席有失（'+一.map((r,i)=>r?'':席[i].k).join('')+'）——⛔不许以缺席作守原')
+const 守原数 = 一.filter(r => r && r.keep).length
 log(`出案 ${池.length} 个；守原 ${守原数} 席`)
 
 if (!池.length) {
@@ -60,30 +61,32 @@ const 刺 = await parallel(池.map(a => () => agent(`${底}
 你是【挑刺王】，专挑逻辑与剧情之刺，⛔不给情面。攻这一案：
 ${JSON.stringify(a, null, 1)}
 找出它最致命的刺（因果立不立得住、人会不会这样做、读者会问的「他为什么不……」、与书中之律相抵、它说的「比现文更好」是不是真的）。⛔与已写正文相抵不算刺，只记改文之价。判：致命／可治／轻；可治者给治法。`, { label: `刺·${a.id}`, phase: '挑刺', effort: 'max',
-  schema: { type: 'object', properties: { 刺: { type: 'string' }, 级: { type: 'string', enum: ['致命', '可治', '轻'] }, 治法: { type: 'string' }, 更好之说真否: { type: 'string' } }, required: ['刺', '级', '更好之说真否'] } })
-  .then(t => ({ ...a, 刺: t }))))
-const 池刺 = 刺.filter(Boolean)
+  schema: { type: 'object', properties: { flaw: { type: 'string' }, level: { type: 'string', enum: ['致命', '可治', '轻'] }, remedy: { type: 'string' }, better_claim_true: { type: 'string' } }, required: ['flaw', 'level', 'better_claim_true'] } })
+  .then(t => ({ ...a, flaw: t }))))
+if (刺.some(t => !t)) throw new Error('挑刺之席有失')
+const 池刺 = 刺
 
 phase('独立复评')
 const 评式 = { type: 'object', properties: {
-  分: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, 好看: { type: 'number' }, 立得住: { type: 'number' }, 胜现文否: { type: 'boolean' }, 由: { type: 'string' } }, required: ['id', '好看', '立得住', '胜现文否', '由'] } },
-  现文好看: { type: 'number' }, 首选: { type: 'string' } }, required: ['分', '现文好看', '首选'] }
+  scores: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, appeal: { type: 'number' }, sound: { type: 'number' }, beats_current: { type: 'boolean' }, reason: { type: 'string' } }, required: ['id', 'appeal', 'sound', 'beats_current', 'reason'] } },
+  current_appeal: { type: 'number' }, first_choice: { type: 'string' } }, required: ['scores', 'current_appeal', 'first_choice'] }
 const 二 = await parallel([...席, { k: '挑刺王', 身: '挑刺王' }].map(s => () => agent(`${底}
 
 你是【${s.身}】（剧情庭·${s.k}席·独立复评）。⛔不许看作者姓名、不许依谁出的案而偏；只凭案本身。
 池中诸案（含挑刺王之刺）：
 ${JSON.stringify(池刺, null, 1)}
-逐案打分：好看、立得住（0—10；有致命之刺未治者立得住 ≤4）；判它胜不胜现文（须真比现文更好看且立得住，才判胜）。再给现文好看之分，与你的首选（案 id，或「现文」）。`, { label: `复评·${s.k}`, phase: '独立复评', schema: 评式, effort: 'max' })))
+逐案打分（字段 scores[{id,appeal,sound,beats_current,reason}]、current_appeal、first_choice）：好看、立得住（0—10；有致命之刺未治者立得住 ≤4）；判它胜不胜现文（须真比现文更好看且立得住，才判胜）。再给现文好看之分，与你的首选（案 id，或「现文」）。`, { label: `复评·${s.k}`, phase: '独立复评', schema: 评式, effort: 'max' })))
 
 // 机械之选：守原为默认。一案须 立得住均≥7、好看均高於现文均≥1、过半席判胜现文，方得入裁
-const 评 = 二.filter(Boolean)
-const 现均 = 评.reduce((x, r) => x + r.现文好看, 0) / Math.max(1, 评.length)
+if (二.some(r => !r)) throw new Error('复评之席有失')
+const 评 = 二
+const 现均 = 评.reduce((x, r) => x + r.current_appeal, 0) / Math.max(1, 评.length)
 const 计 = 池刺.map(a => {
-  const ss = 评.map(r => r.分.find(f => f.id === a.id)).filter(Boolean)
+  const ss = 评.map(r => r.scores.find(f => f.id === a.id)).filter(Boolean)
   const 均 = k => ss.reduce((x, f) => x + f[k], 0) / Math.max(1, ss.length)
-  return { id: a.id, 好看: 均('好看'), 立得住: 均('立得住'), 胜票: ss.filter(f => f.胜现文否).length, 席数: ss.length }
+  return { id: a.id, appeal: 均('appeal'), sound: 均('sound'), wins: ss.filter(f => f.beats_current).length, n: ss.length }
 })
-const 可 = 计.filter(c => c.立得住 >= 7 && c.好看 - 现均 >= 1 && c.胜票 * 2 > c.席数).sort((a, b) => b.好看 - a.好看)
+const 可 = 计.filter(c => c.sound >= 7 && c.appeal - 现均 >= 1 && c.wins * 2 > c.n).sort((a, b) => b.appeal - a.appeal)
 log(`现文好看均 ${现均.toFixed(1)}；过门之案 ${可.map(c => c.id).join('、') || '无'}`)
 
 phase('裁')

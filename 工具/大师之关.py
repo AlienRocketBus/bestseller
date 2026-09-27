@@ -47,6 +47,9 @@ def 查(n, root=ROOT):
         for k in ('小说家', '总编辑', '## 合稿逐条回话'):
             if k not in t:
                 缺.append('_行家评.md 无「%s」' % k)
+        # 0927 作者令·立得住之律（设定/立得住之律.md）：自 380 章起，行家须逐条过「因立不立得住」
+        if n >= 380 and '## 立得住' not in t:
+            缺.append('_行家评.md 无「## 立得住」（立得住之律）')
     f = os.path.join(d, '_创作记录.md')
     if not os.path.exists(f):
         缺.append('_创作记录.md 不在')
@@ -98,7 +101,7 @@ def 自测():
         # ③五样俱全 → 绿
         for 名 in '甲乙丙':
             open(os.path.join(d, '起草_%s_构思.md' % 名), 'w').write('进化账所避：某条\n' + '构' * 420)
-        open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 合稿逐条回话\n1. 改\n')
+        open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 立得住\n无\n## 合稿逐条回话\n1. 改\n')
         open(os.path.join(d, '_创作记录.md'), 'w').write(''.join(k + '、x\n' for k in '一二三四五六'))
         open(os.path.join(tmp, '设定', '大师进化账.md'), 'a').write('- [第400章] 教训｜出处｜往后\n')
         共 += 1; ok += (全(tmp) == {})
@@ -109,6 +112,9 @@ def 自测():
         open(os.path.join(d, '起草_乙_构思.md'), 'w').write('进化账所避：某条\n' + '构' * 420)
         open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n')
         共 += 1; r = 全(tmp); ok += (400 in r and any('合稿逐条回话' in x for x in r[400]))
+        # ⑥无「立得住」 → 红
+        open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 合稿逐条回话\n1. 改\n')
+        共 += 1; r = 全(tmp); ok += (400 in r and any('立得住' in x for x in r[400]))
         # ⑥自章之前者不查
         d2 = os.path.join(tmp, '版本', '第376章'); os.makedirs(d2)
         open(os.path.join(d2, '_十一轮.json'), 'w').write('{}')

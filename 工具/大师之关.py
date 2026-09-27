@@ -39,6 +39,9 @@ def 查(n, root=ROOT):
             缺.append('构思·%s 不足 400 字' % 名)
         if '进化账所避' not in t:
             缺.append('构思·%s 无「进化账所避」' % 名)
+        # 0927 作者令·完美主义（设定/反面教材.md）：自 380 章起构思须有「满分之问」
+        if n >= 380 and '满分之问' not in t:
+            缺.append('构思·%s 无「满分之问」（反面教材·一次到位）' % 名)
     f = os.path.join(d, '_行家评.md')
     if not os.path.exists(f):
         缺.append('_行家评.md 不在')
@@ -100,7 +103,7 @@ def 自测():
         共 += 1; r = 全(tmp); ok += (400 in r and len(r[400]) >= 5)
         # ③五样俱全 → 绿
         for 名 in '甲乙丙':
-            open(os.path.join(d, '起草_%s_构思.md' % 名), 'w').write('进化账所避：某条\n' + '构' * 420)
+            open(os.path.join(d, '起草_%s_构思.md' % 名), 'w').write('进化账所避：某条\n满分之问：三路\n' + '构' * 420)
         open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 立得住\n无\n## 合稿逐条回话\n1. 改\n')
         open(os.path.join(d, '_创作记录.md'), 'w').write(''.join(k + '、x\n' for k in '一二三四五六'))
         open(os.path.join(tmp, '设定', '大师进化账.md'), 'a').write('- [第400章] 教训｜出处｜往后\n')
@@ -109,9 +112,14 @@ def 自测():
         open(os.path.join(d, '起草_乙_构思.md'), 'w').write('构' * 500)
         共 += 1; r = 全(tmp); ok += (400 in r and any('进化账所避' in x for x in r[400]))
         # ⑤行家评无合稿回话 → 红（行家之改法须逐条办）
-        open(os.path.join(d, '起草_乙_构思.md'), 'w').write('进化账所避：某条\n' + '构' * 420)
+        open(os.path.join(d, '起草_乙_构思.md'), 'w').write('进化账所避：某条\n满分之问：三路\n' + '构' * 420)
         open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n')
         共 += 1; r = 全(tmp); ok += (400 in r and any('合稿逐条回话' in x for x in r[400]))
+        # ⑥之一构思无「满分之问」 → 红
+        open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 立得住\n无\n## 合稿逐条回话\n1. 改\n')
+        open(os.path.join(d, '起草_丙_构思.md'), 'w').write('进化账所避：某条\n' + '构' * 420)
+        共 += 1; r = 全(tmp); ok += (400 in r and any('满分之问' in x for x in r[400]))
+        open(os.path.join(d, '起草_丙_构思.md'), 'w').write('进化账所避：某条\n满分之问：三路\n' + '构' * 420)
         # ⑥无「立得住」 → 红
         open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 合稿逐条回话\n1. 改\n')
         共 += 1; r = 全(tmp); ok += (400 in r and any('立得住' in x for x in r[400]))

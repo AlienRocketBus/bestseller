@@ -37,8 +37,8 @@ def 永禁词():
             _PF_CACHE = [w for w in d.get('perm_forbidden', []) if isinstance(w, str) and w]
         except Exception:
             _PF_CACHE = []
-        # ★而旧表所独有之四词（哆嗦／骊山／僵尸／点亮）须并进来，一个不许丢
-        for w in ('哆嗦', '骊山', '僵尸', '点亮'):
+        # ★而旧表所独有之二词（哆嗦／僵尸；0927 骊山、点亮解封）须并进来，一个不许丢
+        for w in ('哆嗦', '僵尸'):
             if w not in _PF_CACHE:
                 _PF_CACHE.append(w)
     return _PF_CACHE
@@ -138,8 +138,8 @@ if __name__ == '__main__':
                 红[k][1] += v
         print('════ 硬闸 · 全书回灌 ════')
         _pf = 永禁词()
-        _old_only = [w for w in ('哆嗦', '骊山', '僵尸', '点亮') if w not in _pf[:len(_pf) - 4] or True]
-        print('  永禁词共 %d 个（其中 canon 之表 %d 个）' % (len(_pf), len(_pf) - sum(1 for w in ('哆嗦', '骊山', '僵尸', '点亮') if _pf.index(w) >= len(_pf) - 4)))
+        _old_only = [w for w in ('哆嗦', '僵尸') if w not in _pf[:len(_pf) - 4] or True]
+        print('  永禁词共 %d 个（其中 canon 之表 %d 个）' % (len(_pf), len(_pf) - sum(1 for w in ('哆嗦', '僵尸') if _pf.index(w) >= len(_pf) - 4)))
         if not 红:
             print('  ✓ 十八格全零。')
         for k, v in sorted(红.items(), key=lambda x: -x[1][1]):

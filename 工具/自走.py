@@ -482,12 +482,7 @@ def 报():
                     print('  ' + _l6)
             except Exception as _e6:
                 print('  ⛔自进化环一层跑不起来：%s' % _e6)
-        try:
-            import time as _t6
-            with open(_m6.日志, 'a', encoding='utf-8') as _fh6:
-                _fh6.write('%s｜自走头·L0L1L3\n' % _t6.strftime('%Y-%m-%d %H:%M'))
-        except Exception:
-            pass
+        _m6.记脉('自走头·L0L1L3')   # 脉由自进化环自落（本器不动盘）
         _卡6 = [(k, v) for k, v in _m6._读挂().items() if v.get('回', 0) >= _m6.卡死之回]
         if _卡6:
             print('  ⛔⛔⛔ **卡死 %d 处——⛔须当面报作者，不许默默往下写**：%s'

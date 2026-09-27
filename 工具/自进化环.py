@@ -382,6 +382,15 @@ def 环之脉():
         return None
 
 
+def 记脉(标):
+    """本环之日志只由本环写（0927：自走.py 自诩不动盘，其头之一行脉改由此落）。"""
+    try:
+        with io.open(日志, 'a', encoding='utf-8') as fh:
+            fh.write('%s｜%s\n' % (time.strftime('%Y-%m-%d %H:%M'), 标))
+    except Exception:
+        pass
+
+
 def 跑(自修=True):
     print('════ 自进化环 · 查 → 自修 → 验自修 → 修不了才报，报了就挂账 ════')
     global 本回之始

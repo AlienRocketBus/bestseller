@@ -1,7 +1,7 @@
 export const meta = {
   name: '大升级',
   description: '全书大升级：式「总」定全书升级总案；式「节」十章一小节——五席独立诊并各出三方、挑刺、复评、过门，三大师重写，行家合稿，验而落（大升级之律·0927）',
-  phases: [{ title: '诊与方' }, { title: '挑刺' }, { title: '复评' }, { title: '裁' }, { title: '执' }, { title: '验与落' }],
+  phases: [{ title: '通读' }, { title: '诊与方' }, { title: '挑刺' }, { title: '复评' }, { title: '裁' }, { title: '执' }, { title: '验与落' }],
 }
 // args: { 式: '总' } 或 { 式: '节', 起: 1, 止: 10 }
 const 式 = (args && args.式) || '节'
@@ -17,7 +17,7 @@ const 底 = `你在长篇小说仓库 /home/user/the-novel 里。正文在 \`正
 ⭐【律⑳·总编辑之权】不许写「交作者裁」而停下；须裁之事照「书更好看」当场裁并写其由；此权不许用来凑字、造高潮、放宽闸。`
 
 const 读令 = 式 === '总'
-  ? '通读全书之纲（圣经、总纲、诸大审册、普查、二稿账），并**亲自逐字抽读**每一站之头、腰、尾各至少两章（1—60 楼兰前、61—140、140—272 青溪、273—360 巴蜀、361—379 贺兰），⛔凭印象判者无效。'
+  ? '通读全书之纲（圣经、总纲、诸大审册、普查、二稿账）；下附三十八位读者逐字通读全书之逐章诊；你再**亲自逐字读**你所拟改动之处与每一站之头、腰、尾，⛔凭印象判者无效。'
   : `**逐字读完第 ${起}—${止} 章全部正文**（⛔不许扫读），再读第 ${起 - 1 > 0 ? 起 - 1 : 1} 章（已升级者读升级後之文）与第 ${止 + 1} 章之头，知其接缝。`
 const 方令 = 式 === '总'
   ? '交**三个全书升级总案**（真不同），每案含：①全书压、删、增、并之处，逐段列章号与压到几章（拖拉、绕圈者重点）；②每站之揭晓与不可回之代价放在哪；③三十八个小节（每十章）各自之升级之的一两句；④新章号之法与何时复写新章（380 起）。每案说明为何比现书更好看、如何立得住、改文之价。'
@@ -38,11 +38,36 @@ const 方式 = { type: 'object', properties: {
     required: ['name', 'plan', 'why_better', 'soundness'] } } },
   required: ['diagnosis', 'current_appeal', 'current_sound', 'plans'] }
 
+// ★总式：先通读全书——三十八位读者各自逐字读十章，交逐章之诊，供五席定总案（0927 作者令「尽全力、绝对完美」）
+let 通读 = []
+if (式 === '总') {
+  phase('通读')
+  const 段 = []
+  for (let a = 1; a <= 379; a += 10) 段.push([a, Math.min(a + 9, 379)])
+  const 读式 = { type: 'object', properties: {
+    block_summary: { type: 'string' },
+    chapters: { type: 'array', items: { type: 'object', properties: {
+      n: { type: 'number' }, what_happens: { type: 'string' }, strong: { type: 'string' },
+      weak: { type: 'string' }, drag: { type: 'string' }, bugs: { type: 'string' },
+      verdict: { type: 'string', enum: ['保', '修', '压', '并', '删', '重写'] } },
+      required: ['n', 'what_happens', 'weak', 'drag', 'bugs', 'verdict'] } },
+    reader_holds: { type: 'string' }, missing: { type: 'string' } },
+    required: ['block_summary', 'chapters', 'reader_holds', 'missing'] }
+  通读 = await parallel(段.map(([a, b]) => () => agent(`${底}
+
+你是全书大升级之通读者（第 ${a}—${b} 章）。⛔独立；⛔**逐字读完这 ${b - a + 1} 章全部正文**，不许扫读、不许凭摘要。你是最挑的读者兼最好的编辑。
+逐章交：发生了什么（两三句）、最好之处（引原句）、写得不好或只是过关之处（引原句）、拖沓与绕圈（同一意思隔章重出者指出）、bug（前後矛盾、数目、人物走样、因立不住——引章:行）、判（保／修／压／并／删／重写）。
+再交：读完这十章读者手里握着什么大问（reader_holds）；这十章缺了什么（揭晓、代价、前迹、真拦主角之力）（missing）。`, { label: `通读·${a}-${b}`, phase: '通读', schema: 读式, effort: 'max' })))
+  const 失 = 通读.map((r, i) => r ? '' : `${段[i][0]}-${段[i][1]}`).filter(Boolean)
+  if (失.length) throw new Error('通读有失：' + 失.join('、') + '——⛔不许缺读而定总案')
+}
+const 通读文 = 式 === '总' ? `\n【全书通读·三十八位读者逐章之诊（各自逐字读毕）】\n${JSON.stringify(通读)}\n⛔以上是底，你仍须亲自逐字读你要动之处的原文再下判。` : ''
+
 phase('诊与方')
 const 一 = await parallel(席.map(s => () => agent(`${底}
 
 你是【${s.身}】（大升级·${s.n}席·${名}）。⛔独立：看不到他席。你看：${s.看}。
-${读令}
+${读令}${通读文}
 ${方令}
 给现文打分：好看、立得住（0—10，10＝世界名著之水准）。`, { label: `诊·${s.n}`, phase: '诊与方', schema: 方式, effort: 'max' })))
 if (一.some(r => !r)) throw new Error('诊方之席有失——⛔不许以缺席作守原')

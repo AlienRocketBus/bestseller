@@ -3776,7 +3776,7 @@ def chk_dashi():
 
 
 def chk_juqing():
-    """剧情庭之关（0927 作者令「这个机制一定要跑起来」）：自 381 起每十章一段，段内有章封版而无剧情庭所裁之势即红。见 工具/剧情庭之关.py。"""
+    """剧情庭之关（0927 作者令「这个机制一定要跑起来」）：自 381 起每十章一段，段内有章封版而无剧情庭所裁之势即红。见 工具/剧情庭之关.py；庭即 工具/席/剧情庭.js。"""
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/剧情庭之关.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/剧情庭之关.py'], cwd=ROOT, capture_output=True, text=True)

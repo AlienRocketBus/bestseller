@@ -3783,6 +3783,14 @@ def chk_juqing():
     return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
 
 
+def chk_shengjing_suicai():
+    """圣经随裁（0927 作者令「圣经要随时更新；机制必须跑起来」）：0927 以後之裁与剧情庭之裁须已落进圣经／总纲。见 工具/圣经随裁.py。"""
+    import subprocess as _sp
+    a = _sp.run([sys.executable, '工具/圣经随裁.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    r = _sp.run([sys.executable, '工具/圣经随裁.py'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+
+
 def chk_kexi():
     """刻意之疲（2026-09-25 立·作者令「最怕刻意：每章都吊胃口，读者审美疲劳、全书割裂」）：
     按段看章尾——吊式收尾成套、或最新一章又落进收尾之模子，即红。见 工具/刻意之疲.py。"""
@@ -5098,6 +5106,7 @@ def main():
         items.append(('刻意之疲', chk_kexi))
         items.append(('大师之关', chk_dashi))
         items.append(('剧情庭之关', chk_juqing))
+        items.append(('圣经随裁', chk_shengjing_suicai))
         items.append(('书名不绑', chk_shuming))
         items.append(('圣经引号', chk_shengjing_yin))
         items.append(('自省哨', chk_zixing))

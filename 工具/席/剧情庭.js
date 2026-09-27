@@ -57,7 +57,7 @@ const 守原数 = 一.filter(r => r && r.keep).length
 log(`出案 ${池.length} 个；守原 ${守原数} 席`)
 
 if (!池.length) {
-  const 裁 = await agent(`${底}\n四席皆守原：${JSON.stringify(一)}\n写 \`设定/剧情庭_${名}.md\`：裁「守原」，列四席之判与由。git add 该档并 commit（末两行：\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回一句摘要。`, { label: '裁·守原', phase: '裁', effort: 'max' })
+  const 裁 = await agent(`${底}\n四席皆守原：${JSON.stringify(一)}\n写 \`设定/剧情庭_${名}.md\`：裁「守原」，列四席之判与由，并写「圣经无改」及其由。git add 该档并 commit（末两行：\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回一句摘要。`, { label: '裁·守原', phase: '裁', effort: 'max' })
   return { 题, 结: '守原', 裁 }
 }
 
@@ -104,7 +104,7 @@ const 裁 = await agent(`${底}
 【独立复评】${JSON.stringify(评, null, 1)}
 【机械之计】现文好看均 ${现均.toFixed(2)}；诸案 ${JSON.stringify(计)}；过门者（立得住均≥7、好看均高现文≥1、过半判胜）：${JSON.stringify(可.map(c => c.id))}
 ⛔过门者无，则裁「守原」（可吸收诸案里不改剧情走向之小长处，须逐条说明）。过门者有，只能在过门者中择一（可嫁接他案之长，但不得带进未治之刺）。
-写 \`设定/剧情庭_${名}.md\`：一、裁定（守原，或所择之案写到能照着改圣经与正文的细）；二、为何它比现文与落选诸案更好看（逐一对照）；三、挑刺王之刺如何治；四、改文之价（改哪几章何处）；五、分数表与各席首选。
+写 \`设定/剧情庭_${名}.md\`：〇、⛔**随裁即改圣经**（圣经随裁之律·0927 作者令「圣经不是一成不变的」）：裁定若改剧情，当场以 \`python3 工具/改单.py --立 …\` 立改单，把裁定之案写进 设定/00_镇冢秘术_唯一总圣经.md（势之裁写进 设定/02_余章之势_总纲.md），相关处写「据 剧情庭_${名}」，旧设定改掉或标作废；裁守原者於档中写「圣经无改」并其由。一、裁定（守原，或所择之案写到能照着改圣经与正文的细）；二、为何它比现文与落选诸案更好看（逐一对照）；三、挑刺王之刺如何治；四、改文之价（改哪几章何处）；五、分数表与各席首选。
 git add 该档（明路径）并 commit（末两行：
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回摘要一段。`, { label: '裁', phase: '裁', effort: 'max' })

@@ -57,7 +57,7 @@ const 守原数 = 一.filter(r => r && r.keep).length
 log(`出案 ${池.length} 个；守原 ${守原数} 席`)
 
 if (!池.length) {
-  const 裁 = await agent(`${底}\n四席皆守原：${JSON.stringify(一)}\n写 \`设定/剧情庭_${名}.md\`：裁「守原」，列四席之判与由。git add 该档并 commit（末两行：\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回一句摘要。`, { label: '裁·守原', phase: '裁' })
+  const 裁 = await agent(`${底}\n四席皆守原：${JSON.stringify(一)}\n写 \`设定/剧情庭_${名}.md\`：裁「守原」，列四席之判与由。git add 该档并 commit（末两行：\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回一句摘要。`, { label: '裁·守原', phase: '裁', effort: 'max' })
   return { 题, 结: '守原', 裁 }
 }
 

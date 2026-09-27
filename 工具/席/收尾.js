@@ -72,7 +72,7 @@ const out = await agent(
 【交什么】每一条红各是哪一种病、各怎么办的／铁底之裁（若有）／冷轮之档（若有）／
 全测末一回之实况／推了没有（其 sha）／双备份四条各印出什么／撤锁了没有。
 ⛔**不许说「已完成」——说你干了什么，和你没干成什么。**`,
-  { phase: '收尾', schema: { type: 'object', properties: {
+  { effort: 'max', phase: '收尾', schema: { type: 'object', properties: {
     reds: { type: 'string', description: '每一条红各是哪一种病、各怎么办的' },
     tiedi: { type: 'string' }, cold: { type: 'string' },
     quance: { type: 'string' }, pushed: { type: 'string' }, beifen: { type: 'string' },

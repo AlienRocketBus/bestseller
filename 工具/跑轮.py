@@ -1116,6 +1116,7 @@ def nextround(n):
     print('   ★不问「这一轮能不能过闸」，问「这一处拿给最好的小说家看，他会怎么改」。')
     print('   ★★而一轮跑过去没把那一处推得更好，那一轮等於没跑——')
     print('     哪怕它十四检全绿、覆盖裁定俱100%。')
+    print('   ★★★先读 设定/反面教材.md（0927）：为圆而凑之因、为过闸而缝之拍，一律重想到最好；过得去的不许交。')
     print(duibiao_brief(n))
     d, led = paths(n)
     lg = json.load(open(led, encoding='utf-8')) if os.path.exists(led) else {'版本': []}

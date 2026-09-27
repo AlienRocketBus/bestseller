@@ -20,8 +20,11 @@ const 底 = `你在长篇小说仓库 /home/user/the-novel 里。先读：
 ⛔尽全力：绞尽脑汁把这一处想到最好——不是交差，是要放进中国第一的小说里。`
 
 const 守原 = 式 === '改'
-  ? `【⛔守原之律】既定剧情默认不改。你若认为「现文」已是最好，直说「守原」并说明为何。你若要改，每一案都须给出**详细之逻辑与方案**：改在哪、改後怎么走、为何比现文更好看（对照现文逐点说：读者在哪一刻比原来更放不下、更震、更信），以及立得住之据与改文之价。⛔说不出比现文更好在哪的案，不许交。⛔不为改而改。`
-  : `【出新之律】这是要新想的剧情。你须独立想出**三个**最好的走向，各自写成可照着写的方案（起、转、落、人物之所为与其由、给读者的那一下），并说明为何好看、如何立得住。三案须真不同，不许一案三变。`
+  ? `【审原与改到满分之律】许多原剧情是最初草定的，不一定好。你先以「满分（10＝世界名著、中国第一最好看的小说里的那一处）」为尺，严审「现文」：它离满分差在哪、差几分，逐点说。
+然後⛔**必须独立想出三个真不同的改法**，每一个都朝满分去改，写成可照着改的方案：改在哪、改後怎么走、人物之所为与其由、给读者的那一下；并对照现文逐点说读者在哪一刻比原来更放不下、更震、更信；附立得住之据与改文之价。⛔不许敷衍：三案须各自尽全力，不许一案三变、不许凑数。
+（题档若列有诸候选案，你可取其长，但三案须是你自己想到的最好者。）
+原剧情照样参赛：若你严审後真认为现文已是满分、三案都不如它，就把 keep 设 true 并逐点证明——⛔改不改由最後之门决定：只有确比现文更好看、立得住的案才能取代它。`
+  : `【出新之律】这是要新想的剧情。你须独立想出**三个**最好的走向，各自写成可照着写的方案（起、转、落、人物之所为与其由、给读者的那一下），并说明为何好看、如何立得住。三案须真不同，不许一案三变。⛔以满分为尺，尽全力。`
 
 const 席 = [
   { k: '小说家', 身: '全中国最顶尖的小说家', 看: '能写出多好看的场面、人物能不能因此立起来、有没有落俗套' },
@@ -33,7 +36,7 @@ const 席 = [
 const 案式 = { type: 'object', properties: {
   current_judgement: { type: 'string' }, current_appeal: { type: 'number' }, current_sound: { type: 'number' },
   keep: { type: 'boolean' }, keep_reason: { type: 'string' },
-  proposals: { type: 'array', items: { type: 'object', properties: {
+  proposals: { type: 'array', minItems: 3, items: { type: 'object', properties: {
     name: { type: 'string' }, plan: { type: 'string' }, why_better: { type: 'string' },
     soundness: { type: 'string' }, rewrite_cost: { type: 'string' } },
     required: ['name', 'plan', 'why_better', 'soundness'] } } },
@@ -45,7 +48,7 @@ const 一 = await parallel(席.map(s => () => agent(`${底}
 你是【${s.身}】（剧情庭·${s.k}席）。⛔独立：你看不到也不许揣测他席。（输出字段：current_*＝对现文之判；keep＝守原；proposals＝你的案，各含 name/plan/why_better/soundness/rewrite_cost）你看：${s.看}。
 先判「现文」（题档所列之现行剧情；若是新想之题，则判题档所列之既定方向）：好看、立得住各 0—10，长短。
 ${守原}
-${式 === '改' ? '若要改，最多三案，每案都须过上面之律。' : ''}`, { label: `出案·${s.k}`, phase: '独立出案', schema: 案式, effort: 'max' })))
+`, { label: `出案·${s.k}`, phase: '独立出案', schema: 案式, effort: 'max' })))
 const 池 = []
 一.forEach((r, i) => { if (r) (r.proposals || []).forEach((a, j) => 池.push({ id: `${席[i].k}${j + 1}`, by: 席[i].k, ...a })) })
 if (一.some(r => !r)) throw new Error('出案之席有失（'+一.map((r,i)=>r?'':席[i].k).join('')+'）——⛔不许以缺席作守原')

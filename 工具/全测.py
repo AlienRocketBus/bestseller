@@ -3775,6 +3775,14 @@ def chk_dashi():
     return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
 
 
+def chk_juqing():
+    """剧情庭之关（0927 作者令「这个机制一定要跑起来」）：自 381 起每十章一段，段内有章封版而无剧情庭所裁之势即红。见 工具/剧情庭之关.py。"""
+    import subprocess as _sp
+    a = _sp.run([sys.executable, '工具/剧情庭之关.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    r = _sp.run([sys.executable, '工具/剧情庭之关.py'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+
+
 def chk_kexi():
     """刻意之疲（2026-09-25 立·作者令「最怕刻意：每章都吊胃口，读者审美疲劳、全书割裂」）：
     按段看章尾——吊式收尾成套、或最新一章又落进收尾之模子，即红。见 工具/刻意之疲.py。"""
@@ -5089,6 +5097,7 @@ def main():
         items.append(('抄袭闸', chk_chaoxi))
         items.append(('刻意之疲', chk_kexi))
         items.append(('大师之关', chk_dashi))
+        items.append(('剧情庭之关', chk_juqing))
         items.append(('书名不绑', chk_shuming))
         items.append(('圣经引号', chk_shengjing_yin))
         items.append(('自省哨', chk_zixing))

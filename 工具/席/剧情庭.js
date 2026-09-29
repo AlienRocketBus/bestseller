@@ -1,7 +1,7 @@
 export const meta = {
   name: '剧情庭',
   description: '剧情庭：小说家、总编辑、顶尖读者、剧本师、挑刺王独立各出三案，默认守原，唯确更好看方改（选剧情之律·0927）',
-  phases: [{ title: '独立出案' }, { title: '挑刺' }, { title: '独立复评' }, { title: '裁' }],
+  phases: [{ title: '验案' }, { title: '独立出案' }, { title: '挑刺' }, { title: '独立复评' }, { title: '裁' }],
 }
 // args: { 题: 题档路径, 名: 输出名, 式: '改'（审既定剧情，默认守原）|'新'（想下一步走向） }
 const 题 = args && args.题
@@ -42,6 +42,51 @@ const 案式 = { type: 'object', properties: {
     soundness: { type: 'string' }, rewrite_cost: { type: 'string' } },
     required: ['name', 'plan', 'why_better', 'soundness'] } } },
   required: ['current_judgement', 'current_appeal', 'current_sound', 'keep', 'proposals'] }
+
+// ★式「验」（0929 立：四审皆以十二新案互攻而永不收敛——改为只验一份主案：挑刺→修案→独立复评→门，至多三轮；门槛不降）
+if (式 === '验') {
+  const 主案 = args.主案
+  if (!主案) throw new Error('式验须传 args.主案（主案档路径）')
+  const 复席 = [
+    { k: '小说家', 身: '全中国最顶尖的小说家' }, { k: '总编辑', 身: '一本中国第一的小说之总编辑' },
+    { k: '顶尖读者', 身: '读过最多好小说、最挑的读者' }, { k: '剧本师', 身: '全中国最顶尖的剧本师' }, { k: '挑刺王', 身: '挑刺王' },
+  ]
+  const 验式 = { type: 'object', properties: { current_appeal: { type: 'number' }, appeal: { type: 'number' }, sound: { type: 'number' }, beats_current: { type: 'boolean' }, fatal: { type: 'string' }, reason: { type: 'string' } }, required: ['current_appeal', 'appeal', 'sound', 'beats_current', 'reason'] }
+  let 轮 = 0, 末 = null
+  while (轮 < 3) {
+    轮++
+    phase('验案')
+    const 刺 = await parallel(['逻辑与因果', '人物与动机', '全书前後与漏查'].map(角 => () => agent(`${底}
+
+你是【挑刺王】（验案·第 ${轮} 轮·${角}）。⛔不给情面。逐字读主案 \`${主案}\`，回原文逐条核其所引（章:行），从「${角}」一角找出它**所有**立不住之处与漏改之处（⛔与已写正文相抵只记改文之价，不算刺）。每刺：处、刺、级（致命／可治／轻）、治法（改源头，⛔不许後补解释）。`, { label: `验刺·${轮}·${角}`, phase: '验案', effort: 'max' })))
+    if (刺.some(x => !x)) throw new Error('验刺有席失')
+    末 = await parallel(复席.map(r => () => agent(`${底}
+
+你是【${r.身}】（验案·第 ${轮} 轮·独立复评·${r.k}席）。⛔独立。逐字读主案 \`${主案}\` 与其所改之原文，并读挑刺王本轮之刺：
+${JSON.stringify(刺)}
+打分：current_appeal（现文好看）、appeal（主案好看）、sound（主案立得住；有未治之致命刺 ≤4）、beats_current（须真比现文好看且立得住）、fatal（你认为仍未治的致命处，无则写「无」）。`, { label: `验评·${轮}·${r.k}`, phase: '验案', schema: 验式, effort: 'max' })))
+    if (末.some(x => !x)) throw new Error('验评有席失')
+    const 均 = k => 末.reduce((a, x) => a + x[k], 0) / 末.length
+    const 过 = 均('sound') >= 7 && 均('appeal') - 均('current_appeal') >= 1 && 末.filter(x => x.beats_current).length * 2 > 末.length
+    log(`验案第 ${轮} 轮：好看 ${均('appeal').toFixed(2)}／立得住 ${均('sound').toFixed(2)}／现文 ${均('current_appeal').toFixed(2)}｜${过 ? '过门' : '未过'}`)
+    if (过) break
+    if (轮 < 3) await agent(`${底}
+
+你是修案席（全中国最顶尖的小说家兼总编辑）。主案 \`${主案}\` 第 ${轮} 轮未过门。挑刺王之刺：${JSON.stringify(刺)}
+五席之评：${JSON.stringify(末)}
+⛔逐条治刺：每一刺改在源头（改主案所定之原文改法、增漏查之处），⛔不许後补解释句，⛔不许新发明未经验之因（非不得已；若须，写明其前迹）。改後直接写回主案档，档末追加「## 第${轮}轮修案记」逐条列刺→治。不提交。返回治了几条、仍治不了几条。`, { label: `修案·${轮}`, phase: '验案', effort: 'max' })
+  }
+  const 均 = k => 末.reduce((a, x) => a + x[k], 0) / 末.length
+  const 过 = 均('sound') >= 7 && 均('appeal') - 均('current_appeal') >= 1 && 末.filter(x => x.beats_current).length * 2 > 末.length
+  const 裁 = await agent(`${底}
+
+你是剧情庭之裁席。式「验」，主案 \`${主案}\`，经 ${轮} 轮。末轮五席之评：${JSON.stringify(末)}
+机械之门：${过 ? '过' : '未过'}（立得住均 ${均('sound').toFixed(2)}，好看均 ${均('appeal').toFixed(2)}，现文 ${均('current_appeal').toFixed(2)}）。
+写 \`设定/剧情庭_${名}.md\`（覆写其首段为本次之裁，旧诸审之记保留於後）：过门则裁「改从主案」，并随裁改圣经（改单、写「据 剧情庭_${名}」，旧设定改掉或标作废），正文之改列入二稿账（⛔不动正文）；未过则裁守原，写明仍卡在哪几刺、诸席之见。git add 明路径并 commit（末两行：
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回一段摘要。`, { label: '裁·验', phase: '验案', effort: 'max' })
+  return { 题, 式, 轮, 过, 裁 }
+}
 
 phase('独立出案')
 const 一 = await parallel(席.map(s => () => agent(`${底}

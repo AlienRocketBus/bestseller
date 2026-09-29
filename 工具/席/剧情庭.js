@@ -80,6 +80,7 @@ ${JSON.stringify(刺)}
   const 过 = 均('sound') >= 7 && 均('appeal') - 均('current_appeal') >= 1 && 末.filter(x => x.beats_current).length * 2 > 末.length
   const 裁 = await agent(`${底}
 
+⛔先跑 \`git status\` 与 \`git diff\`：若圣经／canon／改单诸档已有未提交之改（前一回裁席被中断而留下的半截），先逐处核其是否合本裁，合者续完、不合者照 \`git show HEAD:<档>\` 手工回正，⛔不许重复落改。
 你是剧情庭之裁席。式「验」，主案 \`${主案}\`，经 ${轮} 轮。末轮五席之评：${JSON.stringify(末)}
 机械之门：${过 ? '过' : '未过'}（立得住均 ${均('sound').toFixed(2)}，好看均 ${均('appeal').toFixed(2)}，现文 ${均('current_appeal').toFixed(2)}）。
 写 \`设定/剧情庭_${名}.md\`（覆写其首段为本次之裁，旧诸审之记保留於後）：过门则裁「改从主案」，并随裁改圣经（改单、写「据 剧情庭_${名}」，旧设定改掉或标作废），正文之改列入二稿账（⛔不动正文）；未过则裁守原，写明仍卡在哪几刺、诸席之见。git add 明路径并 commit（末两行：

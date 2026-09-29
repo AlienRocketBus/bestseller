@@ -4771,7 +4771,7 @@ def round11_audit(n):
 
     out.append('  ── 检三·回述实证查（A级防线：凡涉前章事件须贴原场）──')
     hs = set()
-    for m in re.finditer(r'(想起|记得|那天|那一回|昨天|今天早上|早上|前几天|前十[一二三四五六七八九十]*天|二十七年前)', body):
+    for m in re.finditer(r'(想起|记得|那天|那一回|昨天|今天早上|早上|前几天|前十[一二三四五六七八九十]*天|二十七年前|四十八年前)', body):
         hs.add(m.group(1))
     unchecked = [w for w in sorted(hs) if w not in lj]
     out.append('   本章回述词 %d 种；轮记中未见交代者 %d 种%s'

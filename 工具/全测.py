@@ -3807,6 +3807,14 @@ def chk_shenghua():
     return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
 
 
+def chk_gongzuoliu():
+    """工作流账（0930 作者令「GitHub 为唯一之记忆，已做者绝不重做、不覆盖，中断可无缝续」）：凡标已成之件，产出须在且档尾收束俱全。见 工具/工作流账.py。"""
+    import subprocess as _sp
+    a = _sp.run([sys.executable, '工具/工作流账.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    r = _sp.run([sys.executable, '工具/工作流账.py', '--查'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+
+
 def chk_kexi():
     """刻意之疲（2026-09-25 立·作者令「最怕刻意：每章都吊胃口，读者审美疲劳、全书割裂」）：
     按段看章尾——吊式收尾成套、或最新一章又落进收尾之模子，即红。见 工具/刻意之疲.py。"""
@@ -5125,6 +5133,7 @@ def main():
         items.append(('圣经随裁', chk_shengjing_suicai))
         items.append(('全书记忆', chk_jiyi))
         items.append(('升华之闸', chk_shenghua))
+        items.append(('工作流账', chk_gongzuoliu))
         items.append(('书名不绑', chk_shuming))
         items.append(('圣经引号', chk_shengjing_yin))
         items.append(('自省哨', chk_zixing))

@@ -507,6 +507,12 @@ def 报():
             print('⛔★上列诸处：**器上写着的话没有人在读它**——**这一族病今日逮到六处**（律⑱）。')
     except Exception as _e9:                                  # pragma: no cover
         print('⛔未上库哨跑不起来（%s）——⛔**跑不起来不是绿**，须当面查。' % _e9)
+    # 0930 作者令：GitHub 为唯一之记忆——每回先印工作流账（已成／进行／可开与续之令），⛔重做已成之件
+    try:
+        import subprocess as _sp9
+        _sp9.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), '工作流账.py')])
+    except Exception as _e9:
+        print('  ⛔工作流账印不出：%s' % _e9)
     print('════ 自走 · 此刻该干哪一件 ════')
     for x in L:
         print(x)

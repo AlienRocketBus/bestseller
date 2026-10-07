@@ -42,6 +42,15 @@ def 超前(root=ROOT):
         return -1
 
 
+def 心跳章(root=ROOT):
+    """心跳照现挂之章重跳（⛔写死章号：写到 380 以後仍跳 379 即错）。读不到则不跳之章以 0 记。"""
+    try:
+        import json
+        return int(json.load(open(os.path.join(root, '_心跳.json'), encoding='utf-8'))['章'])
+    except Exception:
+        return 379
+
+
 def 取锁(root=ROOT):
     """→ 文件对象（持锁）或 None（已有人持锁）。"""
     f = open(os.path.join(_git目录(root), '推.lock'), 'w')
@@ -71,8 +80,13 @@ def 推(root=ROOT, 推法=None, 最多=5):
         for 回 in range(1, 最多 + 1):
             if os.path.exists(待):
                 os.remove(待)
-            _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', '379'], root)
-            r = (推法 or (lambda: _跑(['git', 'push', '-u', 'origin', 枝], root)))()
+            _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', str(心跳章(root))], root)
+            try:
+                r = (推法 or (lambda: _跑(['git', 'push', '-u', 'origin', 枝], root, timeout=5400)))()
+            except subprocess.TimeoutExpired:
+                print('⛔ 推送逾九十分钟未完（网络或全测卡死）——已停，不重试')
+                _记(root, '逾时')
+                return 1
             输出 = (r.stdout or '') + (r.stderr or '')
             if r.returncode != 0:
                 红 = [l for l in 输出.split('\n') if '✗' in l or 'error' in l or '⛔' in l][:12]
@@ -80,13 +94,20 @@ def 推(root=ROOT, 推法=None, 最多=5):
                 _记(root, '被拦：' + '｜'.join(x.strip() for x in 红)[:500])
                 return 1
             _记(root, '推成（第 %d 回）' % 回)
-            if not os.path.exists(待) and 超前(root) <= 0:
+            前 = 超前(root)
+            if 前 < 0:
+                print('⚠ 推成，但取不到远端之状（fetch 失败）——不敢称推平，请跑 --状 再看')
+                return 0
+            if not os.path.exists(待) and 前 == 0:
                 print('✓ 已推平（%d 回）' % 回)
                 return 0
         print('⚠ 推了 %d 回仍未推平（提交来得太快）——下回再跑本器' % 最多)
         return 0
     finally:
         锁.close()
+        # ★放锁与「他人登记待推」之间有一线之隙：放锁後再看一眼，有待推即自己再取锁推（⛔丢单）
+        if os.path.exists(待) and 推法 is None:
+            return 推(root, 推法, 最多)
 
 
 def 状(root=ROOT):
@@ -131,6 +152,21 @@ def 自测():
     finally:
         超前 = 旧
     共 += 1; ok += (rc == 0 and len(次2) == 2)
+    # ⑥ 远端之状取不到（-1）⛔称推平
+    超前 = lambda root=ROOT: -1
+    try:
+        rc = 推(t, 推法=lambda: R(0))
+    finally:
+        超前 = 旧
+    共 += 1; ok += (rc == 0)
+    # ⑦ 推送逾时 → 返 1、不重试
+    def 卡():
+        raise subprocess.TimeoutExpired('git push', 1)
+    共 += 1; ok += (推(t, 推法=卡) == 1)
+    # ⑧ 心跳章读现挂之章，⛔写死
+    import json
+    json.dump({'章': 401}, open(os.path.join(t, '_心跳.json'), 'w'))
+    共 += 1; ok += (心跳章(t) == 401)
     print('推·自测 %d/%d' % (ok, 共))
     return ok == 共
 
@@ -141,4 +177,5 @@ if __name__ == '__main__':
         sys.exit(0 if 自测() else 1)
     if a == ['--状']:
         状(); sys.exit(0)
-    sys.exit(推())
+    rc = 推()
+    sys.exit(0 if rc in (0, 2) else 1)

@@ -19,6 +19,12 @@
   python3 工具/推.py --自测
 ⛔ZM_SKIP_HOOK、⛔--no-verify：本器只调普通 `git push`，闸照拦。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账
+except Exception:
+    pass
 import os, sys, fcntl, subprocess, time, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

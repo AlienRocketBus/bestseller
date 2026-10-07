@@ -513,6 +513,7 @@ def 报():
         _sp9.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), '工作流账.py')])
     except Exception as _e9:
         print('  ⛔工作流账印不出：%s' % _e9)
+    print('· 推送：一律 `python3 工具/推.py`（文件锁、不排队、被拦即停；⛔自写排队脚本、⛔pgrep 猜进程）')
     print('════ 自走 · 此刻该干哪一件 ════')
     for x in L:
         print(x)

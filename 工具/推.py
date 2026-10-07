@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""推（1007 立）——推送之唯一入口：一把锁、不排队、不空转、推到底。
+
+为何立：1007 我写了「等前一次推送结束再推」之排队脚本，用 `pgrep -f "git push"` 判「有无推送在跑」，
+而排队脚本自己的命令行里就含这几个字——它把自己认成「还有推送在跑」，两个脚本互等，空转一个多小时一次没推。
+（教训见 `设定/教训_D6_方法之僵.md` 附「推送之锁」。）
+
+本器之法：
+  ① **用文件锁（fcntl.flock，`.git/推.lock`）判「有无推送在跑」**——锁随进程生死，进程一死锁即放；
+     ⛔再用 pgrep／ps 去猜进程名（会认错自己）。
+  ② 锁被占 → **不排队、不等待**：只在 `.git/推.待` 记一笔「又有新提交要推」，立即返回。
+  ③ 持锁者推完一次，若见 `.git/推.待` 或本地仍超前远端 → **再推一次**，直到推平（至多 5 回）。
+  ④ 推送被全测拦（失败）→ **不重试、不循环**，印出红的那几项，返回非零——治红是人的事，⛔空转。
+  ⑤ 每次推前先跳心跳（防「接力」误红）；全程记 `.git/推.log`。
+
+用法：
+  python3 工具/推.py            # 推（後台跑亦可：run_in_background）
+  python3 工具/推.py --状       # 有无推送在跑、本地超前几笔
+  python3 工具/推.py --自测
+⛔ZM_SKIP_HOOK、⛔--no-verify：本器只调普通 `git push`，闸照拦。
+"""
+import os, sys, fcntl, subprocess, time, tempfile
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+枝 = 'claude/the-novel-review-4dtuit'
+
+
+def _git目录(root):
+    return os.path.join(root, '.git')
+
+
+def _跑(args, root=ROOT, **kw):
+    return subprocess.run(args, cwd=root, capture_output=True, text=True, **kw)
+
+
+def 超前(root=ROOT):
+    _跑(['git', 'fetch', '-q', 'origin', 枝], root)
+    r = _跑(['git', 'rev-list', '--count', 'origin/%s..HEAD' % 枝], root)
+    try:
+        return int(r.stdout.strip())
+    except ValueError:
+        return -1
+
+
+def 取锁(root=ROOT):
+    """→ 文件对象（持锁）或 None（已有人持锁）。"""
+    f = open(os.path.join(_git目录(root), '推.lock'), 'w')
+    try:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return f
+    except BlockingIOError:
+        f.close()
+        return None
+
+
+def _记(root, s):
+    with open(os.path.join(_git目录(root), '推.log'), 'a', encoding='utf-8') as f:
+        f.write(time.strftime('%m-%d %H:%M:%S ') + s + '\n')
+
+
+def 推(root=ROOT, 推法=None, 最多=5):
+    """→ 0 推平｜1 被拦｜2 已有人在推（已登记待推）。"""
+    待 = os.path.join(_git目录(root), '推.待')
+    锁 = 取锁(root)
+    if 锁 is None:
+        open(待, 'w').close()
+        print('· 已有一次推送在跑——已登记「跑完再推一次」，本次不排队、不等待。')
+        _记(root, '登记待推')
+        return 2
+    try:
+        for 回 in range(1, 最多 + 1):
+            if os.path.exists(待):
+                os.remove(待)
+            _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', '379'], root)
+            r = (推法 or (lambda: _跑(['git', 'push', '-u', 'origin', 枝], root)))()
+            输出 = (r.stdout or '') + (r.stderr or '')
+            if r.returncode != 0:
+                红 = [l for l in 输出.split('\n') if '✗' in l or 'error' in l or '⛔' in l][:12]
+                print('⛔ 推送被拦（第 %d 回）——不重试，先治红：\n%s' % (回, '\n'.join(红)))
+                _记(root, '被拦：' + '｜'.join(x.strip() for x in 红)[:500])
+                return 1
+            _记(root, '推成（第 %d 回）' % 回)
+            if not os.path.exists(待) and 超前(root) <= 0:
+                print('✓ 已推平（%d 回）' % 回)
+                return 0
+        print('⚠ 推了 %d 回仍未推平（提交来得太快）——下回再跑本器' % 最多)
+        return 0
+    finally:
+        锁.close()
+
+
+def 状(root=ROOT):
+    锁 = 取锁(root)
+    在跑 = 锁 is None
+    if 锁:
+        锁.close()
+    print('推送在跑：%s｜本地超前 %d 笔｜待推之记：%s' % (
+        '是' if 在跑 else '否', 超前(root), '有' if os.path.exists(os.path.join(_git目录(root), '推.待')) else '无'))
+
+
+def 自测():
+    ok = 共 = 0
+    t = tempfile.mkdtemp()
+    os.makedirs(os.path.join(t, '.git'))
+    class R:
+        def __init__(s, c, o=''): s.returncode, s.stdout, s.stderr = c, o, ''
+    # ① 持锁时，第二个取锁者拿不到（⛔靠进程名猜）
+    a = 取锁(t); b = 取锁(t)
+    共 += 1; ok += (a is not None and b is None)
+    # ② 锁被占 → 推() 立即返回 2 并登记待推，⛔等待
+    t0 = time.time(); rc = 推(t, 推法=lambda: R(0))
+    共 += 1; ok += (rc == 2 and os.path.exists(os.path.join(t, '.git', '推.待')) and time.time() - t0 < 2)
+    a.close()
+    # ③ 锁一放即可取（进程死、锁即放）
+    c = 取锁(t); 共 += 1; ok += (c is not None); c.close()
+    # ④ 被拦不重试：推法只被调一次
+    次 = []
+    rc = 推(t, 推法=lambda: (次.append(1), R(1, '  ✗ 某闸\nerror: failed'))[1])
+    共 += 1; ok += (rc == 1 and len(次) == 1)
+    # ⑤ 推时又有新提交（待推之记）→ 再推一回
+    次2 = []
+    def 推法2():
+        次2.append(1)
+        if len(次2) == 1:
+            open(os.path.join(t, '.git', '推.待'), 'w').close()
+        return R(0)
+    global 超前
+    旧 = 超前; 超前 = lambda root=ROOT: 0
+    try:
+        rc = 推(t, 推法=推法2)
+    finally:
+        超前 = 旧
+    共 += 1; ok += (rc == 0 and len(次2) == 2)
+    print('推·自测 %d/%d' % (ok, 共))
+    return ok == 共
+
+
+if __name__ == '__main__':
+    a = sys.argv[1:]
+    if a == ['--自测']:
+        sys.exit(0 if 自测() else 1)
+    if a == ['--状']:
+        状(); sys.exit(0)
+    sys.exit(推())

@@ -3815,6 +3815,14 @@ def chk_gongzuoliu():
     return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
 
 
+def chk_duizhang_yushai():
+    """对账预筛（1008 立·作者令「方法先有效、再高效」）：零 token 之全书 grep，滤去主案已引之行，只留未引之行待判——
+    其区间、续列、章限之算须自测通过，否则「已引」误判即漏查。见 工具/对账预筛.py。"""
+    import subprocess as _sp
+    a = _sp.run([sys.executable, '工具/对账预筛.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0, a.stdout.strip()[-120:]
+
+
 def chk_kexi():
     """刻意之疲（2026-09-25 立·作者令「最怕刻意：每章都吊胃口，读者审美疲劳、全书割裂」）：
     按段看章尾——吊式收尾成套、或最新一章又落进收尾之模子，即红。见 工具/刻意之疲.py。"""
@@ -5134,6 +5142,7 @@ def main():
         items.append(('全书记忆', chk_jiyi))
         items.append(('升华之闸', chk_shenghua))
         items.append(('工作流账', chk_gongzuoliu))
+        items.append(('对账预筛', chk_duizhang_yushai))
         items.append(('书名不绑', chk_shuming))
         items.append(('圣经引号', chk_shengjing_yin))
         items.append(('自省哨', chk_zixing))

@@ -3815,6 +3815,14 @@ def chk_gongzuoliu():
     return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
 
 
+def chk_zhangliao():
+    """章料（1008 立·虫洞之律）：零 token 汇一章之料（开镜卡、硬门槛、总案之行、前两章、人物之态、canon、悬线、进化账、十条手艺），
+    席只读此档、⛔自己搜料——其节之取、人物与 canon 之择须自测通过。见 工具/章料.py。"""
+    import subprocess as _sp
+    a = _sp.run([sys.executable, '工具/章料.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0, a.stdout.strip()[-120:]
+
+
 def chk_duizhang_yushai():
     """对账预筛（1008 立·作者令「方法先有效、再高效」）：零 token 之全书 grep，滤去主案已引之行，只留未引之行待判——
     其区间、续列、章限之算须自测通过，否则「已引」误判即漏查。见 工具/对账预筛.py。"""
@@ -5088,7 +5096,7 @@ def main():
     # 1008 总编辑：快测须含设定层诸闸（圣经随裁、圣经引号、改单、工作流账、对账预筛、席令之禁）——否则改圣经／裁档後快测全绿而推时被拦（1008 D3 之裁漏「据 剧情庭_D3」之教）
     if quick:
         items += [('圣经随裁', chk_shengjing_suicai), ('圣经引号', chk_shengjing_yin), ('改单', chk_gaidan),
-                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('席令之禁', chk_xiling_jin)]
+                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('章料', chk_zhangliao), ('席令之禁', chk_xiling_jin)]
 
 
     if not quick:
@@ -5147,6 +5155,7 @@ def main():
         items.append(('升华之闸', chk_shenghua))
         items.append(('工作流账', chk_gongzuoliu))
         items.append(('对账预筛', chk_duizhang_yushai))
+        items.append(('章料', chk_zhangliao))
         items.append(('书名不绑', chk_shuming))
         items.append(('圣经引号', chk_shengjing_yin))
         items.append(('自省哨', chk_zixing))

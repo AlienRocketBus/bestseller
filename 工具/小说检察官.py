@@ -189,6 +189,9 @@ OPEN_BRIEF_CARD_SCHEMA = {
     # ★2026-09-27·第379章封版席插：380 判主线（`总纲:327` `| 380 | 主·148 |`；其锚接 378:141），故苏衍·378 卡在前；
     #   暗线新末见＝379，新卡「沈鸢·第379章还有与框外背两指即时状态」係本坐读 379 末版 v10 白文全篇（1—75 行）所立，列次以明其不许碰。
     380: ('苏衍·第378章站住与拿站住数的即时状态', '沈鸢·第379章还有与框外背两指即时状态', '黎东来·第365章付款条与按窝之价即时状态', 'E4·巴蜀水下开站三数'),
+    # ★2026-10-08·第380章封版席插：381 判暗线（`总纲:328` `| 381 | 暗·142 |`；其锚接 379:75），故沈鸢·379 卡在前；
+    #   主线新末见＝380，新卡「苏衍·第380章头一个与拿记性画的即时状态」係本坐读 380 末版 v03 白文全篇（1—107 行）所立，列次以明其不许碰（`圣经§律·二线不通消息`）。
+    381: ('沈鸢·第379章还有与框外背两指即时状态', '苏衍·第380章头一个与拿记性画的即时状态', '黎东来·第365章付款条与按窝之价即时状态', 'E4·巴蜀水下开站三数'),
     # ★2026-09-19·第351章封版之序（案席·末一道、352起草之前那一道）插：
     #   ★照320案席所立之取法「两条线各取其末见」，⛔不预判下一章之线：
     #     主线末见＝350（苏衍·路上·第一百三十三天·`总纲:256` 亲印 `| 350 | 主·133 |`），
@@ -5319,6 +5322,18 @@ def underwrite_radar(files,focus):
                 if not focus and shown>=10: return
     if shown==0: print('  ✓ 未见高潮词短段(短句蓄力型除外,由AI终裁)')
 
+# ★单字爷之许（判法一字未动，只把许词抽出来以便负测）：其禁所守者「称呼爷爷须叫全两个字」（本档 3844／3848／3992）。
+# ★2026-10-08·380 案席补「禹王爷」：老头土话「禹王爷铸的那九个物件」係圣经:959、:1161、:2697 与总纲:826 所立之句，
+#   与「阎王爷」同属神号，不是单叫一个爷字；全测之全书检因之报 380:67、380:132 两处 ERROR，係许词表漏收，不是文错。
+#   ⛔只收「禹王爷」三字整词，不收「王爷」——单说「王爷」照旧红（负测见 selftest 之 ye_checks）。
+_爷许 = ('爷爷','老爷子','阎王爷','禹王爷','爷俩','爷孙','爷们','大爷','太爷','天爷')
+def _单字爷(t):
+    out=[]
+    for m in re.finditer('爷',t):
+        a=t[max(0,m.start()-2):m.end()+2]
+        if not any(w in a for w in _爷许): out.append(m.start())
+    return out
+
 def mech_layer(files,focus,lib):
     ERR=0; M5X=lib.get('mech5_except',[])
     tg=_scope(files,focus)
@@ -5370,9 +5385,7 @@ def mech_layer(files,focus,lib):
             if re.search(_q+r'句(里头|里|，句句)',_w): continue
             if len(re.findall(r'第[一二三四五六七八九十]句',_w))>=2: continue
             pr.append(f'数句无明细[{_q}句]行{_ln(t,m.start())}')
-        for m in re.finditer('爷',t):
-            a=t[max(0,m.start()-2):m.end()+2]
-            if not any(w in a for w in ['爷爷','老爷子','阎王爷','爷俩','爷孙','爷们','大爷','太爷','天爷']): pr.append(f'单字爷 行{_ln(t,m.start())}')
+        for _p in _单字爷(t): pr.append(f'单字爷 行{_ln(t,_p)}')
         for w in lib['perm_forbidden']:
             for m in re.finditer(re.escape(w),t): pr.append(f'永禁[{w}]行{_ln(t,m.start())}')
         for w,rv in lib['reveal'].items():
@@ -6053,7 +6066,18 @@ def selftest(files,lib):
     for name,good in weight_checks:
         passed+=good
         print(('  ✓' if good else '  ✗分量闸错'),f'[{name}]')
-    total=len(cases)+len(safe)+len(scope_checks)+len(reveal_checks)+len(weight_checks)+len(abolish_checks)
+    ye_checks=[
+      ('单字爷·单叫爷照旧红', bool(_单字爷('：爷，你歇着。'))),
+      ('单字爷·段中单叫爷照旧红', bool(_单字爷('我喊了一声爷。'))),
+      ('单字爷·单说王爷照旧红（只许禹王爷整词）', bool(_单字爷('那是王爷的东西。'))),
+      ('单字爷·禹王爷放行（圣经:959／总纲:826）', not _单字爷('禹王爷铸的那九个物件，这儿是一个。')),
+      ('单字爷·阎王爷放行', not _单字爷('阎王爷不收他。')),
+      ('单字爷·爷爷放行', not _单字爷('爷爷走了七年。')),
+    ]
+    for name,good in ye_checks:
+        passed+=good
+        print(('  ✓' if good else '  ✗单字爷错'),f'[{name}]')
+    total=len(cases)+len(safe)+len(scope_checks)+len(reveal_checks)+len(weight_checks)+len(abolish_checks)+len(ye_checks)
     contract_passed,contract_total=contract_negative_selftest(files)
     wiring,_=project_doctor(files,check_reader=True)
     latest_error=0

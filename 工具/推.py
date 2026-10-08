@@ -11,7 +11,7 @@
   ② 锁被占 → **不排队、不等待**：只在 `.git/推.待` 记一笔「又有新提交要推」，立即返回。
   ③ 持锁者推完一次，若见 `.git/推.待` 或本地仍超前远端 → **再推一次**，直到推平（至多 5 回）。
   ④ 推送被全测拦（失败）→ **不重试、不循环**，印出红的那几项，返回非零——治红是人的事，⛔空转。
-  ⑤ 每次推前先跳心跳（防「接力」误红）；全程记 `.git/推.log`。
+  ⑤ 每次推前先跳心跳（防「接力」误红）、先存底（1008：存底环受两时之限与容器重启而死，存底枝旧则推闸之活态之检红）；全程记 `.git/推.log`。
 
 用法：
   python3 工具/推.py            # 推（後台跑亦可：run_in_background）
@@ -87,6 +87,8 @@ def 推(root=ROOT, 推法=None, 最多=5):
             if os.path.exists(待):
                 os.remove(待)
             _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', str(心跳章(root))], root)
+            if 推法 is None:   # ★1008：先存底——存底枝新、章数齐，推闸之活态之检（负测·自进化环①之二、②）方不因存底环死而红
+                _跑([sys.executable, os.path.join(ROOT, '工具', '存底.py'), '--存'], root, timeout=280)
             try:
                 r = (推法 or (lambda: _跑(['git', 'push', '-u', 'origin', 枝], root, timeout=5400)))()
             except subprocess.TimeoutExpired:

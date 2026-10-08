@@ -5085,6 +5085,10 @@ def main():
              ('轮次完整性回归', chk_lunci),
              ('检察官自测', chk_selftest), ('医生', chk_doctor),
              ('跑轮负测', chk_shilun)]
+    # 1008 总编辑：快测须含设定层诸闸（圣经随裁、圣经引号、改单、工作流账、对账预筛、席令之禁）——否则改圣经／裁档後快测全绿而推时被拦（1008 D3 之裁漏「据 剧情庭_D3」之教）
+    if quick:
+        items += [('圣经随裁', chk_shengjing_suicai), ('圣经引号', chk_shengjing_yin), ('改单', chk_gaidan),
+                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('席令之禁', chk_xiling_jin)]
 
 
     if not quick:

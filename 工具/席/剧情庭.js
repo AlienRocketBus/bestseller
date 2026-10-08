@@ -10,6 +10,9 @@ const 式 = (args && args.式) || '改'
 if (!题) throw new Error('须传 args.题')
 
 const 底 = `你在长篇小说仓库 /home/user/the-novel 里。先读：
+★★★两大铁律（先读这两条，再读其他）：①中国第一——让本书成为中国第一的小说；②剧情全中国最好看、剧情与逻辑闭环绝对完美（每果有因、每因有果、每伏笔有收、每人前後一致、全书无一处相抵，而且闭得漂亮）。这两条唯一不变，其余一切皆工具。
+★★★质量永不妥协（1008 作者令）：无论做什么事都⛔牺牲本书质量；⛔为收工、为省时降标准；一个方法不行就换一个，总有好方法，⛔固步自封。
+★★★虫洞之律（开发方法之第一法则；一切机制随时进化，⛔一成不变）：先找直通之法——效果更好、花费更少，两样都满足才用；⛔笨办法（堆人、堆轮、反复通读、开放式挑刺）。
 ★★第一铁律·最高优先级（没有之一）：造——先执行这一条：本席主力用於创造，以 10 分为的，好看与逻辑闭环都朝满分，交一百分的答卷；⛔造个差不多靠後修；垃圾直接舍弃重造。
 ★死规矩（1007 作者令）：圣经只是工具，随时可改、可增、可删；总话语权在作者与总编辑，不在圣经。凡圣经之设定或规矩挡住了更好看的剧情，就提议改圣经（写明改什么、为何更好、逻辑如何连上），⛔把圣经当不可动之铁律而放弃更好的剧情。内容上无禁区（唯作者明令之「鼎心」一词）；唯一之尺：剧情更好看、逻辑连得上、让这本书成为中国第一。
 ★逻辑闭环（1007 作者令）：凡修剧情，尽全力，须同时做到两件——剧情特别好看，且整体逻辑严密、形成从头到尾的完美闭环：每一个果有因、每一个因有後果、每一处伏笔有收、每一个人的行止前後一致，与全书已写与将写处无一处相抵。只好看而逻辑有缝，或只严密而不好看，都不算修好。
@@ -50,7 +53,7 @@ const 案式 = { type: 'object', properties: {
     required: ['name', 'plan', 'why_better', 'soundness'] } } },
   required: ['current_judgement', 'current_appeal', 'current_sound', 'keep', 'proposals'] }
 
-// ★式「验」（0929 立：四审皆以十二新案互攻而永不收敛——改为只验一份主案：挑刺→修案→独立复评→门，至多三轮；门槛不降）
+// ★式「验」（0929 立：四审皆以十二新案互攻而永不收敛——改为只验一份主案：挑刺→修案→独立复评→门，至多三轮；门槛不降）（1008 改至多两轮）
 if (式 === '验') {
   const 主案 = args.主案
   if (!主案) throw new Error('式验须传 args.主案（主案档路径）')
@@ -60,7 +63,7 @@ if (式 === '验') {
   ]
   const 验式 = { type: 'object', properties: { current_appeal: { type: 'number' }, appeal: { type: 'number' }, sound: { type: 'number' }, beats_current: { type: 'boolean' }, fatal: { type: 'string' }, reason: { type: 'string' } }, required: ['current_appeal', 'appeal', 'sound', 'beats_current', 'reason'] }
   let 轮 = 0, 末 = null
-  while (轮 < 3) {
+  while (轮 < 2) {   // 1008 永远的痛之教：三→二（一回修、一回验）；验之外另跑 工具/对账预筛.py＋只判所留
     轮++
     phase('验案')
     const 刺 = await parallel(['逻辑与因果', '人物与动机', '全书前後与漏查'].map(角 => () => agent(`${底}
@@ -77,7 +80,7 @@ ${JSON.stringify(刺)}
     const 过 = 均('sound') >= 7 && 均('appeal') - 均('current_appeal') >= 1 && 末.filter(x => x.beats_current).length * 2 > 末.length
     log(`验案第 ${轮} 轮：好看 ${均('appeal').toFixed(2)}／立得住 ${均('sound').toFixed(2)}／现文 ${均('current_appeal').toFixed(2)}｜${过 ? '过门' : '未过'}`)
     if (过) break
-    if (轮 < 3) await agent(`${底}
+    if (轮 < 2) await agent(`${底}
 
 你是修案席（全中国最顶尖的小说家兼总编辑）。主案 \`${主案}\` 第 ${轮} 轮未过门。挑刺王之刺：${JSON.stringify(刺)}
 五席之评：${JSON.stringify(末)}

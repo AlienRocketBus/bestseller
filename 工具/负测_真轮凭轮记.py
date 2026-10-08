@@ -138,5 +138,45 @@ for _i in range(1, len(_bl) - 1, 2):
         _有.add(int(_bl[_i]))
 T('⑩真仓 306 十三轮逐轮有实文（今 %d 轮）' % len(_有), len(_有) >= 13, sorted(_有))
 
+# ⑪—⑭ 造式之章（2026-10-08·作者令「名著是写出来的，不是改出来的」·判据在 工具/造式.py）：
+#   ★造式无审改之轮，故 _rounds_full 见 `_式.md` 即改问造式之实——**⛔非豁免**：挂牌无实者照旧红；不挂牌者照旧问十轮。
+_zsp = importlib.util.spec_from_file_location('_zs_neg', os.path.join(ROOT, '工具', '造式.py'))
+ZS = importlib.util.module_from_spec(_zsp)
+_zsp.loader.exec_module(ZS)
+
+
+def _造局(n, 缺=(), 无式=False, 只牌=False):
+    d = os.path.join(ROOT, '版本', '第%d章' % n)
+    tmp = tempfile.mkdtemp()
+    had = os.path.isdir(d)
+    if had:
+        shutil.copytree(d, os.path.join(tmp, 'bak'))
+    try:
+        if 只牌:
+            os.makedirs(d, exist_ok=True)
+            open(os.path.join(d, '_式.md'), 'w', encoding='utf-8').write(ZS.式行 + '\n')
+        else:
+            ZS.造一局(ROOT, n, 缺=缺)
+        json.dump({'版本': [{'档': 'v01.md', '说明': '第3轮·逐数对表'}]},
+                  open(os.path.join(d, '_台账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        if 无式:
+            os.remove(os.path.join(d, '_式.md'))
+        return IC._rounds_full(n)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+        if had:
+            shutil.copytree(os.path.join(tmp, 'bak'), d)
+        shutil.rmtree(tmp)
+
+
+r11 = _造局(N)
+T('⑪造式之实俱齐者放行（造式无审改之轮，不问十轮）', r11 is None, str(r11)[:80])
+r12 = _造局(N, 缺=('回话',))
+T('⑫挂造式之牌而缺合稿逐条回话者红（⛔非豁免）', r12 is not None and '造式之实不全' in r12, str(r12)[:80])
+r13 = _造局(N, 无式=True)
+T('⑬同一局而无 _式.md 者照旧问十轮（十轮不满）', r13 is not None and '十轮不满' in r13, str(r13)[:80])
+r14 = _造局(N, 只牌=True)
+T('⑭只挂一块牌（_式.md）而一样实也没有者红', r14 is not None and '造式之实不全' in r14, str(r14)[:80])
+
 print('── 负测·真轮凭轮记 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
 sys.exit(0 if not bad else 1)

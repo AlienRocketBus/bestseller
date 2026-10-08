@@ -255,7 +255,23 @@ def main():
                            '以其逐版之表裁之，不许直接认亦不许直接驳；'
                            '裁毕写进轮记（认／驳／留后轮，三者必居其一）' % (k, n, k))
         nxt = (max(rounds) + 1) if rounds else 1
-        if len(rounds) >= 13:
+        # ★2026-10-08·造式之章（`版本/第N章/_式.md`·判在 `工具/造式.py`）：⛔审改之轮——⛔不许印「下一轮／先领轮」把人引去跑轮
+        _zs = os.path.exists(os.path.join(ROOT, '版本', '第%d章' % n, '_式.md'))
+        if _zs:
+            try:
+                import importlib.util as _zu
+                _zsp = _zu.spec_from_file_location('_zaoshi_yz', os.path.join(ROOT, '工具', '造式.py'))
+                _zm = _zu.module_from_spec(_zsp)
+                _zsp.loader.exec_module(_zm)
+                _zs, _zq = _zm.判(n, ROOT)
+            except Exception as _ze:
+                _zq = ['造式之判跑不起来（%s）' % _ze]
+        if _zs:
+            out.append('▶ 本章係造式之章（⛔审改之轮，⛔领轮跑轮）：' + ('造式之实俱齐 → 该跑封版之序' if not _zq
+                       else '造式之实缺 %d 样（%s）' % (len(_zq), '｜'.join(_zq[:3]))))
+            if _zq:
+                fix.append('造式之实缺 → 跑 python3 工具/造式.py %d 看全；缺哪一席之档派那一席补（⛔以跑轮补）' % n)
+        elif len(rounds) >= 13:
             out.append('▶ 十三轮已满 → 该跑封版之序')
         else:
             out.append('▶ 下一轮：第%d轮' % nxt)
@@ -348,6 +364,9 @@ def main():
         # ★本章十三轮已满者，其身已成「前章」：查本章之条与下一章之锚。
         #   ★★未满者仍查前章之条与本章之锚。此别2026-08-27立（器初造时漏之）。
         done13 = (os.path.exists(lp) and len(rounds) >= 13) if os.path.exists(lp) else False
+        # ★2026-10-08·造式之章：造式之实俱齐即其「十三轮已满」之刻（无审改之轮，轮数永不满）
+        if os.path.exists(lp) and not done13 and _zs and not _zq:
+            done13 = True
         base = n if done13 else (n - 1)
         e_prev = sum(1 for l in C if l.startswith('### 第 %d 章' % base))
         a_cur = sum(1 for l in C if l.startswith('第 %d 章必须从' % (base + 1)))

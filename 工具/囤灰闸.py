@@ -54,6 +54,31 @@ def 诸段():
         return None
     xs = re.findall(r"title:\s*'([^']+)'", m.group(1))
     return xs or None
+def _造式模():
+    try:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_zaoshi_dust', os.path.join(os.path.dirname(os.path.abspath(__file__)), '造式.py'))
+        _m = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_m)
+        return _m
+    except Exception:
+        return None
+
+
+def _造式(n):
+    """本章是不是造式之章（`版本/第N章/_式.md`·判在 工具/造式.py）。读不出判据而挂着 `_式.md` 者亦认作造式——
+    其段读不出即红，⛔不许借此退回常式之段。"""
+    if not os.path.exists(os.path.join(ROOT, '版本', '第%d章' % n, '_式.md')):
+        return False
+    m = _造式模()
+    return True if m is None else m.是造式(n, ROOT)
+
+
+def _造式之段():
+    m = _造式模()
+    return m.造式之段(ROOT) if m is not None else None
+
+
 真跑口 = ['工具/全测.py', '工具/起草闸.py', '工具/一坐.py', '工具/大审.py', '工具/书级体检.py',
           '工具/回修.py', '工具/十轮精进.py', '工具/一章到底.py', '工具/跑轮.py']
 
@@ -189,7 +214,16 @@ def 查(印=True):
         except Exception as e:
             红.append('丙·第%d章 _席记.json 读不动：%s' % (n, e))
             continue
-        段 = 诸段()
+        # ★2026-10-08·造式之章（`版本/第N章/_式.md`·判在 `工具/造式.py`）：⛔无三庭／五庭／读席／修席／极限诸段，
+        #   其席记照**造式之段**验（当场自 `一章.js` 之 `const 造式之段` 读——与 meta.phases 同律：段名不写死在本闸）。
+        #   ⛔非豁免：造式之段一段不许缺；读不出造式之段即红（不许读不出就放行）。
+        if _造式(n):
+            段 = _造式之段()
+            if not 段:
+                红.append('丙·第%d章係造式之章，而读不出 一章.js 之 const 造式之段——**段名之源断了**。' % n)
+                continue
+        else:
+            段 = 诸段()
         if not 段:
             红.append('丙·读不出 一章.js 之 meta.phases——**段名之源断了，本闸整条丙路即成空转**。')
             continue
@@ -216,6 +250,7 @@ def 查(印=True):
 # ═══ 负测（令§六③：改闸必同日负测，且须旧式回灌） ═══
 def 自测():
     """★负测之要：每一格都要**咬得住一个真的旧局**，不许拿常数钉死（§二十八）。"""
+    global ROOT   # ⑫ 一格须换仓根作局（跑毕复位）
     ok, bad = 0, []
 
     def T(name, cond, note=''):
@@ -309,6 +344,40 @@ def 自测():
     # ⑩旧式回灌·丙：本仓今有「版本/第306章」而无正文，丙不许判它红
     T('⑩无正文之新章不判红',
       not any('第306章无 _席记' in x for x in 查(印=False)[0]) or 正文在(306))
+
+    # ⑪★2026-10-08·造式之章：其席记照造式之段验（当场自 一章.js 读），常式之章照 meta.phases 验——两头皆活
+    _zs = _造式之段()
+    T('⑪造式之段读得出（今 %s）' % ('、'.join(_zs) if _zs else '读不出'), bool(_zs) and len(_zs) >= 6)
+    T('⑪之二 造式之段逐个在 一章.js 里认得着', bool(_zs) and all(("'%s'" % x) in js for x in _zs))
+    T('⑪之三 造式之段不含审改诸段（三庭／五庭／修席／极限）',
+      bool(_zs) and not any(x in _zs for x in ('三庭', '五庭', '修席', '极限')))
+    _R0 = ROOT
+    import tempfile as _tf, shutil as _sh
+    _t = _tf.mkdtemp(prefix='囤灰_造式_')
+    try:
+        for _sub in ('工具/席', '正文'):
+            os.makedirs(os.path.join(_t, _sub))
+        _sh.copy(os.path.join(_R0, '工具', '席', '一章.js'), os.path.join(_t, '工具', '席', '一章.js'))
+        _d = os.path.join(_t, '版本', '第400章')
+        os.makedirs(_d)
+        open(os.path.join(_t, '正文', '镇冢秘术_第四百章_测.md'), 'w', encoding='utf-8').write('测\n')
+        ROOT = _t
+        def _丙红():
+            return [x for x in 查(印=False)[0] if x.startswith('丙·第400章')]
+        # 造式之章：席记照造式之段写齐 → 丙不红
+        open(os.path.join(_d, '_式.md'), 'w', encoding='utf-8').write('式：虫洞（造式·1008）\n')
+        json.dump({'章': 400, '段': {k: 'x' for k in (_zs or [])}}, open(os.path.join(_d, '_席记.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        T('⑫造式之章席记照造式之段写齐者，丙不红', not _丙红(), '；'.join(_丙红()))
+        # 造式之章缺「验」一段 → 红（⛔非豁免）
+        json.dump({'章': 400, '段': {k: 'x' for k in (_zs or []) if k != '验'}}, open(os.path.join(_d, '_席记.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        T('⑫之二 造式之章缺「验」一段者红', any('验' in x for x in _丙红()))
+        # 同一份造式之席记而无 _式.md → 照 meta.phases 验，缺三庭等即红（不挂牌不许用造式之段）
+        json.dump({'章': 400, '段': {k: 'x' for k in (_zs or [])}}, open(os.path.join(_d, '_席记.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        os.remove(os.path.join(_d, '_式.md'))
+        T('⑫之三 无 _式.md 者照常式之段验（缺三庭即红）', any('三庭' in x for x in _丙红()))
+    finally:
+        ROOT = _R0
+        _sh.rmtree(_t, ignore_errors=True)
 
     print('── 负测·囤灰闸 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad

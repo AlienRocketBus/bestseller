@@ -147,6 +147,32 @@ def main():
     _ks = io.open(os.path.join(ROOT, '工具', '开轮六检.py'), encoding='utf-8').read()
     chk('⑤⑨读「目标轮」且无号即⛔（旧式读「轮／round／轮号」印第None轮而✓）',
         "d.get('目标轮')" in _ks and '无「目标轮」' in _ks)
+    # ⑥★2026-10-08·造式之章（无审改之轮，「轮满」之形永不出现）：造式之实俱齐即其封版之刻——锚未备者须咬；未齐者只记不拦
+    #   ★其局自造自灭：取一个圣经里无「下一章之锚」、版本里亦无其目之大号章（跑毕整个删）。
+    Z = _load('_zs_k6', os.path.join(ROOT, '工具', '造式.py'))
+    局z = 9990
+    while os.path.exists(os.path.join(ROOT, '版本', '第%d章' % 局z)) or re.search(r'第\s*%d\s*章必须从' % (局z + 1), s):
+        局z += 1
+    路z = os.path.join(ROOT, '版本', '第%d章' % 局z)
+    import shutil as _sh6
+    try:
+        Z.造一局(ROOT, 局z)
+        咬z = K.check7(局z)[0][1]
+        _sh6.rmtree(路z)
+        Z.造一局(ROOT, 局z, 缺=('回话',))
+        放z = K.check7(局z)[0][1]
+        _sh6.rmtree(路z)
+        Z.造一局(ROOT, 局z)
+        import os as _os6
+        _os6.remove(os.path.join(路z, '_式.md'))
+        放常 = K.check7(局z)[0][1]
+    finally:
+        if os.path.isdir(路z):
+            _sh6.rmtree(路z)
+    chk('⑥造式之实俱齐而下一章之锚未备者，报⛔（⛔不许造式之章借「轮永不满」逃过锚之检）', 咬z is False)
+    chk('⑥之b 造式之实未齐者只记不拦（同轮未满之章）', 放z is True)
+    chk('⑥之c 同一局而无 _式.md 者照轮数判（一轮＜十三，只记不拦）', 放常 is True)
+    chk('⑥之d 其局跑毕即灭（不留一件文件在仓库里）', not os.path.exists(路z))
     print('  ── %d/%d %s ──' % (OK[0], OK[1], '全通' if OK[0] == OK[1] else '有红'))
     return 0 if OK[0] == OK[1] else 1
 

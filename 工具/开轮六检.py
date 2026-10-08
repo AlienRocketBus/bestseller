@@ -368,6 +368,21 @@ def _rounds(默=13):
     return 默
 
 
+def _造式已齐(cur):
+    """本章是造式之章且造式之实俱齐（`工具/造式.py`）——即它已到封版之刻。取不到判据者 False（同旧式：轮未满者只记不拦）。"""
+    if not os.path.exists(os.path.join(ROOT, '版本', '第%d章' % cur, '_式.md')):
+        return False
+    try:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_zaoshi_k6', os.path.join(ROOT, '工具', '造式.py'))
+        _m = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_m)
+        是, 缺 = _m.判(cur, ROOT)
+        return 是 and not 缺
+    except Exception:
+        return False
+
+
 ANCHOR_MAX = 160  # ★医生之正则上限（2026-08-15 逮出：200锚215字而报「锚未备」）
 
 def check7(cur):
@@ -400,10 +415,15 @@ def check7(cur):
             #   ★其验在 `工具/负测_开轮六检.py`：以旧阈（10）回灌304之现轮记须报⛔，以新阈须放行；
             #     ★★而满轮之章（轮记≥ROUNDS）无锚者，新阈照旧须报⛔——**不是挖空闸，是把它挪回它该出声的那一刻。**
             done = len(set(re.findall(r'^## 第(\d+)轮', tx, re.M))) >= _rounds()
-        if not done:
+        # ★2026-10-08·造式之章（`版本/第N章/_式.md`·判在 `工具/造式.py`）：⛔无审改之轮，「轮满」之形永不出现——
+        #   ⛔若仍只认轮数，造式之章便永远「轮未满」、此检永不咬它（是把锚之检挖空）；
+        #   ★故改以「造式之实俱齐」为它到了封版那一刻之凭：齐了而锚未备者，照旧报⛔。
+        造齐 = (not done) and _造式已齐(cur)
+        if not done and not 造齐:
             return [('⑦·第%d章锚' % nx, True,
                      '★未备（而第%d章%d轮未满，封版时方须备）' % (cur, _rounds()))]
         return [('⑦·第%d章锚' % nx, False,
+                 ('⛔未备（★而第%d章造式之实已齐，封版即断链）' % cur) if 造齐 else
                  '⛔未备（★而第%d章%d轮已满，封版即断链）' % (cur, _rounds()))]
     a = m.group(1)
     ok = (len(a) <= ANCHOR_MAX) and ('。' not in a) and ('——' not in a)

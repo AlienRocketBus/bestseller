@@ -1335,6 +1335,11 @@ def _lunji_blocks(n):
         if m:
             last = int(m.group(1))
             out.setdefault(last, []).append('## ' + b)
+        elif b.startswith('造式·'):
+            # ★2026-10-08·造式（`工具/造式.py`）：「## 造式·逻辑审…」「## 造式·盲读」是造式之章之节，不属任何一轮——
+            #   ⛔不许并进其前一轮（多半是机闸之第3轮）：并进去，那一轮之覆盖／裁定／对数即被别席之文撑高，是记错头。
+            #   ★常式之轮记里无此标题，其归块一格不变。
+            last = None
         elif last is not None:
             # 块内之小标题所切出者，归其前一轮（不丢）
             out[last].append('## ' + b)
@@ -1961,6 +1966,23 @@ def duty_cover(n, r, logtext):
     return (len(hit) * 100 // len(items)), len(hit), len(items)
 
 
+def _造式判(n):
+    """★2026-10-08·造式（作者令「名著是写出来的，不是改出来的」·`工具/席/一章.js` 之 args.式==='虫洞'）：
+    本章是不是造式之章、造式之实缺什么。**判据只一处，在 `工具/造式.py`**（⛔不另抄一份——抄一段闸的逻辑就生一个不会同步的双胞胎）。
+    ★以 `JJ_DIR` 之上一层为仓根（负测换 ROOT／JJ_DIR 时随之走）。
+    ⛔挂着 `_式.md` 而判据取不到者，判「缺」——不许读不出就放行。返回 (是造式, 所缺)。"""
+    if not os.path.exists(os.path.join(JJ_DIR, '第%d章' % n, '_式.md')):
+        return False, []
+    try:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_zaoshi', os.path.join(os.path.dirname(os.path.abspath(__file__)), '造式.py'))
+        _zm = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_zm)
+        return _zm.判(n, os.path.dirname(JJ_DIR))
+    except Exception as _e:
+        return True, ['造式之判跑不起来（%s）——⛔读不出不放行' % _e]
+
+
 def zonghe(n):
     """【批123·第十一轮·总核轮】十轮跑完之后的那一轮，专核前十轮「跑满」与「跑透」。
     立此轮之由（作者令）：十条记录齐全不等于每一轮真干了活；
@@ -2015,16 +2037,31 @@ def zonghe(n):
     def _有实记(i):
         b = '\n'.join(lj.get(i, []))
         return len(re.sub(r'\s', '', b)) >= 120
-    miss_v = [i for i in range(1, _era + 1) if i not in byr and not _有实记(i)]
-    miss_l = [i for i in range(1, _era + 1) if i not in lj]
+    # ★★2026-10-08·造式之章（`版本/第N章/_式.md`·其判在 `工具/造式.py`）：⛔无审改之轮（三庭／五庭／修席／极限），
+    #   故「十轮之版与记俱齐」问的是另一制之章——**改问造式之实**（三稿／三构思／行家评之名次·致命·大进·逐条回话／
+    #   轮记之合稿·逻辑审·盲读），缺一样即硬项；⛔**非豁免**：挂了牌而无其实，照旧不过。
+    #   ★而在册之轮（机闸之第3轮）照旧须有轮记——跑过的那一轮，一格不松；乙丙丁诸查亦一格不动。
+    _造, _造缺 = _造式判(n)
     print('   有版之轮：%s' % ('、'.join(str(i) for i in sorted(byr)) or '无'))
     print('   有记之轮：%s' % ('、'.join(str(i) for i in sorted(lj)) or '无'))
-    if miss_v:
-        hard.append('缺凭之轮（既无版、轮记亦无实文）：' + '、'.join('第%d轮' % i for i in miss_v))
-    if miss_l:
-        hard.append('缺轮记之轮：' + '、'.join('第%d轮' % i for i in miss_l))
-    if not miss_v and not miss_l:
-        print('   ✓十轮之版与记俱齐。')
+    if _造:
+        print('   ★本章係造式之章（版本/第%d章/_式.md）：⛔无审改之轮——跑满查改核造式之实（工具/造式.py）。' % n)
+        for _x in _造缺:
+            hard.append('造式之实缺：' + _x)
+        _缺记 = [i for i in sorted(byr) if i not in lj]
+        if _缺记:
+            hard.append('缺轮记之轮（在册而无记）：' + '、'.join('第%d轮' % i for i in _缺记))
+        if not _造缺 and not _缺记:
+            print('   ✓造式之实俱齐；在册之轮版与记俱齐。')
+    else:
+        miss_v = [i for i in range(1, _era + 1) if i not in byr and not _有实记(i)]
+        miss_l = [i for i in range(1, _era + 1) if i not in lj]
+        if miss_v:
+            hard.append('缺凭之轮（既无版、轮记亦无实文）：' + '、'.join('第%d轮' % i for i in miss_v))
+        if miss_l:
+            hard.append('缺轮记之轮：' + '、'.join('第%d轮' % i for i in miss_l))
+        if not miss_v and not miss_l:
+            print('   ✓十轮之版与记俱齐。')
 
     # 乙·跑透查
     print('\n  ── 乙·跑透查 ──')
@@ -2211,13 +2248,18 @@ def zonghe(n):
     # ★其为本闸链中唯一测「够不够好」者；先前九道皆只测「有没有错」。
     # ★★而其硬项计入总核之硬项——即：跑透不了，封不了版。
     print('\n  ── 丙2·尽力查（测跑透，非测跑完）──')
-    try:
-        _jl = jinli(n)
-        if _jl != 0:
-            hard.append('尽力查未过——层薄／十轮无所长／未问到底，'
-                        '其治不是补字，是回第4轮深掘')
-    except Exception as _e:
-        soft_warn.append('尽力查未能跑：%s' % _e)
+    if _造:
+        # ★造式之章：尽力查所认之三痕（深掘之层／十轮之净重曲线／到底之记）皆审改之轮之痕，造式无此轮；
+        #   造式之「尽力」在造——三稿各写整章、蒙名之选、只办致命与大进，其凭已在甲·造式之实里核过。
+        print('   ★造式之章不跑尽力查（其三痕皆审改之轮之痕）——其力在造，见上甲·造式之实。')
+    else:
+        try:
+            _jl = jinli(n)
+            if _jl != 0:
+                hard.append('尽力查未过——层薄／十轮无所长／未问到底，'
+                            '其治不是补字，是回第4轮深掘')
+        except Exception as _e:
+            soft_warn.append('尽力查未能跑：%s' % _e)
 
     # 丁·横评择优
     print('\n  ── 丁·横评择优 ──')
@@ -2238,10 +2280,11 @@ def zonghe(n):
     json.dump({'时': datetime.datetime.now().strftime('%m-%d %H:%M'),
                '版数': len(vs), '真轮': sorted(byr), '轮记轮': sorted(lj),
                '补存版数': sum(1 for x in vs if '补存' in x.get('说明', '')),
-               '软项': soft_warn, '流': _stream_id()},
+               '软项': soft_warn, '流': _stream_id(), **({'式': '造式'} if _造 else {})},
               open(os.path.join(d, '_总核.json'), 'w', encoding='utf-8'),
               ensure_ascii=False, indent=1)
-    print('  【总核·通过】十轮之版与记俱齐、无未记之空轮、无旗、正文与末版一致。')
+    print('  【总核·通过】%s、无未记之空轮、无旗、正文与末版一致。'
+          % ('造式之实俱齐（造式之章·无审改之轮）' if _造 else '十轮之版与记俱齐'))
     print('  已出总核凭据：版本/第%d章/_总核.json（封版闸据此放行）。' % n)
     print('  ══════════════════════════════════════════')
     return 0
@@ -2933,6 +2976,77 @@ def selftest():
     #   ★拿一条只对後三百章成立的判据去拦前七十章，它一次也拦不住。
     chk('领轮闸·⛔不拿「回执在不在」作判（回执闸自73章起，前章无回执）',
         '_receipts_of(n)' not in _src_self.split('def 可领轮')[1].split('def _ling_path')[0])
+
+    # ── 造式之总核（2026-10-08·作者令「名著是写出来的，不是改出来的」）──
+    #   ★总核见 `_式.md` 即改核造式之实（`工具/造式.py`）——⛔非豁免：挂牌无实照旧不过；旗、正文与末版、在册之轮之记照旧咬。
+    def _造局(tmp, 缺=(), 旗=False, 偏=False, 无式=False, 无三记=False):
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_zs_t', os.path.join(os.path.dirname(os.path.abspath(__file__)), '造式.py'))
+        _zm = _u.module_from_spec(_sp); _sp.loader.exec_module(_zm)
+        d = _zm.造一局(tmp, 7, 缺=缺)
+        if 无式:
+            os.remove(os.path.join(d, '_式.md'))
+        body = '《镇冢秘术》\n\n第七章　测\n\n她把手搁在桶沿上，等那口气落稳。\n'
+        open(os.path.join(tmp, '正文', '镇冢秘术_第七章_测.md'), 'w', encoding='utf-8').write(body + ('偏了' if 偏 else ''))
+        open(os.path.join(d, 'v01.md'), 'w', encoding='utf-8').write(body)
+        json.dump({'章': 7, '版本': [{'版': 'v01', '时': 'x', '说明': '第3轮·逐数对表·判不补·记因：诸器全绿',
+                   'hard': {}, 'soft': {'净重': 100, '段数': 9, '均段': 11, '长段数': 1, '嗅': 3, '听': 4, '触': 7, '视': 2,
+                                                '老头': 1, '钱满': 1, '沈鸢': 0, '四字串三现': 0, '顿悟起手': 0}, '全书章数': 1}]},
+                  open(os.path.join(d, '_台账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        实 = '看见了什么：逐器跑过，起草闸甲层九格全绿，硬闸零红，本转零刀判合，其由为诸数与台账逐一对上。' * 3
+        lj = open(os.path.join(d, '_轮记.md'), encoding='utf-8').read()
+        lj = lj.replace('## 第3轮·逐数对表\n', '## 第3轮·逐数对表\n' + ('' if 无三记 else '净重100｜段数9 ' + 实 + '\n'))
+        if 无三记:
+            lj = re.sub(r'## 第3轮·逐数对表\n[^#]*', '', lj)
+        open(os.path.join(d, '_轮记.md'), 'w', encoding='utf-8').write(lj)
+        if 旗:
+            raise_flag(7, '测', '造式')
+
+    def _造核(name, want, **kw):
+        nonlocal ok, fail
+        global ROOT, JJ_DIR
+        tmp = tempfile.mkdtemp(prefix='zm_zs_')
+        try:
+            os.makedirs(os.path.join(tmp, '正文'))
+            os.makedirs(os.path.join(tmp, '设定'))
+            ROOT, JJ_DIR = tmp, os.path.join(tmp, '版本')
+            _造局(tmp, **kw)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = zonghe(7)
+            if rc == want:
+                ok += 1
+            else:
+                fail += 1
+                print('  ✗负测失败：造式之总核·%s（rc=%s，期望%s）' % (name, rc, want))
+                for _l in buf.getvalue().split('\n'):
+                    if '⛔' in _l:
+                        print('      ' + _l.strip()[:110])
+        finally:
+            ROOT, JJ_DIR = _R, _J
+            shutil.rmtree(tmp, ignore_errors=True)
+    _造核('①造式之实俱齐、在册之轮有记、无旗、正文与末版一致者过', 0)
+    _造核('②挂造式之牌而合稿逐条回话缺者不过（⛔非豁免）', 2, 缺=('回话',))
+    _造核('③漏回一号者不过', 2, 缺=('漏回',))
+    _造核('④无逻辑审之节者不过', 2, 缺=('逻辑审之节',))
+    _造核('⑤拦停旗未销者照旧不过', 2, 旗=True)
+    _造核('⑥正文与末版已偏者照旧不过', 2, 偏=True)
+    _造核('⑦同一局而无 _式.md 者照常式量（缺十余轮）不过', 2, 无式=True)
+    _造核('⑧在册之第3轮无轮记者照旧不过', 2, 无三记=True)
+    # ⑨造式之节不并进其前一轮（防第3轮之覆盖／对数被别席之文撑高）
+    tmp = tempfile.mkdtemp(prefix='zm_zs9_')
+    try:
+        ROOT, JJ_DIR = tmp, os.path.join(tmp, '版本')
+        os.makedirs(os.path.join(JJ_DIR, '第7章'))
+        open(os.path.join(JJ_DIR, '第7章', '_轮记.md'), 'w', encoding='utf-8').write(
+            '# 轮记\n## 第3轮·逐数对表\n甲\n### 小节\n乙\n## 造式·逻辑审·起草·第1回\n丙P04\n## 造式·盲读\n丁\n## 第4轮·x\n戊\n')
+        _b = _lunji_blocks(7)
+        _t3 = '\n'.join(_b.get(3, []))
+        chk('造式之节不并进其前一轮（第3轮块含其小节而不含造式之节）', '乙' in _t3 and '丙' not in _t3 and '丁' not in _t3)
+        chk('造式之节之後之轮照旧归块', '戊' in '\n'.join(_b.get(4, [])))
+    finally:
+        ROOT, JJ_DIR = _R, _J
+        shutil.rmtree(tmp, ignore_errors=True)
 
     print('\n  八闸负测（含端到端真跑）：%d/%d' % (ok, ok + fail))
     return 0 if fail == 0 else 1

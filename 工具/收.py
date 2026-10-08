@@ -87,6 +87,20 @@ def rounds_done(n):
                    for m in [re.match(r'\s*第\s*(\d+)\s*轮', x.get('说明', ''))] if m})
 
 
+def _造式判(n):
+    """→ (是造式, 所缺)；判据在 工具/造式.py（⛔不另抄）。挂 _式.md 而判据取不到者，判「缺」。"""
+    if not os.path.exists(os.path.join(ROOT, '版本', '第%d章' % n, '_式.md')):
+        return False, []
+    try:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_zaoshi_shou', os.path.join(ROOT, '工具', '造式.py'))
+        _m = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_m)
+        return _m.判(n, ROOT)
+    except Exception as _e:
+        return True, ['造式之判跑不起来（%s）' % _e]
+
+
 def text_exists(n):
     for f in glob.glob(os.path.join(ROOT, '正文', '*.md')):
         m = re.search(r'第([零一二三四五六七八九十百]+)章', os.path.basename(f))
@@ -106,13 +120,20 @@ def main():
         print('▶ 本章尚未起草。')
         print('【须人办】起草——器写不了。开镜卡在 版本/第%d章/_开镜卡.md' % n)
         return
-    if len(rs) < 13:
+    # ★2026-10-08·造式之章（`版本/第N章/_式.md`·判在 `工具/造式.py`）：⛔审改之轮，「真轮 13/13」永不出现——
+    #   ⛔不许叫它去「跑轮」（那正是作者 1008 所禁）；改以造式之实俱齐为封版之刻，缺者照印其缺而停。
+    造, 造缺 = _造式判(n)
+    if 造 and 造缺:
+        print('▶ 本章係造式之章（⛔审改之轮）：造式之实缺 %d 样——%s' % (len(造缺), '｜'.join(造缺[:4])))
+        print('【须人办】缺哪一席之档，派那一席补（⛔以跑轮补）。全看：python3 工具/造式.py %d' % n)
+        return
+    if len(rs) < 13 and not 造:
         nxt = (max(rs) + 1) if rs else 1
         print('▶ 真轮 %d/13，下一轮：第%d轮。' % (len(rs), nxt))
         print('【须人办】跑轮——器跑不了。先 python3 工具/跑轮.py --下一轮 %d' % n)
         return
 
-    print('▶ 真轮 13/13 已满 → 封版之序（六步，器全办）')
+    print('▶ %s → 封版之序（六步，器全办）' % ('造式之实俱齐（造式之章·无审改之轮）' if 造 else '真轮 13/13 已满'))
     if not go:
         print('')
         print('（只看。要动手，跑 python3 工具/收.py --跑）')

@@ -4920,6 +4920,24 @@ def _rounds_full(n):
     **纵使前面都漏了，回执一交，机器仍会把缺的轮数点出来，且禁封版。**
     只对 n>=153 生效——历史章之轮号编法不一（P23轮号漂移），不追溯。
     全程 try/except 包死，取不到台账一律放行（宁可不拦，不可误拦）。"""
+    # ★★2026-10-08·造式之章（作者令「名著是写出来的，不是改出来的」·其判在 `工具/造式.py`）：
+    #   ⛔无审改之轮（三庭／五庭／修席／极限），「十轮不满」问的是另一制之章——**改问造式之实**，缺一样即不许封版。
+    #   ⛔**非豁免**：挂了 `_式.md` 而无其实者照旧红；**判据取不到者亦红**（此一路不入下面「取不到一律放行」之 try）。
+    if _os.path.exists(_os.path.join(REPO_ROOT, '版本', '第%d章' % n, '_式.md')):
+        try:
+            import importlib.util as _zu
+            _zsp = _zu.spec_from_file_location('_zaoshi_ic', _os.path.join(REPO_ROOT, '工具', '造式.py'))
+            _zm = _zu.module_from_spec(_zsp)
+            _zsp.loader.exec_module(_zm)
+            _是, _缺 = _zm.判(n, REPO_ROOT)
+        except Exception as _ze:
+            _是, _缺 = True, ['造式之判跑不起来（%s）' % _ze]
+        if _是:
+            if not _缺:
+                return None
+            return ('造式之实不全:%s——造式之章无审改之轮，以造式之实代十轮之凭，缺者不许封版'
+                    '（跑 python3 工具/造式.py %d 看全；缺哪一席之档，派那一席补，⛔代补）'
+                    % ('｜'.join(_缺[:4]) + ('…等%d样' % len(_缺) if len(_缺) > 4 else ''), n))
     try:
         import json as _j
         f = _os.path.join(REPO_ROOT, '版本', '第%d章' % n, '_台账.json')
@@ -6312,8 +6330,9 @@ def _round11_main(n):
     import json as _j3, datetime as _dt
     d = _os.path.join(REPO_ROOT, '版本', '第%d章' % n)
     _os.makedirs(d, exist_ok=True)
+    _造式之章 = _os.path.exists(_os.path.join(REPO_ROOT, '版本', '第%d章' % n, '_式.md'))
     _j3.dump({'时': _dt.datetime.now().strftime('%m-%d %H:%M'),
-              '左眼': '跑轮总核·过', '右眼': '检察官五检·过', '软项': rsoft},
+              '左眼': '跑轮总核（造式之实）·过' if _造式之章 else '跑轮总核·过', '右眼': '检察官五检·过', '软项': rsoft},
              open(_os.path.join(d, '_十一轮.json'), 'w', encoding='utf-8'),
              ensure_ascii=False, indent=1)
     print('  【第十一轮·通过】两眼皆过。已出凭据：版本/第%d章/_十一轮.json' % n)

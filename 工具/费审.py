@@ -105,7 +105,7 @@ if __name__ == '__main__':
         print(__doc__); sys.exit(2)
     d = a[0]
     if not os.path.isdir(d):
-        c = glob.glob(os.path.expanduser('~/.claude/projects/*/subagents/workflows/%s' % d))
+        c = glob.glob(os.path.expanduser('~/.claude/projects/*/*/subagents/workflows/%s' % d)) + glob.glob(os.path.expanduser('~/.claude/projects/*/subagents/workflows/%s' % d))
         d = c[0] if c else d
     if not os.path.isdir(d):
         print('⛔ 找不到 Run 之目录：' + a[0]); sys.exit(2)

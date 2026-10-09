@@ -163,6 +163,8 @@ def 是等(x):
         return False
     c = (x.get('input') or {}).get('command') or ''
     c = re.sub(r"<<-?\s*['\"]?(\w+)['\"]?.*?\n\1\b", '', c, flags=re.S)
+    c = re.sub(r'"(?:[^"\\]|\\.)*"', '""', c)          # 引号中之字是参数、⛔命令（1009 再踩：坑之描述里之「kill -0」被认作等待）
+    c = re.sub(r"'[^']*'", "''", c)
     return bool(等之式.search(c))
 
 
@@ -345,7 +347,8 @@ def 自测():
         B = lambda c, n='Bash': {'type': 'tool_use', 'name': n, 'input': {'command': c}}
         共 += 1; ok += (是等(B('sleep 5; tail x')) and 是等(B('timeout 590 python3 工具/推.py --等')) and 是等(B('while kill -0 123; do :; done'))
                         and not 是等(B("python3 - <<'EOF'\nr = 'sleep 5|pgrep|kill -0'\nEOF\necho ok"))   # 码里之字样⛔误认
-                        and not 是等(B('sleep 5', 'Write')) and not 是等(B('grep -n sleepy x')))
+                        and not 是等(B('sleep 5', 'Write')) and not 是等(B('grep -n sleepy x'))
+                        and not 是等(B('python3 x.py --立 "把码里之 sleep 5／kill -0 认作等待"')) and not 是等(B("echo 'pgrep x'")))
         os.makedirs(os.path.join(t, '设定'))
         import io, contextlib
         with contextlib.redirect_stdout(io.StringIO()):

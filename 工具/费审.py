@@ -154,6 +154,45 @@ def 主环(自=None, f=None, 至=None):
     return 审一(f, '主环(总编辑)', 自, 至) if f else None
 
 
+等之式 = re.compile(r'(?<![\w.])sleep\s+\d|\bpgrep\b|\bkill\s+-0\b|推\.py\s+--等')
+
+
+def 是等(x):
+    """一个 tool_use 是否等待／轮询：只认 Bash 之命令，且先剔去 heredoc 之体（写码时码里有这些字样，⛔误认——1009 实踩）。"""
+    if not isinstance(x, dict) or x.get('type') != 'tool_use' or x.get('name') != 'Bash':
+        return False
+    c = (x.get('input') or {}).get('command') or ''
+    c = re.sub(r"<<-?\s*['\"]?(\w+)['\"]?.*?\n\1\b", '', c, flags=re.S)
+    return bool(等之式.search(c))
+
+
+def 主环之等(自=None, 至=None, f=None):
+    """→ (回, 美元)：主环於 [自, 至) 内发出等待／轮询类工具调用（sleep、pgrep、kill -0、推.py --等）之那几回 API 之费——机器能办而花 token 之一类（坑⑮）。"""
+    f = f or (sorted(glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl')), key=os.path.getmtime) or [None])[-1]
+    if not f:
+        return 0, 0.0
+    用, 模, 时, 等 = {}, {}, {}, set()
+    for l in open(f, encoding='utf-8'):
+        try:
+            e = json.loads(l)
+        except Exception:
+            continue
+        if e.get('type') != 'assistant':
+            continue
+        m = e.get('message') or {}
+        k = m.get('id')
+        if not k:
+            continue
+        if m.get('usage'):
+            用[k] = m['usage']; 模[k] = m.get('model') or ''; 时.setdefault(k, e.get('timestamp') or '')
+        for x in (m.get('content') or []):
+            if 是等(x):
+                等.add(k)
+    ids = [k for k in 等 if k in 用 and (not 自 or 时[k] >= 自) and (not 至 or 时[k] < 至)]
+    目 = 价目()
+    return len(ids), sum(一回之金(模[k], 用[k], 目)[0] for k in ids)
+
+
 def 通知之数(rid, 档们=None):
     """主会话转录里，该 Run 之通知所报之 subagent_tokens（取末一回）；无则 None。"""
     档们 = 档们 if 档们 is not None else glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl'))
@@ -303,6 +342,10 @@ def 自测():
         共 += 1; ok += (通知之数('wf_aaaaaaaa-bbb', [mf]) == s['末'] and 通知之数('wf_cccccccc-ddd', [mf]) is None)
         r = 审一(os.path.join(t, 'agent-1.jsonl'), '主', 自='2026-10-08T11:01')
         共 += 1; ok += (r['回'] == 1 and r['读'] == 1100)                            # 主环之窗
+        B = lambda c, n='Bash': {'type': 'tool_use', 'name': n, 'input': {'command': c}}
+        共 += 1; ok += (是等(B('sleep 5; tail x')) and 是等(B('timeout 590 python3 工具/推.py --等')) and 是等(B('while kill -0 123; do :; done'))
+                        and not 是等(B("python3 - <<'EOF'\nr = 'sleep 5|pgrep|kill -0'\nEOF\necho ok"))   # 码里之字样⛔误认
+                        and not 是等(B('sleep 5', 'Write')) and not 是等(B('grep -n sleepy x')))
         os.makedirs(os.path.join(t, '设定'))
         import io, contextlib
         with contextlib.redirect_stdout(io.StringIO()):

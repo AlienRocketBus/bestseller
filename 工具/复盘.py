@@ -22,6 +22,29 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import 费审
 
 
+配额 = [('造', 75, '≥'), ('验', 20, '≤'), ('机器之活', 0, '≤')]
+
+
+def 分配表(行):
+    """资源分配官之表：实占对配额（造≥75%、验≤20%、机器之活→0 归脚本、找料→0 归章料）。"""
+    import re as _re
+    总 = sum(x['读'] for x in 行) or 0
+    if not 总:
+        return '（无 Run 可审——非工作流之席，照回执手填分配）'
+    出 = ['| 类 | 配额 | 实占 | 判 |', '|---|---|---|---|']
+    已 = set()
+    for 名, 额, 向 in 配额:
+        pat = dict(费审.类)[名]
+        s = [x for x in 行 if _re.search(pat, x['名']) and id(x) not in 已]
+        for x in s:
+            已.add(id(x))
+        占 = 100.0 * sum(x['读'] for x in s) / 总
+        合 = (占 >= 额) if 向 == '≥' else (占 <= 额 + (5 if 额 == 0 else 0))
+        出.append('| %s | %s%d%% | %.0f%% | %s |' % (名, 向, 额, 占, '✓' if 合 else '⛔失配'))
+    出.append('| 找料 | 0（章料） | 见「无用功」：执笔／魂之工具回数 | — |')
+    return '\n'.join(出)
+
+
 def 起草(W, 题, runs, root=ROOT, 日=None):
     日 = 日 or time.strftime('%m%d', time.gmtime())
     出 = os.path.join(root, '设定', '复盘', '%s_%s_%s.md' % (日, W, 题))
@@ -35,12 +58,14 @@ def 起草(W, 题, runs, root=ROOT, 日=None):
     except Exception:
         pass
     费段, 疑 = [], []
+    费审之行 = []
     总读 = 0
     for r in runs:
         d = r if os.path.isdir(r) else (glob.glob(os.path.expanduser('~/.claude/projects/*/*/subagents/workflows/%s' % r)) or [r])[0]
         if not os.path.isdir(d):
             费段.append('- Run %s：找不到其目录（非工作流之席，耗费照其回执手填）' % r); continue
         行 = 费审.审(d)
+        费审之行 += 行
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             费审.印(行)
@@ -59,6 +84,7 @@ def 起草(W, 题, runs, root=ROOT, 日=None):
          '- 裁：%s' % '；'.join('%s %s' % (x.get('法'), str(x.get('由', ''))[:160]) for x in 件.get('裁', [])), '',
          '## 产出', '', '（总编辑填：成了什么、质之实据——致命数、行家对拍库之分、盲读）', '',
          '## 耗费', '', '- 合计缓存读：%d（各 Run 详下）；实耗之 token 与时照工作流回执填：' % 总读, ''] + 费段 + ['',
+         '## 资源分配（资源分配官·1009）', '', 分配表(费审之行), '',
          '## 无用功', '', '机器之疑（总编辑逐条判：真费、或该花）：'] + (疑 or ['- （无 Run 可审）']) + ['', '（总编辑填：哪里花了大量 token 与时而无实果，其根）', '',
          '## 刀刃', '', '（总编辑填：钱花在哪儿真出了果）', '',
          '## 改进方案', '', '（总编辑填：具体到改哪档哪条；下回照办之验——下回之费审拿什么数比）', '',

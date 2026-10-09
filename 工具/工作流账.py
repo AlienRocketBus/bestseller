@@ -180,6 +180,15 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
             print('  %s〔%s〕%s' % (坑账.圈(k['号']), k['状'], k['名'][:70]))
         if '坑' not in 有效之据:
             print('⛔ 拒开：有效之据须写「坑之检」——本法如何排除上列诸坑（或指其设计档之「## 坑之检」）'); return False
+    # ★1009 作者令「每一环都要先精准确定它能做成，再去实施；⛔猜」：有 设定/方案/ 之盘，即验其 W 之方案（逐环确证、时、费、败则；未确证者⛔开）
+    if os.path.isdir(os.path.join(root, '设定', '方案')):
+        try:
+            import 方案 as _方案
+            案过, 案坏 = _方案.验(i, root)
+        except Exception as _e:
+            案过, 案坏 = False, ['方案器跑不起来：%s' % _e]
+        if not 案过:
+            print('⛔ 拒开：方案未过——\n  ' + '\n  '.join(案坏)); return False
     # ★1009 作者令「每做一件事先想最好的办法，先设计方法，⛔硬着头皮上」（坑⑳：W18 派十一个模型席去核机器能核之算术）
     if '零token之检' not in 有效之据.replace(' ', ''):
         print('⛔ 拒开：有效之据须写「零token之检：……」——此件哪些机器能办（归脚本、⛔开席）、哪些非模型不可、为何；先设计方法，再开'); return False
@@ -279,6 +288,15 @@ def 自测():
             r4 = 开('A', 6, '停', '换', '据；坑之检：①已排除；零token之检：须模型', '估', t, H(0))
             r5 = 开('A', 6, '停', '换', '据；坑之检：①已排除；零token之检：须模型', '估', t, H(0))   # 例外用即销，二回拒
         os.remove(os.path.join(t, '设定', '暂停令.json')); os.remove(os.path.join(t, '设定', '方法坑账.json'))
+        # 1009：有方案之盘则须方案过——无方案拒、方案好则开
+        os.makedirs(os.path.join(t, '设定', '方案'))
+        with _cl.redirect_stdout(_io.StringIO()):
+            r6 = 开('A', 6, '停', '换', '据；零token之检：须模型', '估', t, H(0))
+            open(os.path.join(t, '设定', '方案', 'A.md'), 'w', encoding='utf-8').write(
+                '## 逐环\n| 环 | 做什么 | 谁办 | 确证 | 时 | 费 | 败则 |\n|---|---|---|---|---|---|---|\n'
+                '| 1 | 对拍 | 脚本：工具/费审对拍.py | 自测 5/5 | 1 分 | $0 | 停 |\n## 未确证\n- 无\n## 合计\n- 时：1 分；费：$0；据：自测\n')
+            r7 = 开('A', 6, '停', '换', '据；零token之检：须模型', '估', t, H(0))
+        共 += 1; ok += (r6 is False and r7 is True)
         共 += 1; ok += (r0 is False and r1 is False and r2 is True and r3 is False and r4 is True and r5 is False)
         共 += 1; ok += (len(查(t, H(7))) == 1 and '逾时限' in 查(t, H(7))[0])  # 逾时 → 红
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(7)) is True and 查(t, H(8)) == [])   # 续一回

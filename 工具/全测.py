@@ -3815,6 +3815,13 @@ def chk_gongzuoliu():
     return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
 
 
+def chk_fupan():
+    """复盘（1009 立·作者令「每一回任务都要复盘：坑、无用功、具体改进方案、详细耗费」）：起草器自测须过；无复盘不许结案（工作流账.py 守）。见 工具/复盘.py。"""
+    import subprocess as _sp
+    a = _sp.run([sys.executable, '工具/复盘.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0, a.stdout.strip()[-120:]
+
+
 def chk_feishen():
     """费审（1009 立·作者令「每次都找到问题所在，虫洞之法不断进化」）：零 token 审一回工作流每席之来回与缓存之费——自测须过。见 工具/费审.py。"""
     import subprocess as _sp
@@ -5110,7 +5117,7 @@ def main():
     # 1008 总编辑：快测须含设定层诸闸（圣经随裁、圣经引号、改单、工作流账、对账预筛、席令之禁）——否则改圣经／裁档後快测全绿而推时被拦（1008 D3 之裁漏「据 剧情庭_D3」之教）
     if quick:
         items += [('圣经随裁', chk_shengjing_suicai), ('圣经引号', chk_shengjing_yin), ('改单', chk_gaidan),
-                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('章料', chk_zhangliao), ('改记', chk_gaiji), ('费审', chk_feishen), ('席令之禁', chk_xiling_jin)]
+                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('章料', chk_zhangliao), ('改记', chk_gaiji), ('费审', chk_feishen), ('复盘', chk_fupan), ('席令之禁', chk_xiling_jin)]
 
 
     if not quick:
@@ -5172,6 +5179,7 @@ def main():
         items.append(('章料', chk_zhangliao))
         items.append(('改记', chk_gaiji))
         items.append(('费审', chk_feishen))
+        items.append(('复盘', chk_fupan))
         items.append(('书名不绑', chk_shuming))
         items.append(('圣经引号', chk_shengjing_yin))
         items.append(('自省哨', chk_zixing))

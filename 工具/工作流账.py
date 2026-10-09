@@ -167,11 +167,22 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
     print('⛔ 无此件：' + i); return False
 
 
+def 有复盘(i, root=ROOT):
+    """1009 作者令：每一回任务都要复盘——耗费、无用功、改进方案三节俱在方许结案。"""
+    for f in glob.glob(os.path.join(root, '设定', '复盘', '*%s*.md' % i)):
+        t = open(f, encoding='utf-8').read()
+        if all(k in t for k in ('## 耗费', '## 无用功', '## 改进方案')):
+            return True
+    return False
+
+
 def 裁(i, 法, 由, 新时限=None, root=ROOT, 今=None):
     if 法 == '守原':
         print('⛔ 无「守原」之出口——作者 1008：留下烂摊子不干了即烂尾。原文果真已达标，以「取」裁之并写由；否则「重造」'); return False
     if 法 not in ('取', '重造', '续') or not (由 or '').strip():
         print('⛔ 裁须为 取／重造／续 之一，且须写由'); return False
+    if 法 in ('取', '重造') and not 有复盘(i, root):
+        print('⛔ 无复盘不许结案（1009 作者令·每任务必复盘）：须先立 设定/复盘/<日>_%s_<题>.md，含「## 耗费」（实耗：token、时、席、来回——`工具/费审.py <Run ID>`）、「## 无用功」（哪里花了大量 token 与时却无实果）、「## 改进方案」（具体到改哪档哪条、下回照办之验）——`python3 工具/复盘.py %s <Run ID…>` 起草' % (i, i)); return False
     账 = 读(root)
     for x in 账['件']:
         if x['id'] != i:
@@ -226,6 +237,9 @@ def 自测():
         共 += 1; ok += (len(查(t, H(7))) == 1 and '逾时限' in 查(t, H(7))[0])  # 逾时 → 红
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(7)) is True and 查(t, H(8)) == [])   # 续一回
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(8)) is False)               # 再续拒
+        共 += 1; ok += (裁('A', '重造', '新法', 4, t, H(10)) is False)          # 无复盘不许重造（1009）
+        os.makedirs(os.path.join(t, '设定', '复盘'), exist_ok=True)
+        open(os.path.join(t, '设定', '复盘', '1009_A_测.md'), 'w').write('## 耗费\n## 无用功\n## 改进方案\n')
         共 += 1; ok += (裁('A', '重造', '新法', 4, t, H(10)) is True and 查(t, H(13)) == [] and len(查(t, H(15))) == 1)
         裁('A', '重造', '又一法', 4, t, H(15))
         共 += 1; ok += (裁('A', '重造', '三法', 4, t, H(20)) is False)          # 重造两回後拒——报作者

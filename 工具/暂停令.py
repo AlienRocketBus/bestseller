@@ -12,6 +12,7 @@
 用法：
   python3 工具/暂停令.py --查                  # 在不在、立於何时、令之原文、其据
   python3 工具/暂停令.py --解 "作者令：……"      # 作者令下方解；记时与言
+  python3 工具/暂停令.py --例外 W18 "作者令：……"  # 暂停之中作者亲令一件：只许此一件开一回（记时与言；用即销），其余照停
   python3 工具/暂停令.py --自测
 """
 import os as _o, sys as _s
@@ -59,6 +60,34 @@ def 在(root=ROOT):
     return True, '暂停令在（立 %s·据 %s）：%s' % (d.get('立', ''), d.get('据', ''), str(d.get('令', ''))[:160])
 
 
+def 许(件, root=ROOT):
+    """暂停之中，此件有作者亲令之例外而未用否。"""
+    d = 读令(root) or {}
+    return any(x.get('件') == 件 and not x.get('用') for x in d.get('例外', []))
+
+
+def 例外(件, 言, root=ROOT):
+    d = 读令(root)
+    if not d or d.get('解'):
+        print('⛔ 无未解之暂停令，无须例外'); return False
+    if '作者' not in 言:
+        print('⛔ 例外须引作者之言（「作者令：……」）'); return False
+    d.setdefault('例外', []).append({'件': 件, '时': time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime()), '言': 言, '用': False})
+    json.dump(d, open(os.path.join(root, 档), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    print('✓ 暂停令之例外：%s（只许开一回）——%s' % (件, 言[:80]))
+    return True
+
+
+def 销(件, root=ROOT):
+    d = 读令(root)
+    for x in (d or {}).get('例外', []):
+        if x.get('件') == 件 and not x.get('用'):
+            x['用'] = time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())
+            json.dump(d, open(os.path.join(root, 档), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+            return True
+    return False
+
+
 def 解(言, root=ROOT):
     d = 读令(root)
     if not d or d.get('解'):
@@ -90,6 +119,11 @@ def 自测():
         with contextlib.redirect_stdout(io.StringIO()):
             r1 = 解('随便', t); r2 = 解('作者令：开', t)
         共 += 1; ok += (r1 is False and r2 is True and 在(t)[0] is False)     # 解须引作者；解後不在
+        w({'立': 'x', '令': '作者令：暂停', '据': '设定/交.md:2', '解': None})
+        with contextlib.redirect_stdout(io.StringIO()):
+            e1 = 例外('W9', '随便', t); e2 = 例外('W9', '作者令：此件可开', t)
+        a1 = 许('W9', t); a2 = 许('W8', t); 销('W9', t); a3 = 许('W9', t)
+        共 += 1; ok += (e1 is False and e2 is True and a1 and not a2 and not a3 and 在(t)[0] is True)   # 例外只许其件、用即销、令仍在
     finally:
         shutil.rmtree(t)
     print('暂停令·自测 %d/%d' % (ok, 共))
@@ -102,6 +136,8 @@ if __name__ == '__main__':
         sys.exit(0 if 自测() else 1)
     if a == ['--查']:
         print(在()[1]); sys.exit(0)
+    if a[:1] == ['--例外'] and len(a) == 3:
+        sys.exit(0 if 例外(a[1], a[2]) else 1)
     if a[:1] == ['--解'] and len(a) == 2:
         sys.exit(0 if 解(a[1]) else 1)
     print(__doc__); sys.exit(2)

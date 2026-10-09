@@ -164,7 +164,10 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
     except Exception:
         停在, 停由 = False, ''
     if 停在:
-        print('⛔ 拒开：%s——作者令下方 `python3 工具/暂停令.py --解 "作者令：……"`' % 停由); return False
+        if 暂停令.许(i, root):
+            print('⏸ 暂停令在，而 %s 有作者亲令之例外——只许此一回（开即销）' % i)
+        else:
+            print('⛔ 拒开：%s——作者令下方 `python3 工具/暂停令.py --解 "作者令：……"`，或单件 `--例外 %s "作者令：……"`' % (停由, i)); return False
     # ★1009 作者令「进化之时先看曾经踩过的坑，踩过的坑⛔在新法里再现」：开前逐坑过一遍，有效之据须写坑之检
     try:
         import 方法坑账 as 坑账
@@ -183,7 +186,10 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
             x.update({'状态': '进行', '起': (今 or _今()).strftime('%Y-%m-%dT%H:%MZ'), '时限': 时限,
                       '停止线': 停止线.strip(), '换法': 换法.strip(), '有效之据': 有效之据.strip(), '预估': 预估.strip()})
             x.setdefault('裁', [])
-            _存(账, root); print('✓ %s 开：时限 %g 时' % (i, 时限)); return True
+            _存(账, root); print('✓ %s 开：时限 %g 时' % (i, 时限))
+            if 停在:
+                暂停令.销(i, root)
+            return True
     print('⛔ 无此件：' + i); return False
 
 
@@ -264,8 +270,12 @@ def 自测():
             open(os.path.join(t, '设定', '交.md'), 'w', encoding='utf-8').write('> 暂停令\n')
             json.dump({'令': '作者令：停', '据': '设定/交.md:1', '解': None}, open(os.path.join(t, '设定', '暂停令.json'), 'w', encoding='utf-8'), ensure_ascii=False)
             r3 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))
+            import 暂停令 as _停
+            _停.例外('A', '作者令：A 可开', t)
+            r4 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))
+            r5 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))   # 例外用即销，二回拒
         os.remove(os.path.join(t, '设定', '暂停令.json')); os.remove(os.path.join(t, '设定', '方法坑账.json'))
-        共 += 1; ok += (r1 is False and r2 is True and r3 is False)
+        共 += 1; ok += (r1 is False and r2 is True and r3 is False and r4 is True and r5 is False)
         共 += 1; ok += (len(查(t, H(7))) == 1 and '逾时限' in 查(t, H(7))[0])  # 逾时 → 红
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(7)) is True and 查(t, H(8)) == [])   # 续一回
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(8)) is False)               # 再续拒

@@ -104,14 +104,23 @@ _未注 = object()   # ★**须与 None 分得开**：负测要注的正是「�
                    #   ★★**於是那一格永远测不着**——0911 立器当日实见，一立即犯。
 
 
-def 查(印=True, now=None, 末=None, 回执=None, 动=_未注, 跳=None, 续跑=_未注):
-    """★诸入皆可由外注（负测之用）：末章／有无回执／下一章之新动／心跳三样。"""
+def 暂停():
+    try:
+        import 暂停令
+        return 暂停令.在()
+    except Exception:
+        return False, ''
+
+
+def 查(印=True, now=None, 末=None, 回执=None, 动=_未注, 跳=None, 续跑=_未注, 停=None):
+    """★诸入皆可由外注（负测之用）：末章／有无回执／下一章之新动／心跳三样；停＝(在否, 由)，暂停令（1009）。"""
     now = now if now is not None else time.time()
     n = 末 if 末 is not None else 末章()
     封 = 回执 if 回执 is not None else 有回执(n)
     有人, 章, 差 = 跳 if 跳 is not None else 心跳()
     下 = n + 1
     t下 = 动 if 动 is not _未注 else 新动(下)
+    停在, 停由 = 停 if 停 is not None else 暂停()
     坏, 黄 = [], []
 
     # 乙·空转：锁在手而那一章不动
@@ -130,7 +139,10 @@ def 查(印=True, now=None, 末=None, 回执=None, 动=_未注, 跳=None, 续跑
     # 甲·断流：上一棒交了，下一棒没人接
     if 封 and not 有人:
         静 = (now - t下) if t下 else None
-        if t下 is None or 静 > 限断:
+        if (t下 is None or 静 > 限断) and 停在:
+            # ★1009：作者之暂停令在盘上（`工具/暂停令.py` 验其引作者原话、其据真在）——下一章不动是令，不是断
+            黄.append('⏸ %s——第%d章不动是作者之令，⛔判断流；作者令下即 `python3 工具/暂停令.py --解 "作者令：……"`，本判即复。' % (停由, 下))
+        elif t下 is None or 静 > 限断:
             几 = ('自 `版本/第%d章/` 最新一档起算 **%d 分钟**' % (下, 静 // 60)) if t下 \
                  else ('**`版本/第%d章/` 根本不在**' % 下)
             坏.append('甲·**断流**：第%d章已封版（回执在），而第%d章一点动静也没有（%s），'
@@ -183,7 +195,7 @@ def 自测():
     now = 1_000_000_000.0
 
     # ①★**拿 0911 那一次真停摆回灌**：312 已封版、313 目录不在、心跳无人在跑
-    坏, _ = 查(印=False, now=now, 末=312, 回执=True, 动=None, 跳=(False, None, None))
+    坏, _ = 查(印=False, now=now, 末=312, 回执=True, 动=None, 跳=(False, None, None), 停=(False, ''))
     T('①0911 真局回灌·上一棒交了而下一棒没人接 → 须断流', any('断流' in x for x in 坏))
     # ①之二·同一局而**三本账皆报得对**——故非本器不可（其证：三者之判各自为真）
     T('①之二 同一局之下「末章已封版」为真（续跑之判）', True)
@@ -233,6 +245,13 @@ def 自测():
       '有回执' in s and 'getmtime' in s and '_心跳.json' in s)
     # ⑨★其报须把「下一步该干什么」说出来（一个只会喊断的器，喊完还是没人接）
     T('⑨断流之报须带其治（派下一席＋先跑席法）', '当场派下一席' in s and '席法' in s)
+
+    # ⑬1009·暂停令在（作者令、据真在）→ 不判断流，须报黄
+    坏13, 黄13 = 查(印=False, now=now, 末=380, 回执=True, 动=None, 跳=(False, None, None), 停=(True, '暂停令在'))
+    T('⑬暂停令在 → 不判断流而报黄', not 坏13 and any('暂停令' in x for x in 黄13))
+    # ⑭暂停令不在（已解或不认）→ 照旧断流
+    坏14, _ = 查(印=False, now=now, 末=380, 回执=True, 动=None, 跳=(False, None, None), 停=(False, '已解'))
+    T('⑭暂停令已解或不认 → 照旧断流', any('断流' in x for x in 坏14))
 
     print('── 负测·接力 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad

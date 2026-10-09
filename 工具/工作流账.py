@@ -180,6 +180,9 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
             print('  %s〔%s〕%s' % (坑账.圈(k['号']), k['状'], k['名'][:70]))
         if '坑' not in 有效之据:
             print('⛔ 拒开：有效之据须写「坑之检」——本法如何排除上列诸坑（或指其设计档之「## 坑之检」）'); return False
+    # ★1009 作者令「每做一件事先想最好的办法，先设计方法，⛔硬着头皮上」（坑⑳：W18 派十一个模型席去核机器能核之算术）
+    if '零token之检' not in 有效之据.replace(' ', ''):
+        print('⛔ 拒开：有效之据须写「零token之检：……」——此件哪些机器能办（归脚本、⛔开席）、哪些非模型不可、为何；先设计方法，再开'); return False
     账 = 读(root)
     for x in 账['件']:
         if x['id'] == i:
@@ -260,22 +263,23 @@ def 自测():
         共 += 1; ok += (len(查(t, H(0))) == 1 and '三问' in 查(t, H(0))[0])   # 进行而未答三问 → 红
         共 += 1; ok += (开('A', 0, '停', '换', '据', '估', t, H(0)) is False)    # 时限缺 → 拒开
         共 += 1; ok += (开('A', 6, '停', '换', '', '', t, H(0)) is False)        # 有效之据、预估缺 → 拒开
-        共 += 1; ok += (开('A', 6, '停', '换', '据', '估', t, H(0)) is True and 查(t, H(5)) == [])   # 时限内不红
+        共 += 1; ok += (开('A', 6, '停', '换', '据；零token之检：须模型', '估', t, H(0)) is True and 查(t, H(5)) == [])   # 时限内不红
         # 1009：有坑账则有效之据须写坑之检；暂停令在即拒开
         json.dump({'坑': [{'号': 1, '名': '甲坑', '状': '已守'}]}, open(os.path.join(t, '设定', '方法坑账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
         import io as _io, contextlib as _cl
         with _cl.redirect_stdout(_io.StringIO()):
             r1 = 开('A', 6, '停', '换', '据', '估', t, H(0))
-            r2 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))
+            r0 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))          # ⑳：缺零token之检 → 拒
+            r2 = 开('A', 6, '停', '换', '据；坑之检：①已排除；零token之检：须模型', '估', t, H(0))
             open(os.path.join(t, '设定', '交.md'), 'w', encoding='utf-8').write('> 暂停令\n')
             json.dump({'令': '作者令：停', '据': '设定/交.md:1', '解': None}, open(os.path.join(t, '设定', '暂停令.json'), 'w', encoding='utf-8'), ensure_ascii=False)
-            r3 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))
+            r3 = 开('A', 6, '停', '换', '据；坑之检：①已排除；零token之检：须模型', '估', t, H(0))
             import 暂停令 as _停
             _停.例外('A', '作者令：A 可开', t)
-            r4 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))
-            r5 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))   # 例外用即销，二回拒
+            r4 = 开('A', 6, '停', '换', '据；坑之检：①已排除；零token之检：须模型', '估', t, H(0))
+            r5 = 开('A', 6, '停', '换', '据；坑之检：①已排除；零token之检：须模型', '估', t, H(0))   # 例外用即销，二回拒
         os.remove(os.path.join(t, '设定', '暂停令.json')); os.remove(os.path.join(t, '设定', '方法坑账.json'))
-        共 += 1; ok += (r1 is False and r2 is True and r3 is False and r4 is True and r5 is False)
+        共 += 1; ok += (r0 is False and r1 is False and r2 is True and r3 is False and r4 is True and r5 is False)
         共 += 1; ok += (len(查(t, H(7))) == 1 and '逾时限' in 查(t, H(7))[0])  # 逾时 → 红
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(7)) is True and 查(t, H(8)) == [])   # 续一回
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(8)) is False)               # 再续拒

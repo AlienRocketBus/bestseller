@@ -26,6 +26,8 @@
   python3 工具/费审.py --核全                     # 凡通知有数之 Run，逐一核 Σ末回＝subagent_tokens
   python3 工具/费审.py --记 <Run ID> [名]          # 随时记：一 Run 一行入 设定/费账.json（已记则更新）
   python3 工具/费审.py --记主 <名> <起 ISO> [止 ISO]  # 随时记：一件主环之活一行
+  python3 工具/费审.py --记全                     # 费账覆全会话：工作流 Run、非工作流子席、主会话全程
+  （精准之证：`python3 工具/费审对拍.py`——结构全异之 SQLite 算器逐单位对拍，并核记录之义）
   python3 工具/费审.py --自测
 Run 之目录在 ~/.claude/projects/<proj>/<session>/subagents/workflows/<runId>/。
 """
@@ -250,6 +252,9 @@ def 记(键, 名, 行, 示=None, root=ROOT, 时=None):
            '来回': s['回'], '新入': s['新'], '缓存建': s['建'], '缓存读': s['读'], '产出': s['出'],
            '全量': s['全'], '美元': round(s['金'], 4), '末回': s['末'], '示': 示, '疑': s['疑'],
            '核': (None if 示 is None else ('符' if 示 == s['末'] else '不符'))}
+    旧 = next((x for x in 账['行'] if x['键'] == 键), None)
+    if 旧 and not 名:
+        row['名'] = 旧.get('名', '')          # --记全 补记时⛔冲掉旧之名
     账['行'] = [x for x in 账['行'] if x['键'] != 键] + [row]
     json.dump(账, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print('✓ 记 %s（%s）：美元 $%.2f｜来回 %d｜全量 %d｜示 %s｜核 %s｜疑 %d' % (键, 名, row['美元'], row['来回'], row['全量'], 示, row['核'], row['疑']))
@@ -322,6 +327,20 @@ if __name__ == '__main__':
             print('⛔ 找不到 Run 之目录：' + a[1]); sys.exit(2)
         rid = os.path.basename(d.rstrip('/'))
         记(rid, a[2] if len(a) == 3 else '', 审(d), 通知之数(rid)); sys.exit(0)
+    if a == ['--记全']:
+        # ★1009：费账覆全会话——工作流 Run、非工作流子席、主会话全程（单位之定与 费审对拍 同源）
+        import 费审对拍
+        for 名, fs in 费审对拍.单位们():
+            if 名.startswith('run:'):
+                rid = 名[4:]
+                记(rid, '', 审(os.path.dirname(fs[0])), 通知之数(rid))
+            elif 名.startswith('子席:'):
+                mf = fs[0][:-len('.jsonl')] + '.meta.json'
+                nm = 席名(json.load(open(mf, encoding='utf-8'))) if os.path.exists(mf) else ''
+                记(名, '非工作流子席·' + nm, [审一(fs[0], nm)], None)
+            else:
+                记(名, '主会话全程', [审一(fs[0], '主会话')], None)
+        sys.exit(0)
     if a[:1] == ['--记主'] and len(a) in (3, 4):
         r = 主环(a[2], 至=a[3] if len(a) == 4 else None)
         记('主环:%s' % a[2], a[1], [r], None, 时=a[2]); sys.exit(0)

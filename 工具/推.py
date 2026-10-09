@@ -11,6 +11,7 @@
   ② 锁被占 → **不排队、不等待**：只在 `.git/推.待` 记一笔「又有新提交要推」，立即返回。
   ③ 持锁者推完一次，若见 `.git/推.待` 或本地仍超前远端 → **再推一次**，直到推平（至多 5 回）。
   ④ 推送被全测拦（失败）→ **不重试、不循环**，印出红的那几项，返回非零——治红是人的事，⛔空转。
+  ⑥ 主环等推：`python3 工具/推.py --等`（阻塞取一回锁，推毕即返；⛔pgrep／sleep 轮询——坑⑮）。
   ⑤ 每次推前先跳心跳（防「接力」误红）、先存底（1008：存底环受两时之限与容器重启而死，存底枝旧则推闸之活态之检红）；全程记 `.git/推.log`。
 
 用法：
@@ -66,6 +67,26 @@ def 取锁(root=ROOT):
     except BlockingIOError:
         f.close()
         return None
+
+
+def 等(root=ROOT, 限=3600):
+    """★1009 坑⑮：主环等推送，⛔以 pgrep／sleep 环轮询（汉字名认不着、每回重发整个上下文）——
+    只阻塞取一回锁：推者一放即返，印 `.git/推.log` 末数行与未推之数。"""
+    import signal
+    f = open(os.path.join(_git目录(root), '推.lock'), 'w')
+    signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError()))
+    signal.alarm(限)
+    try:
+        fcntl.flock(f, fcntl.LOCK_EX)
+    except TimeoutError:
+        print('⛔ 等了 %d 秒推者仍持锁' % 限); return False
+    finally:
+        signal.alarm(0)
+    fcntl.flock(f, fcntl.LOCK_UN); f.close()
+    lp = os.path.join(_git目录(root), '推.log')
+    if os.path.exists(lp):
+        print(''.join(open(lp, encoding='utf-8').readlines()[-4:]).rstrip())
+    return True
 
 
 def _记(root, s):
@@ -185,5 +206,7 @@ if __name__ == '__main__':
         sys.exit(0 if 自测() else 1)
     if a == ['--状']:
         状(); sys.exit(0)
+    if a == ['--等']:
+        sys.exit(0 if 等() else 1)
     rc = 推()
     sys.exit(0 if rc in (0, 2) else 1)

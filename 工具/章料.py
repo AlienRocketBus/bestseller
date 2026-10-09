@@ -70,6 +70,21 @@ def 人物(卡文, 册):
     return 出
 
 
+def 全员(册):
+    """★1009 坑⑬：料包须含「已定之细」——全员生死、末见、线、最新之态（一人一行）；开镜卡点到者另有全卡。"""
+    出 = []
+    for p in 册.get('人物', []):
+        态键 = sorted([k for k in p if re.fullmatch(r'\d+态', k)], key=lambda k: int(k[:-1]))
+        亡 = ('亡於 %s' % p.get('亡於章')) if p.get('亡於章') not in (None, '', 'None') else ''
+        态 = ('｜%s：%s' % (态键[-1], str(p[态键[-1]])[:140])) if 态键 else ''
+        出.append('- %s｜%s%s｜末见 %s｜%s%s' % (p.get('名', ''), p.get('生死', ''), ('·' + 亡) if 亡 else '',
+                                            p.get('末见章', ''), p.get('线', ''), 态))
+    return 出
+
+
+限料 = 120 * 1024   # ★1009 坑③：档要短——章料逾此即红（380 实 102KB）
+
+
 def canon卡(卡文, 库, n, 限=24000):
     有界, 名中 = [], []
     for f in 库.get('facts', []):
@@ -122,6 +137,9 @@ def 汇(n, root=ROOT, 出=None):
     人 = 人物(卡 + 预, 册)
     if 人:
         段.append(('人物之态（开镜卡点到者）', '\n\n'.join(人)))
+    全 = 全员(册)
+    if 全:
+        段.append(('全员之账（生死、末见、线、最新之态）', '\n'.join(全)))
     c = canon卡(卡 + 预, 库, n)
     if c:
         段.append(('canon 卡（有界在前，名中在後）', '\n'.join(c)))
@@ -141,7 +159,11 @@ def 汇(n, root=ROOT, 出=None):
     open(出, 'w', encoding='utf-8').write('\n'.join(文))
     for 名, t in 段:
         print('  %-28s %6d 字节' % (名, len(t.encode())))
-    print('✓ 写 %s（%d KB）' % (os.path.relpath(出, root), os.path.getsize(出) // 1024))
+    大 = os.path.getsize(出)
+    print('✓ 写 %s（%d KB）' % (os.path.relpath(出, root), 大 // 1024))
+    if 大 > 限料:
+        print('⛔ 章料 %d KB 逾限 %d KB（坑③：档要短——每席每回都背它）：先瘦开镜卡与预令，⛔删全员之账与 canon' % (大 // 1024, 限料 // 1024))
+        return None
     return 出
 
 
@@ -157,6 +179,10 @@ def 自测():
                     {'id': 'F3_无关', 'level': 'ERROR', 'note': 'n3'}, {'id': 'F4_债词', 'level': 'FYI', 'note': 'n4', 'only_ch': [380]}]}
     c = canon卡('老头站着', 库, 380)
     共 += 1; ok += (len(c) == 2 and 'F2_别的' in c[0] and 'F1_老头之眼' in c[1])
+    全 = 全员({'人物': [{'名': '甲', '生死': '亡', '亡於章': 300, '末见章': 300, '线': '主线', '299态': '旧', '300态': '倒'},
+                        {'名': '乙', '生死': '存', '亡於章': None, '末见章': 380, '线': '暗线'}]})
+    共 += 1; ok += (len(全) == 2 and '亡於 300' in 全[0] and '300态：倒' in 全[0] and '亡於' not in 全[1])
+    共 += 1; ok += (限料 == 120 * 1024)
     print('章料·自测 %d/%d' % (ok, 共))
     return ok == 共
 
@@ -167,4 +193,4 @@ if __name__ == '__main__':
         sys.exit(0 if 自测() else 1)
     if len(a) not in (1, 2) or not a[0].isdigit():
         print(__doc__); sys.exit(2)
-    汇(int(a[0]), 出=a[1] if len(a) == 2 else None)
+    sys.exit(0 if 汇(int(a[0]), 出=a[1] if len(a) == 2 else None) else 1)

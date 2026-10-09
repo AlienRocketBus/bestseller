@@ -7,8 +7,15 @@
 无复盘不许结案（`工具/工作流账.py --裁 W 取／重造` 先验 `设定/复盘/*W*.md` 三节俱在）。
 
 用法：
-  python3 工具/复盘.py W12 380造式 wf_e7912fa3-a0c [其他 Run ID…]   → 写 设定/复盘/<月日>_W12_380造式.md（已在则⛔覆）
+  python3 工具/复盘.py W12 380造式 wf_e7912fa3-a0c [其他 Run ID…] [--自 2026-10-08T09:01]
+      → 写 设定/复盘/<月日>_W12_380造式.md（已在则⛔覆）；自＝任务起时（缺则取工作流账之「起」）
+  python3 工具/复盘.py 主环 二代定稿 --自 2026-10-09T03:05 [--至 2026-10-09T04:05]   # 非工作流之任务（总编辑亲手）亦须复盘
+  python3 工具/复盘.py --验     # 闸：设定/复盘/ 诸档须有 耗费／无用功／改进方案／坑 四节，坑节须点坑账之号或写「无新坑」
   python3 工具/复盘.py --自测
+
+1009 作者令「每次总结方法：具体流程、具体制作过程、所踩之坑——一次又一次之经验让虫洞方法越来越好」：
+  自动填：流程（各 Run 之席按时序）｜制作过程（任务起後之提交，git 自动）｜耗费（费审，按 message.id 去重）｜主环之费（费审 --主）｜资源分配
+  总编辑亲填：产出、与上回比之判、无用功之判、刀刃、改进方案、坑（新坑先 `工具/方法坑账.py --立`，旧坑复踩 `--复踩`；坑必入法典）
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -45,7 +52,45 @@ def 分配表(行):
     return '\n'.join(出)
 
 
-def 起草(W, 题, runs, root=ROOT, 日=None):
+import re, subprocess
+
+
+def 制作(自, root=ROOT, 至=None):
+    """任务起後之提交（git 自动）：时、号、说明之首行。"""
+    if not 自:
+        return ['（无起时——以 --自 给之）']
+    o = subprocess.run(['git', '-c', 'core.quotepath=off', 'log', '--since=%s' % 自.replace('Z', '+00:00'), '--reverse',
+                        '--date=format:%m-%d %H:%M', '--format=- %ad｜%h｜%s'] + (['--until=%s' % 至.replace('Z', '+00:00')] if 至 else []), cwd=root, capture_output=True, text=True).stdout
+    return [l[:220] for l in o.strip().split('\n') if l] or ['（任务起後无提交）']
+
+
+def 坑号们(t):
+    return set(re.findall(r'[\u2460-\u2473\u3251-\u325F\u32B1-\u32BF]|坑\d+', t))
+
+
+def 验(root=ROOT):
+    坏 = []
+    try:
+        import 方法坑账 as 坑账
+        有号 = {坑账.圈(k['号']) for k in 坑账.读(root)['坑']}
+    except Exception:
+        有号 = None
+    for f in sorted(glob.glob(os.path.join(root, '设定', '复盘', '*.md'))):
+        t = open(f, encoding='utf-8').read()
+        名 = os.path.basename(f)
+        for 节 in ('## 耗费', '## 无用功', '## 改进方案', '## 坑'):
+            if 节 not in t:
+                坏.append('%s 缺「%s」' % (名, 节))
+        坑节 = t.split('## 坑', 1)[1] if '## 坑' in t else ''
+        号 = 坑号们(坑节)
+        if '## 坑' in t and not re.search(r'^\s*[-*]?\s*无新坑', 坑节, re.M) and not 号:
+            坏.append('%s 坑节既无坑账之号、又未写「无新坑」' % 名)
+        if 有号 is not None and 号 - 有号:
+            坏.append('%s 坑节点了坑账里没有之号：%s（先 工具/方法坑账.py --立）' % (名, ''.join(sorted(号 - 有号))))
+    return not 坏, 坏
+
+
+def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None):
     日 = 日 or time.strftime('%m%d', time.gmtime())
     出 = os.path.join(root, '设定', '复盘', '%s_%s_%s.md' % (日, W, 题))
     if os.path.exists(出):
@@ -57,8 +102,10 @@ def 起草(W, 题, runs, root=ROOT, 日=None):
         件 = next((x for x in 账['件'] if x['id'] == W), {})
     except Exception:
         pass
+    自 = 自 or 件.get('起')
     费段, 疑 = [], []
     费审之行 = []
+    流程 = []
     总读 = 0
     for r in runs:
         d = r if os.path.isdir(r) else (glob.glob(os.path.expanduser('~/.claude/projects/*/*/subagents/workflows/%s' % r)) or [r])[0]
@@ -70,28 +117,39 @@ def 起草(W, 题, runs, root=ROOT, 日=None):
         with contextlib.redirect_stdout(buf):
             费审.印(行)
         费段.append('### Run %s\n\n```\n%s```' % (r, buf.getvalue()))
+        流程.append('- Run %s：%s' % (r, ' → '.join('%s(%s)' % (x['名'], x['起']) for x in 行)))
         读 = sum(x['读'] for x in 行) or 1
         总读 += 读
         for x in sorted(行, key=lambda x: -x['回'])[:3]:
             疑.append('- 来回最多：%s（%d 回、工具 %d、缓存读 %d）——是在造，还是在翻料／办机器之活？' % (x['名'], x['回'], x['具'], x['读']))
-        机 = sum(x['读'] for x in 行 if any(k in x['名'] for k in ('定位', '机闸', '案席', '封版', '长令席')))
+        import re as _re
+        机 = sum(x['读'] for x in 行 if _re.search(dict(费审.类)['机器之活'], x['名']))
         if 机:
-            疑.append('- 机器之活（定位／机闸／案席／封版／长令席）占缓存读 %d%%——凡机器能办者，下回归脚本' % (100 * 机 // 读))
+            疑.append('- 机器之活（定位／机闸／案席／封版）占缓存读 %d%%——凡机器能办者，下回归脚本' % (100 * 机 // 读))
+    主 = None
+    if 自:
+        try:
+            主 = 费审.主环(自.replace('Z', ''), 至=至.replace('Z', '') if 至 else None)
+        except Exception:
+            主 = None
+    主段 = ['- 主环（总编辑）自 %s 至 %s：来回 %d、缓存读 %d、产出 %d（主环每回工具都重发整个上下文——坑⑮）' % (自, 至 or '今', 主['回'], 主['读'], 主['出'])] if 主 else ['- 主环之费：（无起时或读不出主会话之记）']
     文 = ['# 复盘·%s·%s（%s 立）' % (W, 题, 日), '',
          '## 任务', '',
          '- 名：%s' % 件.get('名', ''), '- 目的：%s' % str(件.get('目的', ''))[:400],
          '- 停止线：%s' % 件.get('停止线', ''), '- 预估：%s' % 件.get('预估', ''),
          '- 裁：%s' % '；'.join('%s %s' % (x.get('法'), str(x.get('由', ''))[:160]) for x in 件.get('裁', [])), '',
+         '## 流程（实走·自动）', ''] + (流程 or ['- （无 Run——总编辑亲手之任务，照「制作过程」）']) + ['',
+         '## 制作过程（任务起後之提交·git 自动）', ''] + 制作(自, root, 至) + ['',
          '## 产出', '', '（总编辑填：成了什么、质之实据——致命数、行家对拍库之分、盲读）', '',
-         '## 耗费', '', '- 合计缓存读：%d（各 Run 详下）；实耗之 token 与时照工作流回执填：' % 总读, ''] + 费段 + ['',
+         '## 耗费', '', '- 合计缓存读（诸席）：%d（各 Run 详下；按 message.id 去重）；实耗之 token 与时照工作流回执填：' % 总读] + 主段 + [''] + 费段 + ['',
          '## 资源分配（资源分配官·1009）', '', 分配表(费审之行), '',
          '## 与上回比（一次比一次好·1009）', '', '| 项 | 上回同类（填其复盘档名与数） | 本回 | 判 |', '|---|---|---|---|', '| 造之占 | | | 须↑ |', '| 总费（缓存读或 token） | | | 须↓ |', '| 质（致命数、拍库之分、盲读） | | | 须不劣 |', '', '（三样俱合方算进化；不合即写其因、其改）', '',
          '## 无用功', '', '机器之疑（总编辑逐条判：真费、或该花）：'] + (疑 or ['- （无 Run 可审）']) + ['', '（总编辑填：哪里花了大量 token 与时而无实果，其根）', '',
          '## 刀刃', '', '（总编辑填：钱花在哪儿真出了果）', '',
          '## 改进方案', '', '（总编辑填：具体到改哪档哪条；下回照办之验——下回之费审拿什么数比）', '',
-         '## 坑之账', '', '（新坑一行，入四入口档之坑之账）', '']
+         '## 坑', '', '（每条点坑账之号：新坑先 `python3 工具/方法坑账.py --立 名 根 治 计`；旧坑复踩 `--复踩 号 "……；治：……"`；并入法典。无则写「无新坑」）', '']
     open(出, 'w', encoding='utf-8').write('\n'.join(文))
-    print('✓ 起草 %s——「产出」「无用功」之判「刀刃」「改进方案」「坑之账」须总编辑亲填' % os.path.relpath(出, root))
+    print('✓ 起草 %s——「产出」「与上回比」「无用功」之判「刀刃」「改进方案」「坑」须总编辑亲填' % os.path.relpath(出, root))
     return 出
 
 
@@ -108,7 +166,10 @@ def 自测():
             f = 起草('W9', '测', [rd], t, '1009')
             g = 起草('W9', '测', [rd], t, '1009')
         s = open(f, encoding='utf-8').read() if f else ''
-        ok = bool(f) and g is None and all(k in s for k in ('## 耗费', '## 无用功', '## 改进方案')) and '机器之活' in s
+        ok = bool(f) and g is None and all(k in s for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑', '## 流程', '## 制作过程')) and '机器之活' in s
+        ok = ok and 验(t)[0] is False                                   # 草稿之坑节未填 → 闸红
+        open(f, 'a', encoding='utf-8').write('无新坑\n')
+        ok = ok and 验(t)[0] is True
     finally:
         shutil.rmtree(t)
     print('复盘·自测 %d/1' % int(ok))
@@ -119,6 +180,15 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a == ['--自测']:
         sys.exit(0 if 自测() else 1)
+    if a == ['--验']:
+        o, 坏 = 验()
+        print('✓ 复盘：诸档四节俱在、坑节俱点坑账之号' if o else '⛔ 复盘：\n  ' + '\n  '.join(坏))
+        sys.exit(0 if o else 1)
+    自 = 至 = None
+    if '--自' in a:
+        i = a.index('--自'); 自 = a[i + 1]; a = a[:i] + a[i + 2:]
+    if '--至' in a:
+        i = a.index('--至'); 至 = a[i + 1]; a = a[:i] + a[i + 2:]
     if len(a) < 2:
         print(__doc__); sys.exit(2)
-    起草(a[0], a[1], a[2:])
+    起草(a[0], a[1], a[2:], 自=自, 至=至)

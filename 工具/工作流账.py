@@ -157,6 +157,26 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
         时限 = 0
     if 时限 <= 0 or not all((x or '').strip() for x in (停止线, 换法, 有效之据, 预估)):
         print('⛔ 拒开：四问未答全（时限须 >0 时；停止线、重造之法、有效之据、预估皆须写）'); return False
+    # ★1009 坑⑭：作者之暂停令在盘上——在即拒开（⛔靠人记得）
+    try:
+        import 暂停令
+        停在, 停由 = 暂停令.在(root)
+    except Exception:
+        停在, 停由 = False, ''
+    if 停在:
+        print('⛔ 拒开：%s——作者令下方 `python3 工具/暂停令.py --解 "作者令：……"`' % 停由); return False
+    # ★1009 作者令「进化之时先看曾经踩过的坑，踩过的坑⛔在新法里再现」：开前逐坑过一遍，有效之据须写坑之检
+    try:
+        import 方法坑账 as 坑账
+        诸坑 = 坑账.读(root)['坑']
+    except Exception:
+        诸坑 = []
+    if 诸坑:
+        print('── 坑账（开前逐坑过一遍：本法如何排除之）──')
+        for k in 诸坑:
+            print('  %s〔%s〕%s' % (坑账.圈(k['号']), k['状'], k['名'][:70]))
+        if '坑' not in 有效之据:
+            print('⛔ 拒开：有效之据须写「坑之检」——本法如何排除上列诸坑（或指其设计档之「## 坑之检」）'); return False
     账 = 读(root)
     for x in 账['件']:
         if x['id'] == i:
@@ -168,10 +188,11 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
 
 
 def 有复盘(i, root=ROOT):
-    """1009 作者令：每一回任务都要复盘——耗费、无用功、改进方案三节俱在方许结案。"""
-    for f in glob.glob(os.path.join(root, '设定', '复盘', '*%s*.md' % i)):
+    """1009 作者令：每一回任务都要复盘——耗费、无用功、改进方案、坑四节俱在方许结案（坑节须点坑账之号或写「无新坑」，`工具/复盘.py --验` 守）。
+    ★档名须 <日>_<W>_<题>.md 而精确认 W（旧以 *W1* 认，W1 会错认 W12 之复盘）。"""
+    for f in glob.glob(os.path.join(root, '设定', '复盘', '*_%s_*.md' % i)):
         t = open(f, encoding='utf-8').read()
-        if all(k in t for k in ('## 耗费', '## 无用功', '## 改进方案')):
+        if all(k in t for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑')):
             return True
     return False
 
@@ -234,12 +255,25 @@ def 自测():
         共 += 1; ok += (开('A', 0, '停', '换', '据', '估', t, H(0)) is False)    # 时限缺 → 拒开
         共 += 1; ok += (开('A', 6, '停', '换', '', '', t, H(0)) is False)        # 有效之据、预估缺 → 拒开
         共 += 1; ok += (开('A', 6, '停', '换', '据', '估', t, H(0)) is True and 查(t, H(5)) == [])   # 时限内不红
+        # 1009：有坑账则有效之据须写坑之检；暂停令在即拒开
+        json.dump({'坑': [{'号': 1, '名': '甲坑', '状': '已守'}]}, open(os.path.join(t, '设定', '方法坑账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        import io as _io, contextlib as _cl
+        with _cl.redirect_stdout(_io.StringIO()):
+            r1 = 开('A', 6, '停', '换', '据', '估', t, H(0))
+            r2 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))
+            open(os.path.join(t, '设定', '交.md'), 'w', encoding='utf-8').write('> 暂停令\n')
+            json.dump({'令': '作者令：停', '据': '设定/交.md:1', '解': None}, open(os.path.join(t, '设定', '暂停令.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+            r3 = 开('A', 6, '停', '换', '据；坑之检：①已排除', '估', t, H(0))
+        os.remove(os.path.join(t, '设定', '暂停令.json')); os.remove(os.path.join(t, '设定', '方法坑账.json'))
+        共 += 1; ok += (r1 is False and r2 is True and r3 is False)
         共 += 1; ok += (len(查(t, H(7))) == 1 and '逾时限' in 查(t, H(7))[0])  # 逾时 → 红
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(7)) is True and 查(t, H(8)) == [])   # 续一回
         共 += 1; ok += (裁('A', '续', '由', 3, t, H(8)) is False)               # 再续拒
         共 += 1; ok += (裁('A', '重造', '新法', 4, t, H(10)) is False)          # 无复盘不许重造（1009）
         os.makedirs(os.path.join(t, '设定', '复盘'), exist_ok=True)
-        open(os.path.join(t, '设定', '复盘', '1009_A_测.md'), 'w').write('## 耗费\n## 无用功\n## 改进方案\n')
+        open(os.path.join(t, '设定', '复盘', '1009_A_测.md'), 'w').write('## 耗费\n## 无用功\n## 改进方案\n## 坑\n无新坑\n')
+        open(os.path.join(t, '设定', '复盘', '1009_A1_测.md'), 'w').write('## 耗费\n## 无用功\n## 改进方案\n## 坑\n无新坑\n')
+        共 += 1; ok += (有复盘('A', t) is True and 有复盘('A2', t) is False)    # 精确认 W：A1 之复盘⛔算 A 的，A2 无
         共 += 1; ok += (裁('A', '重造', '新法', 4, t, H(10)) is True and 查(t, H(13)) == [] and len(查(t, H(15))) == 1)
         裁('A', '重造', '又一法', 4, t, H(15))
         共 += 1; ok += (裁('A', '重造', '三法', 4, t, H(20)) is False)          # 重造两回後拒——报作者

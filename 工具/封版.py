@@ -101,6 +101,13 @@ def 前(n, root=ROOT):
     print('· 层（层census.py %d）：\n%s' % (n, '\n'.join('    ' + l for l in out.strip().split('\n')[-8:])))
     rc, out, _ = 跑([器('坑账.py'), '--逐章', str(n)], root)
     print('· 坑账之单（逐条答进回执「坑账之答」）：\n' + '\n'.join('    ' + l for l in out.strip().split('\n')))
+    try:                                                     # ★1013：开轮十六检（除⑭）——384 记席未写「承前之判」（⑮），封版·後 方红；今於 --前 即印其红
+        rc6, out6, _ = 跑([器('开轮六检.py'), str(n), '--静'], root)
+        import 全测 as _全测
+        余6 = _全测._六检之败(out6, True)
+        print('· 开轮十六检（除⑭）：%s' % ('✓ 俱过' if not 余6 else '⛔ ' + '；'.join(余6)[:600] + '——记席须治（承前之判写进轮记，逐样点名落判：认／翻／搁下）'))
+    except Exception as _e:
+        print('· 开轮十六检：⛔判不出（%s）' % _e)
     try:                                                     # ★1013：六问（质量三闸①之e）——381 记席未答，封版之全测方红；今於 --前 即印
         import 质量三闸
         _名, _过, _语 = 质量三闸.gate1e(n)[0]

@@ -131,7 +131,8 @@ def 记之缺(n, root=ROOT):
 def 可提交(n, 路们):
     """只收本章所及之处（⛔git add -A）：正文／本章与下一章之版本目录／设定／根之 .md 与 .html。"""
     # ★1013：记席按令改 工具/ 下二档（小说检察官之 OPEN_BRIEF_CARD_SCHEMA[N+1]、提示词系统之「--开拍 N+1」）——旧只收 设定/ 等，此二档永留未提交（381 实逮）
-    前缀 = ('正文/', '版本/第%d章/' % n, '版本/第%d章/' % (n + 1), '设定/', '工具/小说检察官.py', '工具/镇冢秘术_防前后矛盾提示词系统.md')
+    前缀 = ('正文/', '版本/第%d章/' % n, '版本/第%d章/' % (n + 1), '设定/', '工具/小说检察官.py', '工具/镇冢秘术_防前后矛盾提示词系统.md',
+          '阅读器/镇冢秘术_全本阅读器.html')        # ★1013：阅读器由本器同步，旧不收——381 实逮「不在本章所及之处」
     收 = [p for p in 路们 if p.startswith(前缀) or ('/' not in p and p.endswith(('.md', '.html')))]
     return 收, [p for p in 路们 if p not in 收]
 
@@ -189,7 +190,8 @@ def 後(n, 试=False, root=ROOT):
         print('  · 不在本章所及之处、⛔提交：%s' % '、'.join(弃))
     名 = re.sub(r'^.*?第.+?章_?', '', os.path.basename(正文档(n, root) or ''))[:-3]
     subprocess.run(['git', 'add', '--'] + 收, cwd=root, check=True)
-    msg = '第%d章《%s》封版（造式二代）：诸闸、第十一轮、全测俱过——记席之档（回执、锁定行、创作记录、全书记忆、状态册、open_brief、第%d章开镜卡）\n\n%s' % (n, 名, n + 1, 尾)
+    # ★1013：说明须标「封版#N」——改单闸认之为「新章封版之追记（係添不係改）」；缺之则推时改单红（381 实逮）
+    msg = '第%d章《%s》封版（造式二代·封版#%d）：诸闸、第十一轮、全测俱过——记席之档（回执、锁定行、创作记录、全书记忆、状态册、open_brief、第%d章开镜卡）\n\n%s' % (n, 名, n, n + 1, 尾)
     r = subprocess.run(['git', 'commit', '-q', '-m', msg], cwd=root, capture_output=True, text=True)
     print('  %s 提交 %s' % ('✓' if r.returncode == 0 else '⛔', subprocess.run(['git', 'log', '--oneline', '-1'], cwd=root, capture_output=True, text=True).stdout.strip()[:100]))
     if r.returncode != 0:

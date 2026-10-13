@@ -170,10 +170,17 @@ def 汇(n, root=ROOT, 出=None):
     if 案:
         段.append(('余章总案·解歧之裁', 节(案, '## 二、')))
         段.append(('余章总案·本章前後之行（%d±1）' % n, '\n'.join(本章之行(案, n))))
+    import 造式验
+    本线 = 造式验.线(n, root)
     for k in (n - 1, n - 2):
         f = 章档(k, root)
         if f:
-            段.append(('前文·第%d章白文（全）' % k, open(f, encoding='utf-8').read()))
+            t = open(f, encoding='utf-8').read()
+            if 本线 and 造式验.线(k, root) and 造式验.线(k, root) != 本线 and '【本章亮点】' in t:
+                # ★1013：异线之章只收白文（其骨记係另一线之种与物，二线不通消息；384 之料 130KB 逾限，此节省 11KB）；同线之章照收全（物之去向在其骨记）
+                段.append(('前文·第%d章白文（异线·只白文）' % k, t[:t.index('【本章亮点】')].rstrip()))
+            else:
+                段.append(('前文·第%d章白文（全）' % k, t))
     人 = 人物(卡 + 预, 册)
     if 人:
         段.append(('人物之态（开镜卡点到者）', '\n\n'.join(人)))
@@ -227,6 +234,12 @@ def 自测():
     _f = 章档(380); _行 = open(_f, encoding='utf-8').read().split('\n') if _f else ['']
     _引 = 引之原句('见 380:1 又 380:1，又 380:2572（净重）、总纲:1、9380:1', ROOT)
     共 += 1; ok += (len(_引) == 2 and _引[0] == '- 380:1　' + _行[0].strip()[:400] and _引[1].startswith('- 总纲:1　'))
+    import tempfile as _tf, io as _io, contextlib as _cl
+    _o = os.path.join(_tf.mkdtemp(), 'x.md')
+    with _cl.redirect_stdout(_io.StringIO()):
+        汇(384, ROOT, _o)
+    _x = open(_o, encoding='utf-8').read()
+    共 += 1; ok += ('前文·第383章白文（异线·只白文）' in _x and '前文·第382章白文（全）' in _x)   # 异线只白文、同线照全
     print('章料·自测 %d/%d' % (ok, 共))
     return ok == 共
 

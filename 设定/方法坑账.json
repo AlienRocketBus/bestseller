@@ -259,6 +259,10 @@
     {
      "时": "2026-10-13",
      "事": "381 封版，主环写 `python3 工具/封版.py 381 --後 2>&1 | tail -40 && python3 工具/推.py`——&& 判的是 tail 之码，封版败了推照推（pre-push 全测仍拦，未成害）；治：照计立 PreToolUse 钩 工具/链之检.py（.claude/settings.json）：工具之管道後接 && 而无 pipefail 者拦；自测 8/8（含原命令、heredoc／引号之反例、2>&1 之转向）"
+    },
+    {
+     "时": "2026-10-13",
+     "事": "1013 主环以 set -eo pipefail 首行而 python 之 heredoc 断言败，後三行照跑（改单 G1013-01 先结後改）；实测本壳 set -e 不生效（set -e; false; echo 照印），pipefail 生效；治：链之检钩添拦 set -e（自测 12/12），法典与二代档删「或首行 set -e」——多步之链一律 &&"
     }
    ]
   },

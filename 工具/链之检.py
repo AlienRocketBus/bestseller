@@ -29,11 +29,19 @@ def _剔(c):
     return re.sub(r'\d*>&\d*|&>', ' ', c)          # 2>&1、&> 是转向，⛔认作 && 之 &（1013 自测逮）
 
 
+伪停 = re.compile(r'(^|[;&|\n]\s*)set\s+-[a-z]*e[a-z]*\b')
+
+
 def 判(c):
     """→ 拦之由（字符串）或 None。"""
-    if 'pipefail' in (c or ''):
+    if 伪停.search(_剔(c or '')):
+        # ★1013 实测：本壳（Bash 工具）里 set -e 不生效——`set -e; false; echo x` 照印 x；python 之 heredoc 败了後几行照跑（改单 G1013-01 因此先结後改）
+        return ('⛔链之检（坑⑰·复踩2）：本壳 set -e 不生效（1013 实测：set -e; false; echo 照印）——'
+                '多步之命令一律以 && 相连（pipefail 生效，可留）；把 set -e 去掉、改链再发。')
+    剔 = _剔(c or '')
+    if re.search(r'set\s+-o\s+pipefail|set\s+-[a-z]*o\s+pipefail', 剔):   # ★1013：须在剔後之命令里认（旧认原文，heredoc 正文里写着 pipefail 即整条放行——W22 方案之文实逮）
         return None
-    m = 形.search(_剔(c or ''))
+    m = 形.search(剔)
     if not m:
         return None
     return ('⛔链之检（坑⑰）：「%s」——管道之後之 && 判的是管道末一个命令之码，前头工具败了下一步照跑。'
@@ -53,6 +61,11 @@ def 自测():
     T('git commit -m "python3 工具/推.py | tail && b"', False)                          # 引号中之字⛔认
     T('grep -n x a.md | head -3 && echo ok', False)                                    # 非工具之管道不拦
     T('python3 /home/user/the-novel/工具/造式验.py 381 | tail -5 && git add a', True)
+    T('set -eo pipefail; cd /x && python3 a.py', True)                                  # set -e 不生效，拦
+    T('set -e\npython3 - <<EOF\nx\nEOF\ngit add a', True)
+    T('set -o pipefail; python3 工具/封版.py 1 --後 | tail && python3 工具/推.py', False)  # pipefail 生效，不拦
+    T("python3 - <<'EOF'\nprint('set -e')\nEOF", False)                                # heredoc 之体⛔认
+    T("cat > a.md <<'EOF'\n用 set -o pipefail 相链\nEOF\npython3 工具/方案.py --验 W | tail -1 && python3 b.py", True)   # heredoc 里之 pipefail ⛔作数
     print('链之检·自测 %d/%d' % (ok, 共))
     return ok == 共
 

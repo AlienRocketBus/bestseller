@@ -27,8 +27,31 @@ import os, sys, json, glob, sqlite3, tempfile, shutil
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def 单位们():
-    """→ [(单位名, [档…])]：工作流 Run、非工作流子席、主会话。"""
+活之界 = 900   # 秒：近十五分钟内改过之档作「活档」（席之一回工具至多十分钟不落笔）
+
+
+def 快照之(fs, 快照, 今=None, 目录=None):
+    """活档先抄一份，两边只算抄本（1013 实踩：推时之全测正逢 381 之席在写，两边先後读同一活档，读到之行数不同，报「不符 6 处」——⛔量器之差）。
+    fs 中有一档在活之界内者：目录给了（工作流 Run）即整个目录抄去（费审.审 要读 meta）；否则逐档抄。→ 抄本之 fs（无活档则原样）。"""
+    import time as _t
+    今 = 今 or _t.time()
+    if not any(今 - os.path.getmtime(f) < 活之界 for f in fs):
+        return fs
+    if 目录:
+        到 = os.path.join(快照, os.path.basename(目录))
+        shutil.copytree(目录, 到)
+        return [os.path.join(到, os.path.relpath(f, 目录)) for f in fs]
+    出 = []
+    for f in fs:
+        d = tempfile.mkdtemp(dir=快照)
+        出.append(shutil.copy2(f, os.path.join(d, os.path.basename(f))))
+    return 出
+
+
+def 单位们(快照=None):
+    """→ [(单位名, [档…])]：工作流 Run、非工作流子席、主会话。快照给了即活档先抄（见 快照之）。"""
+    if 快照:
+        return [(名, 快照之(fs, 快照, 目录=os.path.dirname(fs[0]) if 名.startswith('run:') else None)) for 名, fs in 单位们()]
     出 = []
     for 会 in sorted(glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl'))):
         d = 会[:-len('.jsonl')]
@@ -172,12 +195,16 @@ def 费审之数(单位们_):
 
 def 跑():
     价 = json.load(open(os.path.join(ROOT, '设定', '价目.json'), encoding='utf-8'))
-    us = 单位们()
-    db = 建库(价)
-    for 名, fs in us:
-        入库(db, 名, fs)
-    甲 = 算(db, 价)
-    乙 = 费审之数(us)
+    快照 = tempfile.mkdtemp()
+    try:
+        us = 单位们(快照)
+        db = 建库(价)
+        for 名, fs in us:
+            入库(db, 名, fs)
+        甲 = 算(db, 价)
+        乙 = 费审之数(us)
+    finally:
+        shutil.rmtree(快照, ignore_errors=True)
     不符 = 对(甲, 乙)
     计 = lambda p: sum(v['金'] for k, v in 甲.items() if k.startswith(p))
     print('════ 费审对拍 ════（本器：SQLite 去重合计计价；费审：Python 逐回）')
@@ -234,6 +261,15 @@ def 自测():
         db2 = 建库(价); 入库(db2, 'v', [g]); r2 = 算(db2, 价)['v']; 义2 = dict(义(db2))
         共 += 1; ok += (r2['回'] == 2 and r2['出'] == 9 + 5 and 义2['同 (档,id) 诸行之 usage 有演变（流式中途之数）'] == 2 and 义2['末行小於前行（取末行即错）'] == 1)
         共 += 1; ok += (对({'x': dict(r)}, {'x': dict(r, 金=r['金'] + 0.01)}) and not 对({'x': dict(r)}, {'x': dict(r)}))   # 差一分即报
+        # 活档之快照：活者抄、静者不抄；抄後原档再添行，抄本不变（两边算同一份）
+        import time as _t
+        快 = tempfile.mkdtemp(dir=t)
+        os.utime(g, (_t.time() - 2 * 活之界, _t.time() - 2 * 活之界))
+        共 += 1; ok += (快照之([g], 快) == [g])
+        活 = os.path.join(t, 'c.jsonl'); open(活, 'w', encoding='utf-8').write(L(1, 'k1', 'claude-sonnet-5-5', uB))
+        抄 = 快照之([活], 快)[0]
+        open(活, 'a', encoding='utf-8').write(L(2, 'k2', 'claude-sonnet-5-5', uB))
+        共 += 1; ok += (抄 != 活 and open(抄, encoding='utf-8').read().count('\n') == 1 and open(活, encoding='utf-8').read().count('\n') == 2)
     finally:
         shutil.rmtree(t)
     print('费审对拍·自测 %d/%d' % (ok, 共))

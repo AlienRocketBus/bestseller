@@ -86,12 +86,14 @@ ${限(16)}
   【厚】线之带是事之底：主线 2,500—3,500｜暗线 2,300—3,100；铁底 2,000——低於带不许交，回去找第二件真事；⛔凑字。【节奏】至少一处 120 字以上长段。
   ⛔抄前章：同一动作、物件、量法，前章写过的，这一章要写就写出它今天的新样子。
 【写完·交之前】① 自己当读者从头读一遍，想跳过的那一拍重写；读完觉得配不上中国第一就整章重来。
-  ② 跑「python3 工具/抄袭闸.py --档 ${蒙档(x.名)} ${N}」：≥12% 即红，⛔交——把列出那几串所在之段重写。
-交：file、beats、words、copy_rate、soul（你的魂，一句）、best（你最好的一拍）、weak（最弱的一拍）、plan（所选之写法与弃掉的两种）。`
+  ② **写档与交在同一条消息里**（坑㉘：长思之後若再起一回，整份上下文须重写，一席多花 $1.7—6.3；1013 试席确证一条消息可并发 Bash 与 StructuredOutput）：
+     一条 Bash 把构思与稿一气写出（cat > 构思档 <<'EOF' … EOF && cat > 稿档 <<'EOF' … EOF；正文里若有单独一行 EOF 即换界词），**同一条消息里**紧接着发 StructuredOutput 交。
+     ⛔写毕再起一回去跑器、去改——抄袭之检由选席对诸稿一回跑毕（≥12% 判致命）；你只须在下笔前就不抄前章（同一动作、物件、量法写出它今天的新样子）。
+交：file、beats、words、soul（你的魂，一句）、best（你最好的一拍）、weak（最弱的一拍）、plan（所选之写法与弃掉的两种）；copy_rate 不填（由选席量）。`
 const 稿式 = { type: 'object', properties: {
   file: { type: 'string' }, beats: { type: 'integer' }, words: { type: 'integer' }, copy_rate: { type: 'number' },
   soul: { type: 'string' }, best: { type: 'string' }, weak: { type: 'string' }, plan: { type: 'string' } },
-  required: ['file', 'beats', 'words', 'copy_rate', 'soul'] }
+  required: ['file', 'beats', 'words', 'soul'] }
 
 phase('造')
 let 诸稿 = (await parallel(执笔们.map(x => () =>
@@ -105,7 +107,7 @@ if (诸稿.length < 宽) {   // 缺稿另派一回（见红才多跑）
       .then(r => r ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean))
 }
 if (诸稿.length < 3) throw new Error('造：交稿不足三（' + 诸稿.length + '）——造式之实必不全，停（主环查明再续：resumeFromRunId）')
-log('造：' + 诸稿.map(d => 蒙号(d.名) + '·' + d.路 + '·' + d.words + '字·抄' + d.copy_rate + '%').join('｜'))
+log('造：' + 诸稿.map(d => 蒙号(d.名) + '·' + d.路 + '·' + d.words + '字·抄' + (d.copy_rate === undefined ? '见选' : d.copy_rate + '%')).join('｜'))
 
 // ═══ 二·选：一位独立行家蒙名读诸稿 ═══
 const 蒙列 = () => 诸稿.map(d => ({ 号: 蒙号(d.名), file: 蒙档(d.名), 路: d.路 }))
@@ -129,6 +131,9 @@ ${料律}（料中有前两章白文与开镜卡——取之为尺；致命之�
 ⛔蒙名：⛔读任何席之构思档（起草_*_构思.md）、轮记、说明；⛔改正文。诸稿逐字读（⛔扫读）：
 ${蒙列()}
 ${限(18)}
+【先跑·一条命令】诸稿之全与抄（执笔已不自跑抄袭闸——坑㉘）：for f in ${稿号.map(h => 章目 + '/起草_' + h + '.md').join(' ')}; do wc -m "$f"; python3 工具/抄袭闸.py --档 "$f" ${N} | tail -1; done
+  缺档、残档（末段不全）或抄 ≥12% 者，判该稿致命（写明其据）；余照常评。
+【写评与交】「_行家评.md」写毕之那一条消息里**同时**发 StructuredOutput 交（坑㉘：写评之长思後再起一回即整份重写）。
 【评判之尺·每稿逐项 0—10，⛔人情分】①白描与细节 ②人物与潜台词 ③节奏与张力 ④结构与那一拍 ⑤语言 ⑥接续与全书（剧情崩坏即低） ⑦刻意与造作（反向） ⑧好看 ⑨立得住 ⑩剧情（⛔最高优先，计两倍；⑩低於 8 者不许作底）。线之带以下之稿⛔作胜稿。
 【你要交的】
 ① **名次与由**：诸稿自好至次；胜稿胜在哪（读者读到哪一拍多得什么）、余稿各输在哪——引原句。拿不准取「读者读着最好、骨子最硬」者，⛔取「毛病最少」者。
@@ -286,7 +291,7 @@ const 记 = (await agent(记令(), { phase: '记', label: '记席', schema: 记�
 log(记 ? '记：' + (记.receipt || '').slice(0, 80) : '⛔记席二回未交——主环查明')
 return {
   章: N, 式: '造式二代', 重, 宽,
-  蒙名: 诸稿.map(d => 蒙号(d.名) + '＝执笔·' + d.名 + '·' + d.路 + '·' + d.words + '字·抄' + d.copy_rate + '%'),
+  蒙名: 诸稿.map(d => 蒙号(d.名) + '＝执笔·' + d.名 + '·' + d.路 + '·' + d.words + '字·抄' + (d.copy_rate === undefined ? '见选' : d.copy_rate + '%')),
   选: { ranking: 选.ranking, why: 选.why, 致命: (选.fatal || []).length, 大进: (选.leap || []).length, 拍库之分: 选.beat_scores },
   合: { file: 草.file, words: 草.words, beats: 草.beats, base: 草.base, gates_green: 草.gates_green, reds: 草.reds },
   盲读: 盲, 逻辑审: { hard: (审.hard || []).length, soft: 审.soft, misread: 审.misread },

@@ -136,6 +136,11 @@ def 可提交(n, 路们):
     return 收, [p for p in 路们 if p not in 收]
 
 
+def 十一轮已过(n, root=ROOT):
+    """首回封版已跑过第十一轮（`版本/第N章/_十一轮.json` 在）——本器重跑之认据。"""
+    return os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_十一轮.json'))
+
+
 def 後(n, 试=False, root=ROOT):
     print('════ 封版·後（第%d章）%s════' % (n, '·试（⛔写、⛔提交）' if 试 else ''))
     缺 = 记之缺(n, root)
@@ -149,6 +154,16 @@ def 後(n, 试=False, root=ROOT):
     for 名, a, 必 in 步:
         rc, out, 秒 = 跑(a, root)
         末 = [l for l in out.split('\n') if l.strip()][-1:] or ['']
+        if 名 == '开轮六检' and rc != 0 and 十一轮已过(n, root):
+            # ★1013 重跑之实：首回已过第十一轮（_十一轮.json 在），章即「已封版」，⑭必红——那不是伤，是本器重跑；
+            #   只免⑭，余检照判（拆法与全测同一把尺：全测._六检之败，⛔另写）
+            import 全测
+            r2, o2, _ = 跑([器('开轮六检.py'), str(n), '--静'], root)
+            余 = 全测._六检之败(o2, True)
+            if not 余:
+                rc, 末 = 0, ['重跑：第十一轮已过，⑭（已封版）免；余检俱过']
+            else:
+                末 = ['；'.join(余)]
         print('  %s %-10s rc=%d %5.0fs  %s' % ('✓' if rc == 0 else '⛔', 名, rc, 秒, 末[0].strip()[:150]))
         if 必 and rc != 0:
             print('⛔ 停：%s 红——⛔提交；照其印治（记席之档或交总编辑）' % 名); return False

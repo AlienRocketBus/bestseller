@@ -47,7 +47,7 @@ def 净重(路):
 
 def 线(n, root=ROOT):
     t = open(os.path.join(root, '设定', '02_余章之势_总纲.md'), encoding='utf-8').read()
-    m = re.search(r'^\|\s*%d\s*\|\s*(主|暗)' % n, t, re.M)
+    m = re.search(r'\|\s*%d\s*\|\s*(主|暗)·\d+\s*\|' % n, t)      # ★总纲两栏排（左 381、右 404）——整行逐栏认（1013 实踩：只认左栏，右栏之章认不出）
     return m.group(1) if m else None
 
 
@@ -119,7 +119,7 @@ def 自测():
     共 += 1; ok += (f is not None and 净重(f) == 净重对表.净重(f))                 # 一把尺
     共 += 1; ok += (硬之红('{\n "破折": 0,\n "英文": 2\n}') == {'英文': 2} and 硬之红('乱') == {'硬闸之印读不出': 1})
     共 += 1; ok += all(os.path.exists(os.path.join(ROOT, '工具', x[0] + '.py')) for x in 致命 + 报)
-    共 += 1; ok += (线(381) == '暗' and 线(380) == '主')
+    共 += 1; ok += (线(381) == '暗' and 线(380) == '主' and 线(404) == '主' and 线(405) == '暗' and 线(999) is None)   # 右栏之章亦认
     print('造式验·自测 %d/%d' % (ok, 共))
     return ok == 共
 

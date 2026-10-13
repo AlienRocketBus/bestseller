@@ -3839,6 +3839,18 @@ def chk_zanting():
     return a.returncode == 0, (a.stdout.strip() + '｜' + b.stdout.strip())[:120]
 
 
+def chk_erdai():
+    """造式二代诸器（1013 立·坑⑨：新器之自测立时即入快测）：造式验、封版、段料、段案验之自测俱须过。"""
+    import subprocess as _sp
+    印 = []
+    ok = True
+    for 器 in ('造式验', '封版', '段料', '段案验'):
+        r = _sp.run([sys.executable, '工具/%s.py' % 器, '--自测'], cwd=ROOT, capture_output=True, text=True)
+        ok = ok and r.returncode == 0
+        印.append((r.stdout.strip().split('\n') or [''])[-1])
+    return ok, '｜'.join(印)[:200]
+
+
 def chk_fangan():
     """方案（1009 立·作者令「每一环都要先精准确定它能做成，再去实施」）：方案器自测须过；设定/方案/ 下诸份逐环俱有确证、时、费、败则，无未确证。见 工具/方案.py。"""
     import subprocess as _sp
@@ -5151,7 +5163,7 @@ def main():
     # 1008 总编辑：快测须含设定层诸闸（圣经随裁、圣经引号、改单、工作流账、对账预筛、席令之禁）——否则改圣经／裁档後快测全绿而推时被拦（1008 D3 之裁漏「据 剧情庭_D3」之教）
     if quick:
         items += [('圣经随裁', chk_shengjing_suicai), ('圣经引号', chk_shengjing_yin), ('改单', chk_gaidan),
-                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('章料', chk_zhangliao), ('改记', chk_gaiji), ('费审', chk_feishen), ('费审对拍', chk_duipai), ('方案', chk_fangan), ('复盘', chk_fupan), ('坑账', chk_kengzhang), ('暂停令', chk_zanting), ('席令之禁', chk_xiling_jin)]
+                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('章料', chk_zhangliao), ('改记', chk_gaiji), ('费审', chk_feishen), ('费审对拍', chk_duipai), ('方案', chk_fangan), ('二代诸器', chk_erdai), ('复盘', chk_fupan), ('坑账', chk_kengzhang), ('暂停令', chk_zanting), ('席令之禁', chk_xiling_jin)]
 
 
     if not quick:
@@ -5217,6 +5229,7 @@ def main():
         items.append(('坑账', chk_kengzhang))
         items.append(('费审对拍', chk_duipai))
         items.append(('方案', chk_fangan))
+        items.append(('二代诸器', chk_erdai))
         items.append(('暂停令', chk_zanting))
         items.append(('书名不绑', chk_shuming))
         items.append(('圣经引号', chk_shengjing_yin))

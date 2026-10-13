@@ -150,9 +150,16 @@ def 判(n, root=ROOT):
     return True, 实之缺(n, root)
 
 
-def 造式之段(root=ROOT):
-    """当场自 `工具/席/一章.js` 读 `const 造式之段 = [...]`（囤灰闸据此判造式之章之席记）。读不出 → None。"""
-    js = _读(os.path.join(root, '工具', '席', '一章.js')) or ''
+def 是二代(n, root=ROOT):
+    """1013：造式二代之章（`_式.md` 书「造式二代」），其席出自 `工具/席/造章.js`。"""
+    t = _读(os.path.join(章目(n, root), '_式.md'))
+    return bool(t) and '造式二代' in t
+
+
+def 造式之段(root=ROOT, n=None):
+    """当场自席档读 `const 造式之段 = [...]`（囤灰闸据此判造式之章之席记）：一代之章读 `工具/席/一章.js`，
+    二代之章（n 给出且其 `_式.md` 书「造式二代」）读 `工具/席/造章.js`（1013）。读不出 → None。"""
+    js = _读(os.path.join(root, '工具', '席', '造章.js' if (n is not None and 是二代(n, root)) else '一章.js')) or ''
     m = re.search(r'const\s+造式之段\s*=\s*\[([^\]]*)\]', js)
     if not m:
         return None

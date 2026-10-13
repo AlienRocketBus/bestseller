@@ -74,9 +74,10 @@ def _造式(n):
     return True if m is None else m.是造式(n, ROOT)
 
 
-def _造式之段():
+def _造式之段(n=None):
+    """n 给出者：二代之章（_式.md 书「造式二代」）读 造章.js 之段（1013），一代之章读 一章.js。"""
     m = _造式模()
-    return m.造式之段(ROOT) if m is not None else None
+    return m.造式之段(ROOT, n) if m is not None else None
 
 
 真跑口 = ['工具/全测.py', '工具/起草闸.py', '工具/一坐.py', '工具/大审.py', '工具/书级体检.py',
@@ -218,9 +219,9 @@ def 查(印=True):
         #   其席记照**造式之段**验（当场自 `一章.js` 之 `const 造式之段` 读——与 meta.phases 同律：段名不写死在本闸）。
         #   ⛔非豁免：造式之段一段不许缺；读不出造式之段即红（不许读不出就放行）。
         if _造式(n):
-            段 = _造式之段()
+            段 = _造式之段(n)
             if not 段:
-                红.append('丙·第%d章係造式之章，而读不出 一章.js 之 const 造式之段——**段名之源断了**。' % n)
+                红.append('丙·第%d章係造式之章，而读不出其席档（一章.js／造章.js）之 const 造式之段——**段名之源断了**。' % n)
                 continue
         else:
             段 = 诸段()

@@ -122,6 +122,29 @@ def 起得来(f):
     return ' ｜ '.join(x.strip() for x in 要)[:200]
 
 
+def 二代之检(t):
+    """1013·造式二代（设定/方法升级_造式二代.md §九3；坑②④）：席之令须带「回数之限」与「只读章料」。
+    判法：一档立了 const 限 与 const 料律 者，即二代之席——其每一份以「`${令}」起之令，至其模板串之末，须含「${限(」；
+    除盲读（⛔读章料）外须含「${料律}」。⛔限：只认以「`${令}」起之令与「盲读令」，不解析 JS 全文。"""
+    if not re.search(r'const\s+限\s*=', t) or not re.search(r'const\s+料律\s*=', t):
+        return []
+    坏 = []
+    for m in re.finditer(r'`\$\{令\}', t):
+        e = t.find('`', m.end())
+        身 = t[m.end():e if e > 0 else len(t)]
+        首 = 身.strip().split('\n')[0][:30]
+        if '${限(' not in 身:
+            坏.append('二代之令缺「回数之限」（${限(n)}）：「%s…」' % 首)
+        if '${料律}' not in 身:
+            坏.append('二代之令缺「只读章料」（${料律}）：「%s…」' % 首)
+    m = re.search(r'const\s+盲读令\s*=\s*\(\)\s*=>\s*`', t)
+    if m:
+        e = t.find('`', m.end())
+        if '${限(' not in t[m.end():e]:
+            坏.append('二代之盲读令缺「回数之限」')
+    return 坏
+
+
 def 查(印=True):
     fs = sorted(glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))
     红 = []
@@ -140,6 +163,8 @@ def 查(印=True):
                       '写中文则 400，**诸席一个也起不来**。' % (rp, x))
         for x in b:
             红.append('乙·%s：%s' % (rp, x))
+        for x in 二代之检(_读(f)):
+            红.append('丁·%s：%s' % (rp, x))
     if 印:
         print('════ 席法 ════（认 %d 份席·三路：**跑得起来（node --check）**／schema键须ASCII／模板串内反引号须转义）' % len(fs))
         for x in 红:
@@ -232,6 +257,13 @@ def 自测():
       len(glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))) >= 4)
     # ⑤本闸逮得出 node --check 逮不出的那一样（其立之由）
     T('⑤本闸之乙路非空判据（认命令词 7 样）', len(re.findall(r'python3\|grep', _读(os.path.join(ROOT, '工具', '席法.py')))) >= 1)
+    # ⑨1013·二代之检：缺限、缺料律即红；全带者不红；非二代之席不查
+    _好 = "const 限 = (n) => n\nconst 料律 = 'x'\nconst 甲 = () => `${令}\n你是甲\n${料律}\n${限(12)}`\nconst 盲读令 = () => `你是盲\n${限(8)}`"
+    T('⑨二代之席令俱带限与料律 → 不红', 二代之检(_好) == [])
+    T('⑨之二 缺限 → 红', any('回数之限' in x for x in 二代之检(_好.replace('${限(12)}', ''))))
+    T('⑨之三 缺料律 → 红', any('只读章料' in x for x in 二代之检(_好.replace('\n${料律}\n', '\n'))))
+    T('⑨之四 非二代之席（无 const 限）不查', 二代之检('const 甲 = () => `${令}\n你是甲`') == [])
+    T('⑨之五 今仓 造章.js 俱合', 二代之检(_读(os.path.join(ROOT, '工具', '席', '造章.js'))) == [])
     print('── 负测·席法 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 

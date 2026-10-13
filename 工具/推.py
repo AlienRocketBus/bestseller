@@ -55,7 +55,7 @@ def 心跳章(root=ROOT):
         import json
         return int(json.load(open(os.path.join(root, '_心跳.json'), encoding='utf-8'))['章'])
     except Exception:
-        return 379
+        return 0     # ★1013：旧回 379（与头注「以 0 记」相违）——封版撤锁後每推一回即凭空跳一个「379 之席在跑」，自走判候、派章之链断四十五分
 
 
 def 取锁(root=ROOT):
@@ -107,7 +107,8 @@ def 推(root=ROOT, 推法=None, 最多=5):
         for 回 in range(1, 最多 + 1):
             if os.path.exists(待):
                 os.remove(待)
-            _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', str(心跳章(root))], root)
+            if 心跳章(root):   # 无挂着之章（已撤锁）⛔跳——跳了即凭空造一个在跑之席
+                _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', str(心跳章(root))], root)
             if 推法 is None:   # ★1008：先存底——存底枝新、章数齐，推闸之活态之检（负测·自进化环①之二、②）方不因存底环死而红
                 _跑([sys.executable, os.path.join(ROOT, '工具', '存底.py'), '--存'], root, timeout=280)
             try:
@@ -196,6 +197,8 @@ def 自测():
     import json
     json.dump({'章': 401}, open(os.path.join(t, '_心跳.json'), 'w'))
     共 += 1; ok += (心跳章(t) == 401)
+    os.remove(os.path.join(t, '_心跳.json'))
+    共 += 1; ok += (心跳章(t) == 0)        # ★1013：撤锁之後读不到 → 0（⛔回 379 凭空造席）
     print('推·自测 %d/%d' % (ok, 共))
     return ok == 共
 

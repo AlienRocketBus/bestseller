@@ -107,6 +107,16 @@ def canon卡(卡文, 库, n, 限=24000):
     return 出
 
 
+def 段案行(n, root=ROOT):
+    """1013：设定/段案/<a>-<b>.md 之「## n」一节（重、魂路、叫绝之拍、种、知之变、物之动、日、钩）；无则空。"""
+    for f in sorted(glob.glob(os.path.join(root, '设定', '段案', '[0-9]*-[0-9]*.md'))):
+        t = open(f, encoding='utf-8').read()
+        m = re.search(r'^## %d\s*$(.*?)(?=^## |\Z)' % n, t, re.M | re.S)
+        if m:
+            return '（%s）\n%s' % (os.path.relpath(f, root), m.group(1).strip())
+    return ''
+
+
 def 汇(n, root=ROOT, 出=None):
     d = os.path.join(root, '版本', '第%d章' % n)
     卡 = 读(os.path.join(d, '_开镜卡.md'))
@@ -122,6 +132,9 @@ def 汇(n, root=ROOT, 出=None):
     库 = json.loads(读(os.path.join(root, '设定', 'canon事实库.json')) or '{}')
     段 = []
     段.append(('开镜卡', 卡))
+    案行 = 段案行(n, root)
+    if 案行:
+        段.append(('段案·本章之行（重、魂路、叫绝之拍、种——上游之设计，执笔照此造）', 案行))
     if 预:
         段.append(('总编辑预令', 预))
     门 = 节(施, '## 四、续写第 %d 章前的硬门槛' % n)
@@ -183,6 +196,7 @@ def 自测():
                         {'名': '乙', '生死': '存', '亡於章': None, '末见章': 380, '线': '暗线'}]})
     共 += 1; ok += (len(全) == 2 and '亡於 300' in 全[0] and '300态：倒' in 全[0] and '亡於' not in 全[1])
     共 += 1; ok += (限料 == 120 * 1024)
+    共 += 1; ok += ('魂路：翻个儿｜物证｜不说' in 段案行(386) and 段案行(999) == '')
     print('章料·自测 %d/%d' % (ok, 共))
     return ok == 共
 

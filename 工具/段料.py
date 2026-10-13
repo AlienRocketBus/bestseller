@@ -54,6 +54,14 @@ def 汇(a, b, root=ROOT, 出=None):
     七 = 章料.节(案, '## 七、')
     if 行於(七, a, b):
         段.append(('余章总案·§七 本段之种', 七))
+    # ★1013：380—389 之拍定在 D6／D3 之主案（余章总案 §七「只在 D6／D3 之拍旁添」）——汇诸题现行主案涉本段之行（⛔已被後审所代之三审／四审／五审）
+    import glob as _g
+    for f in sorted(_g.glob(os.path.join(root, '设定', '剧情庭题', '*主案.md'))):
+        if re.search(r'[三四五]审主案', os.path.basename(f)):
+            continue
+        行们 = 行於(open(f, encoding='utf-8').read(), a, b)
+        if 行们:
+            段.append(('主案·%s 涉本段之行' % os.path.basename(f)[:-3], '\n'.join(行们)))
     段.append(('悬线·钉在本段之行', '\n'.join(行於(读('设定/全书记忆/悬线.md'), a, b))))
     库 = json.loads(读('设定/canon事实库.json') or '{}')
     卡 = []

@@ -105,9 +105,9 @@ def 审(目录):
 
 def 审一(f, 名, 自=None, 至=None, root=ROOT):
     """一档之账。usage 按 message.id 只取一回（无 id 者逐行计）；自／至＝起止之时（ISO，主环用）；美元逐回照价目算。"""
-    具 = 取 = 0
+    具 = 取 = 可见 = 0
     起 = 止 = ''
-    用, 序, 模 = {}, [], {}
+    用, 序, 模, 终 = {}, [], {}, {}
     for l in open(f, encoding='utf-8'):
         try:
             e = json.loads(l)
@@ -126,14 +126,19 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
                 序.append(k)
             用[k] = u
             模[k] = m.get('model') or ''
+            终[k] = bool(m.get('stop_reason'))          # ★坑㉗：席之转录多只记流首之 usage（stop_reason 空、产出为占位之数）
         c = m.get('content')
         if isinstance(c, list):
             for x in c:
                 if x.get('type') == 'tool_use':
                     具 += 1
+                    if e.get('type') == 'assistant':
+                        可见 += len(json.dumps(x.get('input'), ensure_ascii=False))
+                elif x.get('type') == 'text' and e.get('type') == 'assistant':
+                    可见 += len(x.get('text') or '')
                 elif x.get('type') == 'tool_result':
                     取 += len(json.dumps(x.get('content'), ensure_ascii=False).encode())
-    r = dict(名=名, 回=len(用), 具=具, 取=取 // 1024, 起=起, 止=止)
+    r = dict(名=名, 回=len(用), 具=具, 取=取 // 1024, 起=起, 止=止, 未终=sum(1 for k in 用 if not 终.get(k)), 可见=可见)
     for k, key in 项:
         r[k] = sum(u.get(key, 0) for u in 用.values())
     r['全'] = r['新'] + r['建'] + r['读'] + r['出']
@@ -241,7 +246,7 @@ def 通知之数(rid, 档们=None):
 
 
 def 合(行):
-    s = {k: sum(r[k] for r in 行) for k in ('回', '具', '新', '建', '读', '出', '全', '金', '末')}
+    s = {k: sum(r.get(k, 0) for r in 行) for k in ('回', '具', '新', '建', '读', '出', '全', '金', '末', '未终', '可见')}
     s['疑'] = sum(len(r['疑']) for r in 行)
     return s
 
@@ -266,6 +271,10 @@ def 印(行, rid=None, 档们=None):
         v = sum(r['金'] for r in 余)
         print('  %-6s $%10.2f  %4.0f%%  （%d 席：%s）' % ('未归', v, 100.0 * v / (s['金'] or 1), len(余), '、'.join(r['名'] for r in 余)[:60]))
     print('  合计：美元 $%.2f｜来回 %d｜全量 %d｜缓存读 %d｜产出 %d｜Σ末回 %d' % (s['金'], s['回'], s['全'], s['读'], s['出'], s['末']))
+    if s['未终']:
+        print('  ⚠ 产出未全（坑㉗）：%d/%d 回之 usage 非终值（stop_reason 空——席之转录只记流首，产出为占位之数）；'
+              '新入、缓存建、缓存读开流即定，是准的；**产出之 token 与其美元本地不可量，上之美元是下限**。'
+              '可见之产出（工具之参＋文字）%d 字；思考之字转录不存，不可量。' % (s['未终'], s['回'], s['可见']))
     if s['疑']:
         print('  ⚠ 未能精算之回 %d：%s' % (s['疑'], '；'.join(sorted({x for r in 行 for x in r['疑']}))[:200]))
     if rid:
@@ -393,6 +402,18 @@ def 自测():
         共 += 1; ok += (len(账) == 1 and 账[0]['核'] == '不符' and 账[0]['全量'] == s['全'])   # 同键更新、不符即记
     finally:
         shutil.rmtree(t)
+    # ★坑㉗：stop_reason 空之回作「未终」（产出为流首之占位）；有 stop_reason 者作终
+    t2 = tempfile.mkdtemp()
+    try:
+        g = os.path.join(t2, 'a.jsonl')
+        u = {'input_tokens': 1, 'output_tokens': 8}
+        with open(g, 'w', encoding='utf-8') as f:
+            f.write(json.dumps({'type': 'assistant', 'message': {'id': 'p', 'model': 'claude-opus-5-5', 'usage': u, 'content': [{'type': 'tool_use', 'input': {'a': '一二三'}}]}}) + '\n')
+            f.write(json.dumps({'type': 'assistant', 'message': {'id': 'q', 'model': 'claude-opus-5-5', 'usage': u, 'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': '四五'}]}}) + '\n')
+        r = 审一(g, 'x')
+        共 += 1; ok += (r['未终'] == 1 and r['可见'] == len(json.dumps({'a': '一二三'}, ensure_ascii=False)) + 2)
+    finally:
+        shutil.rmtree(t2)
     print('费审·自测 %d/%d' % (ok, 共))
     return ok == 共
 

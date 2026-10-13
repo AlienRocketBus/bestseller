@@ -171,7 +171,21 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None):
             主 = 费审.主环(自.replace('Z', ''), 至=至.replace('Z', '') if 至 else None)
         except Exception:
             主 = None
+    载 = 费审.主环之重载(自.replace('Z', '') if 自 else None, 至.replace('Z', '') if 至 else None) if 自 else (0, 0.0)
     等 = 费审.主环之等(自.replace('Z', '') if 自 else None, 至.replace('Z', '') if 至 else None) if 自 else (0, 0.0)
+    机段 = '- 主环非写作之活：（无起时）'
+    if 自:
+        try:
+            import 机械账
+            m = 机械账.账(自=自.replace('Z', ''), 至=至.replace('Z', '') if 至 else None)
+            写 = {名 for 名, 是, _ in 机械账.类 if 是} | {'答话'}
+            非 = sorted([(k, v) for k, v in m.items() if not k.startswith('（') and k not in 写], key=lambda kv: -kv[1][1])
+            总 = sum(v[1] for k, v in m.items() if not k.startswith('（'))
+            机段 = '- 主环非写作之活：机器自认 $%.2f（占主环 %d%%）——前三：%s（坑㉔：一件机械之活一条命令；候即止）' % (
+                sum(v[1] for _, v in 非), 100 * sum(v[1] for _, v in 非) / 总 if 总 else 0,
+                '；'.join('%s %.0f 回 $%.2f' % (k, v[0], v[1]) for k, v in 非[:3]))
+        except Exception as e:
+            机段 = '- 主环非写作之活：（机械账读不出：%s）' % e
     if 主:
         with contextlib.redirect_stdout(io.StringIO()):
             费审.记('主环:%s' % 自.replace('Z', ''), '%s·%s' % (W, 题), [主], None, root, 时=自)   # ★随时记
@@ -192,7 +206,9 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None):
          '- 总费：$%.2f（自动：诸席 $%.2f＋主环 $%.2f）' % (总金 + (主['金'] if 主 else 0), 总金, 主['金'] if 主 else 0),
          '- 服务目标之费：$（填：直接产出目标之席与来回之费，引费审之类或费账）',
          '- 浪费：$（填：无用功逐条之 $ 合计）',
-         '- 机器能办而花token：$（填：须 $0；非零即入坑账。主环等待／轮询之回，机器自认：%d 回 $%.2f）' % 等, '',
+         '- 机器能办而花token：$（填：须 $0；非零即入坑账。主环等待／轮询之回，机器自认：%d 回 $%.2f）' % 等,
+         '- 闲置重载：机器自认 %d 回 $%.2f（会话闲逾一时、缓存过期而整份上下文重写——坑㉓；长停宜开新会话接交接档）' % 载,
+         机段, '',
          '## 与上回比（一次比一次好·1009）', '', '| 项 | 上回同类（填其复盘档名与数） | 本回 | 判 |', '|---|---|---|---|', '| 造之占 | | | 须↑ |', '| 总费（美元，费审精算） | | | 须↓ |', '| 质（致命数、拍库之分、盲读） | | | 须不劣 |', '', '（三样俱合方算进化；不合即写其因、其改）', '',
          '## 无用功', '', '机器之疑（总编辑逐条判：真费、或该花）：'] + (疑 or ['- （无 Run 可审）']) + ['', '（总编辑填：哪里花了大量 token 与时而无实果，其根）', '',
          '## 刀刃', '', '（总编辑填：钱花在哪儿真出了果）', '',
@@ -216,7 +232,7 @@ def 自测():
             f = 起草('W9', '测', [rd], t, '1009')
             g = 起草('W9', '测', [rd], t, '1009')
         s = open(f, encoding='utf-8').read() if f else ''
-        ok = bool(f) and g is None and all(k in s for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑', '## 流程', '## 制作过程')) and '机器之活' in s
+        ok = bool(f) and g is None and all(k in s for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑', '## 流程', '## 制作过程')) and '机器之活' in s and '主环非写作之活' in s
         ok = ok and 验(t)[0] is False                                   # 草稿之坑节、效节未填 → 闸红
         s2 = open(f, encoding='utf-8').read()
         s2 = re.sub(r'- 类：.*', '- 类：核验', s2); s2 = re.sub(r'- 目标：.*', '- 目标：测', s2)

@@ -195,6 +195,35 @@ def 主环之等(自=None, 至=None, f=None):
     return len(ids), sum(一回之金(模[k], 用[k], 目)[0] for k in ids)
 
 
+def 主环之重载(自=None, 至=None, f=None, 闲=3600):
+    """→ (回, 美元)：主环於 [自, 至) 内「闲逾一时之後之首回」重写缓存之费（缓存 1h 档过期，整份上下文重写；坑㉓）。
+    只计缓存写之费（照该回之 5m／1h 两档），⛔计其读与产出——那是这一回本来就要花的。"""
+    from datetime import datetime
+    f = f or (sorted(glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl')), key=os.path.getmtime) or [None])[-1]
+    if not f:
+        return 0, 0.0
+    用, 时, 模 = {}, {}, {}
+    for l in open(f, encoding='utf-8'):
+        try:
+            e = json.loads(l)
+        except Exception:
+            continue
+        m = e.get('message') or {}
+        if e.get('type') == 'assistant' and m.get('usage') and m.get('id'):
+            用[m['id']] = m['usage']; 模[m['id']] = m.get('model') or ''; 时.setdefault(m['id'], e.get('timestamp') or '')
+    P = lambda s: datetime.fromisoformat(s.replace('Z', '+00:00'))
+    目 = 价目(); 回 = 0; 金 = 0.0; 前 = None
+    for k in sorted(用, key=lambda k: 时[k]):
+        if 前 and 时[k] and 时[前] and (P(时[k]) - P(时[前])).total_seconds() > 闲 and (not 自 or 时[k] >= 自) and (not 至 or 时[k] < 至):
+            p = 目['模型'].get(模[k])
+            if p:
+                cc = 用[k].get('cache_creation') or {}
+                回 += 1
+                金 += ((cc.get('ephemeral_5m_input_tokens') or 0) * p['缓存写5m'] + (cc.get('ephemeral_1h_input_tokens') or 0) * p['缓存写1h']) / 1e6
+        前 = k
+    return 回, 金
+
+
 def 通知之数(rid, 档们=None):
     """主会话转录里，该 Run 之通知所报之 subagent_tokens（取末一回）；无则 None。"""
     档们 = 档们 if 档们 is not None else glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl'))
@@ -344,6 +373,13 @@ def 自测():
         共 += 1; ok += (通知之数('wf_aaaaaaaa-bbb', [mf]) == s['末'] and 通知之数('wf_cccccccc-ddd', [mf]) is None)
         r = 审一(os.path.join(t, 'agent-1.jsonl'), '主', 自='2026-10-08T11:01')
         共 += 1; ok += (r['回'] == 1 and r['读'] == 1100)                            # 主环之窗
+        # 重载：两回相隔逾一时，後一回之缓存写计（m1 在 11:00、m2 在 11:01——不逾；另造一档相隔两时）
+        g = os.path.join(t, 'gap.jsonl')
+        with open(g, 'w', encoding='utf-8') as fh:
+            for mid, ts in (('g1', '2026-10-08T10:00:00Z'), ('g2', '2026-10-08T12:30:00Z')):
+                fh.write(json.dumps({'type': 'assistant', 'timestamp': ts, 'message': {'id': mid, 'model': 'claude-opus-5-5', 'usage': u1}}) + '\n')
+        n重, 金重 = 主环之重载(f=g)
+        共 += 1; ok += (n重 == 1 and abs(金重 - 100 * 8 / 1e6) < 1e-12)          # u1 之缓存写 100 皆 1h 档 → $8/M
         B = lambda c, n='Bash': {'type': 'tool_use', 'name': n, 'input': {'command': c}}
         共 += 1; ok += (是等(B('sleep 5; tail x')) and 是等(B('timeout 590 python3 工具/推.py --等')) and 是等(B('while kill -0 123; do :; done'))
                         and not 是等(B("python3 - <<'EOF'\nr = 'sleep 5|pgrep|kill -0'\nEOF\necho ok"))   # 码里之字样⛔误认

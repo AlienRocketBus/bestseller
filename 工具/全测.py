@@ -3844,8 +3844,9 @@ def chk_erdai():
     import subprocess as _sp
     印 = []
     ok = True
-    for 器 in ('造式验', '封版', '段料', '段案验'):
-        r = _sp.run([sys.executable, '工具/%s.py' % 器, '--自测'], cwd=ROOT, capture_output=True, text=True)
+    # ★路径须字面写死（1013 实踩：以 '工具/%s.py' % 器 拼出，囤灰闸／对位认不出，段料、段案验遂判孤器）
+    for 路 in ('工具/造式验.py', '工具/封版.py', '工具/段料.py', '工具/段案验.py'):
+        r = _sp.run([sys.executable, 路, '--自测'], cwd=ROOT, capture_output=True, text=True)
         ok = ok and r.returncode == 0
         印.append((r.stdout.strip().split('\n') or [''])[-1])
     return ok, '｜'.join(印)[:200]
@@ -3872,7 +3873,9 @@ def chk_feishen():
     """费审（1009 立·作者令「每次都找到问题所在，虫洞之法不断进化」）：零 token 审一回工作流每席之来回与缓存之费——自测须过。见 工具/费审.py。"""
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/费审.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0, a.stdout.strip()[-120:]
+    # ★1013 并验 机械账（同一把尺之按类分账·坑㉔之守）——路径字面写死（囤灰闸认得）
+    b = _sp.run([sys.executable, '工具/机械账.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and b.returncode == 0, (a.stdout.strip()[-100:] + '｜' + b.stdout.strip()[-30:])
 
 
 def chk_gaiji():

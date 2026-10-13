@@ -3875,7 +3875,9 @@ def chk_feishen():
     a = _sp.run([sys.executable, '工具/费审.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     # ★1013 并验 机械账（同一把尺之按类分账·坑㉔之守）——路径字面写死（囤灰闸认得）
     b = _sp.run([sys.executable, '工具/机械账.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and b.returncode == 0, (a.stdout.strip()[-100:] + '｜' + b.stdout.strip()[-30:])
+    # ★1013 并验 链之检（坑⑰之 PreToolUse 钩；主环之链之守）
+    c = _sp.run([sys.executable, '工具/链之检.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and b.returncode == 0 and c.returncode == 0, (a.stdout.strip()[-90:] + '｜' + b.stdout.strip()[-20:] + '｜' + c.stdout.strip()[-20:])
 
 
 def chk_gaiji():

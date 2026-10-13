@@ -117,6 +117,30 @@ def 段案行(n, root=ROOT):
     return ''
 
 
+def 引之原句(文, root=ROOT, 限=80):
+    """1013（坑⑬复踩之治）：开镜卡、段案、预令所引之「章:行」（如 380:69）与「总纲:行」逐一展开为原句。
+    ⛔其由：381 之料只带章号不带原句（318:33、327:29 之掰口等），五稿三稿各撞坏一处已定之细（掰口写反、空钉、床位）。
+    行号逾其章之行数者（如 380:2572 是净重，不是行）⛔展；空行⛔展。"""
+    出, 见, 档 = [], set(), {}
+    纲 = os.path.join(root, '设定', '02_余章之势_总纲.md')
+    for m in re.finditer(r'(?<![\d:])(总纲|\d{3}):(\d{1,4})(?!\d)', 文):
+        k = m.group(0)
+        if k in 见:
+            continue
+        见.add(k)
+        f = 纲 if m.group(1) == '总纲' else 章档(int(m.group(1)), root)
+        if not f or not os.path.exists(f):
+            continue
+        if f not in 档:
+            档[f] = open(f, encoding='utf-8').read().split('\n')
+        i = int(m.group(2))
+        if 1 <= i <= len(档[f]) and 档[f][i - 1].strip():
+            出.append('- %s　%s' % (k, 档[f][i - 1].strip()[:400]))
+        if len(出) >= 限:
+            break
+    return 出
+
+
 def 汇(n, root=ROOT, 出=None):
     d = os.path.join(root, '版本', '第%d章' % n)
     卡 = 读(os.path.join(d, '_开镜卡.md'))
@@ -137,6 +161,9 @@ def 汇(n, root=ROOT, 出=None):
         段.append(('段案·本章之行（重、魂路、叫绝之拍、种——上游之设计，执笔照此造）', 案行))
     if 预:
         段.append(('总编辑预令', 预))
+    引 = 引之原句(卡 + '\n' + 案行 + '\n' + 预, root)
+    if 引:
+        段.append(('开镜卡、段案所引之原句（章:行 逐一展开——写已定之细只照此，⛔凭章号猜）', '\n'.join(引)))
     门 = 节(施, '## 四、续写第 %d 章前的硬门槛' % n)
     if 门:
         段.append(('施工表·续写本章前之硬门槛', 门))
@@ -197,6 +224,9 @@ def 自测():
     共 += 1; ok += (len(全) == 2 and '亡於 300' in 全[0] and '300态：倒' in 全[0] and '亡於' not in 全[1])
     共 += 1; ok += (限料 == 120 * 1024)
     共 += 1; ok += ('魂路：翻个儿｜物证｜不说' in 段案行(386) and 段案行(999) == '')
+    _f = 章档(380); _行 = open(_f, encoding='utf-8').read().split('\n') if _f else ['']
+    _引 = 引之原句('见 380:1 又 380:1，又 380:2572（净重）、总纲:1、9380:1', ROOT)
+    共 += 1; ok += (len(_引) == 2 and _引[0] == '- 380:1　' + _行[0].strip()[:400] and _引[1].startswith('- 总纲:1　'))
     print('章料·自测 %d/%d' % (ok, 共))
     return ok == 共
 

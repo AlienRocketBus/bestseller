@@ -171,6 +171,22 @@ def 候时之活():
     return out
 
 
+def 派令(n, root=None):
+    """→ 派第 n 章之命令行们（1013）：段案有其节（重、魂路俱在）→ 造式二代（造章.js，args 取自段案）；否则一代（一章.js）。
+    ⛔其由：二代起於 381，而本器仍印 一章.js——照抄即以一代之法写二代之章（费约五倍）。"""
+    import 章料
+    t = 章料.段案行(n, root or ROOT)
+    重 = re.search(r'^- 重：(\S+)', t, re.M)
+    路 = re.search(r'^- 魂路：(.+)$', t, re.M)
+    if 重 and 路 and 重.group(1) in ('轻', '中', '重'):
+        路们 = [x.strip() for x in 路.group(1).split('｜') if x.strip()]
+        return ['  python3 工具/章料.py %d && python3 工具/造式验.py %d --料   # 料全方派' % (n, n),
+                '  # 开工之闸：设定/方案/W<k>.md 逐环确证 ＋ python3 工具/工作流账.py --开 W<k>（法典二之七步）',
+                "  Workflow({scriptPath:'工具/席/造章.js', args:{章:%d, 重:'%s', 魂路:[%s]}})" % (
+                    n, 重.group(1), ', '.join("'%s'" % x for x in 路们))]
+    return ["  Workflow({scriptPath:'工具/席/一章.js', args:{章:%d}})" % n]
+
+
 def 锁滞(ch):
     """★2026-09-16 立：**席已办毕而锁未撤**——问 `_任务流.json` 之末笔，不问心跳。
 
@@ -322,7 +338,7 @@ def 断(印=True):
         L.append('  【判】跑。第%d章正文在盘而回执不在——那一章没走完。' % 末)
         L.append('  ── 下一条命令 ──')
         L.append('  python3 工具/心跳.py --跳 %d' % 末)
-        L.append('  Workflow({scriptPath:\'工具/席/一章.js\', args:{章:%d}})' % 末)
+        L.extend(派令(末))
         return '跑', L
 
     if not 十一轮过(末):
@@ -431,7 +447,7 @@ def 断(印=True):
             L.append('  Workflow({scriptPath:\'工具/席/剧情庭.js\', args:{题:\'设定/剧情庭题/势_第%d段.md\', 名:\'势_第%d段\', 式:\'新\'}})' % (_段, _段))
     L.append('  python3 工具/席法.py                      # 钥匙不绿，一个席也不许派')
     L.append('  python3 工具/起草庭.py %d' % 下)
-    L.append('  Workflow({scriptPath:\'工具/席/一章.js\', args:{章:%d}})' % 下)
+    L.extend(派令(下))
     return ('欠' if 欠 else '起'), L
 
 
@@ -536,6 +552,9 @@ def 报():
 def 自测():
     R = []
     判, L = 断(印=False)
+    _派 = 派令(382)
+    R.append(('派令·有段案之章印造章.js（二代），其重与魂路取自段案；无段案之章仍印一章.js',
+               any("造章.js" in x and "重:'中'" in x and "'换账'" in x for x in _派) and any('一章.js' in x for x in 派令(999))))
     R.append(('①判得出一个字（候／跑／补／救／欠／起／庭／停）',
                判 in ('候', '跑', '补', '救', '欠', '起', '庭', '停')))
     R.append(('②末一行是一条可照抄之命令', any(

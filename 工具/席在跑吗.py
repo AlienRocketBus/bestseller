@@ -65,6 +65,20 @@ def 问心跳():
     return (r.returncode == 1), (行[-1] if 行 else '')
 
 
+活之界 = 900   # 秒
+
+
+def 席之转录在写(界=活之界, 今=None):
+    """1013：工作流之席十五分钟内写过其转录 → 有席在跑。回 (有否, 末改之档)。
+    ⛔其由：二代（造章.js）之席不报心跳（报心跳要写 git 之枝，席禁 git 写——律⑮），381 跑时心跳逾 45 分即「死」，
+    本钩遂把回合一回回顶回去，每回白花一回主环（坑㉔）。转录之末改时刻是机器之实，⛔本坐自称。"""
+    import glob as _g
+    今 = 今 or time.time()
+    fs = _g.glob(os.path.expanduser('~/.claude/projects/*/*/subagents/workflows/wf_*/agent-*.jsonl'))
+    新 = [f for f in fs if 今 - os.path.getmtime(f) < 界]
+    return (bool(新), max(新, key=os.path.getmtime) if 新 else '')
+
+
 def 完本了吗():
     try:
         out = subprocess.run([sys.executable, os.path.join(ROOT, '工具', '自走.py')],
@@ -83,22 +97,32 @@ def main():
         print('✓席在跑吗：有席在跑——放行。')
         print('   心跳印：%s' % 行)
         return 0
+    转, 档 = 席之转录在写()
+    if 转:
+        print('✓席在跑吗：工作流之席十五分钟内写过转录（%s）——放行。' % os.path.basename(os.path.dirname(档)))
+        return 0
     完, out = 完本了吗()
     if 完:
         print('✓席在跑吗：自走.py 判「完本」——放行。')
         return 0
-    # ⛔拦
-    print('⛔⛔⛔ 席在跑吗：**手上没有一样在跑的席——这一回合还没完，不许收。**')
-    print('   心跳印：%s' % (行 or '（心跳器无话）'))
-    print('')
-    print('★**律⑰**：席一收，头一件事只有一件——**跑 `自走.py`，照它印的那一行派下一席**。')
-    print('　**机制之活、补账之活、治闸之活，一律排在「席已起、Run ID 已回」之後。**')
-    print('')
-    print('── 现在就跑这一条 ──')
-    print('   cd /home/user/the-novel && python3 工具/自走.py')
-    print('　★它印「起」→ 逐条照抄跑完，末一条 `Workflow({scriptPath:\'工具/席/一章.js\', args:{章:N}})`')
-    print('　★它印「候」→ 说明另有席在跑；若心跳已死而它仍印「候」，跑 `python3 工具/心跳.py --跳 N` 接手')
-    print('⛔**「我现在开它」这六个字不算派席——须回了 Run ID 才算。**')
+    # ⛔拦（★印到 stderr：Stop 钩只把 stderr 给模型——1013 实踩，印在 stdout 则模型只见「No stderr output」）
+    _o = sys.stdout
+    sys.stdout = sys.stderr
+    try:
+        print('⛔⛔⛔ 席在跑吗：**手上没有一样在跑的席——这一回合还没完，不许收。**')
+        print('   心跳印：%s' % (行 or '（心跳器无话）'))
+        print('')
+        print('★**律⑰**：席一收，头一件事只有一件——**跑 `自走.py`，照它印的那一行派下一席**。')
+        print('　**机制之活、补账之活、治闸之活，一律排在「席已起、Run ID 已回」之後。**')
+        print('')
+        print('── 现在就跑这一条 ──')
+        print('   cd /home/user/the-novel && python3 工具/自走.py')
+        print('　★它印「起」→ 逐条照抄跑完，末一条 `Workflow(...)`（二代之章为 造章.js，一代为 一章.js——照自走所印）')
+        print('　★它印「候」→ 说明另有席在跑；若心跳已死而它仍印「候」，跑 `python3 工具/心跳.py --跳 N` 接手')
+        print('⛔**「我现在开它」这六个字不算派席——须回了 Run ID 才算。**')
+
+    finally:
+        sys.stdout = _o
     return 2
 
 
@@ -107,11 +131,13 @@ def 自测():
     格 = []
     def 报(名, 得, 期): 格.append((名, 得 == 期, 得, 期))
 
-    def 判(有席, 有叫停, 完本):
+    def 判(有席, 有叫停, 完本, 转录活=False):
         """把 main 之判逐条摆出来（与 main 同一条路，⛔不另写一份）。"""
         if 有叫停:
             return 0
         if 有席:
+            return 0
+        if 转录活:
             return 0
         if 完本:
             return 0
@@ -130,6 +156,13 @@ def 自测():
     # ⑦⛔不许自己去读心跳档（头一版之病：心跳不在工作区，读不着即误判无席）
     报('⑦不自读心跳档', '_心跳.json' not in src, True)
 
+    报('⑧二代之席不报心跳而转录在写即放行', 判(False, False, False, True), 0)
+    import tempfile as _t
+    _d = _t.mkdtemp(); _f = os.path.join(_d, 'a.jsonl'); open(_f, 'w').write('x')
+    报('⑨转录之活以末改时刻判（十五分钟之界）', (time.time() - os.path.getmtime(_f) < 活之界, time.time() + 2 * 活之界 - os.path.getmtime(_f) < 活之界), (True, False))
+    import shutil as _sh; _sh.rmtree(_d)
+    src2 = inspect.getsource(main)
+    报('⑩拦时印到 stderr', 'sys.stdout = sys.stderr' in src2, True)
     过 = sum(1 for _, ok, _, _ in 格 if ok)
     for 名, ok, 得, 期 in 格:
         if not ok:

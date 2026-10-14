@@ -475,6 +475,23 @@ def 记账(ops, 单名们, root=ROOT, 时=None):
     return 账
 
 
+def 施後同步(章们, root=ROOT):
+    """★1014 W26 三回手跑、漏一回（283 净重差 2 而推闸红）：施毕一条命令办毕——全书记忆 sha1、净重对表 --补、阅读器、全书记忆之验。"""
+    import hashlib, subprocess
+    for 章 in sorted(章们):
+        f, _ = 读章(章, root)
+        sha = hashlib.sha1(open(f, 'rb').read()).hexdigest()[:12]
+        p = os.path.join(root, '设定', '全书记忆', '第%d章.md' % 章)
+        if os.path.exists(p):
+            t = open(p, encoding='utf-8').read()
+            t2 = re.sub(r'sha1：[0-9a-f]{12}', 'sha1：' + sha, t, count=1)
+            if t2 != t:
+                open(p, 'w', encoding='utf-8').write(t2)
+    for 令 in (['工具/净重对表.py', '--补'], ['工具/同步全本阅读器.py'], ['工具/全书记忆.py']):
+        r = subprocess.run([sys.executable] + 令, cwd=root, capture_output=True, text=True)
+        print('  施後·%s：%s' % (os.path.basename(令[0]), (r.stdout.strip().split('\n') or [''])[-1][:80]))
+
+
 # ───────── 料 ─────────
 def 料(组, root=ROOT, 规=None):
     规 = 规 or 读规(root)
@@ -666,6 +683,7 @@ if __name__ == '__main__':
                     open(f, 'w', encoding='utf-8').write('\n'.join(今))
                     print('  施 第%d章 %d 行' % (章, 动[章]))
             记账([o for _, o in 读单们([x for x in a[1:] if x != '--全'])], [os.path.basename(x) for x in a[1:] if x != '--全'])
+            施後同步([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今])
         sys.exit(1 if 红 else 0)
     print(__doc__)
     sys.exit(2)

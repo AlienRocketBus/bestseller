@@ -373,6 +373,9 @@ def 验(ops们, 规, 取章=读章):
             R('添於空行（後添须接在有字之行末）'); continue
         if 式 in ('插', '添') and not 新:
             R('%s 无新' % 式); continue
+        # ④之前·文体之律（★1014：W28 席、W30 主环、G71 裁文三回把「W26」「L17」「D6」写进骨记，全书检方逮——施前即拦）
+        if re.search(r'[A-Za-z]', 新 or ''):
+            R('新含英文字母「%s」（全书⛔英文，骨记亦然）' % ''.join(re.findall(r'[A-Za-z]+\d*', 新))[:20]); continue
         # ④ 新之出处
         if 新:
             if 撰:
@@ -615,6 +618,7 @@ def 自测():
     T([{'G': '大审387·一', '据': '大审', '章': 88, '行': 3, '式': '添', '新': '新句。', '撰': '大审裁', '由': '立得住一'}], False)   # 大审之治：可动、列黄
     T([{'G': '大审387·一', '据': '大审', '章': 88, '行': 1, '式': '换', '原': '护护', '新': '甲', '撰': '大审裁', '由': '立得住一'}], True)   # 大审亦守护句
     T([{'G': '大审387·一', '据': '大审', '章': 88, '行': 3, '式': '添', '新': '新句。'}], True)                                    # 须由、须撰
+    T([{'G': '大审387·一', '据': '大审', '章': 88, '行': 3, '式': '添', '新': '（L17 末）', '撰': '大审裁', '由': '立得住一'}], True)   # 新含英文即红
     共 += 1; ok += bool(数词.match('三个多月')) and bool(数词.match('两个多月')) and not 数词.match('她三个月')
     共 += 1; ok += 引(令文('| G9 | 88:3 | 改 | 「甲」 | 「乙」 | 与 201:29 相抵 |'), 88) == {88: {3}}   # 由栏之 201:29 ⛔作可改
     共 += 1; ok += 引(令文('| G29 | 235:325—329 | 此段改为（照留 381—401） | 「甲」 | 「乙」 | 由 |'), 235) == {235: {325, 326, 327, 328, 329}}
@@ -652,7 +656,7 @@ if __name__ == '__main__':
                 t2 = '\n'.join(文[n][2]); i = t2.find('【本章亮点】')
                 return t2[:i] if i >= 0 else t2
             return 欠账闸.白文(n)
-        所涉 = sorted({o.get('G') for _, o in 读单们([x for x in a[1:] if x != '--全']) if o.get('G') and o.get('G') != 'G56'}, key=lambda g: int(g[1:]))
+        所涉 = sorted({o.get('G') for _, o in 读单们([x for x in a[1:] if x != '--全']) if re.fullmatch(r'G\d+', o.get('G') or '') and o.get('G') != 'G56'}, key=lambda g: int(g[1:]))   # ★1014 W30 逮：「大审387·…」之号⛔入欠账之判（旧 int(g[1:]) 即崩）
         判们 = {}
         for 号, 处, 式, 原, 改, 由 in 欠账闸.行们(open(os.path.join(ROOT, 主案), encoding='utf-8').read()):
             if 号 in 所涉:
@@ -683,7 +687,7 @@ if __name__ == '__main__':
             if len(单们) > 1:                   # 多单：只印末一单之变（前诸单之果作「前」）——补审只看新改之窗
                 _, _, 前文, _ = 验(读单们(单们[:-1]), 规)
                 底 = {章: (f2, 前文[章][2] if 章 in 前文 else 旧2, 今2) for 章, (f2, 旧2, 今2) in 文.items()}
-            p = os.path.join(ROOT, 草, '窗_%s.md' % os.path.splitext(os.path.basename(单们[-1]))[0])
+            p = os.path.join(os.path.dirname(os.path.abspath(单们[-1])), '窗_%s.md' % os.path.splitext(os.path.basename(单们[-1]))[0])   # ★1014 W30 逮：窗写在末单之旁（旧写死 W26）
             open(p, 'w', encoding='utf-8').write('# 还账之窗（改前／改後；●＝变）\n\n' + 窗(底))
             print('还账·窗 → %s' % os.path.relpath(p, ROOT))
         if a[0] == '--施':

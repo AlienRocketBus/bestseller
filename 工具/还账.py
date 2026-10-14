@@ -23,7 +23,7 @@
 
 用法：
   python3 工具/还账.py --料 丁                 # 汇一组之料 → 设定/_草/W26/料_丁.md（G 号、S 号、补表与六之四、护句、所引之行）
-  python3 工具/还账.py --验 单1.json [单2…]    # 依序模拟；印红黄；有红 rc=1
+  python3 工具/还账.py --验 单1.json [单2…] [--全]   # 依序模拟；印红黄；有红 rc=1；--全 另印 G56 表行之新数落没落
   python3 工具/还账.py --窗 单1.json [单2…]    # 验之上，印每处改前改後之窗 → 设定/_草/W26/窗_<首单名>.md
   python3 工具/还账.py --施 单1.json [单2…]    # 无红方写盘；印每章几处；行数不变
   python3 工具/还账.py --自测
@@ -44,7 +44,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         '乙': [217, 221, 232],
         '丙': [235, 239, 241, 244, 247, 249, 253, 255, 257, 259],
         '丁': [261, 263, 265, 267, 270],
-        '戊': [272, 273, 275, 279, 281, 283, 286, 288, 290, 292, 296, 298, 300, 316, 318, 325, 329, 335]}
+        '戊': [272, 273, 275, 279, 281, 283, 286, 288, 290, 292, 296, 298, 300, 316, 318, 325, 329, 335],
+        '己': [294, 302, 304, 306, 308, 310, 314, 383]}   # ★1014 补：余章表与 S25 之余波所及而前五组未收之章
 式们 = ('换', '插', '添', '清')
 
 
@@ -84,12 +85,56 @@ def 读规(root=ROOT):
         m = re.match(r'\|\s*(\d{2,3}):(\d+)\s*\|', l)
         if m:
             规['表'].setdefault((int(m.group(1)), int(m.group(2))), []).append(('六之四', l))
+    for l in 六四:                                  # ★1014 余四组逮（坑⑬复踩）：「| 217（五十九） | 11 甲「…」；35 庚「…」 |」与「| 232:33、41 |」两式旧不认——126 行漏料
+        for 章, 行, 类, 文 in 余章条(l):
+            规['表'].setdefault((章, 行), []).append(('六之四', 文))
     for 段 in 规['六之四首'].split('\n'):          # ★1014 丁组试逮：六之四首之段落里散列之条（八类之例、第2轮补列）亦是令——旧只认表行而漏
         for 章, 行, 类 in 段条(段):
             if 类 in ('辛', '丁') or not 类:          # 辛类撤（G56）；丁类照留；无类者係日之注（「232 係第七十一日（232:465）」）
                 continue
             规['表'].setdefault((章, 行), []).append(('六之四', '〔六之四首·%s类〕%s' % (类, 段)))
     return 规
+
+
+def 余章条(l):
+    """六之四之表行（「| 章（日） | 行 类「新」；… | 照留 |」或「| 章:a、b | 「原」 | 类 | 「新」 |」）→ [(章, 行, 类, 其条之文)]；丁、辛⛔入。
+    单行之格「| 235:389 |」由旧法认，此处⛔重。"""
+    c = [x.strip() for x in l.strip().strip('|').split('|')]
+    出 = []
+    m = re.match(r'^(\d{2,3})((?:[—、]\d{2,3})*)（', c[0])
+    if m:
+        单 = None if m.group(2) else int(m.group(1))
+        for 段 in _分(c[1] if len(c) > 1 else ''):
+            mm = re.match(r'\s*(?:(\d{2,3})[:：])?(\d+)((?:、\d+)*)\s*(掐|[甲乙丙丁戊己庚辛])', 段)
+            if not mm:
+                continue
+            章 = int(mm.group(1)) if mm.group(1) else 单
+            if 章 is None or mm.group(4) in ('丁', '辛'):
+                continue
+            for n in [mm.group(2)] + re.findall(r'\d+', mm.group(3)):
+                出.append((章, int(n), mm.group(4), 段.strip()))
+    elif re.match(r'^\d{2,3}[:：]\d+\s*[、；;]', c[0]) and len(c) > 2 and not re.search(r'丁|辛|事', c[2]):
+        for 章, 行们 in 引(c[0]).items():
+            for n in sorted(行们):
+                出.append((章, n, c[2], l))
+    return 出
+
+
+def 表新(行文):
+    """表之一条 → 其「新数」之片（无则 None）：表行取第四栏首引；余章之条取首引；照留、撤者 None；「……」前截。"""
+    if 行文.startswith('〔六之四首'):
+        return None
+    if 行文.startswith('|'):
+        c = [x.strip() for x in 行文.strip().strip('|').split('|')]
+        格 = c[3] if len(c) > 3 else ''
+    else:
+        格 = 行文
+    if re.search(r'照留|撤|见 S', 格):
+        return None
+    m = re.search(r'「([^」]{2,})」', 格)
+    if not m:
+        return None
+    return re.sub(r'〔[^〕]*〕', '', m.group(1)).split('……')[0].strip('，。、；：') or None
 
 
 def _展(s):
@@ -297,7 +342,7 @@ def 验(ops们, 规, 取章=读章):
             if 护中:
                 if all(k in 许.get(章, set()) for k in 护中):
                     Y('护句 %s 括注所许，改之' % 护中[:6])
-                elif (o.get('护许') or '').strip() and 式 == '换' and 数词.match(原) and 数词.match(新 or '') and all(k in 准 for k in 护中):
+                elif (o.get('护许') or '').strip() and 式 == '换' and 数词.match(原) and (数词.match(新 or '') or (据 in ('补表', '六之四') and 新 and 新 in 据文)) and all(k in 准 for k in 护中):
                     Y('护句 %s 只正其数「%s」→「%s」（总编辑许：%s）' % (护中[:6], 原, 新, o['护许'][:40]))   # 照 283:13、33「只正其数」之例；裁文须点名该行
                 else:
                     R('护句 %s ⛔换、⛔清（护句只添）' % 护中[:6]); continue
@@ -509,6 +554,10 @@ def 自测():
     段 = '重核：甲（床上那人在屋之久；**221:57「三个月前」→「四十来天前」，补**）、乙（写字之久；267:109、185，283:13 诸随之）、丁（照留；221:519 照留）、辛（柴：**298:29、489；300:21**——改作）。唯一之变：辛类 288:101 改由 S26。**补列**（刺）：甲类 221:161（「甲」→「乙」；判误）、195；丙类 261:317（「三个多月」→「两个来月」）。232 係第七十一日（232:465）'
     共 += 1; ok += [(c, l, k) for c, l, k in 段条(段) if k not in ('辛', '丁', '')] == [(221, 57, '甲'), (267, 109, '乙'), (267, 185, '乙'), (283, 13, '乙'), (221, 161, '甲'), (221, 195, '甲'), (261, 317, '丙')]
     共 += 1; ok += {(c, l) for c, l, k in 段条(段) if k == '辛'} == {(298, 29), (298, 489), (300, 21), (288, 101)} and (232, 465, '') in 段条(段)
+    共 += 1; ok += [(c, n, k) for c, n, k, _ in 余章条('| 290—296（九十六） | 290:297 丙「两个多月」；296:193 甲「比两个多月前」 | 296:205 丁 |')] == [(290, 297, '丙'), (296, 193, '甲')]
+    共 += 1; ok += [(c, n, k) for c, n, k, _ in 余章条('| 217（五十九） | 11 甲「四十来天」；35 庚「两个来月」 | 7 丁 |')] == [(217, 11, '甲'), (217, 35, '庚')]
+    共 += 1; ok += [(c, n) for c, n, _, _ in 余章条('| 232:33、41 | 「三个月」 | 己 | 「一个多月」 |')] == [(232, 33), (232, 41)] and 余章条('| 235:389 | 「甲」 | 丙 | 「乙」 |') == []
+    共 += 1; ok += 表新('| 235:389 | 「那一角这三个月」 | 丙 | 「这四十来天」 |') == '这四十来天' and 表新('11 甲「那股味她四十来天来闻惯了」') == '那股味她四十来天来闻惯了' and 表新('| 275:13 | 「先前」 | 丁 | 照留（久） |') is None and 表新('| 201:289 | 「x」 | 丙 | 「四十四天，一天一页……」 |') == '四十四天，一天一页'
     共 += 1; ok += bool(数词.match('三个多月')) and bool(数词.match('两个多月')) and not 数词.match('她三个月')
     共 += 1; ok += 引(令文('| G9 | 88:3 | 改 | 「甲」 | 「乙」 | 与 201:29 相抵 |'), 88) == {88: {3}}   # 由栏之 201:29 ⛔作可改
     共 += 1; ok += 引(令文('| G29 | 235:325—329 | 此段改为（照留 381—401） | 「甲」 | 「乙」 | 由 |'), 235) == {235: {325, 326, 327, 328, 329}}
@@ -534,7 +583,7 @@ if __name__ == '__main__':
         sys.exit(0)
     if a[:1] in (['--验'], ['--窗'], ['--施']) and len(a) >= 2:
         规 = 读规()
-        红, 黄, 文, 计 = 验(读单们(a[1:]), 规)
+        红, 黄, 文, 计 = 验(读单们([x for x in a[1:] if x != '--全']), 规)
         for x in 红:
             print('  ⛔', x)
         for x in 黄:
@@ -546,17 +595,39 @@ if __name__ == '__main__':
                 t2 = '\n'.join(文[n][2]); i = t2.find('【本章亮点】')
                 return t2[:i] if i >= 0 else t2
             return 欠账闸.白文(n)
-        所涉 = sorted({o.get('G') for _, o in 读单们(a[1:]) if o.get('G') and o.get('G') != 'G56'}, key=lambda g: int(g[1:]))
+        所涉 = sorted({o.get('G') for _, o in 读单们([x for x in a[1:] if x != '--全']) if o.get('G') and o.get('G') != 'G56'}, key=lambda g: int(g[1:]))
         判们 = {}
         for 号, 处, 式, 原, 改, 由 in 欠账闸.行们(open(os.path.join(ROOT, 主案), encoding='utf-8').read()):
             if 号 in 所涉:
                 判们.setdefault(欠账闸.判一(处, 式, 原, 改, 模白)[0], []).append(号)
+        if '--全' in a:                       # G56 之全：每一表行之「新数」在模拟後之行里在不在（零 token）
+            未 = []
+            for (章, 行), 条们 in sorted(规['表'].items()):
+                if 章 == 263:
+                    continue
+                for 出处, 文2 in 条们:
+                    片 = 表新(文2)
+                    if not 片:
+                        continue
+                    if 章 not in 文:
+                        f2, ls2 = 读章(章)
+                        if not ls2:
+                            continue
+                        文[章] = (f2, list(ls2), list(ls2))
+                    if 1 <= 行 <= len(文[章][2]) and 片 not in 文[章][2][行 - 1]:
+                        未.append('%d:%d（%s）「%s」' % (章, 行, 出处, 片[:16]))
+            print('表之全（G56·模拟施後）：表行之新数未落 %d 处%s' % (len(未), ('：' + '；'.join(未[:60])) if 未 else ''))
         print('欠账闸（模拟施後·单所涉之号）：%s' % '｜'.join('%s %d%s' % (k, len(v), '' if k == '已执行' else '（%s）' % '、'.join(v)) for k, v in 判们.items()))
         print('还账·验：%s｜动 %d 章 %d 行｜红 %d｜黄 %d' % ('、'.join('%s %d' % kv for kv in 计.items()) or '无单', sum(1 for v in 动.values() if v), sum(动.values()), len(红), len(黄)))
         if a[0] == '--窗':
             os.makedirs(os.path.join(ROOT, 草), exist_ok=True)
-            p = os.path.join(ROOT, 草, '窗_%s.md' % os.path.splitext(os.path.basename(a[1]))[0])
-            open(p, 'w', encoding='utf-8').write('# 还账之窗（改前／改後；●＝变）\n\n' + 窗(文))
+            单们 = [x for x in a[1:] if x != '--全']
+            底 = 文
+            if len(单们) > 1:                   # 多单：只印末一单之变（前诸单之果作「前」）——补审只看新改之窗
+                _, _, 前文, _ = 验(读单们(单们[:-1]), 规)
+                底 = {章: (f2, 前文[章][2] if 章 in 前文 else 旧2, 今2) for 章, (f2, 旧2, 今2) in 文.items()}
+            p = os.path.join(ROOT, 草, '窗_%s.md' % os.path.splitext(os.path.basename(单们[-1]))[0])
+            open(p, 'w', encoding='utf-8').write('# 还账之窗（改前／改後；●＝变）\n\n' + 窗(底))
             print('还账·窗 → %s' % os.path.relpath(p, ROOT))
         if a[0] == '--施':
             if 红:

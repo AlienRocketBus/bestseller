@@ -138,7 +138,9 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
                     可见 += len(x.get('text') or '')
                 elif x.get('type') == 'tool_result':
                     取 += len(json.dumps(x.get('content'), ensure_ascii=False).encode())
-    r = dict(名=名, 回=len(用), 具=具, 取=取 // 1024, 起=起, 止=止, 未终=sum(1 for k in 用 if not 终.get(k)), 可见=可见)
+    r = dict(名=名, 回=len(用), 具=具, 取=取 // 1024, 起=起, 止=止, 未终=sum(1 for k in 用 if not 终.get(k)), 可见=可见,
+             写1h=sum((u.get('cache_creation') or {}).get('ephemeral_1h_input_tokens', 0) for u in 用.values()),
+             写5m=sum((u.get('cache_creation') or {}).get('ephemeral_5m_input_tokens', 0) for u in 用.values()))
     for k, key in 项:
         r[k] = sum(u.get(key, 0) for u in 用.values())
     r['全'] = r['新'] + r['建'] + r['读'] + r['出']
@@ -246,7 +248,7 @@ def 通知之数(rid, 档们=None):
 
 
 def 合(行):
-    s = {k: sum(r.get(k, 0) for r in 行) for k in ('回', '具', '新', '建', '读', '出', '全', '金', '末', '未终', '可见')}
+    s = {k: sum(r.get(k, 0) for r in 行) for k in ('回', '具', '新', '建', '读', '出', '全', '金', '末', '未终', '可见', '写1h', '写5m')}
     s['疑'] = sum(len(r['疑']) for r in 行)
     return s
 
@@ -271,6 +273,8 @@ def 印(行, rid=None, 档们=None):
         v = sum(r['金'] for r in 余)
         print('  %-6s $%10.2f  %4.0f%%  （%d 席：%s）' % ('未归', v, 100.0 * v / (s['金'] or 1), len(余), '、'.join(r['名'] for r in 余)[:60]))
     print('  合计：美元 $%.2f｜来回 %d｜全量 %d｜缓存读 %d｜产出 %d｜Σ末回 %d' % (s['金'], s['回'], s['全'], s['读'], s['出'], s['末']))
+    if s['写1h'] or s['写5m']:   # ★1014·坑㉘：席之缓存档（subagentPromptCacheTtl=1h 後须俱一时档）
+        print('  缓存写之档：一时 %d（%.0f%%）｜五分 %d' % (s['写1h'], 100.0 * s['写1h'] / (s['写1h'] + s['写5m']), s['写5m']))
     if s['未终']:
         print('  ⚠ 产出未全（坑㉗）：%d/%d 回之 usage 非终值（stop_reason 空——席之转录只记流首，产出为占位之数）；'
               '新入、缓存建、缓存读开流即定，是准的；**产出之 token 与其美元本地不可量，上之美元是下限**。'

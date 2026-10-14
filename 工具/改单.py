@@ -92,6 +92,13 @@ def 毕(号, 句):
     d = 读()
     for x in d['单']:
         if x['号'] == 号:
+            # ★1014：单改了正文即当场同步阅读器（G1014-02 改 384 骨记而未同，推时检察官自测、医生、全书检三红一根）
+            _器 = os.path.join(ROOT, '工具', '同步全本阅读器.py')
+            if os.path.exists(_器) and any(str(p).startswith('正文/') for p in x.get('档', [])):   # 器不在（自测之沙盘）即不跑
+                r = subprocess.run([sys.executable, _器], cwd=ROOT, capture_output=True, text=True)
+                print('  · 单涉正文，已同步阅读器：%s' % ((r.stdout.strip().split('\n') or [''])[-1] if r.returncode == 0 else '⛔同步败（rc=%d）' % r.returncode))
+                if r.returncode != 0:
+                    print('⛔ 阅读器未同步，⛔结单'); return False
             x['状'] = '毕'; x['毕'] = time.strftime('%Y-%m-%d %H:%M'); x['结'] = 句
             写(d)
             with open(清单, 'a', encoding='utf-8') as f:

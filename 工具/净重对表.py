@@ -132,8 +132,13 @@ def 补():
         new = old.replace(数.search(L[i - 1]).group(1), '{:,}'.format(实))
         L[i - 1] = L[i - 1].replace(old, new, 1)
         print('  改 表%d行 第%d章 %d → %d' % (i, n, 记, 实))
+    # ★1014 W26／W30 两回漏：列内之「N:数」旧须手正——今随锁定行一并照正文实算补（近处注陈数者，列量本不认，⛔动）
+    红二, _ = 列量(表文='\n'.join(L))
+    for i, n, 记, 实 in 红二:
+        L[i - 1] = re.sub(r'(?<![0-9`])%d:%d(?![0-9`])' % (n, 记), '%d:%d' % (n, 实), L[i - 1], count=1)
+        print('  改 表%d行 列内第%d章 %d → %d' % (i, n, 记, 实))
     io.open(表, 'w', encoding='utf-8').write('\n'.join(L))
-    return len(红)
+    return len(红) + len(红二)
 
 
 def 跑(报=True):

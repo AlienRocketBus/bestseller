@@ -43,7 +43,7 @@ def 总纲之日(纲, a, b):
     return {int(m.group(1)): m.group(2) for m in re.finditer(r'\|\s*(\d{3})\s*\|\s*([主暗]·\d+)\s*\|', 纲) if a <= int(m.group(1)) <= b}
 
 
-def 汇(a, b, root=ROOT, 出=None):
+def 汇(a, b, root=ROOT, 出=None, 顶=限):
     读 = lambda p: open(os.path.join(root, p), encoding='utf-8').read() if os.path.exists(os.path.join(root, p)) else ''
     案 = 读('设定/剧情庭题/余章总案.md')
     纲 = 读('设定/02_余章之势_总纲.md')
@@ -91,8 +91,8 @@ def 汇(a, b, root=ROOT, 出=None):
     for 名, t in 段:
         print('  %-30s %7d 字节' % (名, len((t or '').encode())))
     print('✓ 写 %s（%d KB）' % (os.path.relpath(出, root), 大 // 1024))
-    if 大 > 限:
-        print('⛔ 段料 %d KB 逾 %d KB（坑③）' % (大 // 1024, 限 // 1024)); return None
+    if 顶 and 大 > 顶:
+        print('⛔ 段料 %d KB 逾 %d KB（坑③）' % (大 // 1024, 顶 // 1024)); return None
     return 出
 
 
@@ -103,8 +103,10 @@ def 自测():
     t = tempfile.mkdtemp()
     try:
         with contextlib.redirect_stdout(io.StringIO()):
-            p = 汇(381, 389, ROOT, os.path.join(t, 'x.md'))
+            p = 汇(381, 389, ROOT, os.path.join(t, 'x.md'), 顶=None)   # ★1014：381—389 已写成之段，其悬线随记席一章章长（151KB）——验诸节在不在⛔受顶（第二十八犯之族：⛔钉快照）
+            q = 汇(381, 389, ROOT, os.path.join(t, 'y.md'), 顶=1024)       # 顶照拦（真用照守 150KB）
         s = open(p, encoding='utf-8').read() if p else ''
+        共 += 1; ok += (q is None)
         共 += 1; ok += bool(p) and all(k in s for k in ('〔余章总案·解歧之裁〕', '〔全员之账', '〔总纲·本段逐章之日〕', '| 381 | 暗·142 |', '〔段案之格〕', '四十拍'))
         纲 = open(os.path.join(ROOT, '设定', '02_余章之势_总纲.md'), encoding='utf-8').read()
         日 = 总纲之日(纲, 381, 405)

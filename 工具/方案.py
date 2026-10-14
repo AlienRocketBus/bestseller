@@ -92,6 +92,17 @@ def 验文(文):
     合 = 节(文, '合计')
     if 合 is None or not 时式.search(合) or not 费式.search(合) or '据' not in 合:
         坏.append('「## 合计」须有时、$ 费与其据')
+    # ★1014 上线之律（作者令「新弄出一个方法，要确定它绝对有效」）：方案之题标「新法」者，须有「## 前定之验」——
+    #   试之前写死：比哪个基线、拿什么数、胜几分算胜、不胜即退（⛔先上线後找理由；⛔「再试一回」逾一次）
+    首 = 文.split('\n', 1)[0]
+    if '新法' in 首:
+        前 = 节(文, '前定之验')
+        if 前 is None:
+            坏.append('题标「新法」而无「## 前定之验」（上线之律：基线、数、胜之界、不胜即退，试前写死）')
+        else:
+            for k in ('基线', '胜', '退'):
+                if k not in 前:
+                    坏.append('「前定之验」缺「%s」（上线之律）' % k)
     return 坏
 
 
@@ -163,6 +174,10 @@ def 自测():
         共 += 1; ok += (p is not None and q is None and 验('W9', t)[0] is False and 验('W8', t)[0] is False)     # 模板未填即红；无方案即红
     finally:
         shutil.rmtree(t)
+    新 = 好.replace('# 方案·W9·测', '# 方案·W9·测（新法）', 1)
+    共 += 1; ok += any('前定之验' in x for x in 验文(新))                       # 新法无前定之验即红
+    新2 = 新 + '\n## 前定之验\n- 基线：W8 之实｜数：行家之分｜胜：≥+2｜不胜即退回旧法\n'
+    共 += 1; ok += not any('前定之验' in x for x in 验文(新2))                  # 写足即过
     print('方案·自测 %d/%d' % (ok, 共))
     return ok == 共
 

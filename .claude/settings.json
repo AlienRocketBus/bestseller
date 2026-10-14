@@ -37,5 +37,7 @@
       }
     ]
   },
-  "_说明_链": "1013 立（坑⑰复踩之守）：PreToolUse 钩，主环之 Bash 命令有「python3 工具/X.py … | … && 下一步」而无 pipefail 者拦——管道之後之 && 判的是 tail 之码，工具败了下一步照跑。见 工具/链之检.py 之头注。"
+  "_说明_链": "1013 立（坑⑰复踩之守）：PreToolUse 钩，主环之 Bash 命令有「python3 工具/X.py … | … && 下一步」而无 pipefail 者拦——管道之後之 && 判的是 tail 之码，工具败了下一步照跑。见 工具/链之检.py 之头注。",
+  "subagentPromptCacheTtl": "1h",
+  "_说明_缓存": "1014 立（作者令「省钱不许碰质量，省下的钱全扔回造」·坑㉘）：子席与工作流诸席之提示缓存改一时档（官方：code.claude.com/docs/en/prompt-caching「Choose the TTL yourself」、workflows「Prompt caching in a fan-out」；v2.1.242+）。其由：执笔 effort max 之长思一回逾五分钟即缓存过期、整份上下文重写；以 384、385 之真转录逐回推算，一时档（写价 2× 而免重写）省输入侧 20—29%（每章 $5.5—11）；⛔动 effort、⛔动料。"
 }

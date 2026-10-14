@@ -3892,7 +3892,9 @@ def chk_zhangliao():
     席只读此档、⛔自己搜料——其节之取、人物与 canon 之择须自测通过。见 工具/章料.py。"""
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/章料.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0, a.stdout.strip()[-120:]
+    # ★1014 并验 欠账闸（主案 G 号落没落正文；取白文用 章料.章档）——只验自测；全量之判待 W26 还清後再升为闸
+    b = _sp.run([sys.executable, '工具/欠账闸.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and b.returncode == 0, a.stdout.strip()[-100:] + '｜' + b.stdout.strip()[-16:]
 
 
 def chk_duizhang_yushai():

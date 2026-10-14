@@ -3894,7 +3894,9 @@ def chk_zhangliao():
     a = _sp.run([sys.executable, '工具/章料.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     # ★1014 并验 欠账闸（主案 G 号落没落正文；取白文用 章料.章档）——只验自测；全量之判待 W26 还清後再升为闸
     b = _sp.run([sys.executable, '工具/欠账闸.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and b.returncode == 0, a.stdout.strip()[-100:] + '｜' + b.stdout.strip()[-16:]
+    # ★1014 并验 还账（W26：G 号落正文之译单之验、施；行号不移）
+    c = _sp.run([sys.executable, '工具/还账.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    return a.returncode == 0 and b.returncode == 0 and c.returncode == 0, a.stdout.strip()[-90:] + '｜' + b.stdout.strip()[-16:] + '｜' + c.stdout.strip()[-14:]
 
 
 def chk_duizhang_yushai():

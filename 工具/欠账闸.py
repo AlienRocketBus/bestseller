@@ -21,7 +21,7 @@ try:
     import _账
 except Exception:
     pass
-import os, sys, re, glob
+import os, sys, re, glob, json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 默认 = os.path.join('设定', '剧情庭题', 'D6_床上那人_六审主案.md')
@@ -95,11 +95,21 @@ def 判一(处, 式, 原, 改, 取白=白文):
     return '未执行', '原「%s」%s%s' % (原句[:20], '仍在' if 原在 else '已去', '' if 改在 is None else ('、改作在' if 改在 else '、改作不在'))
 
 
+def 施账(root=ROOT):
+    """还账器施过之号（设定/还账账.json）——★1014 W26：闸之字判於多处之号、後添、骨记有盲区（G7、G24、G39、G53、G54、G70、G71、G72 实施而判未执行），施过即认。"""
+    p = os.path.join(root, '设定', '还账账.json')
+    return json.load(open(p, encoding='utf-8')) if os.path.exists(p) else {}
+
+
 def 查(档=默认, root=ROOT, 章=None):
     t = open(os.path.join(root, 档), encoding='utf-8').read()
     结 = []
+    施 = 施账(root) if 档 == 默认 else {}
     for 号, 处, 式, 原, 改, 由 in 行们(t):
         if 章 is not None and str(章) not in (由 + 处):
+            continue
+        if 号 in 施:
+            结.append((号, 处[:30], 式[:16], '已执行', '还账施 %d 条（%s 章）' % (施[号]['条'], len(施[号]['章']))))
             continue
         判, 说 = 判一(处, 式, 原, 改, lambda n: 白文(n, root))
         结.append((号, 处[:30], 式[:16], 判, 说))

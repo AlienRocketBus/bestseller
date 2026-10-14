@@ -283,6 +283,7 @@ def 验(ops们, 规, 取章=读章):
     """ops们：[(单名, op)…] 依序 → (红[], 黄[], 文{章: (档, 旧行们, 新行们)}, 计{})"""
     护, 许, 全护 = 护们(规['护'])
     红, 黄, 文, 计, 添字 = [], [], {}, {}, {}
+    顶许们 = {o.get('G'): o['顶许'] for _, o in ops们 if (o.get('顶许') or '').strip()}   # 裁文之句逐字而逾其式栏之字顶（G13 多一字）：总编辑许，列黄
     for 单名, o in ops们:
         标 = '%s·%s %s:%s' % (单名, o.get('G', '?'), o.get('章'), o.get('行'))
         def R(x): 红.append('%s｜%s' % (标, x))
@@ -393,7 +394,9 @@ def 验(ops们, 规, 取章=读章):
         顶 = 字顶(规['G'][G].split('|')[3] if 规['G'][G].count('|') > 3 else '')
         if 顶 is None:
             continue
-        if h > 顶:
+        if h > 顶 and G in 顶许们:
+            黄.append('%s｜所添汉字 %d 逾顶 %d（总编辑顶许：%s）' % (G, h, 顶, 顶许们[G][:40]))
+        elif h > 顶:
             红.append('%s｜所添汉字 %d 逾顶 %d' % (G, h, 顶))
         elif t > 顶:
             黄.append('%s｜所添连标点 %d 逾顶 %d（汉字 %d 未逾）' % (G, t, 顶, h))
@@ -445,6 +448,31 @@ def 窗(文, 宽=2):
                     if 版[k].strip() or 旧[k] != 今[k]:
                         出.append('%s %d｜%s' % ('●' if 旧[k] != 今[k] else ' ', k + 1, 版[k] if 版[k].strip() else '（空）'))
     return '\n'.join(出)
+
+
+账档 = os.path.join('设定', '还账账.json')
+
+
+def 记账(ops, 单名们, root=ROOT, 时=None):
+    """施毕，记每一 G 号施了几条、在哪几章——欠账闸先认此账（多处之号、後添、骨记，闸之字判有盲区；施过即是施过）。"""
+    import datetime
+    p = os.path.join(root, 账档)
+    账 = json.load(open(p, encoding='utf-8')) if os.path.exists(p) else {}
+    时 = 时 or datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ')
+    for o in ops:
+        G = o.get('G')
+        if not G:
+            continue
+        r = 账.setdefault(G, {'条': 0, '章': [], '单': [], '时': 时})
+        r['条'] += 1
+        if int(o['章']) not in r['章']:
+            r['章'].append(int(o['章']))
+        for 名 in 单名们:
+            if 名 not in r['单']:
+                r['单'].append(名)
+        r['时'] = 时
+    json.dump(账, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+    return 账
 
 
 # ───────── 料 ─────────
@@ -558,6 +586,7 @@ def 自测():
     共 += 1; ok += [(c, n, k) for c, n, k, _ in 余章条('| 217（五十九） | 11 甲「四十来天」；35 庚「两个来月」 | 7 丁 |')] == [(217, 11, '甲'), (217, 35, '庚')]
     共 += 1; ok += [(c, n) for c, n, _, _ in 余章条('| 232:33、41 | 「三个月」 | 己 | 「一个多月」 |')] == [(232, 33), (232, 41)] and 余章条('| 235:389 | 「甲」 | 丙 | 「乙」 |') == []
     共 += 1; ok += 表新('| 235:389 | 「那一角这三个月」 | 丙 | 「这四十来天」 |') == '这四十来天' and 表新('11 甲「那股味她四十来天来闻惯了」') == '那股味她四十来天来闻惯了' and 表新('| 275:13 | 「先前」 | 丁 | 照留（久） |') is None and 表新('| 201:289 | 「x」 | 丙 | 「四十四天，一天一页……」 |') == '四十四天，一天一页'
+    T([{'G': 'G4', '章': 91, '行': 1, '式': '添', '新': '多多多。', '顶许': '裁文之句逐字'}], False)   # 顶许 → 黄
     共 += 1; ok += bool(数词.match('三个多月')) and bool(数词.match('两个多月')) and not 数词.match('她三个月')
     共 += 1; ok += 引(令文('| G9 | 88:3 | 改 | 「甲」 | 「乙」 | 与 201:29 相抵 |'), 88) == {88: {3}}   # 由栏之 201:29 ⛔作可改
     共 += 1; ok += 引(令文('| G29 | 235:325—329 | 此段改为（照留 381—401） | 「甲」 | 「乙」 | 由 |'), 235) == {235: {325, 326, 327, 328, 329}}
@@ -636,6 +665,7 @@ if __name__ == '__main__':
                 if 旧 != 今:
                     open(f, 'w', encoding='utf-8').write('\n'.join(今))
                     print('  施 第%d章 %d 行' % (章, 动[章]))
+            记账([o for _, o in 读单们([x for x in a[1:] if x != '--全'])], [os.path.basename(x) for x in a[1:] if x != '--全'])
         sys.exit(1 if 红 else 0)
     print(__doc__)
     sys.exit(2)

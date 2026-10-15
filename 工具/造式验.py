@@ -110,6 +110,8 @@ def 料全(n, root=ROOT):
     for k in (n - 1, n - 2):
         if not 正文档(k, root):
             坏.append('第%d章正文不在' % k)
+    import 剧情庭之关                          # ★1015 左移（W43 逮：391 写毕封版时方红）：动笔前，本段须已有剧情庭之势
+    坏 += 剧情庭之关.查(root, 章=n)
     return 坏
 
 

@@ -2,7 +2,9 @@
 """剧情庭之关（0927·作者令「这个机制一定要跑起来」）：
 自第 381 章起，每十章一段（381—390、391—400……）；段内已有章封版（版本/第N章/_十一轮.json 在）者，
 须有 设定/剧情庭_势_第<段首>段.md（剧情庭「式：新」所裁之走向），且其内含「裁」字样；缺即红。
-见 设定/选剧情之律.md §四。用法：python3 工具/剧情庭之关.py ｜ --自测
+见 设定/选剧情之律.md §四。用法：python3 工具/剧情庭之关.py ｜ --章 N（动笔前：N 所在之段须已有势）｜ --自测
+★1015 进化（W43 逮）：①旧只认「裁」一字——第381段之档自写「此裁无效」亦过；今自注无效者须有「代裁：」一行，所点之档俱在盘上，方算有势。
+  ②旧只在封版後验（391 已写才红）；今 --章 N 供动笔前之验，造式验 --料 调之（左移）。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -20,7 +22,26 @@ def 段首(n):
     return 起 + (n - 起) // 10 * 10
 
 
-def 查(root=ROOT):
+def 有势(s, root=ROOT):
+    f = os.path.join(root, '设定', '剧情庭_势_第%d段.md' % s)
+    if not os.path.exists(f):
+        return False
+    t = open(f, encoding='utf-8', errors='replace').read()
+    if '裁' not in t:
+        return False
+    if '此裁无效' in t:                       # 自注无效：须「代裁：」点出真裁之档，且俱在
+        m = re.search(r'^代裁：(.+)$', t, re.M)
+        档们 = re.findall(r'设定/[^\s、，,；;）)]+\.md', m.group(1)) if m else []
+        return bool(档们) and all(os.path.exists(os.path.join(root, x)) for x in 档们)
+    return True
+
+
+def 查(root=ROOT, 章=None):
+    if 章 is not None:                        # 动笔前之验
+        if 章 < 起:
+            return []
+        s = 段首(章)
+        return [] if 有势(s, root) else ['第%d—%d段无剧情庭之势（第%d章动笔前须先裁：工具/席/剧情庭.js 式段）' % (s, s + 9, 章)]
     红 = []
     段 = set()
     for d in glob.glob(os.path.join(root, '版本', '第*章')):
@@ -28,8 +49,7 @@ def 查(root=ROOT):
         if m and int(m.group(1)) >= 起 and os.path.exists(os.path.join(d, '_十一轮.json')):
             段.add(段首(int(m.group(1))))
     for s in sorted(段):
-        f = os.path.join(root, '设定', '剧情庭_势_第%d段.md' % s)
-        if not os.path.exists(f) or '裁' not in open(f, encoding='utf-8', errors='replace').read():
+        if not 有势(s, root):
             红.append('第%d—%d段无剧情庭之势' % (s, s + 9))
     return 红
 
@@ -48,6 +68,15 @@ def 自测():
         d2 = os.path.join(t, '版本', '第380章'); os.makedirs(d2)
         open(os.path.join(d2, '_十一轮.json'), 'w').write('{}')
         共 += 1; ok += (查(t) == [])                      # 段前不查
+        共 += 1; ok += (len(查(t, 章=391)) == 1 and 查(t, 章=385) == [] and 查(t, 章=300) == [])   # 动笔前：段无势即红
+        f = os.path.join(t, '设定', '剧情庭_势_第381段.md')
+        open(f, 'w').write('## ⛔此裁无效\n（原文·无效）裁：守原')
+        共 += 1; ok += (len(查(t)) == 1)                  # 自注无效而无代裁 → 红
+        open(os.path.join(t, '设定', '真裁.md'), 'w').write('裁')
+        open(f, 'w').write('## ⛔此裁无效\n代裁：设定/真裁.md、设定/无此档.md\n裁')
+        共 += 1; ok += (len(查(t)) == 1)                  # 代裁所点之档有缺 → 红
+        open(f, 'w').write('## ⛔此裁无效\n代裁：设定/真裁.md\n裁')
+        共 += 1; ok += (查(t) == [])
     finally:
         shutil.rmtree(t)
     print('剧情庭之关·自测 %d/%d' % (ok, 共))
@@ -57,8 +86,9 @@ def 自测():
 if __name__ == '__main__':
     if sys.argv[1:] == ['--自测']:
         sys.exit(0 if 自测() else 1)
-    红 = 查()
+    a = sys.argv[1:]
+    红 = 查(章=int(a[a.index('--章') + 1])) if '--章' in a else 查()
     if 红:
-        print('⛔ 剧情庭之关：%s（选剧情之律§四：每段动笔前先过剧情庭·式新）' % '｜'.join(红))
+        print('⛔ 剧情庭之关：%s（选剧情之律§四：每段动笔前先过剧情庭·式段或式新）' % '｜'.join(红))
         sys.exit(1)
     print('✓ 剧情庭之关：已动笔之段皆有剧情庭所裁之势')

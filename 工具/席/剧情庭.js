@@ -3,7 +3,7 @@ export const meta = {
   description: '剧情庭：小说家、总编辑、顶尖读者、剧本师、挑刺王独立各出三案，默认守原，唯确更好看方改（选剧情之律·0927）',
   phases: [{ title: '验案' }, { title: '独立出案' }, { title: '挑刺' }, { title: '独立复评' }, { title: '裁' }],
 }
-// args: { 题: 题档路径, 名: 输出名, 式: '改'（审既定剧情，默认守原）|'新'（想下一步走向） }
+// args: { 题: 题档路径, 名: 输出名, 式: '改'（审既定剧情，默认守原）|'新'（想下一步走向）|'段'（每十章一段之势·1015 立·虫洞：段案已立者审之，默认守原——二席出案、一席并攻、二异席复评，六席代二十二席） }
 const 题 = args && args.题
 const 名 = (args && args.名) || 'untitled'
 const 式 = (args && args.式) || '改'
@@ -32,7 +32,7 @@ const 底 = `你在长篇小说仓库 /home/user/the-novel 里。先读：
 ⭐【律⑳·总编辑之权】⛔不许写「交作者裁」「待作者定」「报作者」而停下——凡须裁之事，照「让这本书更好看」当场裁定并写明其由；⛔此权只朝书更好看一个方向用：不许凑字、造高潮、放宽闸。
 ⛔尽全力：绞尽脑汁把这一处想到最好——不是交差，是要放进中国第一的小说里。`
 
-const 守原 = 式 === '改'
+const 守原 = (式 === '改' || 式 === '段')
   ? `【审原与改到满分之律】许多原剧情是最初草定的，不一定好。你先以「满分（10＝世界名著、中国第一最好看的小说里的那一处）」为尺，严审「现文」：它离满分差在哪、差几分，逐点说。
 然後⛔**必须独立想出三个真不同的改法**，每一个都朝满分去改，写成可照着改的方案：改在哪、改後怎么走、人物之所为与其由、给读者的那一下；并对照现文逐点说读者在哪一刻比原来更放不下、更震、更信；附立得住之据与改文之价。⛔不许敷衍：三案须各自尽全力，不许一案三变、不许凑数。
 （题档若列有诸候选案，你可取其长，但三案须是你自己想到的最好者。）
@@ -101,31 +101,46 @@ Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔
   return { 题, 式, 轮, 过, 裁 }
 }
 
+// ★式「段」（1015 立·W43）：出案只小说家、剧本师二席；挑刺王一席并攻全池；复评取未出案之总编辑、顶尖读者二席（⛔自评己案）；裁席⛔提交（主环照封版之序提交）
+const 段 = 式 === '段'
+const 出席 = 段 ? 席.filter(s => s.k === '小说家' || s.k === '剧本师') : 席
+const 评席 = 段 ? 席.filter(s => s.k === '总编辑' || s.k === '顶尖读者') : [...席, { k: '挑刺王', 身: '挑刺王' }]
+const 交 = 段 ? '⛔不提交、⛔git add（主环提交）。' : '把该档 git add（明路径）并 commit（末两行：\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。'
+
 phase('独立出案')
-const 一 = await parallel(席.map(s => () => agent(`${底}
+const 一 = await parallel(出席.map(s => () => agent(`${底}
 
 你是【${s.身}】（剧情庭·${s.k}席）。⛔独立：你看不到也不许揣测他席。（输出字段：current_*＝对现文之判；keep＝守原；proposals＝你的案，各含 name/plan/why_better/soundness/rewrite_cost）你看：${s.看}。
 先判「现文」（题档所列之现行剧情；若是新想之题，则判题档所列之既定方向）：好看、立得住各 0—10，长短。
 ${守原}
 `, { label: `出案·${s.k}`, phase: '独立出案', schema: 案式, effort: 'max' })))
 const 池 = []
-一.forEach((r, i) => { if (r) (r.proposals || []).forEach((a, j) => 池.push({ id: `${席[i].k}${j + 1}`, by: 席[i].k, ...a })) })
-if (一.some(r => !r)) throw new Error('出案之席有失（'+一.map((r,i)=>r?'':席[i].k).join('')+'）——⛔不许以缺席作守原')
+一.forEach((r, i) => { if (r) (r.proposals || []).forEach((a, j) => 池.push({ id: `${出席[i].k}${j + 1}`, by: 出席[i].k, ...a })) })
+if (一.some(r => !r)) throw new Error('出案之席有失（'+一.map((r,i)=>r?'':出席[i].k).join('')+'）——⛔不许以缺席作守原')
 const 守原数 = 一.filter(r => r && r.keep).length
 log(`出案 ${池.length} 个；守原 ${守原数} 席`)
 
 if (!池.length) {
-  const 裁 = await agent(`${底}\n四席皆守原：${JSON.stringify(一)}\n写 \`设定/剧情庭_${名}.md\`：裁「守原」，列四席之判与由，并写「圣经无改」及其由。git add 该档并 commit（末两行：\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回一句摘要。`, { label: '裁·守原', phase: '裁', effort: 'max' })
+  const 裁 = await agent(`${底}\n诸席皆守原：${JSON.stringify(一)}\n写 \`设定/剧情庭_${名}.md\`：裁「守原」，列诸席之判与由，并写「圣经无改」及其由。${交}返回一句摘要。`, { label: '裁·守原', phase: '裁', effort: 'max' })
   return { 题, 结: '守原', 裁 }
 }
 
 phase('挑刺')
-const 刺 = await parallel(池.map(a => () => agent(`${底}
+const 刺式 = { type: 'object', properties: { flaw: { type: 'string' }, level: { type: 'string', enum: ['致命', '可治', '轻'] }, remedy: { type: 'string' }, better_claim_true: { type: 'string' } }, required: ['flaw', 'level', 'better_claim_true'] }
+const 刺 = 段 ? await agent(`${底}
+
+你是【挑刺王】，专挑逻辑与剧情之刺，⛔不给情面。池中 ${池.length} 案，逐案攻之（每案一条，id 照池）：
+${JSON.stringify(池, null, 1)}
+每案找出它最致命的刺（因果立不立得住、人会不会这样做、读者会问的「他为什么不……」、与书中之律相抵、它说的「比现文更好」是不是真的）。⛔与已写正文相抵不算刺，只记改文之价。判：致命／可治／轻；可治者给治法。`, { label: '刺·并攻', phase: '挑刺', effort: 'max',
+  schema: { type: 'object', properties: { attacks: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, ...刺式.properties }, required: ['id', ...刺式.required] } } }, required: ['attacks'] } })
+  .then(t => t && 池.map(a => ({ ...a, flaw: (t.attacks || []).find(x => x.id === a.id) || null })))
+  .then(r => r && r.every(a => a.flaw) ? r : [null])
+  : await parallel(池.map(a => () => agent(`${底}
 
 你是【挑刺王】，专挑逻辑与剧情之刺，⛔不给情面。攻这一案：
 ${JSON.stringify(a, null, 1)}
 找出它最致命的刺（因果立不立得住、人会不会这样做、读者会问的「他为什么不……」、与书中之律相抵、它说的「比现文更好」是不是真的）。⛔与已写正文相抵不算刺，只记改文之价。判：致命／可治／轻；可治者给治法。`, { label: `刺·${a.id}`, phase: '挑刺', effort: 'max',
-  schema: { type: 'object', properties: { flaw: { type: 'string' }, level: { type: 'string', enum: ['致命', '可治', '轻'] }, remedy: { type: 'string' }, better_claim_true: { type: 'string' } }, required: ['flaw', 'level', 'better_claim_true'] } })
+  schema: 刺式 })
   .then(t => ({ ...a, flaw: t }))))
 if (刺.some(t => !t)) throw new Error('挑刺之席有失')
 const 池刺 = 刺
@@ -134,7 +149,7 @@ phase('独立复评')
 const 评式 = { type: 'object', properties: {
   scores: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, appeal: { type: 'number' }, sound: { type: 'number' }, beats_current: { type: 'boolean' }, reason: { type: 'string' } }, required: ['id', 'appeal', 'sound', 'beats_current', 'reason'] } },
   current_appeal: { type: 'number' }, first_choice: { type: 'string' } }, required: ['scores', 'current_appeal', 'first_choice'] }
-const 二 = await parallel([...席, { k: '挑刺王', 身: '挑刺王' }].map(s => () => agent(`${底}
+const 二 = await parallel(评席.map(s => () => agent(`${底}
 
 你是【${s.身}】（剧情庭·${s.k}席·独立复评）。⛔不许看作者姓名、不许依谁出的案而偏；只凭案本身。
 池中诸案（含挑刺王之刺）：
@@ -162,8 +177,6 @@ const 裁 = await agent(`${底}
 【独立复评】${JSON.stringify(评, null, 1)}
 【机械之计】现文好看均 ${现均.toFixed(2)}；诸案 ${JSON.stringify(计)}；过门者（立得住均≥7、好看均高现文≥1、过半判胜）：${JSON.stringify(可.map(c => c.id))}
 ⛔过门者无，则裁「守原」（可吸收诸案里不改剧情走向之小长处，须逐条说明）。过门者有，只能在过门者中择一（可嫁接他案之长，但不得带进未治之刺）。
-写 \`设定/剧情庭_${名}.md\`：〇、⛔**随裁即改圣经**（圣经随裁之律·0927 作者令「圣经不是一成不变的」）：裁定若改剧情，当场以 \`python3 工具/改单.py --立 …\` 立改单，把裁定之案写进 设定/00_镇冢秘术_唯一总圣经.md（势之裁写进 设定/02_余章之势_总纲.md），相关处写「据 剧情庭_${名}」，旧设定改掉或标作废；裁守原者於档中写「圣经无改」并其由。一、裁定（守原，或所择之案写到能照着改圣经与正文的细）；二、为何它比现文与落选诸案更好看（逐一对照）；三、挑刺王之刺如何治；四、改文之价（改哪几章何处）；五、分数表与各席首选。
-git add 该档（明路径）并 commit（末两行：
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回摘要一段。`, { label: '裁', phase: '裁', effort: 'max' })
+写 \`设定/剧情庭_${名}.md\`：〇、⛔**随裁即改圣经**（圣经随裁之律·0927 作者令「圣经不是一成不变的」）：裁定若改剧情，当场以 \`python3 工具/改单.py --立 …\` 立改单，把裁定之案写进 设定/00_镇冢秘术_唯一总圣经.md（势之裁写进 设定/02_余章之势_总纲.md），相关处写「据 剧情庭_${名}」，旧设定改掉或标作废；裁守原者於档中写「圣经无改」并其由。${段 ? '（式段：裁定若改，并改题档所指之段案与余章总案之行，写「据 剧情庭_' + 名 + '」。）' : ''}一、裁定（守原，或所择之案写到能照着改圣经与正文的细）；二、为何它比现文与落选诸案更好看（逐一对照）；三、挑刺王之刺如何治；四、改文之价（改哪几章何处）；五、分数表与各席首选。
+${交}返回摘要一段。`, { label: '裁', phase: '裁', effort: 'max' })
 return { 题, 过门: 可, 现均, 裁 }

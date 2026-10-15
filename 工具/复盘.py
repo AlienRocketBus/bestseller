@@ -106,6 +106,15 @@ def 验(root=ROOT):
                     m = re.search(r'^- %s：(.*)$' % 项, 虹.group(1), re.M)
                     if not m or not m.group(1).strip() or m.group(1).strip().startswith('（填'):
                         坏.append('%s 之虹吸之问缺「%s」' % (名, 项))
+        if m日 and m日.group(1) >= '1015':                 # ★1015 起之复盘须答完美之问
+            完 = re.search(r'^## 完美之问[^\n]*\n(.*?)(?=^## |\Z)', t, re.M | re.S)
+            if not 完:
+                坏.append('%s 缺「## 完美之问」（残缺、独立之眼、未验之断）' % 名)
+            else:
+                for 项 in ('残缺', '独立之眼', '未验之断'):
+                    m = re.search(r'^- %s：(.*)$' % 项, 完.group(1), re.M)
+                    if not m or not m.group(1).strip() or m.group(1).strip().startswith('（填'):
+                        坏.append('%s 之完美之问缺「%s」' % (名, 项))
         坑节 = t.split('## 坑', 1)[1] if '## 坑' in t else ''
         号 = 坑号们(坑节)
         if '## 坑' in t and not re.search(r'^\s*[-*]?\s*无新坑', 坑节, re.M) and not 号:
@@ -230,6 +239,10 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None):
          '- 可流：（填：本件之活有无会重复者；已做成流水线之一环否——封版／记席／全测；未做者写其计）',
          '- 顺势：（填：本件有无另起一席专办、本可由已在做之事顺带产出者）',
          '- 下一回之法：（填：照上三问，此类之活下回之法比本回好在哪——具体到改哪档）', '',
+         '## 完美之问（1015 作者令「所有的一切都必须达到绝对的完美」·法典一「完美之律」）', '',
+         '- 残缺：（填：本件交出後仍知之缺，逐条带限；无则写「无」）',
+         '- 独立之眼：（填：谁验——驳席、盲读、负测、对照之试；逮了什么、治了没有）',
+         '- 未验之断：（填：未经跑或测之断语；无则写「无」，有则逐条写其验之计）', '',
          '## 坑', '', '（每条点坑账之号：新坑先 `python3 工具/方法坑账.py --立 名 根 治 计`；旧坑复踩 `--复踩 号 "……；治：……"`；并入法典。无则写「无新坑」）', '']
     open(出, 'w', encoding='utf-8').write('\n'.join(文))
     print('✓ 起草 %s——「产出」「与上回比」「无用功」之判「刀刃」「改进方案」「坑」须总编辑亲填' % os.path.relpath(出, root))
@@ -249,7 +262,7 @@ def 自测():
             f = 起草('W9', '测', [rd], t, '1009')
             g = 起草('W9', '测', [rd], t, '1009')
         s = open(f, encoding='utf-8').read() if f else ''
-        ok = bool(f) and g is None and all(k in s for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑', '## 流程', '## 制作过程')) and '机器之活' in s and '主环非写作之活' in s and '## 虹吸之问' in s
+        ok = bool(f) and g is None and all(k in s for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑', '## 流程', '## 制作过程')) and '机器之活' in s and '主环非写作之活' in s and '## 虹吸之问' in s and '## 完美之问' in s
         ok = ok and 验(t)[0] is False                                   # 草稿之坑节、效节未填 → 闸红
         s2 = open(f, encoding='utf-8').read()
         s2 = re.sub(r'- 类：.*', '- 类：核验', s2); s2 = re.sub(r'- 目标：.*', '- 目标：测', s2)

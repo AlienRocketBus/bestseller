@@ -1248,7 +1248,7 @@
     }
    ],
    "验": "封版#392；致命 0；记席 ≤40 回、≤$4.5；执笔 flaws 不再同报料缺原句",
-   "续之令": "Workflow({scriptPath:'工具/席/造章.js', args:{章:392, 重:'中', 魂路:['物证','咬合','不说']}})；断了以 resumeFromRunId 续",
+   "续之令": "Workflow({scriptPath:'工具/席/造章.js', resumeFromRunId:'wf_a35ca383-e3e', args:{章:392, 重:'中', 魂路:['物证','咬合','不说']}})；新会话去 resumeFromRunId",
    "依": [
     "W41",
     "W43"

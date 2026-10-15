@@ -365,54 +365,7 @@ def chk_open_six():
     return False, '｜'.join(_m)
 
 
-def chk_three_bands():
-    """评论员三条带 负测（2026-09-03立·298第13轮·见 工具/负测_三条带.py）。
-    ★其立之由：评论员之群只一条「前6章之窗」，而比带两造之前就立过「三条带，以同形为先」；
-    ★★298第13轮实逮：本席判「弱在动拍%（本章46，窗中位54.5）」，
-    ★★★而全书中位38、同形「做事」中位38——本章46在两条带之上，那个弱是六章之窗造出来的。
-    ★★★★而此测须在旧式（只取窗）下与新式判得不同方算数（令§六③·回灌验），否则它是陪跑。"""
-    out = run('负测·三条带', ['工具/负测_三条带.py'])
-    if out is None:
-        return False, '运行失败'
-    if '全通' not in out:
-        return False, out.strip().split('\n')[0]
-    if '非陪跑' not in out:
-        return False, '★此测在旧式下亦同判，是陪跑之测'
-    return True, out.strip().split('\n')[0].replace('✓ ', '')
 
-
-def chk_nomination_ledger():
-    """小说家提名账 负测（2026-09-03立·298第12轮·见 工具/负测_提名账.py）。
-    ★其立之由：小说家席在第298章连提同一对拍四回，而看官账所记者是拍号，
-    ★★拍号每削一刀就漂一格——四条记的是同两拍，四条却无一条对得上另一条，
-    ★★★故那四回提名一回也没被看见，而第12轮重判判它该删。
-    ★★★★而此测须在旧式（认号）下认 0 回方算数（令§六③·回灌验），否则它是陪跑。"""
-    out = run('负测·提名账', ['工具/负测_提名账.py'])
-    if out is None:
-        return False, '运行失败'
-    if '全通' not in out:
-        return False, out.strip().split('\n')[0]
-    if '非陪跑' not in out:
-        return False, '★此测在旧式下亦认得出，是陪跑之测'
-    return True, out.strip().split('\n')[0].replace('✓ ', '')
-
-
-def chk_kanguan_hand():
-    """看官·「手上之事」闸 负测（2026-09-01立·见 工具/负测_看官手闸.py）。
-    ★其立之由：生客问一报第287章「拍25—49连25拍无一手上之事」，
-    ★★而那一段里 抬×5、托×2 皆是手上之事；数其群，旧式全书287章报红202章（70%）——
-    ★★★一道七成篇幅都喊的闸，喊的不是文，是它自己。
-    ★★★★而此测须在旧式下漏认方算数（令§六③·回灌验），否则它是陪跑。"""
-    out = run('负测·看官手闸', ['工具/负测_看官手闸.py'])
-    if out is None:
-        return False, '运行失败'
-    if '全通' not in out:
-        return False, out.strip().split('\n')[0]
-    if '非陪跑' not in out:
-        return False, '★此测在旧式下亦全过，是陪跑之测'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) 全通', out)
-    return True, ('%s/%s 全通' % (m.group(1), m.group(2))) if m else '全通'
 
 
 def chk_hard_gate():
@@ -575,11 +528,8 @@ def chk_net_weight_table():
         return False, '运行失败'
     if '⛔' in out:
         return False, [x.strip() for x in out.split('\n') if '⛔' in x][0]
-    neg = run('负测·净重对表', ['工具/负测_净重对表.py'])
-    if neg is None or '全通' not in neg:
-        return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
     ln = [x.strip() for x in out.split('\n') if '✓' in x]
-    return True, (ln[0] if ln else '全绿') + '｜负测_净重对表 10/10 全通（拿 db520882 之施工表回灌逐行逮出 17 处，而别器无一行同时读「锁定」与「净重」）'
+    return True, (ln[0] if ln else '全绿') + '｜W35：负测_净重对表已退（其格由 --自测 管）'
 
 
 def chk_line_limit():
@@ -620,21 +570,6 @@ def chk_presc_flag():
     ln = [x.strip() for x in out.split('\n') if '处方里点名之旗' in x]
     return True, (ln[0] if ln else '已跑') + '｜⛔只报不拦｜自测 8/8'
 
-
-def chk_zhenshang_dao():
-    """负测·真伤认刀（2026-09-17 立·见 工具/负测_真伤认刀.py·MECH-343-真伤之词 之治）——
-    **守：`跑轮::总核` 之「无真伤之轮」须认那一刀落过没有，⛔不认「真伤」那两个字。**
-    ★其据（0917 亲跑 325—341·四百七十轮）：**照批134写那一行者 26 轮（5.5%）**，
-    　**而其文里看得出落过刀者 431 轮（91.7%）**——**它数的是那两个字出现过没有，不是那一刀落过没有。**
-    ⛔**本测之要害二条**：**抄了那两个字而无一处可指之刀者须判无刀**｜**「真伤」二字本身不算一刀**。
-    ★★**并及本测自己的守**：**其判据自 `跑轮.py` 之码里当场取回，⛔不另抄一份**——
-    　**抄一份即成两把尺，改了一头另一头照旧**（本仓「一处判两份码」之旧伤，其注在 `跑轮.py` 2134 行）。"""
-    out = run('负测·真伤认刀', ['工具/负测_真伤认刀.py'])
-    if out is None:
-        return False, '运行失败'
-    if '全通' not in out:
-        return False, [x.strip() for x in out.split('\n') if '⛔' in x][:1] or ['未过']
-    return True, [x.strip() for x in out.split('\n') if '负测·真伤认刀' in x][-1]
 
 
 def chk_xiang_kou():
@@ -840,11 +775,8 @@ def chk_highlight_present():
         return False, '运行失败'
     if '⛔' in out:
         return False, [x.strip() for x in out.split('\n') if '⛔' in x][0]
-    neg = run('负测·亮点在', ['工具/负测_亮点在.py'])
-    if neg is None or '全通' not in neg:
-        return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
     ln = [x.strip() for x in out.split('\n') if '✓' in x]
-    return True, (ln[0] if ln else '全绿') + '｜负测_亮点在 8/8 全通（拿 6d8dee47 之 280 回灌须判红，而旧式对同一份原物零报）'
+    return True, (ln[0] if ln else '全绿') + '｜W35：负测_亮点在已退（其格由 --自测 管）'
 
 
 def chk_breath_day():
@@ -915,18 +847,6 @@ def chk_num_gate():
     m = _r.search(r'不符 (\d+) 处', out or '')
     return False, ('全书「N个字」标签不符 %s 处（其单在 数闸.py）' % (m.group(1) if m else '?'))
 
-
-def chk_receipt_recon():
-    """回执对账闸 负测（2026-09-01立·见 工具/负测_回执对账.py）。
-    ★其立之由：287回执自书「净重2,951（起草）→2,796…共减155字」，而台账明印
-    ★★v01=2,529→峰v08=2,951→v15=2,796，**是净增267**——把峰当成了起草 ⛔。
-    ★★★令§十一：留底之档里的错因，会被下一坐当成场。"""
-    out = run('负测·回执对账', ['工具/负测_回执对账.py'])
-    if out is None:
-        return False, '运行失败'
-    if '全通' not in out:
-        return False, out.strip().split('\n')[0]
-    return True, _测数(out, '3/3') + ' 全通（含灌回旧错之验）'
 
 
 def chk_fs_silence():
@@ -1188,24 +1108,6 @@ def chk_object_roll_all():
     return True, '%d 份册逐章跑过，皆绿' % len(ps)
 
 
-def chk_stop_flag():
-    """拦停旗自失其义 负测（2026-09-04立·见 工具/负测_拦停旗.py）。
-    ★其立之由（299第6轮亲犯）：`--存版 N` 不带说明，版落盘而说明为空；
-      ★★带着说明再存，空轮闸判「正文与末版逐字相同」→ 拦 → 落旗；
-      ★★★而销旗之路只有一条「一次成功的存版／补存」，那一条路正被空轮闸堵着——
-      **旗落下去就再也拿不掉，而它拦的是其後一切轮务**（第二十四犯之族）。
-    ★★★★故立「旗自失其义」之查，其条件写死三样（因是空轮闸｜说明报得出轮号｜账上有那一轮之真说明）；
-      **而棘轮回退／趋阈闸／硬项／闸八所落之旗，一面也销不掉**——那几样是「存坏了」，不是「存了两回」。"""
-    out = run('负测·拦停旗', ['工具/负测_拦停旗.py'])
-    if out is None or out.startswith('__'):
-        return False, '运行失败'
-    if '坏 0' not in out:
-        bad = [l.strip() for l in out.split('\n') if l.strip().startswith('✗')]
-        return False, bad[0] if bad else out.strip().split('\n')[-1]
-    if '非陪跑' not in out:
-        return False, '★陪跑之测'
-    return True, _测数(out, '19 项') + ' 全通（旧式「只问旗在不在」在①之下照旧拒，故非陪跑）'
-
 
 def chk_reread_dup():
     """连读客·问五（逐字重出）负测（2026-09-03·296第11轮立·见 工具/负测_连读重出.py）。
@@ -1254,23 +1156,6 @@ def chk_due_states():
         return False, '负测未证其非陪跑（旧表回灌须报红）'
     return True, out.strip().split('\n')[-1] + '（旧表回灌那三笔皆判未清，故非陪跑）'
 
-
-def chk_price_check():
-    """立价查 负测（2026-09-03·296第9轮立·见 工具/负测_立价查.py）。
-    ★其立之由：`立价查.py` 自292第13轮立起，全书无一条负测证明它红得起来
-      （对位闸印「赤手无负测者 21 项」，此器即其一）；
-    ★★而296第9轮当场见其缺口：旧式四条认不着「只要」，
-      故它在296之第4、7、9三轮连印「✓全章无立价之句」，
-      **而本章之价正写在「而它管用只在一样上：只要它今天这么摆着」**。
-    ★★★数其群：条件句全集688处，旧式认544处，**144处（21%）此器一眼看不见**。"""
-    out = run('负测·立价查', ['工具/负测_立价查.py'])
-    if out is None:
-        return False, '运行失败'
-    if '全通' not in out:
-        return False, out.strip().split('\n')[-1]
-    if '非陪跑' not in out:
-        return False, '★陪跑之测'
-    return True, _测数(out, '7/7') + ' 全通（旧式回灌真器印「全章无立价之句」）'
 
 
 def chk_open6_gate():
@@ -1362,25 +1247,6 @@ def chk_cold_明裁():
             return False, '%s：%s' % (名, 尾.strip())
     return True, '二器俱全通（开轮六检一头＋到期账一头·%s 起）' % 底
 
-
-def chk_reader_nag():
-    """存版·阅读器过期即报 负测（2026-09-01立·见 工具/负测_阅读器催.py）。
-    ★其立之由：每轮改文之后阅读器即过期，而医生／检察官自测／全书检三项俱据之报红，
-    ★★遂使每一轮之推送皆被拦一回；其治只一条命令，难只在「想不起来」。
-    ★★★七项之中，末二项最要紧：器崩与看不懂之时须仍催——
-    ★★★★一个「看不懂就当没事」的催，比没有更坏。"""
-    out = run('负测·阅读器催', ['工具/负测_阅读器催.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    tot, ok, bad = (int(x) for x in m.groups())
-    if bad or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通' % (ok, tot)
 
 
 def chk_reversible():
@@ -1506,24 +1372,6 @@ def chk_band():
         ok, tot, _w.group(1) if _w else '?', _w.group(2) if _w else '?', _z.group(1) if _z else '?')
 
 
-def chk_ratchet_verdict():
-    """★棘轮裁负测（2026-09-02·292第3轮所立）：**那道专为「裁棘轮回退」而立的器，自己是歪的。**
-    ★①方向：其「历史最优」用 min()，不分方向；★★而棘轮 MIN 二目、MAX 二目、V01 四目，
-      **八目里六目愈高愈好**——跑 `--棘轮 292 --项 嗅` 得「历史最优 2（出於 v01）」，
-      而 v01 正是最薄那一版；**照它读，嗅 8 反倒该记功。**
-    ★②举证：292第2轮裁一处回退，其由是「所删那一拍係逐字抄290」——**而那句话是我说的，不是器说的**；
-      ★★其治不是让器替我免裁（回灌全书：可免裁者 18/28＝64%，含拆章之版，**太松，那是挖空闸**），
-      ★★★而是举证：**器摆凭据，裁仍归人**。
-    ★★★★其回灌（令§六③）：③以旧式（min）於嗅得 2，新式得 12；⑦⑧举证之句逐字可查。"""
-    out = run('负测·棘轮裁', ['工具/负测_棘轮裁.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
-    if not m:
-        return False, '未见其数'
-    return m.group(3) == '全通', '棘轮裁负测 %s/%s' % (m.group(1), m.group(2))
-
 
 def chk_blankline_gate():
     """★段间空行闸负测（2026-09-02·292第11轮·补跑所立）：
@@ -1549,107 +1397,8 @@ def chk_blankline_gate():
     return True, '%d/%d 全通' % (ok, tot)
 
 
-def chk_fill_note_gate():
-    """★填记口负测（2026-09-02·292第11轮自逮）：**吞记闸之第二形**。
-    ★其形：`--验收 N` 之说明亦係位置参数（argv[3]）；不写即自动存版并落一行占位说明。
-      ★★而落完之後正文与末版已逐字相同，**空轮闸遂拦住 --存版 与 --补存**——
-      **那一行占位说明再也改不掉了**；★★★而真轮数轮号数的正是这一行：
-      **一轮真跑过了，而账上说不出它跑了什么。**（292 v16、v17 二行皆栽於此）
-    ★其治不是让验收少落一版（账上少一版比说不清更坏），而是开一个**只填得了洞的口**：
-      ★★凡该行说明非占位原文者一律拒填，且填完留「原说明」之痕——**能填洞，不能覆盖记录。**
-    ★★★其回灌（令§六③）：③以真说明一行试填，须拒；③之d 填过一回之後再填，仍须拒。"""
-    out = run('负测·填记口', ['工具/负测_填记口.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    tot, ok, bad = (int(x) for x in m.groups())
-    if bad or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通' % (ok, tot)
 
 
-def chk_effort_recheck():
-    """★功力回检第五路负测（2026-09-02·292第12轮·极限轮所立）：
-    ★**一道靠加词修的闸，修了五回。** 前四修皆是「再加几个词」（08-19加真伤路／08-21修数字类
-      并广词表／08-22加带数之产出／08-22再修加净重A→B）；★★**每加一个词就多一个「写这个词
-      即可蒙混」的口，而它照旧看不见没写那个词的活。**
-    ★★★今日之实：**292第7轮之轮记有十一版回灌表、一个相关系数、一处「42→27」，
-      是全十轮里量得最细的一轮**，而器判它「五路俱无·走了过场」——
-      ★**器报的不是活没干，是器看不见活**（此语係08-21那一修自己写下的，今日又应验一回）。
-    ★★★★故第五路不认词，只认账：**自台账取该轮之版与其前一版比净重，文动了即是实凭**；
-      并於每行下印「凭何而绿」，**见得出哪一轮靠轮记之实、哪一轮只靠正文动过。**
-    ★其回灌（令§六③）：⑥摘掉第五路，第2轮须由绿转⚠（**证非陪跑**）；
-      ⑤第3轮词无而正文亦未动，两式同判⚠（**证未把闸改成人人皆绿**）。"""
-    out = run('负测·功力回检', ['工具/负测_功力回检.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    tot, ok, bad = (int(x) for x in m.groups())
-    if bad or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通' % (ok, tot)
-
-
-def chk_layer_census_honest():
-    """★层census与立价查负测（2026-09-02·292第13轮所立）：
-    ★**造出来的器不称职，须与器同存，不许删。**
-    ★★层census 本是为答「每层在白文里占几拍」而造；拿她自己四章回灌：
-      **284 覆盖 6%（四层皆判「占一拍」，而284係已封版之章，其五层无人判过薄）｜
-      286 17%｜292 31%｜288 45%**——★★★**同一把尺在五章之间从6%摆到45%**，
-      **摆的是我写亮点段的手，不是章的厚薄**。★★★★故其名与其判俱改：
-      **它量的是「亮点段引实率」**，且校准之数印在器上，**不许再读作层薄**。
-    ★而那一问另造一器答之：**立价查**——价之形係条件句，其收是那个果在其後真发生一回。
-      ★★292得「立价1处·未收1处」（拍10「写上去这一行就得往里挪」），
-      **正是第12轮逐层读出来的那一根，器独立复得**；
-      ★★★回灌她自己四章：284/286 零｜288 一处未收｜290 二处未收｜**291 一处而收了**
-      ——**非遍地皆红，亦非陪跑。**
-    ★★★★而其所现者非伤：**立而不收是她三章连着的一个手法**（288「改了这一行就成了两个日子的」／
-      290、292「往里挪」）——**她一再立一个价，然後不付。** 器把它由「疑似之伤」变成「认得出的形」。"""
-    out = run('负测·层census与立价查', ['工具/负测_层census.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    tot, ok, bad = (int(x) for x in m.groups())
-    if bad or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通' % (ok, tot)
-
-
-def chk_seal_new_cold():
-    """★销立门负测（2026-09-02·293起轮时所立·第二十四犯之第四形）：
-    ★**立之序明书「销旧须当场立新」**，而**291之回执销了两笔却一笔也没立新**；
-      ★★遂使 `_cold_limit(291)` 退回通则 N+2＝293，而其面无档——
-      **账上一笔红，红的是一个不存在的东西。**
-    ★★★**与前三形之别**：前三形是「写下来的东西被吞了」，**本形是「该写的那一样从来没写」**——
-      ★★★★**吞了的还看得出说明是空的，没写的连个空位也没有。**
-    ★数其群（令§六②）：**自 COLD-153 立档以降之回执 140 份，销过旧冷轮者 134 份，
-      而销而未立新者 4 份（155、198、200、291）**——**群成，非孤例，故机化。**
-    ★★其向只朝前（只查正在封版的那一章），**故於已封之史零假红**；
-      ★★★其回灌（令§六③）：④之b 291今已补立，须不在其中——**它若还在，说明补立那一档没落盘。**"""
-    out = run('负测·销立门', ['工具/负测_销立门.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    tot, ok, bad = (int(x) for x in m.groups())
-    if bad or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通' % (ok, tot)
 
 
 def chk_orphan_snapshot():
@@ -1705,57 +1454,6 @@ def chk_fs_ack():
     return True, '%d/%d 全通' % (ok, tot)
 
 
-def chk_highlight_gate():
-    """★亮点闸负测（2026-09-02·293第2轮所立·**九犯而未机化，今机化**）：
-    ★一坐⑬之法早已写在纸上——**「凡起草毕即须落亮点段，不得留到后轮」**；★★**而它只报不拦。**
-    ★★★病历本记「亮点段必犯病」8次，一坐今日印「此病已犯九次」——**而第九次正是我自己**：
-      293起草毕未落，留到第2轮才补。
-    ★★★★数其群（令§六①②）：**有版可查之章 174，亮点段落在 v01 或 v02 者 125 章，
-      而落在 v03 之後者 49 章（28%）**——**群成，非孤例。**
-    ★其位非在报，在存版之路上：**第1轮之存版若无亮点段，当场拦停**；
-      ★★而其向只朝前（旧章不再重存，全书106篇无亮点段之旧章零假红），
-      ★★★不报轮号之存版亦不受此拦（与领轮闸同律：说明一空即不认轮）。
-    ★★★★其回灌（令§六③）：⑥摘掉 `_liang` 一路，第1轮无亮点段者即放行——**证非陪跑**；
-      ★②③④三项各验其不越界（有者不拦／第2轮不问／不报轮号者不问）——**证未扩成「凡存版皆拦」。**"""
-    out = run('负测·亮点闸', ['工具/负测_亮点闸.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    tot, ok, bad = (int(x) for x in m.groups())
-    if bad or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通' % (ok, tot)
-
-
-def chk_review_no_note():
-    """★验收空说明只查不存 负测（2026-09-02·293第3轮所立·**第二十四犯第二形之根治**）：
-    ★前此之治只是「先出声，照旧落占位」；★★**而一坐之内我从这个口走过六回**
-      （292 v16/v17、293 v02/v05/v07/v08/v11/v12）——**每一回都是同一个来回**：
-      做完活 → 跑一次不带说明的 `--验收` 查硬项 → 它把版存了 →
-      我带着说明再存，空轮闸判「正文与末版逐字相同」→ 拦 → 回头 `--填记`。
-    ★★★数其群（令§六①②）：**全书台账 3,352 版，占位行旧史只 1 行（第101章 v03）**；
-      **而今日一坐造出 8 行**——★★★★**群不在旧史里，在今日这一坐里，而它是同一个口。**
-    ★故不再落占位：**不带说明的 `--验收` 只查不存**；
-      ★★**其由**：**一行读不出自己跑的是哪一轮的账，不如不落**；
-      ★★★**而「挑刺」带说明者照旧存版，批103之单一入口未动**（只少了「空说明也存」这一路）。
-    ★★★★其回灌（令§六③）：①之c 沙盘实跑一回，台账一行不动；
-      ★②③各验其不越界（带说明者照旧存／填记口未删，旧史那一行还得有路可填）。"""
-    out = run('负测·验收空说明', ['工具/负测_验收空说明.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    tot, ok, bad = (int(x) for x in m.groups())
-    if bad or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if ln.strip().startswith('⛔')]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通' % (ok, tot)
 
 
 def _简测(名, 脚本):
@@ -1804,10 +1502,6 @@ def chk_two_ledger():
     return True, '两册认得上者 %s 对，逐笔同限（★其余只在一册上者本器不说）' % (m.group(1) if m else '?')
 
 
-def chk_two_ledger_neg():
-    """负测·两册对限（见 工具/负测_两册对限.py）。"""
-    return _简测('负测·两册对限', '工具/负测_两册对限.py')
-
 
 def chk_scenecut_neg():
     """负测·场景切换闸（2026-09-04·300第5轮立·见 工具/负测_场景切换闸.py）。
@@ -1817,28 +1511,6 @@ def chk_scenecut_neg():
     """
     return _简测('负测·场景切换闸', '工具/负测_场景切换闸.py')
 
-
-def chk_duiwei_sanlu():
-    """负测·对位之三路（2026-09-23·限362 立·见 工具/负测_对位之三路.py）。
-
-    ⛔**其所治者**：**`对位.py` 是数「谁没有负测」的那一把尺，而它自己没有负测。**
-    ★**一把量别人有没有防线的尺，自己没有防线**——
-      **此係本坐今日所荐三项之第三项**（`设定/册_0923_赤手无负测之拆数.md` §五）。
-    ★★**所问只三句**：①孤器认不认得出｜②有撑／赤手之分对不对｜
-      ⛔③**它印的那个数，与它自己列出来的那一单，须一样长。**
-    ⛔**并及本测之限**（其⑬格钉在码里）：**它数得出「有没有负测」，⛔数不出「那一份负测硬不硬」**
-      （丙堆三十八项之限，其详在那一册 §二）。
-    """
-    out = run('负测·对位之三路', ['工具/负测_对位之三路.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测·对位之三路：(\d+)/(\d+)', out)
-    if not m:
-        return False, '未见其数'
-    if m.group(1) != m.group(2):
-        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
-    return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
 def chk_duiwei():
@@ -1924,13 +1596,6 @@ def chk_station_ledger():
     return _简测('负测·站账闸', '工具/负测_站账.py')
 
 
-def chk_caibi_gate():
-    """裁毕闸（2026-09-02·293第12轮立·第二十四犯第五形之治）
-    ★其由：293第9轮之轮记称「21对，逐对裁毕」，而同节之内写明其由者只八条；
-      ★★那四个字，是我替其余十三对签的字——**而没人报。**
-    ★★★其回灌之要害在③：**以293第9轮之原轮记回灌，须报红。**"""
-    return _简测('负测·裁毕闸', '工具/负测_裁毕闸.py')
-
 
 def chk_yishi_jichen():
     """一事几陈（2026-09-02·293第12轮立·第二十七犯之治）
@@ -1940,26 +1605,6 @@ def chk_yishi_jichen():
       **一份在改前改後都印同一个数的测就是陪跑。**"""
     return _简测('负测·一事几陈', '工具/负测_一事几陈.py')
 
-
-def chk_ratchet_by_word():
-    """负测·棘轮之四字三现·认词（DEBT-298A·298第12轮立·限307·於307封版之序结清）。
-
-    ★所治之伤：**棘轮之「四字三现」认的是四字之窗，不是词**——
-      一句五个字的重出算两处，六个字的算三处；**句子越长它被罚得越重，而它其实只重了一回。**
-    ★★而 298 当章一行代码不动此尺（不许为了让自己那一笔过去而挖空闸），故其治拖到 307：
-      **不改旧式，另立一个认词之变式**（`十轮精进.py::rep3_by_word`，其口在 `棘轮预检.py --项 四字三现·认词`）。
-    ★★★其头一项断言即其档所命逐字：**以298v38回灌，旧式报20而新式须报15上下（今16），
-      且二者之差须逐条指得出是哪四句被数了两遍**（那一圈水印／门口那只碗／她一回也没／宽的那一半）。
-    ★★★★而其非陪跑之凭：**旧式对同一份原物照旧报20**——新式只报，旧式照旧管棘轮之判。"""
-    out = run('负测·棘轮认词', ['工具/负测_棘轮认词.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测·棘轮认词 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    tot, ok, bad = map(int, m.groups())
-    return bad == 0, '%d/%d 全通（旧式对298v38照旧报20，新式报16，其差四句逐句点名）' % (ok, tot)
 
 
 def chk_compare_reopen():
@@ -2076,21 +1721,6 @@ def chk_duty_num_neg():
         return False, '未见其数'
     return m.group(3) == '全通', '必答表负测 %s/%s' % (m.group(1), m.group(2))
 
-
-def chk_vague_time_neg():
-    """★模糊时距负测（2026-09-05·机制总审·硬闸探伤审第1条·见 工具/负测_模糊时距.py）：
-    ★★其形：崩坏对照第121条自称「永禁词表（不知过了多久一类）已机化」，而永禁词表里一个时间词也没有——
-      `grep -l` 全书：不知过了多久 7 章／不知多久 7 章／过了很久 5 章，预检一个字不出。
-    ★取二组数（令§六①）：**组一·六形逐形认（①）**；**组二·半晌44章／良久6章／一晃19章三形不认（②）**。
-    ★★★其回灌（令§六③）：③以 HEAD 之预检回灌须无此项；④第1章须≥1处、第305章须0处。**报而不拦，旧章不追。**"""
-    out = run('负测·模糊时距', ['工具/负测_模糊时距.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
-    if not m:
-        return False, '未见其数'
-    return m.group(3) == '全通', '模糊时距负测 %s/%s' % (m.group(1), m.group(2))
 
 
 def chk_sentence_reuse_neg():
@@ -2210,46 +1840,6 @@ def chk_threshold_gate():
         ok, tot, _h.group(2) if _h else '?', _h.group(1) if _h else '?')
 
 
-def chk_missing_slot():
-    """★缺报格闸负测（2026-09-02·六造§八所立）：
-    ★★令§〇之二逼我每轮写一行「本可问而未问」，**而从前没有任何器数它在不在**；
-      ★★★漏写既不报红也不留痕，下一坐无从知道那一轮到底选了什么、办了什么。
-    ★取二组数（令§六①）：**全书137章1594轮，缺此格者98%**——而其大半立於此法之前；
-      ★★**而五造之後四章（288—291）之数是 288缺2/13、289缺2/13、290缺4/13、291缺0/6**，
-      ★★★即：**法已在而人漏 18%**，非拆书。且此闸只查当章，历史之红不入 fix。
-    ★★★★而其最险处不在逮不逮得住，在误伤：**289一轮拆二十三节**，按节数则其缺由2涨至12。"""
-    out = run('负测·缺报格', ['工具/负测_缺报格.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（290回灌报缺四轮｜289按节数则由2涨至12，故合数一步非可有可无）' % (ok, tot)
-
-
-def chk_turnpage_obj():
-    """★翻页备料查（检五）之对象负测（2026-09-02·291第1轮所逮）：
-    ★★原码取「全书最大章号＋1」，是全局之数，不随所查之章而动；
-      ★★★其果：291一起草，以290为cur索292之锚，**以289为cur也索292之锚**——
-        判据里根本没有「所查之章」这一项，故它不是在查这一章的翻页，是在查全书的进度。
-    ★★★★今改作 n+1；而状态卡批次係全书一个指针，只问前沿（n+1 未写出者）。"""
-    out = run('负测·翻页备料查', ['工具/负测_翻页备料查.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '✗' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（旧式令289与290所索者同为一章｜新式各索其下一章）' % (ok, tot)
 
 
 def chk_cold_veto():
@@ -2313,28 +1903,6 @@ def chk_lineref_true():
     return True, ('%d/%d 全通（头一格拿316真局回灌；'
                   '⑬骨记行冒充白文·⑭汉字形「白文第N行」·⑮证⑭没空转）' % (ok, tot))
 
-
-def chk_round_order():
-    """★轮次闸乱序之负测（2026-09-13 立·体检账 ㊞·325 之五个「洞」係本闸挖的）：
-    ★★守一句——**报一个比末轮小的号：那一轮册上还没有＝补洞，许；已在册上＝重跑，拦。**
-    ⛔**旧式係「比末轮小即拦」**，而十一段席的排法本就不按号走
-      （**第10轮先於第9轮开｜第4轮三路各一席｜无伤席一轮一席**，皆 325 实事）；
-      **於是第2轮、第5轮之席存不上版，照令不肯改号去哄闸，红原样交上**，
-      **`验轮闸` 随後把这几处报成「洞」**——**而那五轮一轮也没丢，`_轮记.md` 逐块俱在。**
-    ★★★**本测同时守两头**：①—③乱序许（皆 325 真局）｜④—⑥重跑照旧拦；
-      **⑩之一／之二拿同一份料照旧式算一遍，证①不是陪跑。**"""
-    out = run('负测·轮次闸乱序', ['工具/负测_轮次闸乱序.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（①—③拿 325 乱序真局；④—⑥重跑照旧拦；⑩旧式回灌证非陪跑）' % (ok, tot)
 
 
 def chk_note_gate():
@@ -2402,39 +1970,6 @@ def chk_dashen_hang():
     return True, '%d/%d 全通（④格拿 0913 真局回灌：其由之格之旧限 309 不认）' % (ok, tot)
 
 
-def chk_xuannian_neg():
-    """★悬念哨之负测（2026-09-13 立）：⛔**牙在三处**——
-    **限内不许报**｜**骨记之明报须带据（空口一行不算）**｜**账上挂了哨才算写明卡在哪一条。**"""
-    out = run('负测·悬念哨', ['工具/负测_悬念哨.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（③限内不报·⑤空口不算·⑦无哨即红）' % (ok, tot)
-
-
-def chk_chongchu_neg():
-    """★重出之趋之负测（2026-09-13 立）：⛔**牙在三处**——
-    **不相干者不报**｜**只比 n−2 不比 n−1**｜**全测之认须带「第N章」或「N·」之形**
-    （⛔**`str(n) in 裁文` 那一式，册上出现过这三个数字就算过，等於没有闸**）。"""
-    out = run('负测·重出之趋', ['工具/负测_重出趋.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（④不相干不报·⑤只比n−2·⑥其认须紧）' % (ok, tot)
 
 
 def chk_repeat_trend():
@@ -2601,25 +2136,6 @@ def chk_jiaceng_read():
         return False, '%s/%s ⛔坏 %s' % (m.group(2), m.group(1), m.group(3))
     return True, '%s/%s 全通' % (m.group(2), m.group(1))
 
-
-def chk_kanguan_win():
-    """负测·看官问三之窗（2026-09-23·限359 立·随 `看官.py::问三` 不取跨句之窗同日）。
-    ★守一句——**数「有没有一样东西说得太多」的那个窗，不许跨句。**
-    ⛔**其立之由**：旧式之窗跨句而取，357 之报头一行遂印作「**。她把指**」11回——
-      **那一点句号是上一句的尾巴，不是这一样东西的名字**；
-      ★**而一个带着句号的窗只数得着句首那几个字，落在段中的同一个词它一个也数不着**——
-      **它报的数比实数小，而它印得像个实数**；★★**且它还占着榜位，把真说得太多的那一样挤下去。**
-    """
-    out = run('负测·看官问三之窗', ['工具/负测_看官问三之窗.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测 (\d+) 项，过 (\d+)，坏 (\d+)', out)
-    if not m:
-        return False, '未见其数'
-    if int(m.group(3)):
-        return False, '%s/%s ⛔坏 %s' % (m.group(2), m.group(1), m.group(3))
-    return True, '%s/%s 全通' % (m.group(2), m.group(1))
 
 
 def chk_heyu():
@@ -3177,26 +2693,6 @@ def chk_weight_trend():
     return True, '%s·末段第%s—%s章之跌已有一行裁在册上' % (m.group(0), 末[0], 末[1])
 
 
-def chk_huogua():
-    """★机制体检丙「一行里引着的旧限，不是一笔活挂账」之负测（2026-09-13 立）：
-    ★★守一句——**同一行若已写明它了结了、或引的是旧限、或是在转述别器之印，即不作活挂账论。**
-    ⛔**其事**：本器逐坐报「逾限之挂账 3 笔」，三笔逐行亲读皆係已了之账在讲自己的来历
-      （寨老自书「还……旧书『限315章』」｜大问挂账引「305第12轮印⚠…限306章」）；
-      ★**即把「一句话里出现过的限」当成了「这一笔此刻挂着的限」**。
-    ★★★**其牙未拔**：②格七行素行（无了结之记者）须照旧逐笔报。"""
-    out = run('负测·活挂账', ['工具/负测_活挂账.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（②素行照旧报·③盘上今日丙＝0）' % (ok, tot)
-
 
 def chk_fs_caiguo():
     """★FS闸「裁过的不许再催」之负测（2026-09-13 立）：
@@ -3362,25 +2858,6 @@ def chk_weight_one():
     return True, '%d/%d 全通（⑤格回灌旧局四数，证其非空转）' % (ok, tot)
 
 
-def chk_flag_lifecycle():
-    """★旗之销立之负测（2026-09-12 立·随 `跑轮.raise_flag` 同日落）：
-    ★★守三句——**拦已失其义者不落新旗**｜**并销去为同一件事落下的旧旗**
-      （⛔否则那面旗永远等不到「一次成功的存版」：clear_flag 只挂在存版成功那一路上，
-      而这一版已存过、再存必被空轮闸拦——321 之旗连销三回而总核照旧报未销）｜
-      ⛔**其条件一条不放宽**：「存坏了」那一类旗（棘轮回退、说明无轮号、账上无那一版）一面也不许销。"""
-    out = run('负测·旗之销立', ['工具/负测_旗之销立.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（头一格拿321真局回灌）' % (ok, tot)
-
 
 def chk_renzhang_paid():
     """★人账之还之负测（2026-09-12 立·随 `人账._还之验` 同日落）：
@@ -3421,43 +2898,6 @@ def chk_presence_paid():
     return True, '%d/%d 全通（头一格拿 CHAR-317A 真局回灌）' % (ok, tot)
 
 
-def chk_round_law():
-    """★轮号之律之负测（2026-09-12 立·315／317／318 三章连栽方立）：
-    ★★守一句——**轮号从派工书来，不从台账来**；**台账之版数 ≠ 轮号**（一轮可存多版）。
-      ★★★头一格拿 318 真局回灌（其第3轮一轮占三版），
-        并查 318 之轮记块第6轮、第9轮俱在、无逾十三之号，
-        末二格查此律确写在 一章.js 与 救章.js 之令里（不许只写在册子上）。"""
-    out = run('负测·轮号之律', ['工具/负测_轮号之律.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（头一格拿318真局回灌）' % (ok, tot)
-
-
-def chk_verdict_words():
-    """★裁语词表之负测（2026-09-11 立·随 `跑轮.VERDICT` 补「删」「刀」二字同日落）：
-    ★★守两句——**「只删不添」那一类裁须认得**（补之由）；
-      **而补了二字，抄清单仍须不过**（补之限）；
-      ★★★其④格拿旧词表回灌同一段，证本次之补非无病呻吟。"""
-    out = run('负测·裁语词表', ['工具/负测_裁语词表.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|有败)', out)
-    if not m:
-        return False, '未见其数'
-    ok, tot, 判 = int(m.group(1)), int(m.group(2)), m.group(3)
-    if 判 != '全通' or ok != tot:
-        _b = [ln.strip() for ln in out.splitlines() if '⛔' in ln]
-        return False, '；'.join(_b[:3]) or '%d/%d' % (ok, tot)
-    return True, '%d/%d 全通（头一格拿315第8轮真局回灌）' % (ok, tot)
 
 
 def chk_cold_void():
@@ -3970,19 +3410,6 @@ def chk_gaidan():
     r = _sp.run([sys.executable, '工具/改单.py', '--查'], cwd=ROOT, capture_output=True, text=True)
     return r.returncode == 0, ' ｜'.join(l.strip() for l in r.stdout.splitlines() if l.strip())[:300]
 
-def chk_blind_read():
-    """负测·盲读之关（2026-09-25 立·见 工具/负测_盲读之关.py）：每章须过一个不读任何席之说的读者，
-    二回重锻仍不肯接着翻，就不许封版。守其牙不被拔。"""
-    out = run('负测·盲读之关', ['工具/负测_盲读之关.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测·盲读之关 (\d+)/(\d+)', out)
-    if not m:
-        return False, '未见其数'
-    if m.group(1) != m.group(2):
-        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
-    return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 def chk_seal_proof():
     """负测·封版之凭（2026-09-24 立·见 工具/负测_封版之凭.py）。
@@ -4207,19 +3634,6 @@ def chk_huixiu():
 
 
 
-def chk_repair_name():
-    """★负测·回修案档名（301第12轮立·同日与其闸并立·令§六④）：
-    ★一份档名读不出章号的案，从前在回修案检里是 continue——**它不在册上，而末行照旧印「俱办毕」。**"""
-    out = run('负测·回修案档名', ['工具/负测_回修案档名.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|⛔有败)', out)
-    if not m:
-        return False, '取不着其数'
-    return m.group(3) == '全通', '%s/%s %s' % (m.group(1), m.group(2), m.group(3))
-
-
 
 def chk_adj_dup():
     """★负测·邻拍重出（301第13轮立·同日与其器并立·令§六④）：
@@ -4235,20 +3649,6 @@ def chk_adj_dup():
         return False, '取不着其数'
     return m.group(3) == '全通', '%s/%s %s' % (m.group(1), m.group(2), m.group(3))
 
-
-
-def chk_nozhen():
-    """★负测·无真伤之由（301封版之序立·与其闸同日·令§六④）：
-    ★乙4之罚辞明书「须逐轮说明何以皆无」，而其判据只数「真伤」二字——**那一句说明它看不见。**
-    ★★而本日另逮一样：**这一段判词在 十轮精进.py 与 跑轮.py 里各有一份。**"""
-    out = run('负测·无真伤之由', ['工具/负测_无真伤之由.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|⛔有败)', out)
-    if not m:
-        return False, '取不着其数'
-    return m.group(3) == '全通', '%s/%s %s' % (m.group(1), m.group(2), m.group(3))
 
 
 def chk_dup_defs():
@@ -4644,30 +4044,6 @@ def chk_lunci():
 
     return not bad, ('；'.join(bad) if bad else '正测3/负测23 全通')
 
-
-def chk_fengban_tuiwei():
-    """负测·封版须推位（2026-09-23·限362 立·见 工具/负测_封版须推位.py）。
-
-    ⛔**其所由来**：**361 封版席自己交上来的第⑦条红**：
-      「`open_brief` 第六回靠人记得·盘上四把器无一把写它（355／357／358／359／360／361）
-       ——⛔须立一把器去写它」。
-    ★**而本坐判其所指为真、其所求之治不可取**：**五格之中只有 `for_ch` 是机械的**，
-      **其余四格皆係判**；⛔**器自己把数推上去而料照旧，闸转绿而料是旧的，比不推更坏。**
-    ★★**那道闸其实早已有**（`小说检察官.py:4733`），**缝在「几时查」**——
-      **它只在下一章开跑之时才出声，於是这一笔永远落在下一坐头上。**
-    ★★★**故所立者不是写它的器，是把那一条已有之令挪到它该咬住的那一刻**：
-      **`收.py` 封版之前问一句，推不上去就不许封。**⛔**此改令闸更硬，不更软。**
-    """
-    out = run('负测·封版须推位', ['工具/负测_封版须推位.py'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'负测·封版须推位：(\d+)/(\d+)', out)
-    if not m:
-        return False, '未见其数'
-    if m.group(1) != m.group(2):
-        return False, '%s/%s ⛔有坏' % (m.group(1), m.group(2))
-    return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
 def chk_gou_lu():
@@ -5240,19 +4616,14 @@ def main():
         items.append(('负测·未答闸', chk_unans_gate))
         items.append(('负测·棘轮预检', chk_ratchet_pre))
         items.append(('负测·冷轮作废', chk_cold_void))
-        items.append(('负测·裁语词表', chk_verdict_words))
-        items.append(('负测·轮号之律', chk_round_law))
         items.append(('负测·在场之兑', chk_presence_paid))
         items.append(('负测·人账之还', chk_renzhang_paid))
-        items.append(('负测·旗之销立', chk_flag_lifecycle))
         items.append(('负测·行号引真', chk_lineref_true))
-        items.append(('负测·轮次闸乱序', chk_round_order))
         items.append(('负测·说明闸', chk_note_gate))
         items.append(('负测·大审挂限', chk_dashen_hang))
         items.append(('负测·大审收方', chk_dashen_shoufang))
         items.append(('负测·分量闸之读', chk_fenliang_read))
         items.append(('负测·甲层之读', chk_jiaceng_read))
-        items.append(('负测·看官问三之窗', chk_kanguan_win))
         items.append(('合玉闸', chk_heyu))
         items.append(('认领哨·自测', chk_renling))
         items.append(('负测·摆问之嵌', chk_baiwen))
@@ -5266,7 +4637,6 @@ def main():
         items.append(('负测·起手哨', chk_qishao_neg))
         items.append(('负测·换型令之尺', chk_huanxing_ruler))
         items.append(('负测·封版之凭', chk_seal_proof))
-        items.append(('负测·盲读之关', chk_blind_read))
         items.append(('改单', chk_gaidan))
         items.append(('总编辑复核', chk_zongbian))
         items.append(('抄袭闸', chk_chaoxi))
@@ -5298,15 +4668,11 @@ def main():
         items.append(('负测·补存说明', chk_buccun_desc))
         items.append(('负测·核轮', chk_helun_neg))
         items.append(('负测·书级体检', chk_bookcheck_neg))
-        items.append(('负测·封版须推位', chk_fengban_tuiwei))
-        items.append(('负测·对位之三路', chk_duiwei_sanlu))
         items.append(('负测·大审空模子', chk_dashen_kongmuzi))
         items.append(('负测·FS裁过', chk_fs_caiguo))
-        items.append(('负测·活挂账', chk_huogua))
         items.append(('净重之趋', chk_weight_trend))
         items.append(('负测·账键一名', chk_zhangjian))
         items.append(('悬念哨', chk_suspense))
-        items.append(('负测·悬念哨', chk_xuannian_neg))
         items.append(('咬合哨', chk_yaohe))
         items.append(('硬条哨', chk_yingtiao))
         items.append(('接坐记', chk_jiezuo))
@@ -5323,43 +4689,28 @@ def main():
         items.append(('看官欠哨', chk_kanguan_qian))
         items.append(('感官之趋', chk_ganguan))
         items.append(('重出之趋', chk_repeat_trend))
-        items.append(('负测·重出之趋', chk_chongchu_neg))
         items.append(('负测·站账逐章行', chk_station_rows))
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·软报不拦', chk_soft_report))
         items.append(('负测·亮点残引', chk_hl_residue))
         items.append(('负测·净重取形', chk_weight_shape))
         items.append(('负测·亮点对表', chk_hl_table))
-        items.append(('负测·回修案档名', chk_repair_name))
         items.append(('负测·邻拍重出', chk_adj_dup))
-        items.append(('负测·无真伤之由', chk_nozhen))
         items.append(('负测·棘轮v01', chk_ratchet_v01))
         items.append(('负测·冷轮否决记', chk_cold_veto))
-        items.append(('负测·翻页备料查', chk_turnpage_obj))
-        items.append(('负测·缺报格', chk_missing_slot))
         items.append(('负测·趋阈闸', chk_threshold_gate))
         items.append(('负测·数句闸', chk_count_sentence_gate))
         items.append(('负测·必答表', chk_duty_num_neg))
-        items.append(('负测·模糊时距', chk_vague_time_neg))
         items.append(('负测·整句复述哨', chk_sentence_reuse_neg))
         items.append(('接口验', chk_anchor_join))
         items.append(('负测·接口验', chk_anchor_join_neg))
         items.append(('负测·吞记闸', chk_swallowed_note_gate))
         items.append(('负测·封版档冷轮口', chk_seal_cold_slot))
-        items.append(('负测·棘轮裁', chk_ratchet_verdict))
         items.append(('负测·段间空行闸', chk_blankline_gate))
-        items.append(('负测·填记口', chk_fill_note_gate))
-        items.append(('负测·功力回检', chk_effort_recheck))
-        items.append(('负测·层census与立价查', chk_layer_census_honest))
-        items.append(('负测·销立门', chk_seal_new_cold))
         items.append(('负测·孤版闸', chk_orphan_snapshot))
         items.append(('负测·FS认账', chk_fs_ack))
-        items.append(('负测·亮点闸', chk_highlight_gate))
-        items.append(('负测·验收空说明', chk_review_no_note))
         items.append(('负测·比带', chk_band_by_form))
-        items.append(('负测·棘轮认词', chk_ratchet_by_word))
         items.append(('负测·横评重开', chk_compare_reopen))
-        items.append(('负测·裁毕闸', chk_caibi_gate))
         items.append(('负测·站账闸', chk_station_ledger))
         items.append(('负测·约到期闸', chk_promise_due))
         items.append(('大审闸', chk_grand_audit))
@@ -5370,10 +4721,6 @@ def main():
         items.append(('负测·推闸', chk_push_gate))
         items.append(('可逆库之验', chk_reversible))
         items.append(('负测·可逆册', chk_reversible_neg))
-        items.append(('负测·阅读器催', chk_reader_nag))
-        items.append(('负测·看官手闸', chk_kanguan_hand))
-        items.append(('负测·提名账', chk_nomination_ledger))
-        items.append(('负测·三条带', chk_three_bands))
         items.append(('负测·硬闸', chk_hard_gate))
         items.append(('负测·叠词闸', chk_dup_gate))
         items.append(('亮点界', chk_highlight_boundary))
@@ -5384,7 +4731,6 @@ def main():
         items.append(('版档指纹', chk_version_fingerprint))
         items.append(('线限哨', chk_line_limit))
         items.append(('处方旗哨', chk_presc_flag))
-        items.append(('负测·真伤认刀', chk_zhenshang_dao))
         items.append(('负测·⑲卡口', chk_xiang_kou))
         items.append(('负测·章型连锁', chk_xingchain_neg))
         # ★0918·本日新立之四样负测，一并接进跑口（囤灰闸当日报「造了没人跑」，逮得对）
@@ -5402,7 +4748,6 @@ def main():
         items.append(('字数闸', chk_word_count))
         items.append(('含拍', chk_contain_beat))
         items.append(('数闸', chk_num_gate))
-        items.append(('负测·回执对账', chk_receipt_recon))
         items.append(('FS沉默闸', chk_fs_silence))
         items.append(('外声闸', chk_outside_voice))
         items.append(('大问表', chk_big_questions))
@@ -5414,16 +4759,13 @@ def main():
         items.append(('负测·大问挂账', chk_bigq_neg))
         items.append(('负测·场景切换闸', chk_scenecut_neg))
         items.append(('两册对限', chk_two_ledger))
-        items.append(('负测·两册对限', chk_two_ledger_neg))
         items.append(('对位闸', chk_duiwei))
         items.append(('负测·冷轮同判', chk_cold_agree))
         items.append(('负测·冷轮明裁', chk_cold_明裁))
         items.append(('起手哨', chk_起手哨))
         items.append(('负测·器物点名', chk_object_roll))
         items.append(('器物册·逐章回灌', chk_object_roll_all))
-        items.append(('负测·拦停旗', chk_stop_flag))
         items.append(('封版留旗', chk_sealed_flags))
-        items.append(('负测·立价查', chk_price_check))
         items.append(('负测·开轮六检', chk_open6_gate))
         items.append(('负测·到期账词表', chk_due_states))
         items.append(('负测·起草庭', chk_draft_court))

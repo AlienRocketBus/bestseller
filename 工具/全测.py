@@ -3902,7 +3902,9 @@ def chk_zhangliao():
     f = _sp.run([sys.executable, '工具/剧情链.py', '--验'], cwd=ROOT, capture_output=True, text=True)
     # ★1015 并验 人物料（W34：一人之五处汇一档，人物之审之席一回读毕）——作者令「每个角色都要独特、⛔反智」
     g = _sp.run([sys.executable, '工具/人物料.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    return all(x.returncode == 0 for x in (a, b, c, d, e, f, g)), '｜'.join(x.stdout.strip().split('\n')[-1][:40] for x in (a, b, c, d, e, f, g))
+    # ★1015 并验 人物链（每人之链、每两人之关系，自章记零 token 并；封版重并）
+    h = _sp.run([sys.executable, '工具/人物链.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    return all(x.returncode == 0 for x in (a, b, c, d, e, f, g, h)), '｜'.join(x.stdout.strip().split('\n')[-1][:40] for x in (a, b, c, d, e, f, g, h))
 
 
 def chk_duizhang_yushai():

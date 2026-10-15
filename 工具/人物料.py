@@ -9,6 +9,7 @@
 用法：
   python3 工具/人物料.py 名 [--出 目录]      # → 设定/_草/人物料/<名>.md
   python3 工具/人物料.py --全 [--出 目录]    # 主要诸人
+  python3 工具/人物料.py --全 --薄           # 只前四处（历章由人物链代之）
   python3 工具/人物料.py --自测
 """
 import os as _o, sys as _s
@@ -113,7 +114,7 @@ def 将来之行(称们, root=ROOT, 最多=60, 每行=320):
     return '\n'.join(出)
 
 
-def 汇(名, root=ROOT):
+def 汇(名, root=ROOT, 薄=False):
     称们, 圣首, 人首, 册名 = 主要[名]
     人物 = 读(os.path.join(记, '人物.md'), root)
     圣 = 读(圣经, root)
@@ -131,6 +132,9 @@ def 汇(名, root=ROOT):
              '\n\n### 圣经他处提此人之行（各截 300 字）\n\n' + '\n'.join(圣他[:80]) +
              ('\n（尚有 %d 行未印）' % (len(圣他) - 80) if len(圣他) > 80 else ''))
     出.append('\n## 四·将来：总纲、余章总案提此人之行\n\n' + (将来之行(称们, root) or '（无）'))
+    if 薄:                       # ★W34 再换法：历章由人物链（工具/人物链.py --并记，全书无舍）代之
+        出.append('\n## 五·历章\n\n见人物链：`设定/全书记忆/人物链/%s.md`（自第 1 章至末章，章记「在场之人」零 token 所并，⛔舍）' % 名)
+        return '\n'.join(出)
     行们 = 章记之行(称们, root)
     章们 = sorted({n for n, _, _ in 行们})
     头 = '\n'.join(出)
@@ -163,8 +167,8 @@ def _段(ns):
     return '、'.join(出)
 
 
-def 写(名, 出目, root=ROOT):
-    t = 汇(名, root)
+def 写(名, 出目, root=ROOT, 薄=False):
+    t = 汇(名, root, 薄)
     p = os.path.join(root, 出目, '%s.md' % 名)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     open(p, 'w', encoding='utf-8').write(t)
@@ -193,5 +197,5 @@ if __name__ == '__main__':
     if not 名们:
         print(__doc__); print('主要：' + '、'.join(主要)); sys.exit(2)
     for 名 in 名们:
-        p, b = 写(名, 出目)
+        p, b = 写(名, 出目, 薄='--薄' in a)
         print('✓ %s（%d KB）' % (os.path.relpath(p, ROOT), b // 1024))

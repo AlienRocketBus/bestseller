@@ -129,6 +129,12 @@ def 跑():
     R.append(('⑨之二·留〔〕者判未答', m._问九之坏(_九) == ['问九「认」未答']))
     R.append(('⑨之三·五问俱答即过', m._问九之坏(_九.replace('〔逐人一行〕', '老头凭「门里的」认')) == []))
     R.append(('⑨之四·391 前⛔追', m._check9(390)[0][1] is True))
+    # ⑨之五（1015·391 记席逮）：卡之模係 %-式，模里添字（如「39%」）未写作「39%%」即令 --立 崩——造局：取模之原文，去 %% 後⛔有 %d／%s 以外之 %
+    import re as _re, io as _io2
+    _src = _io2.open(m.__file__, encoding='utf-8').read()
+    _i = _src.index("tmpl = '''# 第%d章 · 开镜卡"); _j = _src.index("'''", _i + 15)
+    _模 = _src[_i + len("tmpl = '''"):_j].replace('%%', '')
+    R.append(('⑨之五·开镜卡之模无未转义之 %（--立 不崩）', not _re.search(r'%(?![ds])', _模)))
     for 名, o in R:
         print(('  ✓ ' if o else '  ⛔ ') + 名)
     过 = sum(1 for _, o in R if o)

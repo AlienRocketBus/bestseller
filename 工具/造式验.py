@@ -97,6 +97,12 @@ def 验(n, root=ROOT):
     return 出
 
 
+def 照整章(卡):
+    """卡里「照 NNN」「NNN 之腔／原句」而全卡无「NNN:行」者 → [NNN]。"""
+    提 = set(re.findall(r'照\s*(\d{3})(?![\d:：])', 卡)) | set(re.findall(r'(?<![\d:：])(\d{3})\s*(?:之腔|原句|的原句|的腔)', 卡))
+    return sorted(x for x in 提 if not re.search(r'(?<!\d)%s\s*[:：]\s*\d' % x, 卡))
+
+
 def 料全(n, root=ROOT):
     坏 = []
     d = os.path.join(root, '版本', '第%d章' % n)
@@ -110,6 +116,10 @@ def 料全(n, root=ROOT):
     for k in (n - 1, n - 2):
         if not 正文档(k, root):
             坏.append('第%d章正文不在' % k)
+    卡 = open(os.path.join(d, '_开镜卡.md'), encoding='utf-8').read() if os.path.exists(os.path.join(d, '_开镜卡.md')) else ''
+    整章 = 照整章(卡)
+    if 整章:                                  # ★1015（391 七席同报：卡令「照 268 原句」而无行号，七席各 awk 整章）
+        坏.append('开镜卡令照 %s 之原句／之腔而未点其行——点作「%s:a—b」，章料即自展' % ('、'.join(整章), 整章[0]))
     import 剧情庭之关                          # ★1015 左移（W43 逮：391 写毕封版时方红）：动笔前，本段须已有剧情庭之势
     坏 += 剧情庭之关.查(root, 章=n)
     return 坏
@@ -123,6 +133,7 @@ def 自测():
     共 += 1; ok += (硬之红('{\n "破折": 0,\n "英文": 2\n}') == {'英文': 2} and 硬之红('乱') == {'硬闸之印读不出': 1})
     共 += 1; ok += all(os.path.exists(os.path.join(ROOT, '工具', x[0] + '.py')) for x in 致命 + 报)
     共 += 1; ok += (线(381) == '暗' and 线(380) == '主' and 线(404) == '主' and 线(405) == '暗' and 线(999) is None)   # 右栏之章亦认
+    共 += 1; ok += (照整章('点户照 268 原句，腔照 211') == ['211', '268'] and 照整章('照 268 原句（268:61—77）') == [])
     print('造式验·自测 %d/%d' % (ok, 共))
     return ok == 共
 

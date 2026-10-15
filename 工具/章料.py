@@ -122,28 +122,78 @@ def 段案行(n, root=ROOT):
     return ''
 
 
-def 引之原句(文, root=ROOT, 限=80):
+# ★1015（391 诸席「此法之缺」七席同报：卡令「照 268 原句」而料只展单行；D3:76、D6 T44、余章总案:54 俱不展——七席各自 awk 整章，费七回）
+_设档 = {'总纲': os.path.join('设定', '02_余章之势_总纲.md'),
+        '余章总案': os.path.join('设定', '剧情庭题', '余章总案.md'),
+        'D3': os.path.join('设定', '剧情庭题', 'D3_真拦之敌_主案.md'),
+        'D6': os.path.join('设定', '剧情庭题', 'D6_床上那人_六审主案.md')}
+_引式 = re.compile(r'(?<![\d:A-Za-z])(总纲|余章总案|D3|D6|\d{3})(?:\.md)?(?:\s*主案)?\s*[:：]\s*(\d{1,4})(?:\s*[—\-～~]\s*[:：]?(\d{1,4}))?(?!\d)')
+_行式 = re.compile(r'(?<![A-Za-z])(D3|D6)\s*(?:主案\s*)?([RWT]\d{1,3})(?!\d)')
+
+
+def 引之原句(文, root=ROOT, 限=80, 段限=30, 字限=30 * 1024):
     """1013（坑⑬复踩之治）：开镜卡、段案、预令所引之「章:行」（如 380:69）与「总纲:行」逐一展开为原句。
     ⛔其由：381 之料只带章号不带原句（318:33、327:29 之掰口等），五稿三稿各撞坏一处已定之细（掰口写反、空钉、床位）。
-    行号逾其章之行数者（如 380:2572 是净重，不是行）⛔展；空行⛔展。"""
+    行号逾其章之行数者（如 380:2572 是净重，不是行）⛔展；空行⛔展。
+    ★1015：①行段「268:61—77」整段展（每段至多 30 行）；②「D3:76」「D3 主案:76」「D6:75」「余章总案:54」认其档；
+    ③「D6 T44」「D3 W7」认主案表中以其号起之行；④展出逾 30KB 即止（照实印所舍）。"""
     出, 见, 档 = [], set(), {}
-    纲 = os.path.join(root, '设定', '02_余章之势_总纲.md')
-    for m in re.finditer(r'(?<![\d:])(总纲|\d{3}):(\d{1,4})(?!\d)', 文):
+    大 = 0
+
+    def 行们(f):
+        if f not in 档:
+            档[f] = open(f, encoding='utf-8').read().split('\n')
+        return 档[f]
+    for m in _引式.finditer(文):
         k = m.group(0)
         if k in 见:
             continue
         见.add(k)
-        f = 纲 if m.group(1) == '总纲' else 章档(int(m.group(1)), root)
+        名 = m.group(1)
+        f = os.path.join(root, _设档[名]) if 名 in _设档 else 章档(int(名), root)
         if not f or not os.path.exists(f):
             continue
-        if f not in 档:
-            档[f] = open(f, encoding='utf-8').read().split('\n')
-        i = int(m.group(2))
-        if 1 <= i <= len(档[f]) and 档[f][i - 1].strip():
-            出.append('- %s　%s' % (k, 档[f][i - 1].strip()[:400]))
-        if len(出) >= 限:
-            break
+        L = 行们(f)
+        i = int(m.group(2)); j = int(m.group(3)) if m.group(3) else i
+        if j < i or j - i >= 段限:
+            j = i + 段限 - 1 if j >= i else i
+        if (f, i, j) in 见:                    # 「D3:76」「D3 主案:76」同一处只展一回
+            continue
+        见.add((f, i, j))
+        if not (1 <= i <= len(L)):
+            continue
+        块 = ['- %s　%s' % (k, L[i - 1].strip()[:400])] if i == j else \
+             ['- %s' % k] + ['  %d｜%s' % (x, L[x - 1].strip()[:400]) for x in range(i, min(j, len(L)) + 1) if L[x - 1].strip()]
+        if i == j and not L[i - 1].strip():
+            continue
+        b = len('\n'.join(块).encode())
+        if 大 + b > 字限 or len(出) >= 限:
+            出.append('（所引尚有未展者——逾 %d KB 之限；要者照其号 awk 一处）' % (字限 // 1024)); break
+        出.append('\n'.join(块)); 大 += b
+    for m in _行式.finditer(文):
+        k = '%s %s' % (m.group(1), m.group(2))
+        if k in 见:
+            continue
+        见.add(k)
+        f = os.path.join(root, _设档[m.group(1)])
+        if not os.path.exists(f):
+            continue
+        for x, l in enumerate(行们(f), 1):
+            if re.match(r'^\|?\s*\**%s\**\s*[|｜：:　 ]' % m.group(2), l.strip()):
+                b = len(l.encode())
+                if 大 + b <= 字限:
+                    出.append('- %s（%s:%d）　%s' % (k, m.group(1), x, l.strip()[:600])); 大 += b
+                break
     return 出
+
+
+def 内部名(文, root=ROOT):
+    """1015（391 五席同报：卡用「点户」「档柜」「贺兰」，正文 0 见——各席各译）：卡、段案里 2—4 字之「名」，正文全书 0 见者。"""
+    名们 = sorted(set(re.findall(r'「([\u4e00-\u9fff]{2,4})」', 文)))
+    if not 名们:
+        return []
+    白 = ''.join(open(f, encoding='utf-8').read() for f in glob.glob(os.path.join(root, '正文', '*.md')))
+    return [x for x in 名们 if x not in 白]
 
 
 def 汇(n, root=ROOT, 出=None):
@@ -169,12 +219,20 @@ def 汇(n, root=ROOT, 出=None):
     引 = 引之原句(卡 + '\n' + 案行 + '\n' + 预, root)
     if 引:
         段.append(('开镜卡、段案所引之原句（章:行 逐一展开——写已定之细只照此，⛔凭章号猜）', '\n'.join(引)))
+    内 = 内部名(卡 + '\n' + 案行, root)
+    if 内:
+        段.append(('卡之内部名（正文全书 0 见——设计之称或新物；白文⛔照搬：照卡中「白文作」，无则译成在场之人口里、眼里之称，诸稿各自译，合稿统一）', '、'.join(内)))
     门 = 节(施, '## 四、续写第 %d 章前的硬门槛' % n)
     if 门:
         段.append(('施工表·续写本章前之硬门槛', 门))
     if 案:
-        段.append(('余章总案·解歧之裁', 节(案, '## 二、')))
-        段.append(('余章总案·本章前後之行（%d±1）' % n, '\n'.join(本章之行(案, n))))
+        if not 案行:                            # ★1015：段案係「据余章总案 §二解歧之裁」所立（只汇只验）——有段案之章⛔重收 §二（392 料 6KB）
+            段.append(('余章总案·解歧之裁', 节(案, '## 二、')))
+        if 案行:                                # ★1015（392 料 132KB）：段案已据余章总案立本章之行（且随裁同改）——总案只留「下一章」之行，供埋种；本章与前一章⛔重收
+            本行 = set(本章之行(案, n, 0)) | set(本章之行(案, n - 1, 0))
+            段.append(('余章总案·下一章之行（%d；本章之设计见段案）' % (n + 1), '\n'.join(l for l in 本章之行(案, n + 1, 0) if l not in 本行)))
+        else:
+            段.append(('余章总案·本章前後之行（%d±1）' % n, '\n'.join(本章之行(案, n))))
     import 造式验
     本线 = 造式验.线(n, root)
     for k in (n - 1, n - 2):
@@ -243,6 +301,11 @@ def 自测():
     _f = 章档(380); _行 = open(_f, encoding='utf-8').read().split('\n') if _f else ['']
     _引 = 引之原句('见 380:1 又 380:1，又 380:2572（净重）、总纲:1、9380:1', ROOT)
     共 += 1; ok += (len(_引) == 2 and _引[0] == '- 380:1　' + _行[0].strip()[:400] and _引[1].startswith('- 总纲:1　'))
+    _段 = 引之原句('照 380:1—3、380:5—1（倒段只展首行）', ROOT)                             # ★1015 行段整展、倒段只首行
+    共 += 1; ok += (len(_段) == 2 and _段[0].startswith('- 380:1—3\n  1｜') and _段[1].startswith('- 380:5—1　'))
+    _d = 引之原句('D3:1、D3 主案:1、余章总案.md:1、D6 T44', ROOT)                                # 设档之认、主案表之号
+    共 += 1; ok += (len(_d) == 3 and any(x.startswith('- D6 T44（D6:') for x in _d) and _d[1].startswith('- 余章总案.md:1'))
+    共 += 1; ok += (内部名('「老头」「七七七七」「那盏灯」') == ['七七七七'] or 内部名('「老头」「七七七七」') == ['七七七七'])   # 正文 0 见者
     import tempfile as _tf, io as _io, contextlib as _cl
     _o = os.path.join(_tf.mkdtemp(), 'x.md')
     with _cl.redirect_stdout(_io.StringIO()):

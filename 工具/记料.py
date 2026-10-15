@@ -127,9 +127,9 @@ def 汇(N, root=ROOT):
         canon = json.load(open(os.path.join(root, '设定', 'canon事实库.json'), encoding='utf-8'))
         ob = canon.get('open_brief') if isinstance(canon, dict) else None
     except Exception:
-        ob = None
+        canon, ob = {}, None
     出.append(节('八·圣经之锚与事件链之题、检察官里本章与下一章之行、open_brief（今之块）',
-                行们(圣, r'第 (%d|%d) 章必须从|^## 十一、已写 1—|第 %d 章《' % (N, N + 1, N - 1), 0, 0, 12) + '\n\n' +
+                行们(圣, r'第 (%d|%d) 章必须从|^## 十一、已写 1—|第 %d 章《' % (N, N + 1, N - 1), 0, 2, 12) + '\n\n' +
                 行们(检, r'^ (%d|%d):' % (N, N + 1), 0, 0, 20) + '\n\n' +
                 (json.dumps(ob, ensure_ascii=False, indent=1)[:4000] if ob else '（open_brief 不在）')))
     # 九、下一章：段案、总纲
@@ -142,6 +142,29 @@ def 汇(N, root=ROOT):
     纲 = 读(os.path.join('设定', '02_余章之势_总纲.md'), root)
     出.append(节('九·下一章（%d）：段案之节、总纲之行；开镜卡以「python3 工具/第零轮开镜庭.py --立 %d」起' % (N + 1, N + 1),
                 (段 or '（段案无其节）') + '\n\n' + 行们(纲, r'\| *(%d|%d) *\|' % (N + 1, N + 2), 0, 0, 6)))
+    # ★1015（391 记席「此法之缺」：同线前章之白文、在场之人之册行、canon 卡名，各自 awk／python 补约六回）
+    import 造式验
+    本线 = 造式验.线(N, root)
+    同 = next((k for k in range(N - 1, N - 13, -1) if 本线 and 造式验.线(k, root) == 本线), None)
+    if 同 and 同 != N - 1:
+        _, 同白 = 章白(同, root)
+        出.append(节('十·同线前章（第%d章）之白文——承前之判（开轮⑮）、极短段之比、收句之骨' % 同, 同白))
+    行 = []
+    for 名, 中, v in 人们:
+        体2 = {k: v[k] for k in v if not re.match(r'\d+态$', k)}
+        态2 = sorted([x for x in v if re.match(r'\d+态$', x)], key=lambda x: int(re.match(r'\d+', x).group()))[-2:]
+        体2.update({x: v[x] for x in 态2})
+        行.append(json.dumps(体2, ensure_ascii=False))
+    if 行:
+        出.append(节('十一·人物状态册之行（在场之人；去旧态、留末二态——添「%d态」照此式）' % N, '\n'.join(行)))
+    try:
+        卡们 = [c for c in ((canon or {}).get('state_canon') or []) if isinstance(c, dict)]
+    except Exception:
+        卡们 = []
+    名们 = [x for _, 中, _ in 人们 for x in 中]
+    近 = [c.get('what', '') for c in 卡们 if (isinstance(c.get('from'), int) and c['from'] >= N - 15) or any(x in str(c.get('what', '')) for x in 名们)]
+    if 近:
+        出.append(节('十二·canon state_canon 卡名（近十五章所立、或提在场之人者；open_brief 之 required_state_cards 照此择）', '\n'.join('- ' + x for x in 近[-80:])))
     return '\n'.join(出)
 
 

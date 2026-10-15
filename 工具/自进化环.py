@@ -105,16 +105,26 @@ def 挂(层, 因, 修得了):
     return x['回']
 
 
+def _封之章(回执们, 已录):
+    """回执之档 → 已封版之章号。★1015（391 封版逮）：回执由记席写於封版之前，碑由封版提交之後立——
+    旧以「回执在」即算已封，则每章封版中之全测必红其自身「缺碑」（序之缺）；今以「回执已提交」为已封。"""
+    封 = set()
+    for f in 回执们:
+        m = re.search(r'第(\d+)章', os.path.basename(f))
+        if m and f in 已录:
+            封.add(int(m.group(1)))
+    return 封
+
+
 def _缺碑():
     """→ [已封版（309 起）而云端无 `章-N` 碑之章]。⛔**309 係章标之制立起之章，其前不追。**"""
     r = _跑('git', 'ls-remote', '--heads', 'origin', timeout=60)
     有 = set(int(x) for x in re.findall(r'refs/heads/章-(\d+)', r.stdout or ''))
-    封 = set()
-    for f in (glob.glob(os.path.join(ROOT, '设定', '回执_*第*章封版席*.md'))
-              + glob.glob(os.path.join(ROOT, '设定', '回执_*第*章作业单*.md'))):
-        m = re.search(r'第(\d+)章', os.path.basename(f))
-        if m:
-            封.add(int(m.group(1)))
+    回执们 = [os.path.relpath(f, ROOT) for f in (glob.glob(os.path.join(ROOT, '设定', '回执_*第*章封版席*.md'))
+                                              + glob.glob(os.path.join(ROOT, '设定', '回执_*第*章作业单*.md')))]
+    录 = _跑('git', '-c', 'core.quotepath=off', 'ls-files', '--', *回执们, timeout=60) if 回执们 else None
+    已录 = set((录.stdout or '').split('\n')) if (录 and 录.returncode == 0) else set(回执们)   # ⛔git 失灵即照旧式全算（⛔静默放过）
+    封 = _封之章(回执们, 已录)
     return sorted(n for n in 封 if n >= 309 and n not in 有)
 
 
@@ -464,6 +474,8 @@ def 自测():
               all(w not in io.open(__file__, encoding='utf-8').read().split('def L1')[1]
                   .split('def L2')[0] for w in ('--no-verify', 'ZM_SKIP_HOOK'))))
     R.append(('⑦本环每跑一回落一行日志（本环之脉）', '日志' in io.open(__file__, encoding='utf-8').read()))
+    R.append(('⑧封版中之章（回执在而未提交）⛔算已封——⛔自红其缺碑；已提交者照算',
+              _封之章(['设定/回执_1_第390章封版席.md', '设定/回执_1_第391章封版席.md'], {'设定/回执_1_第390章封版席.md'}) == {390}))
     for 名, o in R:
         print(('  ✓ ' if o else '  ⛔ ') + 名)
     过 = sum(1 for _, o in R if o)

@@ -3896,7 +3896,11 @@ def chk_zhangliao():
     b = _sp.run([sys.executable, '工具/欠账闸.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     # ★1014 并验 还账（W26：G 号落正文之译单之验、施；行号不移）
     c = _sp.run([sys.executable, '工具/还账.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and b.returncode == 0 and c.returncode == 0, a.stdout.strip()[-90:] + '｜' + b.stdout.strip()[-16:] + '｜' + c.stdout.strip()[-14:]
+    # ★1015 并验 记料（记席之章料）、剧情链（自测＋链与详记同不同）——作者令「每章精读、串成从头到尾之链」
+    d = _sp.run([sys.executable, '工具/记料.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    e = _sp.run([sys.executable, '工具/剧情链.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
+    f = _sp.run([sys.executable, '工具/剧情链.py', '--验'], cwd=ROOT, capture_output=True, text=True)
+    return all(x.returncode == 0 for x in (a, b, c, d, e, f)), '｜'.join(x.stdout.strip().split('\n')[-1][:40] for x in (a, b, c, d, e, f))
 
 
 def chk_duizhang_yushai():

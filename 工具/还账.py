@@ -498,7 +498,7 @@ def 施後同步(章们, root=ROOT):
             t2 = re.sub(r'sha1：[0-9a-f]{12}', 'sha1：' + sha, t, count=1)
             if t2 != t:
                 open(p, 'w', encoding='utf-8').write(t2)
-    for 令 in (['工具/净重对表.py', '--补'], ['工具/同步全本阅读器.py'], ['工具/全书记忆.py']):
+    for 令 in (['工具/净重对表.py', '--补'], ['工具/同步全本阅读器.py'], ['工具/剧情链.py'], ['工具/全书记忆.py']):
         r = subprocess.run([sys.executable] + 令, cwd=root, capture_output=True, text=True)
         print('  施後·%s：%s' % (os.path.basename(令[0]), (r.stdout.strip().split('\n') or [''])[-1][:80]))
 

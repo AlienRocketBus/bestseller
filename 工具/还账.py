@@ -498,6 +498,9 @@ def 施後同步(章们, root=ROOT):
             t2 = re.sub(r'sha1：[0-9a-f]{12}', 'sha1：' + sha, t, count=1)
             if t2 != t:
                 open(p, 'w', encoding='utf-8').write(t2)
+    for 章 in sorted(章们):      # ★1015 W42 所逮：施改封版之章而⛔存版，正文与末版遂不一（版档指纹不符之积）——施毕即逐章存一版
+        r = subprocess.run([sys.executable, '工具/跑轮.py', '--存', str(章), '还账施改（工具/还账.py --施）'], cwd=root, capture_output=True, text=True)
+        print('  施後·存版 第%d章：rc=%d' % (章, r.returncode))
     for 令 in (['工具/净重对表.py', '--补'], ['工具/同步全本阅读器.py'], ['工具/剧情链.py'], ['工具/全书记忆.py']):
         r = subprocess.run([sys.executable] + 令, cwd=root, capture_output=True, text=True)
         print('  施後·%s：%s' % (os.path.basename(令[0]), (r.stdout.strip().split('\n') or [''])[-1][:80]))

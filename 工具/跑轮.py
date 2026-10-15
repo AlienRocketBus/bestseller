@@ -916,6 +916,21 @@ def _flag_stale(n, fl):
         return False, ''
     R = _round_of(str(fl.get('本次说明', '')))
     if R is None:
+        # ★1015 W42 所逮：还账、补正之存版⛔带轮号，其空轮之旗依上三条永不失义而拦其章一切轮务——
+        #   旗之义是「那一版没存上」；若「因」只是空轮闸、且末版之说明非空非占位、正文与末版逐字同，则那一版已在，旗失其义。
+        try:
+            d, led = paths(n)
+            vs = json.load(open(led, encoding='utf-8')).get('版本', []) if os.path.exists(led) else []
+            末 = vs[-1] if vs else {}
+            s = (末.get('说明') or '').strip()
+            if s and s != _占位 and '说明闸' not in str(fl.get('因', '')):
+                vp = os.path.join(d, '%s.md' % 末.get('版', ''))
+                import 章料 as _章料
+                f = _章料.章档(n)
+                if f and os.path.exists(vp) and open(f, encoding='utf-8').read() == open(vp, encoding='utf-8').read():
+                    return True, '末版（%s）已在账上且与正文逐字同，其说明：%s' % (末.get('版', '?'), s[:60])
+        except Exception:
+            pass
         return False, ''
     d, led = paths(n)
     if not os.path.exists(led):

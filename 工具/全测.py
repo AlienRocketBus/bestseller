@@ -12,6 +12,7 @@
     python3 工具/全测.py            # 全跑
     python3 工具/全测.py --快        # 略过全书检（仅自检层，供频繁调用）
 """
+import time
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
 try:
@@ -5169,6 +5170,30 @@ def chk_paozhang():
         return False, '跑账跑不起来：%s' % e
 
 
+def _记器账(录, quick):
+    """★1015 W35·作者令「工具也要有升级和进化之机制，发现其 bug 与瑕疵」——虹吸：每推本就跑全测，顺手记每检之果、之秒、之红，
+    器之健康之数自流（零 token）；工具/囤灰闸.py --普查 读之，列候修（假红多、慢）、候退（久无红、唯自测）。
+    档 `_器之账.json` 係跑起来的痕（.gitignore；存底.py 强塞入存底枝），⛔入主枝。记坏⛔碍全测。"""
+    try:
+        import json as _j
+        p = os.path.join(ROOT, '_器之账.json')
+        账 = _j.load(open(p, encoding='utf-8')) if os.path.exists(p) else {}
+        今 = time.strftime('%m%d %H:%M')
+        for 名, ok, 秒, 说 in 录:
+            x = 账.setdefault(名, {'跑': 0, '红': 0, '秒均': 0.0, '红史': []})
+            x['跑'] += 1
+            if not quick:
+                x['秒均'] = round(秒 if x['跑'] == 1 else 0.7 * x['秒均'] + 0.3 * 秒, 2)
+                x['秒末'] = round(秒, 2)
+            x['末跑'] = 今
+            if not ok:
+                x['红'] += 1
+                x['红史'] = (x['红史'] + [[今, 说[:200]]])[-10:]
+        _j.dump(账, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
+    except Exception as e:
+        print('  ⚠ 器之账未记（%s）——不碍全测' % e)
+
+
 def main():
     quick = '--快' in sys.argv
     items = [('重名定义扫描', chk_dup_defs), ('钩子挂载', chk_hookspath),
@@ -5410,12 +5435,16 @@ def main():
     fails = []
     跑过件数 = [0]
     _快照 = _留字快照()
+    _器录 = []
     for name, fn in items:
         跑过件数[0] += 1
+        _t0 = time.time()
         ok, detail = fn()
+        _器录.append((name, bool(ok), time.time() - _t0, str(detail)))
         print('  %s %-14s %s' % ('✓' if ok else '✗', name, detail))
         if not ok:
             fails.append(name)
+    _记器账(_器录, quick)
     # ★负测留字之查（2026-09-05）：跑毕再照一回，凡 设定／版本／正文 之内容有变、有增、有失者，即负测留字。
     _变, _增, _失 = _留字之差(_快照)
     if _变 or _增 or _失:

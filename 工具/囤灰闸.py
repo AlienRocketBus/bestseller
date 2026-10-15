@@ -380,12 +380,89 @@ def 自测():
         ROOT = _R0
         _sh.rmtree(_t, ignore_errors=True)
 
+    # ⑬ 器之迹（1015）：窗内之跑、败、重跑认得出，窗外⛔入
+    import json as _j
+    _行 = [_j.dumps({'t': '2026-10-15T01:00:0%d' % i, '器': '甲.py', '参': ['389'], '秒': 2, 'rc': (1 if i == 0 else 0)}) for i in range(3)]
+    _行.append(_j.dumps({'t': '2026-10-16T01:00:00', '器': '乙.py', '参': [], '秒': 1, 'rc': 0}))
+    _计 = 迹('2026-10-15T00:00:00', '2026-10-15T23:00:00', 行们=_行)
+    if _计.get('甲.py', {}).get('跑') == 3 and _计['甲.py']['败'] == 1 and _计['甲.py'].get('重跑') and '乙.py' not in _计:
+        ok += 1
+    else:
+        bad.append('⑬器之迹之窗、败、重跑')
     print('── 负测·囤灰闸 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
+
+
+def 迹窗(n, root=None):
+    """第 N 章之器之全程之窗：自 版本/第N章/_料.md 之立（章之料成即章起）至本章封版之提交（未封即今）。→ (始 ISO, 至 ISO)"""
+    import subprocess, time as _t
+    root = root or ROOT
+    料 = os.path.join(root, '版本', '第%d章' % n, '_料.md')
+    始 = _t.strftime('%Y-%m-%dT%H:%M:%S', _t.gmtime(os.path.getmtime(料))) if os.path.exists(料) else '0000'
+    r = subprocess.run(['git', 'log', '-1', '--format=%cI', '--grep', '第%d章《' % n, '--grep', '封版', '--all-match'],
+                       cwd=root, capture_output=True, text=True)
+    至 = '9999'
+    if r.stdout.strip():
+        import datetime
+        至 = datetime.datetime.fromisoformat(r.stdout.strip()).astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S')
+    return 始, 至
+
+
+def 迹(始, 至, root=None, 行们=None):
+    """_器之迹.jsonl 里 始—至 之诸跑 → 每器：跑、败（rc 非 0／None）、总秒、最长、同参重跑（同器同参 ≥3 回＝摩擦之疑）"""
+    import json as _j
+    root = root or ROOT
+    if 行们 is None:
+        p = os.path.join(root, '_器之迹.jsonl')
+        行们 = open(p, encoding='utf-8').read().split('\n') if os.path.exists(p) else []
+    计 = {}; 参计 = {}
+    for l in 行们:
+        try:
+            e = _j.loads(l)
+        except Exception:
+            continue
+        if not (始 <= e.get('t', '') <= 至):
+            continue
+        x = 计.setdefault(e['器'], {'跑': 0, '败': 0, '秒': 0.0, '最长': 0.0, '败例': []})
+        x['跑'] += 1; x['秒'] += e.get('秒') or 0; x['最长'] = max(x['最长'], e.get('秒') or 0)
+        if e.get('rc') not in (0, None):
+            x['败'] += 1
+            if len(x['败例']) < 3:
+                x['败例'].append('%s %s rc=%s' % (e['t'][11:16], ' '.join(e.get('参') or []), e.get('rc')))
+        k = (e['器'], tuple(e.get('参') or []))
+        参计[k] = 参计.get(k, 0) + 1
+    for (器, 参), c in 参计.items():
+        if c >= 3:
+            计[器].setdefault('重跑', []).append('%s ×%d' % (' '.join(参) or '（无参）', c))
+    return 计
+
+
+def 迹报(n, 计, 始, 至):
+    行 = ['# 器之迹·第%d章（零 token·工具/囤灰闸.py --迹 %d）' % (n, n), '',
+         '> 本章从料成到封版（%s — %s，UTC）所跑之器与其表现。败＝退出码非 0（闸之红亦算——须分辨真红、假红）；'
+         '重跑＝同器同参 ≥3 回（摩擦之疑：其印不明、或闸反复红）。供复盘与每回大审之器之审。' % (始, 至), '',
+         '| 器 | 跑 | 败 | 总秒 | 最长 | 重跑 | 败例 |', '|---|---|---|---|---|---|---|']
+    for 器, x in sorted(计.items(), key=lambda kv: (-kv[1]['败'], -kv[1]['秒'])):
+        行.append('| %s | %d | %d | %.1f | %.1f | %s | %s |' % (器, x['跑'], x['败'], x['秒'], x['最长'],
+                  '；'.join(x.get('重跑', [])), '；'.join(x['败例'])))
+    if not 计:
+        行.append('| （窗内无迹——_器之迹.jsonl 自 1015 03:20 起记） | | | | | | |')
+    return '\n'.join(行) + '\n'
 
 
 if __name__ == '__main__':
     if '--自测' in sys.argv:
         sys.exit(0 if 自测() else 1)
+    if '--迹' in sys.argv:
+        _n = int(sys.argv[sys.argv.index('--迹') + 1])
+        _始, _至 = 迹窗(_n)
+        _报 = 迹报(_n, 迹(_始, _至), _始, _至)
+        if '--写' in sys.argv:
+            _p = os.path.join(ROOT, '版本', '第%d章' % _n, '_器之迹.md')
+            os.makedirs(os.path.dirname(_p), exist_ok=True)
+            open(_p, 'w', encoding='utf-8').write(_报); print('✓ 写 %s' % os.path.relpath(_p, ROOT))
+        else:
+            print(_报)
+        sys.exit(0)
     红, _ = 查()
     sys.exit(1 if 红 else 0)

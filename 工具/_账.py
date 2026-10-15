@@ -47,3 +47,46 @@ def _落():
         pass
 
 _落()
+
+
+def _迹():
+    """★1015 W35·作者议「每写一章，从头到尾看用到哪些器、每器之表现——有无缺、效够不够高」：
+    每一回跑，退出时追一行於 `_器之迹.jsonl`（始、器、参、秒、退出之码或异常、流）——一章之器之全程由此零 token 可复原
+    （囤灰闸之 --迹 N 读之）。只追写一行（O_APPEND）；同守上之三⛔：不抛、不慢、不碰别的档。"""
+    try:
+        名 = os.path.basename(getattr(sys.modules.get('__main__'), '__file__', '') or '')
+        if not 名 or 名.startswith(('_', '<')):          # 「<stdin>」等临时之码⛔记
+            return
+        import atexit
+        态 = {'rc': None, 't0': time.time()}
+        原exit = sys.exit
+
+        def _exit(code=0):
+            态['rc'] = code if code is None or isinstance(code, int) else str(code)[:60]
+            原exit(code)
+        sys.exit = _exit
+        原hook = sys.excepthook
+
+        def _hook(tp, v, tb):
+            态['rc'] = 'exc:' + getattr(tp, '__name__', '?')
+            原hook(tp, v, tb)
+        sys.excepthook = _hook
+
+        def _写():
+            try:
+                行 = json.dumps({'t': time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime(态['t0'])), '器': 名,
+                                '参': [str(x)[:40] for x in sys.argv[1:5]], '秒': round(time.time() - 态['t0'], 2),
+                                'rc': 态['rc'], '流': os.environ.get('ZM_STREAM', '')}, ensure_ascii=False)
+                根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                fd = os.open(os.path.join(根, '_器之迹.jsonl'), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+                try:
+                    os.write(fd, (行 + '\n').encode('utf-8'))
+                finally:
+                    os.close(fd)
+            except Exception:
+                pass
+        atexit.register(_写)
+    except Exception:
+        pass
+
+_迹()

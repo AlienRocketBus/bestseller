@@ -96,7 +96,7 @@ def 存(说明='', 续心跳=True):
         r = _跑('git', 'add', '-A', env=env)
         # ★两本账在 .gitignore 里（免得主枝永远是脏的），故须**强塞**进这一份临时索引——
         #   **存底枝要是没有它们，续跑之账就断了**（东西保住而进度丢了，仍是断）。
-        for _档 in ('_跑账.json', '_任务流.json', '_器之账.json'):
+        for _档 in ('_跑账.json', '_任务流.json', '_器之账.json', '_器之迹.jsonl'):
             if os.path.exists(os.path.join(ROOT, _档)):
                 _跑('git', 'add', '-f', _档, env=env)
         if r.returncode != 0:

@@ -5093,6 +5093,20 @@ def chk_dust():
     out = run('囤灰闸', ['工具/囤灰闸.py'])
     if out is None:
         return False, '囤灰闸崩'
+    # ★1015 器之进化之律：健康之数之源（_记器账）须有自测——同档之函，於此验（⛔令囤灰闸 import 全测：其闭包即全器，1015 自测逮）
+    try:
+        import tempfile as _tf, json as _j
+        _d = _tf.mkdtemp(); _r0 = globals()['ROOT']; globals()['ROOT'] = _d
+        try:
+            _记器账([('甲', True, 1.0, 'ok'), ('乙', False, 2.0, '坏')], False)
+            _记器账([('甲', False, 9.0, '快红')], True)
+            _a = _j.load(open(os.path.join(_d, '_器之账.json'), encoding='utf-8'))
+        finally:
+            globals()['ROOT'] = _r0
+        if not (_a['甲']['跑'] == 2 and _a['甲']['秒末'] == 1.0 and _a['甲']['红'] == 1 and _a['乙']['红史'][0][1] == '坏'):
+            return False, '器之账之记不对：%s' % _a
+    except Exception as e:
+        return False, '器之账之测崩：%s' % e
     if '⛔' in out:
         return False, '囤灰：' + '；'.join(x.strip(' ⛔') for x in out.split('\n') if '⛔' in x)[:300]
     m = re.search(r'甲·器 (\d+) 样，跑得着 (\d+)', out)

@@ -81,6 +81,43 @@ def 数(n, root=ROOT):
     return d
 
 
+def 机械之证(n, root=ROOT):
+    """★1015 W33 之改（390 之试：记席 58 工具里翻查 32——坑账之答所须之据由模型逐条 grep）：
+    据之可机算者器先算——①骨记引句逐条核於所引之章（坑㉕）②卡之⛔字在白文之数（坑⑱）③对白之行（坑⑩）④日词（坑⑫）⑤数词之行（坑㉘）。
+    ⛔判：只交据；犯没犯仍由记席判。"""
+    import 章料, 人物链
+    f = 章料.章档(n, root)
+    t = open(f, encoding='utf-8').read()
+    i = t.find('【本章亮点】')
+    白, 骨 = (t[:i], t[i:]) if i >= 0 else (t, '')
+    L = 白.split('\n'); 出 = []
+    # ①骨记之引句
+    引 = re.findall(r'(\d{1,3})[:：](\d{1,4})(?:[—–-]\d+)?\s*「([^」]{4,40})」', 骨)
+    坏 = []
+    for c, ln, 句 in 引:
+        合, 实 = 人物链.核句(int(c), 句, ln, root)
+        if not 合:
+            坏.append('%s:%s「%s」%s' % (c, ln, 句[:16], ('实在 :%d' % 实) if 实 else '所引之章无此句'))
+    出.append('①骨记引句 %d 处｜不合 %d%s' % (len(引), len(坏), ('：' + '；'.join(坏[:8])) if 坏 else '（俱核於所引之章之行·±1）'))
+    # ②卡之⛔字
+    卡 = os.path.join(root, '版本', '第%d章' % n, '_开镜卡.md')
+    禁 = []
+    if os.path.exists(卡):
+        kt = open(卡, encoding='utf-8').read()
+        禁 = sorted(set(re.findall(r'⛔\s*「([^」]{1,8})」', kt) + re.findall(r'「([^」]{1,8})」\s*⛔', kt)))
+    出.append('②卡之⛔字在白文之数：' + ('｜'.join('「%s」%d' % (w, 白.count(w)) for w in 禁[:30]) or '（卡无⛔「字」之式）'))
+    # ③对白之行
+    对 = [(k + 1, l) for k, l in enumerate(L) if '“' in l or re.search(r'「[^」]{1,40}」[，。！？]?(?:他|她|我|钱满|刘二|东头|老头)?说', l)]
+    出.append('③对白之行 %d：%s' % (len(对), '、'.join(':%d' % k for k, _ in 对[:40])))
+    # ④日词
+    日 = [(k + 1, m) for k, l in enumerate(L) for m in re.findall(r'第[零〇一二三四五六七八九十百]+[天日]|昨天|前天|今天|明天|後半夜|天亮|天黑|晌午|後晌|日落', l)]
+    出.append('④日词：%s' % ('、'.join(':%d%s' % (k, m) for k, m in 日[:40]) or '无'))
+    # ⑤数词之行
+    数 = [(k + 1, m) for k, l in enumerate(L) for m in re.findall(r'[零〇一二两三四五六七八九十百千]+(?:个|道|处|回|天|步|指|尺|丈|口|块|张|行|格|刻|时辰|下)', l) if not re.match(r'一[^十百千]', m)]   # 「一个」「一下」之类⛔列（噪）
+    出.append('⑤数词 %d 处（先说後数之核）：%s' % (len(数), '、'.join(':%d%s' % (k, m) for k, m in 数[:40])))
+    return 出
+
+
 def 前(n, root=ROOT):
     print('════ 封版·前（第%d章）════' % n)
     d = 数(n, root)
@@ -101,6 +138,10 @@ def 前(n, root=ROOT):
     print('· 层（层census.py %d）：\n%s' % (n, '\n'.join('    ' + l for l in out.strip().split('\n')[-8:])))
     rc, out, _ = 跑([器('坑账.py'), '--逐章', str(n)], root)
     print('· 坑账之单（逐条答进回执「坑账之答」）：\n' + '\n'.join('    ' + l for l in out.strip().split('\n')))
+    try:
+        print('· 坑账之机械之证（器先算·记席照此答、⛔再逐条 grep——W33 之治：390 记席翻查 32 回多在此）：\n' + '\n'.join('    ' + l for l in 机械之证(n, root)))
+    except Exception as _e:
+        print('· 坑账之机械之证：⛔算不出（%s）——记席照旧手查' % _e)
     try:                                                     # ★1013：开轮十六检（除⑭）——384 记席未写「承前之判」（⑮），封版·後 方红；今於 --前 即印其红
         rc6, out6, _ = 跑([器('开轮六检.py'), str(n), '--静'], root)
         import 全测 as _全测
@@ -224,6 +265,8 @@ def 自测():
     共 += 1; ok += (d.get('净重') == 2572 and d.get('末版') == 'v03' and d.get('六数', '').startswith('净重2572｜段数48｜长段数7｜嗅0｜触8｜四字串三现4'))
     共 += 1; ok += (d.get('＊') == 4 and d.get('拍') == 5 and d.get('sha1', '').startswith('a2f8fd36') and d.get('与末版同') is True)
     共 += 1; ok += (d.get('总纲') == '| 380 | 主·148 |')
+    _证 = 机械之证(390)                       # ★1015 W33 之改：据 390 记席手查之果（回执 §六：骨记引句俱合、对白 8 行皆钱满 :15…:125）
+    共 += 1; ok += (len(_证) == 5 and '不合 0' in _证[0] and _证[2].startswith('③对白之行 8：:15、:99'))
     收, 弃 = 可提交(381, ['正文/a.md', '版本/第381章/x', '版本/第382章/_开镜卡.md', '设定/y.json', 'README.md', '工具/z.py', '版本/第379章/v.md'])
     共 += 1; ok += (弃 == ['工具/z.py', '版本/第379章/v.md'] and len(收) == 5)
     共 += 1; ok += (记之缺(380) == [] and '下一章开镜卡' not in 记之缺(380))

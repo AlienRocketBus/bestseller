@@ -199,6 +199,25 @@ def 账():
     return 末, 上, 距, 判
 
 
+def 限於(n):
+    """★1016（394 逮：393 记席照 大问表 之印填 394 卡问七，⛔见大审册「已挂·限394」之 #23——开镜卡漏、封版必逾）：
+    上一册§三里「已挂」之格其限（取最小，同上「逾」之读法）≤ n 之笔 → [(号, 限, 其行之要)]。"""
+    cs = 诸册()
+    if not cs:
+        return []
+    t = io.open(cs[-1][1], encoding='utf-8', errors='replace').read()
+    _sec = t.split('## 三·')[-1].split('\n## ')[0] if '## 三·' in t else ''
+    出 = []
+    for x in _sec.splitlines():
+        if not (x.strip().startswith('|') and x.count('|') >= 5 and '已挂' in x):
+            continue
+        _cells = [c for c in x.split('|') if '已挂' in c]
+        ms = re.findall(r'限\s*(\d+)', _cells[0]) if _cells else []
+        if ms and min(int(y) for y in ms) <= n:
+            出.append((x.split('|')[1].strip(), min(int(y) for y in ms), re.sub(r'\s+', ' ', _cells[0]).strip()[:200]))
+    return 出
+
+
 def 立(n):
     p = os.path.join(册目, '大审_至第%d章.md' % n)
     if os.path.exists(p):
@@ -250,6 +269,14 @@ def 印(只闸=False):
 
 
 if __name__ == '__main__':
+    if '--限' in sys.argv:                 # 开镜卡问七：python3 工具/大审.py --限 N → 上一册「已挂」限 ≤N 之笔
+        n = int(sys.argv[sys.argv.index('--限') + 1])
+        r = 限於(n)
+        print('── 大审「已挂」限 ≤%d 之笔（开镜卡问七须逐笔抄上；到其限须裁：已治／改限带由）──' % n)
+        for 号, l, c in r:
+            print('  #%s 限%d｜%s' % (号, l, c))
+        print('  （零笔）' if not r else '  共 %d 笔' % len(r))
+        raise SystemExit(0)
     if '--立' in sys.argv:
         raise SystemExit(0 if 立(int(sys.argv[sys.argv.index('--立') + 1])) else 2)
     raise SystemExit(1 if 印('--闸' in sys.argv) else 0)

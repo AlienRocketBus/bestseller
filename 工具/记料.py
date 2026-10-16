@@ -72,6 +72,9 @@ def _节首(t, k):
     return '\n'.join(出)
 
 
+十一收册 = True   # 十一节收在场之人之册行（末态一）；五节⛔重印末态
+
+
 def 汇(N, root=ROOT):
     import 章料
     f, 白 = 章白(N, root)
@@ -99,8 +102,8 @@ def 汇(N, root=ROOT):
     总览 = 读(os.path.join(记, '总览.md'), root)
     出.append(节('四·全书记忆：用法（首六十行）、前章之记（式样）、总览之首与索引之末',
                 用法 + '\n\n〔第%d章.md·式样（每节首八行；全文照 `设定/全书记忆/第%d章.md`）〕\n' % (N - 1, N - 1) + _节首(前章记, 8) + '\n\n〔总览·首十四行〕\n' + '\n'.join(总览.split('\n')[:14]) +
-                '\n\n〔总览·「全书今之末」「下一章」与索引末五行〕\n' + 行们(总览, r'全书今之末|下一章', 0, 1, 6) + '\n' +
-                '\n'.join('%d｜%s' % (i + 1, l) for i, l in list(enumerate(总览.split('\n')))[-8:])))
+                '\n\n〔总览·「全书今之末」「下一章」之行（式样，至多三）与索引末三行〕\n' + 行们(总览, r'全书今之末|下一章', 0, 0, 3) + '\n' +
+                '\n'.join('%d｜%s' % (i + 1, l) for i, l in list(enumerate(总览.split('\n')))[-3:])))
     # 五、在场之人：人物、状态册
     册 = {}
     try:
@@ -122,13 +125,14 @@ def 汇(N, root=ROOT):
         体.append(行们(人物, r'^#+ .*%s' % re.escape(名), 0, 2, 3))
         态 = sorted([x for x in v if re.match(r'\d+态$', x)], key=lambda x: int(re.match(r'\d+', x).group()))[-1:]
         for x in 态:
-            体.append('状态册·%s：%s' % (x, str(v[x])[:600]))
+            if not 十一收册:                    # ★1016（394 记料 161KB）：十一节已收其册行（含末态），此处⛔重印
+                体.append('状态册·%s：%s' % (x, str(v[x])[:600]))
     出.append(节('五·本章白文里出现之人（人物.md 之节首、状态册之末态）——须添「%d态」者' % N, '\n'.join(体)))
     # 六、物件、悬线
     物件 = 读(os.path.join(记, '物件.md'), root)
     悬线 = 读(os.path.join(记, '悬线.md'), root)
-    钉 = '|'.join(str(x) for x in range(N, N + 7))
-    出.append(节('六·物件之末一块「N-1 之物」、悬线钉在 %d—%d 之行' % (N, N + 6),
+    钉 = '|'.join(str(x) for x in range(N, N + 4))   # ★1016：本章与下一至三章（旧 N—N+6，394 记料 161KB）
+    出.append(节('六·物件之末一块「N-1 之物」、悬线钉在 %d—%d 之行' % (N, N + 3),
                 行们(物件, r'%d 之物' % (N - 1), 0, 6) + '\n\n' + 行们(悬线, r'(^|[^\d])(%s)([^\d]|$)' % 钉, 0, 0, 60)))
     # 七、轮记、行家评
     轮 = 读(os.path.join('版本', '第%d章' % N, '_轮记.md'), root)
@@ -168,11 +172,11 @@ def 汇(N, root=ROOT):
     行 = []
     for 名, 中, v in 人们:
         体2 = {k: v[k] for k in v if not re.match(r'\d+态$', k)}
-        态2 = sorted([x for x in v if re.match(r'\d+态$', x)], key=lambda x: int(re.match(r'\d+', x).group()))[-2:]
+        态2 = sorted([x for x in v if re.match(r'\d+态$', x)], key=lambda x: int(re.match(r'\d+', x).group()))[-1:]
         体2.update({x: v[x] for x in 态2})
         行.append(json.dumps(体2, ensure_ascii=False))
     if 行:
-        出.append(节('十一·人物状态册之行（在场之人；去旧态、留末二态——添「%d态」照此式）' % N, '\n'.join(行)))
+        出.append(节('十一·人物状态册之行（在场之人；去旧态、留末一态——添「%d态」照此式）' % N, '\n'.join(行)))
     try:
         卡们 = [c for c in ((canon or {}).get('state_canon') or []) if isinstance(c, dict)]
     except Exception:

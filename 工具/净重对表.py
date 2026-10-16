@@ -215,7 +215,21 @@ def 自测():
     return all(o for _, o in R)
 
 
+def 稿之量(路):
+    """★1016（393 逮：执笔令「落笔前照此估、⛔跑器」，诸席在思考里数字——一席单回逾 128k 输出而死，三席各 25 万上下，章费倍）：
+    一档之净重与硬项（非零者），供执笔写毕之同一条命令末尾一跑。"""
+    from 硬闸 import 硬项
+    t = io.open(路, encoding='utf-8').read()
+    红 = {k: v for k, v in 硬项(t).items() if v and k not in ('段间空行病', '章号入正文')}   # 此二格係合稿入正文之式，稿⛔计
+    return 净重(路), 红
+
+
 if __name__ == '__main__':
+    if '--量' in sys.argv:
+        路 = sys.argv[sys.argv.index('--量') + 1]
+        n, 红 = 稿之量(路)
+        print('净重 %d｜硬项 %s' % (n, '零' if not 红 else '、'.join('%s %d' % kv for kv in 红.items())))
+        sys.exit(0)
     if '--自测' in sys.argv:
         sys.exit(0 if 自测() else 1)
     if '--补' in sys.argv:

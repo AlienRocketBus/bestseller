@@ -187,6 +187,11 @@ def 引之原句(文, root=ROOT, 限=80, 段限=30, 字限=30 * 1024):
     return 出
 
 
+def _号行(t):
+    """★1015（392 二席报：前文白文不带行号，引一处须另跑 awk）——非空行前加「行号｜」，空行照留。"""
+    return '\n'.join(('%d｜%s' % (i, l)) if l.strip() else l for i, l in enumerate(t.split('\n'), 1))
+
+
 def 内部名(文, root=ROOT):
     """1015（391 五席同报：卡用「点户」「档柜」「贺兰」，正文 0 见——各席各译）：卡、段案里 2—4 字之「名」，正文全书 0 见者。"""
     名们 = sorted(set(re.findall(r'「([\u4e00-\u9fff]{2,4})」', 文)))
@@ -241,9 +246,9 @@ def 汇(n, root=ROOT, 出=None):
             t = open(f, encoding='utf-8').read()
             if 本线 and 造式验.线(k, root) and 造式验.线(k, root) != 本线 and '【本章亮点】' in t:
                 # ★1013：异线之章只收白文（其骨记係另一线之种与物，二线不通消息；384 之料 130KB 逾限，此节省 11KB）；同线之章照收全（物之去向在其骨记）
-                段.append(('前文·第%d章白文（异线·只白文）' % k, t[:t.index('【本章亮点】')].rstrip()))
+                段.append(('前文·第%d章白文（异线·只白文；行首为行号，引作「%d:行」）' % (k, k), _号行(t[:t.index('【本章亮点】')].rstrip())))
             else:
-                段.append(('前文·第%d章白文（全）' % k, t))
+                段.append(('前文·第%d章白文（全；行首为行号，引作「%d:行」）' % (k, k), _号行(t)))
     人 = 人物(卡 + 预, 册, 本线)
     if 人:
         段.append(('人物之态（开镜卡点到者）', '\n\n'.join(人)))
@@ -311,7 +316,7 @@ def 自测():
     with _cl.redirect_stdout(_io.StringIO()):
         汇(384, ROOT, _o)
     _x = open(_o, encoding='utf-8').read()
-    共 += 1; ok += ('前文·第383章白文（异线·只白文）' in _x and '前文·第382章白文（全）' in _x)   # 异线只白文、同线照全
+    共 += 1; ok += ('前文·第383章白文（异线·只白文' in _x and '前文·第382章白文（全' in _x and '\n1｜' in _x)   # 异线只白文、同线照全；行首带号
     print('章料·自测 %d/%d' % (ok, 共))
     return ok == 共
 

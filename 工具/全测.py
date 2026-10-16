@@ -2612,7 +2612,13 @@ def chk_suspense():
     import json as _j, io as _io
     账 = _j.load(_io.open(_os.path.join(ROOT, '设定', '到期账.json'), encoding='utf-8'))['items']
     哨章 = dict((x['id'], x.get('哨')) for x in 账)
-    坏 = [k for k, 末见, 距, bad in 报 if bad and not 哨章.get(k)]
+    # ★1015（392 逮）：旧只问「有哨否」——SUS-B 哨 392，392 写毕未出而照绿；今哨须在末章之後（已写过之章不算挂）
+    def _哨在前(v):
+        try:
+            return int(v) > 末
+        except Exception:
+            return False
+    坏 = [k for k, 末见, 距, bad in 报 if bad and not _哨在前(哨章.get(k))]
     if 坏:
         return False, ('⛔逾限而账上无哨（未写明改挂到哪一章）：%s' % '、'.join(坏))
     # ⛔★★★★★2026-09-23·限362 补第二问：**一个已经过去的哨不是哨，是碑。**

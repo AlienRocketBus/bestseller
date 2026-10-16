@@ -1290,7 +1290,7 @@
     }
    ],
    "验": "封版#393；致命 0；执笔 flaws ⛔同报卡无章:行",
-   "续之令": "Workflow({scriptPath:'工具/席/造章.js', args:{章:393, 重:'重', 魂路:['换账','回声','不说']}})；断了以 resumeFromRunId 续",
+   "续之令": "Workflow({scriptPath:'工具/席/造章.js', resumeFromRunId:'wf_edeb81d7-7da', args:{章:393, 重:'重', 魂路:['换账','回声','不说']}})；新会话去 resumeFromRunId",
    "依": [
     "W44"
    ],

@@ -633,13 +633,53 @@ def _line_of(c):
     return '她' if 她 >= 他 else '他'
 
 
-def _prev_same_line(cur):
-    """★本章之前，同一条线上最近的那一章。★★无者返 None。"""
-    me = _line_of(cur)
-    if me is None:
+# ★★★★★1016·X01（391 封版之⑮所逮）：⑮之线只以「我」与她/他之密度判（_line_of），而总纲所排之线它一眼不看——
+#   391（暗·霍钧镜，他13.8/千）之同线前章 389（暗，而对白里「我」4.4/千 ≥3）被判作「主」，
+#   遂报「本线之前无章（十二章之内），免测」，⑮对 391 形同虚设；390 之所比者亦误作 389（应为 388）。
+#   今线照 工具/造式验.py 之 线(n)（总纲两栏俱认，其自测在）同一把尺：**总纲有其行者以总纲为准（主／暗）**；
+#   ★总纲无其行之旧章（306 以前）仍照 _line_of 之三值（主／她／他·268／270 之分不动）；
+#   ★★一有一无者以粗值比（她、他→暗）。
+_纲线之存 = {}
+
+
+def _纲线(c, root=ROOT):
+    """★总纲所排之线（主／暗／None）——直调 造式验.线，不另造尺。"""
+    k = (c, root)
+    if k not in _纲线之存:
+        try:
+            import 造式验
+            _纲线之存[k] = 造式验.线(c, root=root)
+        except Exception:
+            _纲线之存[k] = None
+    return _纲线之存[k]
+
+
+def _线(c, root=ROOT, 细=None):
+    """★返 (纲, 细)：纲＝总纲之线（主／暗／None），细＝_line_of 之三值（主／她／他／None）。"""
+    return _纲线(c, root), (细 or _line_of)(c)
+
+
+def _同线(a, b):
+    """★a、b 皆 _线 之返。二者皆有纲→比纲；皆无→比细；一有一无→以粗值比（她、他→暗）。"""
+    粗 = lambda v: None if v is None else ('主' if v == '主' else '暗')
+    if a[0] and b[0]:
+        return a[0] == b[0]
+    if not a[0] and not b[0]:
+        return a[1] is not None and a[1] == b[1]
+    x = a[0] or 粗(a[1])
+    y = b[0] or 粗(b[1])
+    return x is not None and x == y
+
+
+def _prev_same_line(cur, root=ROOT, 有=None, 细=None):
+    """★本章之前，同一条线上最近的那一章。★★无者返 None。
+    ★root／有／细 三参只为自测造局（临时总纲、章之集、细线之函）；常用一律缺省。"""
+    有 = F if 有 is None else 有
+    me = _线(cur, root, 细)
+    if me == (None, None):
         return None
     for c in range(cur - 1, max(0, cur - 13), -1):
-        if c in F and _line_of(c) == me:
+        if c in 有 and _同线(_线(c, root, 细), me):
             return c
     return None
 

@@ -72,17 +72,130 @@ def 硬之红(out):
         return {'硬闸之印读不出': 1}
 
 
+# ★1016·X02（393 合稿席为找红处多跑三回工具）：器红时总表只印其末行——起草闸印训语「③写完先跑本器甲层」、
+#   硬闸只印计数、不印句，且「五逗句」扫全档连骨记，与「亮点段五逗」把同一句计两回（393 报 3＋3 实 3 句）。
+#   今器红时於其行下另印「要」：起草闸甲层红之项、硬闸非零诸格之句（首二十字、至多五句）、余器之⛔行。
+#   ⛔判红之准一格未动——以下只管「印什么」，红不红仍由 rc／硬之红 定。
+def _句段(t):
+    """t 之句（与 硬闸.硬项 同切：句末 。！？…）→ [(起, 止)]。"""
+    段, s = [], 0
+    for m in re.finditer(r'(?<=[。！？…])', t):
+        if m.start() > s:
+            段.append((s, m.start())); s = m.start()
+    if s < len(t):
+        段.append((s, len(t)))
+    return 段
+
+
+def _句之首(t, 起, 止, 锚=None):
+    """句之首二十字。句起自锚（红处，缺则句中首个「，」）所在之行首——句切只认 。！？…，
+    章题、「---」、【本章亮点】、上段末之 ” 会粘在句前，⛔印作句首。"""
+    if 锚 is None:
+        锚 = t.find('，', 起, 止)
+        锚 = 起 if 锚 < 0 else 锚
+    起 = max(起, t.rfind('\n', 0, 锚) + 1)
+    return '%d行「%s」' % (t.count('\n', 0, 起) + 1, re.sub(r'\s+', '', t[起:止]).lstrip('」”’』）)、，；：')[:20])
+
+
+def 硬之要(txt, h=None, 至多=5):
+    """txt：全档之文；h：硬闸诸格之数（缺则自算）。返 (末, 要)——末为一行之计，要为逐格之句。
+    五逗句与亮点段五逗⛔重计：五逗句分白文／骨记二数，骨记之句即亮点段五逗，不另列。"""
+    import 硬闸
+    if h is None:
+        h = {k: v for k, v in 硬闸.硬项(txt).items() if v}
+    body, hl = 硬闸.拆(txt)
+    prose = txt.split('【本章亮点】')[0]
+    偏 = {'全': (txt, 0), '白': (body, len(prose) - len(body)),
+          '亮': (hl, txt.find('【本章亮点】') if hl else len(txt))}
+    禁 = '|'.join(re.escape(w) for w in sorted(硬闸.永禁词(), key=len, reverse=True)) or r'(?!)'
+    定 = {'破折': ('全', '—'), '半角逗': ('全', ','), '半角冒': ('全', ':'), '半角引号': ('全', '"'),
+         '半角问': ('全', r'\?'), '半角叹': ('全', '!'), '半角分': ('全', ';'), '半角撇': ('全', "'"),
+         '英文': ('全', '[A-Za-z]'), '章号入正文': ('白', r'(?:[一二三四五六七八九十百零〇]+|\d+)章'),
+         '禁抖': ('白', '[抖颤]'), '永禁词': ('白', 禁), '叠词粘连': ('白', 硬闸.叠词式.pattern),
+         '段间空行病': ('白', r'[。！？”＊]\n(?!\n)[^\n]'),
+         '亮点段破折': ('亮', '—'), '亮点段半角': ('亮', '[,"]'), '亮点段永禁': ('亮', 禁)}
+    句 = _句段(txt)
+    界 = txt.find('【本章亮点】') if hl else len(txt)
+
+    def 所在(pos):
+        for a, b in 句:
+            if a <= pos < b:
+                return (a, b)
+        return (pos, pos + 20)
+
+    def 列(spans):
+        出, 见 = [], set()
+        for sp in spans:
+            if sp not in 见:
+                见.add(sp); 出.append(sp)
+        return 出
+
+    末, 要 = [], []
+    for k, v in h.items():
+        if k == '亮点段五逗' and '五逗句' in h:
+            continue                                   # 并入五逗句之骨记数，⛔重计
+        if k == '五逗句' or k == '亮点段五逗':
+            五 = [sp for sp in 句 if txt[sp[0]:sp[1]].count('，') >= 5]
+            白 = [sp for sp in 五 if sp[1] <= 界]
+            骨 = [sp for sp in 五 if sp[1] > 界]
+            if k == '五逗句':
+                注 = '五逗句 %d 句（白文 %d｜骨记 %d%s）' % (v, len(白), len(骨),
+                       '；骨记之句即「亮点段五逗 %d」，同句不重计' % h['亮点段五逗'] if h.get('亮点段五逗') else '')
+                spans = 白 + 骨
+            else:
+                注, spans = '亮点段五逗 %d 句' % v, 骨
+            末.append(注)
+            要.append('%s：%s' % (注.split('（')[0], '；'.join(('骨记·' if sp[1] > 界 else '') + _句之首(txt, *sp)
+                                                         for sp in spans[:至多]) or '（句定不着，跑 硬闸.py N 自看）'))
+            continue
+        末.append('%s %s' % (k, v))
+        if k not in 定:
+            要.append('%s：（此格无句之定位，跑 硬闸.py N 自看）' % k); continue
+        域, 式 = 定[k]
+        t, o = 偏[域]
+        锚 = {}
+        for m in re.finditer(式, t):
+            锚.setdefault(所在(o + m.start()), o + m.start())
+        spans = 列(锚)
+        要.append('%s：%s' % (k, '；'.join(_句之首(txt, sp[0], sp[1], 锚[sp]) for sp in spans[:至多]) or '（句定不着）')
+                  + ('（另 %d 句未列）' % (len(spans) - 至多) if len(spans) > 至多 else ''))
+    return '、'.join(末), 要
+
+
+def 红之要(器, out, 末):
+    """器红时其行下另印之要（硬闸另由 硬之要 出）。起草闸：甲层⛔之项；余器：⛔行（去末行，至多三条）。"""
+    行 = [l.strip() for l in out.split('\n') if l.strip()]
+    if 器 == '起草闸':
+        甲 = out.split('── 乙层')[0]
+        红 = [l.strip() for l in 甲.split('\n') if l.strip().startswith('⛔')]
+        if 红:
+            return ['甲层红 %d 项：%s' % (len(红), '、'.join(l[1:].strip().split('：')[0] for l in 红))] + \
+                   [l[:160] for l in 红]
+        return ['甲层无⛔行而 rc≠0——其印之末三行：'] + [l[:160] for l in 行[-3:]]
+    红 = [l[:160] for l in 行 if '⛔' in l and l != 末.strip()]
+    return 红[:3]
+
+
 def 验(n, root=ROOT):
     出 = []
     for 器, 参, 判 in 致命:
         rc, out, 末, 秒 = 跑(器, 参, n)
+        要 = []
         if 判 == '硬':
             h = 硬之红(out)
             红 = bool(h) or rc != 0
             末 = '、'.join('%s %s' % kv for kv in h.items()) if h else '诸格俱零'
+            f = 正文档(n, root)
+            if h and f and '硬闸之印读不出' not in h:
+                try:
+                    末, 要 = 硬之要(open(f, encoding='utf-8').read(), h)
+                except Exception as e:                       # 只是印法，⛔因之改红绿
+                    要 = ['（定句时出错：%s）' % e]
         else:
             红 = rc != 0
-        出.append(dict(器=器, 类='致命', 红=红, rc=rc, 秒=round(秒, 1), 末=末))
+            if 红:
+                要 = 红之要(器, out, 末)
+        出.append(dict(器=器, 类='致命', 红=红, rc=rc, 秒=round(秒, 1), 末=末, 要=要))
     f = 正文档(n, root)
     if not f:
         出.append(dict(器='厚', 类='致命', 红=True, rc=1, 秒=0, 末='第%d章之正文不在 正文/' % n))
@@ -93,7 +206,8 @@ def 验(n, root=ROOT):
                       末='净重 %d｜%s线带底 %s' % (w, l or '?', 底 if 底 else '（总纲无本章之行）')))
     for 器, 参 in 报:
         rc, out, 末, 秒 = 跑(器, 参, n)
-        出.append(dict(器=器, 类='报', 红=rc != 0, rc=rc, 秒=round(秒, 1), 末=末[:200]))
+        出.append(dict(器=器, 类='报', 红=rc != 0, rc=rc, 秒=round(秒, 1), 末=末[:200],
+                      要=红之要(器, out, 末) if rc != 0 else []))
     return 出
 
 
@@ -134,6 +248,26 @@ def 自测():
     共 += 1; ok += all(os.path.exists(os.path.join(ROOT, '工具', x[0] + '.py')) for x in 致命 + 报)
     共 += 1; ok += (线(381) == '暗' and 线(380) == '主' and 线(404) == '主' and 线(405) == '暗' and 线(999) is None)   # 右栏之章亦认
     共 += 1; ok += (照整章('点户照 268 原句，腔照 211') == ['211', '268'] and 照整章('照 268 原句（268:61—77）') == [])
+    # ★X02：红处之要——五逗不重计、硬闸印句、起草闸印甲层红项（造局以字串，⛔钉盘上之数）
+    文 = ('# 第九百九十九章 试\n\n甲，乙，丙，丁，戊，己。他说——好。\n平常一句。\n\n---\n\n'
+          '【本章亮点】\n\n①子，丑，寅，卯，辰，巳。②平。')
+    import 硬闸
+    h = {k: v for k, v in 硬闸.硬项(文).items() if v}
+    末, 要 = 硬之要(文, h)
+    共 += 1; ok += (h.get('五逗句') == 2 and h.get('亮点段五逗') == 1          # 硬闸自身仍计两回（判准未动）
+                   and '白文 1｜骨记 1' in 末 and '亮点段五逗 1」，同句不重计' in 末
+                   and not any(y.startswith('亮点段五逗') for y in 要)
+                   and any(y.startswith('五逗句') and '3行「甲，乙，丙' in y and '骨记·' in y and '骨记·10行「①子，丑，寅' in y for y in 要)
+                   and any(y.startswith('破折') and '「他说——好。」' in y for y in 要)
+                   and any(y.startswith('段间空行病') for y in 要))
+    共 += 1; ok += (硬之要('# 第九百九十九章 试\n\n他说：「走。」——好。\n')[1] == ['破折：3行「——好。」'])   # 句首之」⛔印
+    多 = '# 第九百九十九章 试\n\n' + ''.join('句%d——。' % i for i in range(7))
+    _, 要7 = 硬之要(多)
+    共 += 1; ok += (len(要7) == 1 and 要7[0].count('「') == 5 and '另 2 句未列' in 要7[0])   # 至多五句
+    起 = ('── 甲层·机器判得死的（红即拦）──\n  ✓ 亮点对表：✓ 零\n  ⛔ 含拍：⛔ 并段旧拍未删\n'
+          '  ⛔ 硬闸·本章：{\'破折\': 1}\n\n── 乙层\n  ⛔ 乙层之⛔不算\n    ③写完先跑本器甲层，再交别人看')
+    r = 红之要('起草闸', 起, '③写完先跑本器甲层，再交别人看')
+    共 += 1; ok += (r[0] == '甲层红 2 项：含拍、硬闸·本章' and len(r) == 3 and not any('乙层' in y for y in r))
     print('造式验·自测 %d/%d' % (ok, 共))
     return ok == 共
 
@@ -152,6 +286,8 @@ if __name__ == '__main__':
     r = 验(n)
     for x in r:
         print('  %s %-6s %-5s %5.1fs  %s' % ('⛔' if x['红'] else '✓', x['器'], '（致命）' if x['类'] == '致命' else '', x['秒'], x['末']))
+        for y in x.get('要') or []:
+            print('        ↳ %s' % y)
     红致 = [x['器'] for x in r if x['红'] and x['类'] == '致命']
     红报 = [x['器'] for x in r if x['红'] and x['类'] == '报']
     print('造式验·第%d章：致命之器%s｜报之器%s' % (n, '俱绿' if not 红致 else '有红（%s）——⛔交' % '、'.join(红致),

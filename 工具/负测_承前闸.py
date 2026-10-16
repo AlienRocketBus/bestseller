@@ -50,10 +50,11 @@ def 旧式(cur):
 for c in sorted(K.F):
     if c - 1 not in K.F or c < 210:
         continue
-    l0, l1 = K._line_of(c - 1), K._line_of(c)
-    if None in (l0, l1):
+    # ★1016·X01：分群之线与 ⑮ 同尺（K._线／K._同线：总纲有行者照总纲，无者照 _line_of 三值）
+    l0, l1 = K._线(c - 1), K._线(c)
+    if (None, None) in (l0, l1):
         continue
-    (同 if l0 == l1 else 换).append(c)
+    (同 if K._同线(l0, l1) else 换).append(c)
 chk('①同线相接之章数 ≥20', len(同) >= 20, True)
 chk('②换线相接之章数 ≥50', len(换) >= 50, True)
 
@@ -102,7 +103,7 @@ for c in 换:
     p = K._prev_same_line(c)
     if p is None:
         continue
-    if p == c - 1 or K._line_of(p) != K._line_of(c):
+    if p == c - 1 or not K._同线(K._线(p), K._线(c)):
         错.append(c)
 chk('④换线相接：所比者皆为同线之章且非前一章', 错, [])
 
@@ -116,6 +117,30 @@ chk('⑥新式於换线之章红率 显著低於旧式（新%d ＜ 旧%d）' % (
 
 # ── 戊·免测之口须窄：十二章之内无同线者方免 ──
 chk('⑦无前章者免测', K.check15(1)[0][1], True)
+
+# ── 己·线照总纲两栏认（1016·X01·391 之⑮报「本线之前无章」而 389 係同线前章）──
+# ★造局（临时总纲＋假细线，⛔不钉盘上之数）：总纲左右两栏混排；细线（我/她/他之密度）故意判错——
+#   3 纲暗而细判「主」（如 389 对白多「我」）；5、7 纲暗而细判「他」（如 391、393 霍钧镜）；1 无纲行、细判「她」（旧章）。
+import tempfile as _tf, shutil as _sh
+_tmp = _tf.mkdtemp()
+try:
+    _o.makedirs(_o.path.join(_tmp, '设定'))
+    open(_o.path.join(_tmp, '设定', '02_余章之势_总纲.md'), 'w', encoding='utf-8').write(
+        '| 章 | 线 | 事 |\n|---|---|---|\n'
+        '| 2 | 主·1 | 甲 | | 4 | 主·2 | 丙 |\n'
+        '| 3 | 暗·1 | 乙 | | 5 | 暗·2 | 丁 |\n'
+        '| 9 | 主·9 | 庚 | | 6 | 主·3 | 戊 |\n'
+        '| 10 | 暗·9 | 辛 | | 7 | 暗·3 | 己 |\n')
+    _细 = {1: '她', 2: '主', 3: '主', 4: '主', 5: '他', 6: '主', 7: '他'}.get
+    _有 = set(range(1, 8))
+    _得 = tuple(K._prev_same_line(c, root=_tmp, 有=_有, 细=_细) for c in (3, 4, 5, 6, 7))
+    chk('⑦之b 总纲两栏：3→1（一有纲一无纲以粗值比）4→2 5→3（右栏）6→4 7→5', _得, (1, 2, 3, 4, 5))
+    # ★非陪跑之凭：旧式（只认细线）下 5 无同线前章（3 被判「主」·即 391 之「免测」），3 误比主线之 2（即 390 误比 389）
+    _旧 = lambda cur: next((c for c in range(cur - 1, max(0, cur - 13), -1)
+                            if c in _有 and _细(c) == _细(cur)), None)
+    chk('⑦之c 旧式（只认细线）於 5 报无前章、3 误比主线之 2（证此格非陪跑）', (_旧(5), _旧(3)), (None, 2))
+finally:
+    _sh.rmtree(_tmp, ignore_errors=True)
 
 
 # ══════ 第二节（2026-09-03·295第1轮并入）：⑮之第二路——轮记里逐样落判者亦算过 ══════

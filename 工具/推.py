@@ -94,6 +94,27 @@ def _记(root, s):
         f.write(time.strftime('%m-%d %H:%M:%S ') + s + '\n')
 
 
+速检之器 = [('改单', ['改单.py', '--查']), ('工作流账', ['工作流账.py', '--查']), ('复盘', ['复盘.py', '--验']),
+          ('方法坑账', ['方法坑账.py', '--验']), ('剧情庭之关', ['剧情庭之关.py'])]
+
+
+def 速检(root=ROOT):
+    """→ [红之行]。全测之中最常拦推而只须数秒者——先跑；全测仍是终审（⛔以此代之）。"""
+    红 = []
+    for 名, a in 速检之器:
+        f = os.path.join(root, '工具', a[0])
+        if not os.path.exists(f):
+            continue
+        try:
+            r = subprocess.run([sys.executable, f] + a[1:], cwd=root, capture_output=True, text=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            continue
+        if r.returncode != 0:
+            末 = [l for l in ((r.stdout or '') + (r.stderr or '')).split('\n') if l.strip()][-1:] or ['']
+            红.append('  ✗ %s：%s' % (名, 末[0].strip()[:200]))
+    return 红
+
+
 def 推(root=ROOT, 推法=None, 最多=5):
     """→ 0 推平｜1 被拦｜2 已有人在推（已登记待推）。"""
     待 = os.path.join(_git目录(root), '推.待')
@@ -109,6 +130,12 @@ def 推(root=ROOT, 推法=None, 最多=5):
                 os.remove(待)
             if 心跳章(root):   # 无挂着之章（已撤锁）⛔跳——跳了即凭空造一个在跑之席
                 _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', str(心跳章(root))], root)
+            if 推法 is None:   # ★1016 先行之速检（392 後二回推被拦於全测第六分钟——改单之缺、工作流账逾时）：数秒之闸先跑，红即止
+                速红 = 速检(root)
+                if 速红:
+                    print('⛔ 速检红（未起全测）——先治：\n%s' % '\n'.join(速红))
+                    _记(root, '速检红：' + '｜'.join(速红)[:500])
+                    return 1
             if 推法 is None:   # ★1008：先存底——存底枝新、章数齐，推闸之活态之检（负测·自进化环①之二、②）方不因存底环死而红
                 _跑([sys.executable, os.path.join(ROOT, '工具', '存底.py'), '--存'], root, timeout=280)
             try:
@@ -199,6 +226,11 @@ def 自测():
     共 += 1; ok += (心跳章(t) == 401)
     os.remove(os.path.join(t, '_心跳.json'))
     共 += 1; ok += (心跳章(t) == 0)        # ★1013：撤锁之後读不到 → 0（⛔回 379 凭空造席）
+    _u = tempfile.mkdtemp(); os.makedirs(os.path.join(_u, '工具'))
+    open(os.path.join(_u, '工具', '改单.py'), 'w').write("print('甲 改了 正文 而无改单'); raise SystemExit(1)")
+    open(os.path.join(_u, '工具', '复盘.py'), 'w').write("print('ok')")
+    _r = 速检(_u)
+    共 += 1; ok += (len(_r) == 1 and '改单' in _r[0] and '而无改单' in _r[0])   # ★1016 速检：红者印其末行，绿者⛔报，缺器⛔跑
     print('推·自测 %d/%d' % (ok, 共))
     return ok == 共
 

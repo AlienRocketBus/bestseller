@@ -1011,6 +1011,21 @@ def check19(cur):
                              % (top, _mk.group(1), seq))]
             except Exception:
                 pass
+        # ★1016（396 封版逮）：本器之治曰「下一章换一个向」——本章已写成（正文在）者，其治只能落在下一章；
+        #   ⛔旧式只看本章之卡，章写毕而封版时再红即无可治（396 之卡由 395 记席照段案定「往前」，⑲ 於动笔前未跑——左移之缺，造式验 --料 今调之）。
+        #   ★故本章已写成者，下一章之卡明写改向即认其治；⛔下一章之卡未写或同向，照红。
+        if cur in F:
+            kn = os.path.join(ROOT, '版本', '第%d章' % (cur + 1), '_开镜卡.md')
+            if os.path.exists(kn):
+                try:
+                    _n = open(kn, encoding='utf-8', errors='replace').read()
+                    _mn = re.search(r'本章之向[：:）\)\*★]*[^\n]{0,12}?(往内|往外|往前|往侧)', _n)
+                    if _mn and not top.startswith(_mn.group(1)):
+                        return [('⑲·骨之方向（近三章不同向）', True,
+                                 '★近三章皆朝「%s」——本章已写成，其治落於下一章：第%d章之卡明写改朝「%s」✓：★★%s'
+                                 % (top, cur + 1, _mn.group(1), seq))]
+                except Exception:
+                    pass
     return [('⑲·骨之方向（近三章不同向）', ok,
              ('★%s' % seq) if ok
              else ('⛔近三章之骨皆朝「%s」：★而三章皆好，可它们是同一个方向的三步；'

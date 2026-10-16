@@ -109,11 +109,14 @@ const 稿式 = { type: 'object', properties: {
   soul: { type: 'string' }, best: { type: 'string' }, weak: { type: 'string' }, plan: { type: 'string' } },
   required: ['file', 'beats', 'words', 'soul'] }
 
+// ★1016 承（393 逮：失败之执笔在 journal 无缓存，resumeFromRunId 必重跑之而令选以下俱失缓存、覆正文；新会话亦不能 resume）：
+//   args.承 = {诸稿, 选, 草, 盲, 审, 回写}——已成之段之果（自 journal 取）径用，⛔再派其席；诸稿以其 file 认回执笔之名与路
+const 承 = (args && args.承 && typeof args.承 === 'object') ? args.承 : {}
 phase('造')
-let 诸稿 = (await parallel(执笔们.map(x => () =>
+let 诸稿 = 承.诸稿 ? 承.诸稿.map(r => { const x = 执笔们.find(x => r && r.file && r.file.endsWith(蒙档(x.名))); return x ? { ...r, 名: x.名, 路: x.路.k } : null }).filter(Boolean) : (await parallel(执笔们.map(x => () =>
   agent(交缺(执笔令(x)), { phase: '造', label: '执笔·' + x.名 + '·' + x.路.k, schema: 加缺(稿式), effort: 'max' })
     .then(r => r ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean)
-if (诸稿.length < 宽) {   // 缺稿另派一回（见红才多跑）
+if (!承.诸稿 && 诸稿.length < 宽) {   // 缺稿另派一回（见红才多跑）
   const 欠 = 执笔们.filter(x => !诸稿.some(d => d.名 === x.名))
   log('造：执笔·' + 欠.map(x => x.名).join('、') + ' 未交——另派一回')
   诸稿.push(...(await parallel(欠.map(x => () =>
@@ -159,7 +162,7 @@ ${限(18)}
 「## 名次」（引原句）｜「## 小说家之眼」（诸稿最好与最弱之处、诸项之分）｜「## 总编辑之眼」｜「## 叫绝之拍」（开镜卡所定之拍，诸稿各落第几拍、谁落得最高；并录拍库之分）｜「## 立得住」（胜稿逐条「因为……所以……」，立不住者入致命）｜「## 致命」（逐条「- 致命1：…」，无则「无（查了哪几样）」）｜「## 大进」（逐条「- 大进1：…」，无则「无」）——⛔写「## 合稿逐条回话」（合稿席之节）。
 交：ranking（如 ["稿二","稿四",…]）、why、fatal、leap、common_fatal、beat_scores、peaks。`
 phase('选')
-const 选 = (await agent(交缺(选令()), { phase: '选', label: '选·行家兼两眼', schema: 加缺(选式), effort: 'max' }))
+const 选 = 承.选 || (await agent(交缺(选令()), { phase: '选', label: '选·行家兼两眼', schema: 加缺(选式), effort: 'max' }))
   || (log('选席未交——另派一回'), await agent(交缺(选令()), { phase: '选', label: '选·补', schema: 加缺(选式), effort: 'max' }))
 if (!选) throw new Error('选：二回未交——无胜稿不许合')
 log('选：' + (选.ranking || []).join('＞') + '｜致命 ' + (选.fatal || []).length + '｜大进 ' + (选.leap || []).length + '｜拍库之分 ' + (选.beat_scores || '').slice(0, 80))
@@ -205,7 +208,7 @@ ${限(24)}
 11. **记之账**（交给记席与下一章，⛔省）：ledger——本章之种（埋了哪几颗、收了哪几颗，各带拍号与其所钉之章）、知之变（谁在本章知了何事）、物之动（何物由谁到谁、在哪）、日号、生死与伤；recap——下一章盲读者用之「前情」三百字以内（只写读者读到的事，⛔透露後文与作者之意）。
 交：file、beats、words、base、fatal_done、leap_done、peaks、gates（逐器一行）、gates_green（致命之器俱绿否）、reds、ledger、recap。`
 phase('合')
-let 草 = (await agent(交缺(合令()), { phase: '合', label: '合稿', schema: 加缺(合式), effort: 'max' }))
+let 草 = 承.草 || (await agent(交缺(合令()), { phase: '合', label: '合稿', schema: 加缺(合式), effort: 'max' }))
   || (log('合稿未交——另派一回'), await agent(交缺(合令()), { phase: '合', label: '合稿·补', schema: 加缺(合式), effort: 'max' }))
 if (!草) throw new Error('合：二回未交——停')
 log('合：底 ' + 草.base + '｜' + 草.words + '字·' + 草.beats + '拍｜致命之器' + (草.gates_green ? '俱绿' : '有红：' + (草.reds || '').slice(0, 120)))
@@ -215,7 +218,7 @@ const 盲读式 = { type: 'object', properties: {
   understood: { type: 'boolean' }, confused: { type: 'string' }, misread: { type: 'string' },
   want_next: { type: 'boolean' }, why_next: { type: 'string' }, happened: { type: 'string' }, remember: { type: 'string' } },
   required: ['understood', 'confused', 'misread', 'want_next', 'why_next', 'happened', 'remember'] }
-const 盲读令 = () => `你是第 ${N} 章的**盲读者**——一位读过全中国最好看的长篇、口味极挑的老读者。
+const 盲读令 = (k = 1) => `你是第 ${N} 章的**盲读者**——一位读过全中国最好看的长篇、口味极挑的老读者。
 ⛔你不许读任何席之轮记、裁、说明、构思、行家评、开镜卡、章料——**只读正文**：先读第 ${N - 2} 章与第 ${N - 1} 章全文，再读第 ${N} 章全文（${新料 ? '档：' + 正文式(N - 2) + '、' + 正文式(N - 1) + '、' + 正文式(N) + '——一条 cat 读毕' : '正文/ 下之档'}；【本章亮点】以後不读）。⛔改正文、⛔跑 git 之写命令。
 ${限(8)}
 只答读者之事：
@@ -224,7 +227,7 @@ ${限(8)}
 ③ want_next／why_next：读完想不想立刻读下一章，一句说为什么——⛔为讨好而想、⛔为显挑而不想。
 ④ happened：一句话说这一章发生了什么（谁怎样了）——照你读到的说，⛔猜作者之意。
 ⑤ remember：读完你最记得哪一拍（引原句）。
-【并录·⛔省】把这五答逐字写进「${章目}/_轮记.md」一节「## 造式·盲读」（节名照此；此节是你唯一许写之处${新料 ? '；以 cat >> 追加於档尾，⛔先读其档' : ''}）。`
+【并录·⛔省】把这五答逐字写进「${章目}/_轮记.md」一节「## 造式·盲读${k > 1 ? '·第' + k + '回（回写之後复验）' : ''}」（节名照此；此节是你唯一许写之处${新料 ? '；以 cat >> 追加於档尾，⛔先读其档' : ''}）。`
 const 逻辑审令 = (k, 盲) => `${令}
 
 你是第 ${N} 章的**逻辑审席**（造式二代·合後·第${k}回）——全书防崩之第一责任人；造式之章无审改之轮，**你这一审是本章因果与相抵之唯一一道人眼**。⛔改正文一字。
@@ -245,16 +248,16 @@ const 崩式 = { type: 'object', properties: {
   misread: { type: 'boolean' }, misread_where: { type: 'string' }, misread_fix: { type: 'string' } },
   required: ['hard', 'soft', 'gate', 'misread'] }
 phase('验')
-const 盲 = (await agent(交缺(盲读令()), { phase: '验', label: '盲读', schema: 加缺(盲读式) }))
+let 盲 = 承.盲 || (await agent(交缺(盲读令()), { phase: '验', label: '盲读', schema: 加缺(盲读式) }))
   || (log('盲读未交——另派一回'), await agent(交缺(盲读令()), { phase: '验', label: '盲读·补', schema: 加缺(盲读式) }))
 if (!盲) {
   log('⛔盲读二回未交——读者之眼没睁过，不许封版')
   return { 章: N, 停: '盲读未交', 选, 草 }
 }
-let 审 = await agent(交缺(逻辑审令(1, 盲)), { phase: '验', label: '逻辑审·1', schema: 加缺(崩式), effort: 'high' })
+let 审 = 承.审 || await agent(交缺(逻辑审令(1, 盲)), { phase: '验', label: '逻辑审·1', schema: 加缺(崩式), effort: 'high' })
 const 病 = (r) => r && ((r.hard && r.hard.length) || r.misread)
 if (病(审)) {
-  await agent(`${令}
+  if (!承.回写) await agent(`${令}
 
 你是第 ${N} 章的**回写席**（造式二代·一回）。逻辑审查出：
 ${(审.hard || []).map((h, i) => (i + 1) + '. 【' + h.kind + '】' + h.where + '：' + h.what + '｜据：' + h.proof).join('\n') || '（无硬崩）'}
@@ -264,6 +267,8 @@ ${限(16)}
 【你要办的】逐处治：**改本章去合前文**（⛔改前文迁就本章、⛔改状态册洗白）。先 awk 亲印两处原句确认是真崩；读「设定/立得住之律.md」，想出至少两种治法，取立得住、量配得上、前文有迹、且让这一拍更好看者。读误只许加一个动作或改一处措辞让读者读对（⛔加解释句）。⛔凑字、说破。
 治毕：骨记同笔改；跑「python3 工具/造式验.py ${N}」（致命之器须绿）；存一版「python3 工具/跑轮.py --存 ${N} "造式二代·回写：<一句话>"」；轮记起一节「## 防崩·合後回写」逐处写治法。`,
     { phase: '验', label: '回写', effort: 'max' })
+  // ★1016（393 逮）：读误之治须盲读复验——旧以回写前之盲读交逻辑审·2，读误永销不了，章章停於「致命未净」
+  if (N >= 393 && 审.misread) 盲 = (await agent(交缺(盲读令(2)), { phase: '验', label: '盲读·2', schema: 加缺(盲读式) })) || 盲
   审 = await agent(交缺(逻辑审令(2, 盲)), { phase: '验', label: '逻辑审·2', schema: 加缺(崩式), effort: 'high' })
 }
 // ★1013：总编辑之裁（args.裁）——停於「致命未净」之後，总编辑亲治其余病、存版，以 resumeFromRunId 续：前诸席之令不变，俱自缓存回放，只记席新跑

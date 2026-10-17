@@ -190,7 +190,9 @@ def 派令(n, root=None):
                 '  # 开工之闸：设定/方案/W<k>.md 逐环确证 ＋ python3 工具/工作流账.py --开 W<k>（法典二之七步）',
                 "  Workflow({scriptPath:'工具/席/造章.js', args:{章:%d, 重:'%s', 魂路:[%s]}})" % (
                     n, 重.group(1), ', '.join("'%s'" % x for x in 路们))]
-    return ["  Workflow({scriptPath:'工具/席/一章.js', args:{章:%d}})" % n]
+    # ★1017 淘汰之律：一代 一章.js 已淘汰（二代 造章.js 自 381 起、费约五分之一）——无段案之章⛔派一代，先立段案
+    return ['  # 第%d章无段案之节（重、魂路）——一代 一章.js 已淘汰（1017 作者铁律·淘汰之律）；先立段案再派二代' % n,
+            '  python3 工具/段案验.py   # 立 设定/段案/<起>-<止>.md 之第%d章之节（重：轻／中／重；魂路：三路），验过再跑本器' % n]
 
 
 def 锁滞(ch):
@@ -587,8 +589,8 @@ def 自测():
     R = []
     判, L = 断(印=False)
     _派 = 派令(382)
-    R.append(('派令·有段案之章印造章.js（二代），其重与魂路取自段案；无段案之章仍印一章.js',
-               any("造章.js" in x and "重:'中'" in x and "'换账'" in x for x in _派) and any('一章.js' in x for x in 派令(999))))
+    R.append(('派令·有段案之章印造章.js（二代），其重与魂路取自段案；无段案之章⛔派一代（已淘汰）、印先立段案',
+               any("造章.js" in x and "重:'中'" in x and "'换账'" in x for x in _派) and not any('一章.js' in x and 'Workflow' in x for x in 派令(999)) and any('段案' in x for x in 派令(999))))
     R.append(('①判得出一个字（候／跑／补／救／欠／起／庭／停）',
                判 in ('候', '跑', '补', '救', '欠', '起', '庭', '停')))
     R.append(('②末一行是一条可照抄之命令', any(

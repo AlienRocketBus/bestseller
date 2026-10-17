@@ -36,7 +36,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def 规之册():
     s = open(os.path.join(ROOT, '工具', '全测.py'), encoding='utf-8').read()
-    名们 = re.findall(r"items\.append\(\('([^']+)'", s)
+    # ★1017：并认起首之元组表（('检察官自测', chk_selftest) 一类八条——旧式只认 items.append，裁之亦不入册）
+    名们 = re.findall(r"items\.append\(\('([^']+)'", s) + re.findall(r"\('([^']+)',\s*chk_\w+\)", s)
     seen, out = set(), []
     for n in 名们:
         if n not in seen:

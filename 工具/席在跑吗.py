@@ -79,6 +79,16 @@ def 席之转录在写(界=活之界, 今=None):
     return (bool(新), max(新, key=os.path.getmtime) if 新 else '')
 
 
+def 暂停令在():
+    """盘上之暂停令（工具/暂停令.py·坑⑭）在否——与 自走.py、接力同认一处。读不出即作「不在」（照旧拦）。"""
+    try:
+        sys.path.insert(0, os.path.join(ROOT, '工具'))
+        import 暂停令
+        return 暂停令.在(ROOT)
+    except Exception:
+        return False, ''
+
+
 def 完本了吗():
     try:
         out = subprocess.run([sys.executable, os.path.join(ROOT, '工具', '自走.py')],
@@ -91,6 +101,11 @@ def 完本了吗():
 def main():
     if os.path.exists(叫停):
         print('✓席在跑吗：作者已叫停（设定/_作者叫停.flag 在盘上）——放行。')
+        return 0
+    # ★1017（坑⑭复踩：作者令「大审毕即暂停」已立於盘上之暂停令，自走.py 判「停」，而本钩不认，逼派 398）：暂停令在即放行
+    在停, 停由 = 暂停令在()
+    if 在停:
+        print('✓席在跑吗：%s——放行（⛔派席；作者令下方 `python3 工具/暂停令.py --解`）。' % 停由[:120])
         return 0
     有席, 行 = 问心跳()
     if 有席:
@@ -131,9 +146,11 @@ def 自测():
     格 = []
     def 报(名, 得, 期): 格.append((名, 得 == 期, 得, 期))
 
-    def 判(有席, 有叫停, 完本, 转录活=False):
+    def 判(有席, 有叫停, 完本, 转录活=False, 暂停=False):
         """把 main 之判逐条摆出来（与 main 同一条路，⛔不另写一份）。"""
         if 有叫停:
+            return 0
+        if 暂停:
             return 0
         if 有席:
             return 0
@@ -163,6 +180,8 @@ def 自测():
     import shutil as _sh; _sh.rmtree(_d)
     src2 = inspect.getsource(main)
     报('⑩拦时印到 stderr', 'sys.stdout = sys.stderr' in src2, True)
+    报('⑪盘上暂停令在即放行（坑⑭：与自走、接力同认）', 判(False, False, False, False, True), 0)
+    报('⑪之二·main 真调暂停令之判', '暂停令在()' in src2 and 'import 暂停令' in inspect.getsource(暂停令在), True)
     过 = sum(1 for _, ok, _, _ in 格 if ok)
     for 名, ok, 得, 期 in 格:
         if not ok:

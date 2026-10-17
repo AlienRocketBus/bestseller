@@ -4590,8 +4590,8 @@ def _记器账(录, quick):
         print('  ⚠ 器之账未记（%s）——不碍全测' % e)
 
 
-def main():
-    quick = '--快' in sys.argv
+def 诸项(quick):
+    """★1017 W51：诸项之表抽出——串行之 main 与并行之 `工具/全测并.py`（经 `--只`）同取此一表，⛔两份。"""
     items = [('重名定义扫描', chk_dup_defs), ('钩子挂载', chk_hookspath),
              ('字数对齐回归', chk_zishu),
              ('节奏方差闸回归', chk_rhythm),
@@ -4785,6 +4785,39 @@ def main():
     items.append(('跑账', chk_paozhang))
     # ★0911 立：三本账问的都是「上一件事办完没有」，本项只问「**下一件事起来没有**」
     items.append(('接力', chk_jieli))
+    return items
+
+
+def 只跑(名们, 出, quick):
+    """★1017 W51：`--只 名,… [--出 档]`——只跑所列之项（取自 诸项()，⛔另写），每项印一行同 main；
+    以 JSON 交其果 {果: [[名, 过, 语, 秒]], 未认: [...]} 於 出（全测并.py 於工作副本中逐项调之）。
+    ⛔不记器账、⛔不查留字（并行之驱於副本以 git status 查之、主仓库之项以 _留字快照 查之）。"""
+    表 = dict(诸项(quick))
+    果, 未认 = [], [n for n in 名们 if n not in 表]
+    for 名 in 名们:
+        if 名 not in 表:
+            continue
+        _t0 = time.time()
+        try:
+            ok, detail = 表[名]()
+        except Exception as _e:
+            ok, detail = False, '⛔器崩：%r' % (_e,)
+        果.append([名, bool(ok), str(detail), round(time.time() - _t0, 2)])
+        print('  %s %-14s %s' % ('✓' if ok else '✗', 名, detail))
+    if 出:
+        import json as _j
+        _j.dump({'果': 果, '未认': 未认}, open(出, 'w', encoding='utf-8'), ensure_ascii=False)
+    return 0 if (not 未认 and all(x[1] for x in 果)) else 1
+
+
+def main():
+    quick = '--快' in sys.argv
+    if '--只' in sys.argv:
+        _a = sys.argv
+        _名 = [x for x in _a[_a.index('--只') + 1].split(',') if x] if _a.index('--只') + 1 < len(_a) else []
+        _出 = _a[_a.index('--出') + 1] if '--出' in _a and _a.index('--出') + 1 < len(_a) else None
+        return 只跑(_名, _出, quick)
+    items = 诸项(quick)
     print('\n████ 全测 · %d 项 ████' % len(items))
     _席凭 = _有席在跑()
     if _席凭:

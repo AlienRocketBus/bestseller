@@ -180,6 +180,12 @@ def 派令(n, root=None):
     路 = re.search(r'^- 魂路：(.+)$', t, re.M)
     if 重 and 路 and 重.group(1) in ('轻', '中', '重'):
         路们 = [x.strip() for x in 路.group(1).split('｜') if x.strip()]
+        # ★1017 承（397 一章两回容器重启）：本章已有起草之稿 → 先收已成之段（⛔重派已交之执笔）
+        if n > 末章() and glob.glob(os.path.join(root or ROOT, '版本', '第%d章' % n, '起草_稿*.md')):
+            return ['  # 第%d章已有起草之稿（容器重启所余？）——先收诸 journal 已成之段，⛔重派已交之席' % n,
+                    "  python3 工具/承.py %d --重 %s --魂路 %s" % (n, 重.group(1), ','.join(路们)),
+                    "  Workflow({scriptPath:'%s'})   # 承.py 所写之包裹；诸稿不足三者照其印加「补」" % os.path.join(
+                        root or ROOT, '版本', '第%d章' % n, '_承.js')]
         return ['  python3 工具/章料.py %d && python3 工具/造式验.py %d --料   # 料全方派' % (n, n),
                 '  # 开工之闸：设定/方案/W<k>.md 逐环确证 ＋ python3 工具/工作流账.py --开 W<k>（法典二之七步）',
                 "  Workflow({scriptPath:'工具/席/造章.js', args:{章:%d, 重:'%s', 魂路:[%s]}})" % (

@@ -1444,7 +1444,7 @@
     }
    ],
    "验": "封版#397；致命 0；撞 128k ≤1；点户之程算得过",
-   "续之令": "1017 02:36 容器重启：前 Run wf_c9a88943-36b 只交甲（稿三）、乙（稿四），丙（稿五）稿成未交、丁稿半、戊未起——今以承续：版本/第397章/_承.json（诸稿三＋补:true 补派丁、戊），Run wf_a50601f6-6c4；再断则以 resumeFromRunId:'wf_a50601f6-6c4' 续同一包裹（workflow({scriptPath:'工具/席/造章.js'}, _承.json 之 args)），有失败之席即照 journal 更新 _承.json 再承",
+   "续之令": "1017 容器两回重启（02:36 执笔之半、03:5x 选之半）——今 Run wf_3940232d-ddd 承五稿起於选；再断：python3 工具/承.py 397 → Workflow({scriptPath:'/home/user/the-novel/版本/第397章/_承.js'})（承.py 自诸 journal 收已成之段）",
    "依": [
     "W48"
    ],

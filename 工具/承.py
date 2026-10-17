@@ -13,6 +13,12 @@
 稿档已不在者⛔收（稿被覆或挪走）。args 之 章／重／魂路 取旧 _承.json，无则须 --重 与 --魂路。
 ⛔本器只读 journal、只写 版本/第N章/_承.json 与 _承.js；⛔git。
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import glob
 import json
 import os

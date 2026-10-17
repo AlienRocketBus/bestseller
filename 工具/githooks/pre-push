@@ -19,7 +19,8 @@ if [ "$ZM_SKIP_HOOK" = "1" ]; then
   exit 0
 fi
 echo "── pre-push:全测中(批115)……"
-OUT=$(ZM_STREAM="${ZM_STREAM:-streamA-cli}" python3 工具/全测.py 2>&1)
+# 【W51·1017】全测改并行（工具/全测并.py：工作副本隔离、同表同判；副本建不成即自退串行）——一处试：同一 HEAD 串 1153 秒、并 408 秒，186 项过否全同，主仓库 sha256 同
+OUT=$(ZM_STREAM="${ZM_STREAM:-streamA-cli}" python3 工具/全测并.py 2>&1)
 rc=$?
 echo "$OUT"
 if [ $rc -eq 0 ]; then

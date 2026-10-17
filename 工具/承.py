@@ -5,6 +5,7 @@
 手拼 args.承——393、397、397 三回皆手办，易错（稿与执笔之对、丙稿成而未交者之补）。今一器办毕：
   python3 工具/承.py 397            # 扫诸 journal，收 397 之已成段，写 _承.json 与 _承.js，印续之令
   python3 工具/承.py 397 --印       # 只印所收，⛔写
+  python3 工具/承.py 397 --再回写   # 「致命未净」（回写一回後复验仍读误／硬崩）：以 盲读·2、逻辑审·2 之果作 盲、审，⛔承回写——再走一回 回写→盲读→审→记席
   python3 工具/承.py --自测
 
 所收（label → 承之键）：执笔·*→诸稿（以 file 认，後者覆前者）；选·行家兼两眼／选·补→选；合稿／合稿·补→草；
@@ -51,12 +52,13 @@ def 首令属(路, 诸id, n):
     return False
 
 
-def 收(n, 诸路, root=ROOT):
+def 收(n, 诸路, root=ROOT, 再=False):
     """诸 journal 依 mtime 升序扫；属第 n 章之 run（有执笔之果其 file 在 版本/第n章/）方收；後者覆前者。"""
     章目 = os.path.join(root, '版本', '第%d章' % n) + os.sep
     承 = {}
     稿 = {}
     来 = []
+    键们 = 键表 + ([(re.compile(r'^盲读·2$'), '盲'), (re.compile(r'^逻辑审·2$'), '审')] if 再 else [])
     for 路 in sorted(诸路, key=lambda p: os.path.getmtime(p) if os.path.exists(p) else 0):
         行 = 读(路)
         标 = {d.get('key'): d.get('label', '') for d in 行 if d.get('type') == 'started'}
@@ -67,7 +69,7 @@ def 收(n, 诸路, root=ROOT):
             continue
         来.append(路)
         for l, r in 果:
-            for 式, k in 键表:
+            for 式, k in 键们:
                 if not 式.search(l) or r is None:
                     continue
                 if k == '诸稿':
@@ -79,10 +81,12 @@ def 收(n, 诸路, root=ROOT):
                     承[k] = r
     if 稿:
         承['诸稿'] = list(稿.values())
+    if 再:
+        承.pop('回写', None)   # 再回写：回写⛔承——造章.js 见 审 有病即再派回写，以 审（逻辑审·2）之读误与硬崩为令
     return 承, 来
 
 
-def 造(n, 承, 旧=None, 重=None, 魂路=None):
+def 造(n, 承, 旧=None, 重=None, 魂路=None, 再=False):
     旧 = 旧 or {}
     a = {'章': n, '重': 重 or 旧.get('重'), '魂路': 魂路 or 旧.get('魂路')}
     if not a['重'] or not a['魂路']:
@@ -97,6 +101,8 @@ def 造(n, 承, 旧=None, 重=None, 魂路=None):
     for k in ('选', '草', '盲', '审', '回写'):
         if k in 承:
             合[k] = 承[k]
+    if 再:
+        合.pop('回写', None)
     a['承'] = 合
     return a
 
@@ -143,6 +149,9 @@ def 自测():
         a = 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '承': {'补': True, '诸稿': [{'file': f('稿三'), 'words': 3}]}})
         R.append(('④并旧 _承.json：旧稿留、补去、重魂路承旧', len(a['承']['诸稿']) == 3 and '补' not in a['承'] and a['重'] == '中'))
         R.append(('⑤包裹调 造章.js 而带 args', '造章.js' in 包裹(a) and '"章": 9' in 包裹(a)))
+        承2, _ = 收(9, [j1, j2, j3, j4], root=t, 再=True)
+        a2 = 造(9, 承2, 旧={'重': '中', '魂路': ['物证'], '承': {'回写': True}}, 再=True)
+        R.append(('⑦再回写：盲读·2 作盲、回写⛔承（新旧俱去）', 承2.get('盲') == {'x': 1} and '回写' not in a2['承']))
         try:
             造(9, 承)
             R.append(('⑥无 重／魂路 即停', False))
@@ -163,12 +172,15 @@ def main():
         sys.exit(2)
     n = int(a[0])
     取 = lambda k: a[a.index(k) + 1] if k in a and a.index(k) + 1 < len(a) else None
-    承, 来 = 收(n, glob.glob(诸journal之式))
+    再 = '--再回写' in a
+    承, 来 = 收(n, glob.glob(诸journal之式), 再=再)
+    if 再 and not (承.get('审') or {}).get('misread') and not (承.get('审') or {}).get('hard'):
+        print('  ⚠ --再回写：所收之审无读误亦无硬崩——再回写无的，照常续（去 --再回写）即可')
     章目 = os.path.join(ROOT, '版本', '第%d章' % n)
     旧路 = os.path.join(章目, '_承.json')
     旧 = json.load(open(旧路, encoding='utf-8')) if os.path.exists(旧路) else None
     魂路 = 取('--魂路').split(',') if 取('--魂路') else None
-    args = 造(n, 承, 旧, 取('--重'), 魂路)
+    args = 造(n, 承, 旧, 取('--重'), 魂路, 再=再)
     print('承·第%d章：journal %d 份；诸稿 %d（%s）；%s' % (
         n, len(来), len(args['承'].get('诸稿', [])),
         '、'.join('%s·%s字' % (os.path.basename(x['file']), x.get('words')) for x in args['承'].get('诸稿', [])),

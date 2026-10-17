@@ -12,7 +12,7 @@
   甲·器之囤灰：认 `工具/*.py` **全部 118 样**（本书同类即此 118 样，无遗）。
      判法：自九个真跑口（全测／起草闸／一坐／大审／书级体检／回修／十轮精进／一章到底／跑轮）
      并 `工具/席/*.js` 与 git 钩子起，**逐层展开引用闭包**；闭包之外者即囤灰。
-  乙·席之囤灰：认 `工具/席/*.js` **全部**（今 4 样）。判法：须在 `工具/席/一章.js` 或 `工具/席/用法.md` 里有其位。
+  乙·席之囤灰：认 `工具/席/*.js` **全部**（今 4 样）。判法：须在 `工具/席/造章.js`（1017 起；一章.js 已彻删）或 `工具/席/用法.md` 里有其位。
   丙·章之未走全席：认**第 起用章 及其後**之章（今起用章＝306）。判法：`版本/第N章/_席记.json` 须在，
      且八段（定位／三魂／起草／机闸／读席／修席／极限／案席）逐段有记。
      ★**丙只管新章**：306 以前之章不是这套机制写的，拿它去判是假红（令§十三②）。
@@ -48,12 +48,9 @@ def 诸段():
     ★★**故改：段名不写在本闸里，当场自 `工具/席/一章.js` 之 meta.phases 读**——
       **流水线加一段，本闸下一次跑就认得它；再也生不出这种锈。**
     ★★★读不着即判红（不许「读不着就放行」——那等於把闸关了）。"""
-    js = _读('工具/席/一章.js')
-    m = re.search(r'phases:\s*\[(.*?)\]\s*,?\s*\}', js, re.S)
-    if not m:
-        return None
-    xs = re.findall(r"title:\s*'([^']+)'", m.group(1))
-    return xs or None
+    # ★1017 淘汰之律（X28）：一章.js 已彻删——一代之段冻存於 造式.py（只供复核已封之旧章）
+    m = _造式模()
+    return list(m.一代之段) if m is not None else None
 def _造式模():
     try:
         import importlib.util as _u
@@ -175,15 +172,15 @@ def 查(印=True):
             (t, ('已挂账：' + 账[t]) if t in 账 else '接进某个跑口，或写进 设定/囤灰挂账.md'))
 
     # 乙·席
-    一章 = _读('工具/席/一章.js')
+    一章 = _读('工具/席/造章.js')   # ★1017：一章.js 已彻删，诸席之调度今在 造章.js
     用法 = _读('工具/席/用法.md')
     席们 = sorted(os.path.basename(f) for f in glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))
     for s in 席们:
-        if s == '一章.js':
+        if s == '造章.js':
             continue
         if s not in 一章 and s not in 用法:
             (黄 if s in 账 else 红).append(
-                '乙·席囤灰：工具/席/%s 既不在 一章.js 里被调，也不在 用法.md 里有其位。%s' %
+                '乙·席囤灰：工具/席/%s 既不在 造章.js 里被调，也不在 用法.md 里有其位。%s' %
                 (s, ('已挂账：' + 账[s]) if s in 账 else ''))
 
     # 乙之二·席之 schema 键须尽是 ASCII
@@ -221,12 +218,12 @@ def 查(印=True):
         if _造式(n):
             段 = _造式之段(n)
             if not 段:
-                红.append('丙·第%d章係造式之章，而读不出其席档（一章.js／造章.js）之 const 造式之段——**段名之源断了**。' % n)
+                红.append('丙·第%d章係造式之章，而读不出其席档（一章.js／造章.js）之 const 造式之段——**段名之源断了**（一代之段冻存於 造式.py）。' % n)
                 continue
         else:
             段 = 诸段()
         if not 段:
-            红.append('丙·读不出 一章.js 之 meta.phases——**段名之源断了，本闸整条丙路即成空转**。')
+            红.append('丙·读不出冻存之一代之段（造式.py）——**段名之源断了，本闸整条丙路即成空转**。')
             continue
         缺 = [x for x in 段 if x not in (j.get('段') or {})]
         if 缺:
@@ -235,7 +232,7 @@ def 查(印=True):
     if 印:
         print('════ 囤灰闸 ════')
         print('  甲·器 %d 样，跑得着 %d，囤灰 %d' % (len(tools), len(reach), len(灰)))
-        print('  乙·席 %d 张（一章.js 除外）' % max(0, len(席们) - 1))
+        print('  乙·席 %d 张（造章.js 除外）' % max(0, len(席们) - 1))
         新章 = [d for d in glob.glob(os.path.join(ROOT, '版本', '第*章'))
                 if re.search(r'第(\d+)章', os.path.basename(d))
                 and int(re.search(r'第(\d+)章', os.path.basename(d)).group(1)) >= 起用章]
@@ -315,10 +312,10 @@ def 自测():
 
     # ⑥段名须当场自 一章.js 读出，且其数须与 js 里 title: 之数相同（防只读到前几个）
     段 = 诸段()
-    js = _读('工具/席/一章.js')
+    _m = _造式模()
     T('⑥段名读得出（今 %s 段）' % (len(段) if 段 else '读不出'), bool(段) and len(段) >= 8,
       str(段))
-    T('⑥之二 段名逐个在 js 里认得着', bool(段) and all(("title: '%s'" % x) in js for x in 段))
+    T('⑥之二 段名与冻存之一代之段同（造式.py·X28）', bool(段) and _m is not None and 段 == list(_m.一代之段))
     # ⑥之三·**这一格是本闸生锈那一回的负测**：若把段名钉回旧式八段，
     #   而 js 已是十一段，则「钉死」之式认不出新加的三段——须当场看得出其差。
     旧八 = ['定位', '三魂', '起草', '机闸', '读席', '修席', '极限', '案席']
@@ -329,7 +326,7 @@ def 自测():
     T('⑦席读得着', len(glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))) >= 4)
 
     # ⑧旧式回灌·席：拿一个不存在于 一章.js 与 用法.md 的席名，须判红
-    T('⑧未挂之席须判红', ('无此席.js' not in js) and ('无此席.js' not in _读('工具/席/用法.md')))
+    T('⑧未挂之席须判红', ('无此席.js' not in _读('工具/席/造章.js')) and ('无此席.js' not in _读('工具/席/用法.md')))
 
     # ⑧之二·旧式回灌·schema 键：拿一段中文键之 schema 灌进正则，须逮出
     坏 = re.findall(r'([^\x00-\x7F][^\s:]*)\s*:\s*\{\s*type:', '  锁定行: { type: \'string\' },')
@@ -349,7 +346,7 @@ def 自测():
     # ⑪★2026-10-08·造式之章：其席记照造式之段验（当场自 一章.js 读），常式之章照 meta.phases 验——两头皆活
     _zs = _造式之段()
     T('⑪造式之段读得出（今 %s）' % ('、'.join(_zs) if _zs else '读不出'), bool(_zs) and len(_zs) >= 6)
-    T('⑪之二 造式之段逐个在 一章.js 里认得着', bool(_zs) and all(("'%s'" % x) in js for x in _zs))
+    T('⑪之二 造式之段与冻存之一代造式之段同', bool(_zs) and _m is not None and _zs == list(_m.一代造式之段))
     T('⑪之三 造式之段不含审改诸段（三庭／五庭／修席／极限）',
       bool(_zs) and not any(x in _zs for x in ('三庭', '五庭', '修席', '极限')))
     _R0 = ROOT
@@ -358,7 +355,6 @@ def 自测():
     try:
         for _sub in ('工具/席', '正文'):
             os.makedirs(os.path.join(_t, _sub))
-        _sh.copy(os.path.join(_R0, '工具', '席', '一章.js'), os.path.join(_t, '工具', '席', '一章.js'))
         _d = os.path.join(_t, '版本', '第400章')
         os.makedirs(_d)
         open(os.path.join(_t, '正文', '镇冢秘术_第四百章_测.md'), 'w', encoding='utf-8').write('测\n')

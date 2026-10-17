@@ -132,7 +132,7 @@ def main():
         print('')
         print('── 现在就跑这一条 ──')
         print('   cd /home/user/the-novel && python3 工具/自走.py')
-        print('　★它印「起」→ 逐条照抄跑完，末一条 `Workflow(...)`（二代之章为 造章.js，一代为 一章.js——照自走所印）')
+        print('　★它印「起」→ 逐条照抄跑完，末一条 `Workflow(...)`（造章.js——照自走所印；一代 一章.js 已淘汰）')
         print('　★它印「候」→ 说明另有席在跑；若心跳已死而它仍印「候」，跑 `python3 工具/心跳.py --跳 N` 接手')
         print('⛔**「我现在开它」这六个字不算派席——须回了 Run ID 才算。**')
 

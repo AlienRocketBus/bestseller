@@ -104,7 +104,7 @@ def _下一步(一):
         if any(x in 事 for x in 候):
             if i + 1 < len(段序):
                 return '下一段：**%s**（十一段之第 %d）' % (段序[i + 1], i + 2)
-            return '**封版已是末一段**——办毕即开下一章（`python3 工具/下一章.py`）'
+            return '**封版已是末一段**——办毕即开下一章（`python3 工具/自走.py`）'
     return '（末一步不在十一段之列，下一步须由人当场定）'
 
 
@@ -154,15 +154,13 @@ def 自测():
     T('②只许往後接，无一处删旧步', '.pop(' not in s and "del d['步']" not in s and 'clear()' not in s)
     T('③段序当场对得上一章.js 之十一段',
       段序 == ['定位', '三魂', '起草', '机闸', '三庭', '五庭', '读席', '修席', '极限', '案席', '封版'])
-    # ③之二·真去比一章.js（判据之源律）
+    # ③之二·与冻存之一代之段比（1017 X28：一章.js 已彻删，其段冻存於 造式.py）
     try:
-        js = open(os.path.join(ROOT, '工具', '席', '一章.js'), encoding='utf-8').read()
-        import re as _re
-        m = _re.search(r'phases:\s*\[(.*?)\]\s*,?\s*\}', js, _re.S)
-        实 = _re.findall(r"title:\s*'([^']+)'", m.group(1)) if m else []
+        import 造式 as _zs
+        实 = list(_zs.一代之段)
     except Exception:
         实 = []
-    T('③之二 段序与 一章.js 之 meta.phases 逐名相同（当场读，不写死）', 实 == 段序, str(实)[:80])
+    T('③之二 段序与冻存之一代之段逐名相同（造式.py）', 实 == 段序, str(实)[:80])
     T('④下一步是自末一步当场推的，推不出即说推不出（不许编）',
       '_下一步' in s and '不许编' in s and '须由人当场定' in s)
     # ⑧★2026-09-16 立：**席自报之名须推得出下一段**

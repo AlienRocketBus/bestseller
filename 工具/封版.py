@@ -192,6 +192,8 @@ def 前(n, root=ROOT):
         print('· 回执闸：%s' % ('✓ 键俱在' if _检._receipt_ok(n) else '⛔ 回执（设定/回执_*第%d章*.md）缺键：%s——记席照 396 回执之式补其节（到期账：本章动没动 设定/到期账.json、哨与限）' % (n, '、'.join(_缺) or '（档名不认本章）')))
     except Exception as _e:
         print('· 回执闸：⛔判不出（%s）' % _e)
+    r = subprocess.run([sys.executable, 器('小说检察官.py'), '--末章', str(n)], cwd=root, capture_output=True, text=True)   # ★1020：398 亮点 5+逗 至封版·後之全测·快（十一分钟後）方红——检察官之末章硬闸单跑（约一分半）左移於此
+    print('· 末章硬闸（检察官）：%s' % ('✓ 通过' if r.returncode == 0 else '⛔ ' + '；'.join(l.strip() for l in r.stdout.split('\n')[next((i for i, l in enumerate(r.stdout.split('\n')) if '✗' in l), 0):] if l.strip())[:600] + '——治後再跑 --前'))
     try:                                                     # ★1013：六问（质量三闸①之e）——381 记席未答，封版之全测方红；今於 --前 即印
         import 质量三闸
         _名, _过, _语 = 质量三闸.gate1e(n)[0]

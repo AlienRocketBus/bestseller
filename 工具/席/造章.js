@@ -256,9 +256,14 @@ const 崩式 = { type: 'object', properties: {
   misread: { type: 'boolean' }, misread_where: { type: 'string' }, misread_fix: { type: 'string' } },
   required: ['hard', 'soft', 'gate', 'misread'] }
 phase('验')
+// ★1020 399 逮：盲读之答被安全之器截停而席仍交一份「未交」之壳（happened 起首「未交」）——旧只认 null，遂不补派、造式之实红於封版前；今壳亦作未交
+const 盲未交 = x => !x || /^\s*未交/.test(String(x.happened || ''))
 let 盲 = 承.盲 || (await agent(交缺(盲读令()), { phase: '验', label: '盲读', schema: 加缺(盲读式) }))
-  || (log('盲读未交——另派一回'), await agent(交缺(盲读令()), { phase: '验', label: '盲读·补', schema: 加缺(盲读式) }))
-if (!盲) {
+if (!承.盲 && 盲未交(盲)) {
+  log('盲读未交（或答被截）——另派一回新席')
+  盲 = (await agent(交缺(盲读令()), { phase: '验', label: '盲读·补', schema: 加缺(盲读式) })) || 盲
+}
+if (盲未交(盲)) {
   log('⛔盲读二回未交——读者之眼没睁过，不许封版')
   return { 章: N, 停: '盲读未交', 选, 草 }
 }

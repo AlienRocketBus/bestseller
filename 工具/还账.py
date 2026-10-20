@@ -26,6 +26,7 @@
   python3 工具/还账.py --验 单1.json [单2…] [--全]   # 依序模拟；印红黄；有红 rc=1；--全 另印 G56 表行之新数落没落
   python3 工具/还账.py --窗 单1.json [单2…]    # 验之上，印每处改前改後之窗 → 设定/_草/W26/窗_<首单名>.md
   python3 工具/还账.py --施 单1.json [单2…]    # 无红方写盘；印每章几处；行数不变
+  python3 工具/还账.py --随 单1.json [单2…] [--旧 HEAD]   # ★1020 W52 之 B＋C：随改之扫——单所删换之旧片於在役诸档（设定/ 除史档、正文亮点）grep 之，列每一处仍引旧文者；施後用 --旧 HEAD 取改前之文
   python3 工具/还账.py --自测
 """
 import os as _o, sys as _s
@@ -34,7 +35,7 @@ try:
     import _账
 except Exception:
     pass
-import os, sys, re, json
+import os, sys, re, json, glob, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 主案 = os.path.join('设定', '剧情庭题', 'D6_床上那人_六审主案.md')
@@ -248,7 +249,16 @@ def 护们(护文):
         净 = re.sub(r'（[^）]*）', '', 段)
         for 章2, 行们 in 引(净).items():
             护.setdefault(章2, set()).update(行们)
+    # ★1020 总编辑：後裁收窄前锁——人物之审_至第388章 十·一（总编辑 1015 之裁）「破床上那人庭六审 272 全章之锁」：
+    #   272 只护 D6 护句 272:101、293—301（一字不动），余行许照後裁（大审397·#58、二稿账:44）落。⛔他章之全章护照旧。
+    for 章, 行们 in 收窄.items():
+        if 章 in 全:
+            全.discard(章)
+            护.setdefault(章, set()).update(行们)
     return 护, 许, 全
+
+
+收窄 = {272: {101} | set(range(293, 302))}   # 十·一裁（1015）：272 全章之锁破，只留 D6 护句
 
 
 def 字顶(式文):
@@ -415,6 +425,89 @@ def 验(ops们, 规, 取章=读章):
         if len(旧) != len(今):
             红.append('第%d章行数变了（%d→%d）' % (章, len(旧), len(今)))
     return 红, 黄, 文, 计
+
+
+# ───────── 随（1020 W52 之 B＋C）─────────
+史档 = ('设定/回执_', '设定/改单备份/', '设定/_草/', '设定/复盘/', '设定/大审_至第', '设定/病册', '设定/大升级', '设定/方案/',
+       '设定/剧情庭_', '设定/剧情庭题/_', '设定/冷轮_', '设定/废案', '设定/裁_', '设定/册_', '设定/改单账.json', '设定/费账.json',
+       '设定/全书记忆/剧情链.md', '设定/造之回报审_', '设定/回修专案_', '设定/全书通读_', '设定/全书病册/',
+       '设定/剧情庭题/D', '设定/段案/_料_', '设定/修改清单', '设定/大师进化账')   # 史、审稿之报、机器重生之档⛔扫（剧情链、段料由器重生）
+
+
+def _句们(行):
+    return [x for x in re.split(r'[，。；：！？「」『』（）、\s]+', 行) if 汉(x) >= 5]
+
+
+def 旧片(旧, 新):
+    """一行改前改後 → 已不在新行之旧片：差分所删换之片（不足四汉字者扩至其分句），去其仍在新行者。"""
+    import difflib
+    片们 = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, 旧, 新, autojunk=False).get_opcodes():
+        if tag not in ('replace', 'delete'):
+            continue
+        片 = 旧[i1:i2]
+        if 汉(片) < 6:                                 # 短片太泛（「从哪儿来」撞满书）——扩至其分句
+            for 句 in _句们(旧):
+                if 旧.find(句) <= i1 < 旧.find(句) + len(句) and 句 not in 新:
+                    片 = 句; break
+        if 汉(片) >= 6 and 片 not in 新:
+            片们.append(片.strip('，。；：、 '))
+    return [x for x in dict.fromkeys(片们) if x]
+
+
+def _档章(rel):
+    m = re.search(r'第([零〇一二三四五六七八九十百千]+)章', rel)
+    if not m:
+        return None
+    try:
+        import 自走
+        return 自走._num(m.group(1))
+    except Exception:
+        return None
+
+
+def 随(文, root=ROOT):
+    """文：{章: (档, 旧行们, 新行们)} → [(档:行, 片, 出处)]——在役诸档里仍引旧片者；并「清」行之「章:行」之引。"""
+    靶 = []
+    for 章, (_, 旧们, 新们) in sorted(文.items()):
+        for i, (旧, 新) in enumerate(zip(旧们, 新们)):
+            if 旧 == 新:
+                continue
+            for 片 in 旧片(旧, 新):
+                靶.append((片, '%d:%d' % (章, i + 1), None))
+            if not 新.strip() and 旧.strip():
+                靶.append((None, '%d:%d' % (章, i + 1), re.compile(r'(?<!\d)%d[:：]%d(?![\d—–])' % (章, i + 1))))
+    if not 靶:
+        return []
+    诸档 = []
+    for dp, dn, fn in os.walk(os.path.join(root, '设定')):
+        for f in fn:
+            if f.endswith(('.md', '.json')):
+                rel = os.path.relpath(os.path.join(dp, f), root)
+                if not rel.startswith(史档):
+                    诸档.append(rel)
+    for f in glob.glob(os.path.join(root, '正文', '*.md')) + glob.glob(os.path.join(root, '*.md')):   # ★仓根之入口档（README 等）亦在役
+        诸档.append(os.path.relpath(f, root))
+    出 = []
+    for rel in sorted(诸档):
+        try:
+            行们 = open(os.path.join(root, rel), encoding='utf-8').read().split('\n')
+        except Exception:
+            continue
+        起 = 0
+        if rel.startswith('正文/'):                     # 正文只扫亮点（白文之改由单施）
+            起 = next((k for k, l in enumerate(行们) if '【本章亮点】' in l), len(行们))
+        for k in range(起, len(行们)):
+            l = 行们[k]
+            if re.search(r'已删|已治|改前|旧作|原作', l):   # 有意之史引（注明其已删已改者）⛔算残
+                continue
+            for 片, 处, 式 in 靶:
+                章 = 处.split(':')[0]
+                # 片不足十汉字者，须其行点出处之章（或其档即该章之记／该章之正文）方认作引——免常句之撞
+                本档 = rel in ('设定/全书记忆/第%s章.md' % 章,) or (rel.startswith('正文/') and 章 == str(_档章(rel)))
+                if (片 and 片 in l and (汉(片) >= 10 or 本档 or re.search(r'(?<!\d)%s(?!\d)' % 章, l))) or (式 and 式.search(l)):
+                    出.append(('%s:%d' % (rel, k + 1), 片 or 处, 处))
+    return 出
 
 
 def 读单们(路们):
@@ -629,7 +722,18 @@ def 自测():
     共 += 1; ok += 引('| G7 | 195:715；199:175、347—349 | 改 | 「12:3」 |') == {195: {715}, 199: {175, 347, 348, 349}}
     共 += 1; ok += 字顶('後添（⛔多於一百三十五字）') == 135 and 字顶('改（⛔合多於一百字）') == 100 and 字顶('改') is None
     护, 许, 全 = 护们('- **⛔动之句**（本案之所以立）：201:17、155；263:77—141（护句）、457—473；272 全章；283:5—37（只正其数：13 乙、33 照 S38）。（201:13 照二审⑤只添半句，G62。）')
-    共 += 1; ok += 护[201] == {17, 155} and 140 in 护[263] and 460 in 护[263] and 272 in 全 and 许[283] == {13, 33} and 13 in 许[201]
+    # ★1020 随：旧片取得准（短片扩至分句）、在役之档逮得着、史档不扫
+    _片 = 旧片('黑里，那是一张饼，边上一圈齐齐的，没有一个缺口。', '黑里，那是一块饼，一边弯，两边是掰出来的茬。')
+    共 += 1; ok += any('一圈齐齐' in x for x in _片) and all('一边弯' not in x for x in _片) and not any(汉(x) < 6 for x in _片)
+    with tempfile.TemporaryDirectory() as _t:
+        for _d in ('设定/全书记忆', '设定/回执_x', '正文'):
+            os.makedirs(os.path.join(_t, _d), exist_ok=True)
+        open(os.path.join(_t, '设定', '全书记忆', '人物.md'), 'w', encoding='utf-8').write('甲\n他那张饼边上一圈齐齐的，没有一个缺口（9:2）\n常句：边上一圈齐齐的\n「边上一圈齐齐的」（9:2 已删·大审）\n')
+        open(os.path.join(_t, '设定', '回执_x', 'a.md'), 'w', encoding='utf-8').write('9:2 边上一圈齐齐的\n')
+        open(os.path.join(_t, '正文', 'x.md'), 'w', encoding='utf-8').write('9:2 边上一圈齐齐的\n【本章亮点】\n引 9:2 边上一圈齐齐的\n')
+        _出 = 随({9: ('x', ['', '那是一张饼，边上一圈齐齐的，没有一个缺口。'], ['', '那是一块饼，一边弯，两边是掰出来的茬。'])}, _t)
+        共 += 1; ok += sorted({x[0] for x in _出}) == ['正文/x.md:3', '设定/全书记忆/人物.md:2']   # 常句（无章号、片不足十字）⛔认；史档⛔扫；正文白文⛔扫
+    共 += 1; ok += 护[201] == {17, 155} and 140 in 护[263] and 460 in 护[263] and 272 not in 全 and {101, 293, 301} <= 护[272] and 1509 not in 护[272] and 许[283] == {13, 33} and 13 in 许[201]   # ★1020：272 照十·一裁收窄
     print('还账·自测 %d/%d' % (ok, 共))
     return ok == 共
 
@@ -645,6 +749,27 @@ if __name__ == '__main__':
         open(p, 'w', encoding='utf-8').write(t)
         print('还账·料 %s → %s（%d 字）' % (a[1], os.path.relpath(p, ROOT), len(t)))
         sys.exit(0)
+    if a[:1] == ['--随'] and len(a) >= 2:
+        规 = 读规()
+        单们 = [x for x in a[1:] if not x.startswith('--') and x != (a[a.index('--旧') + 1] if '--旧' in a else None)]
+        取 = 读章
+        if '--旧' in a:                         # 施後：改前之文取自 git 之某版（ops 照旧可模拟）
+            ref = a[a.index('--旧') + 1]
+            def 取(n, root=ROOT):
+                import 章料, subprocess as _sp
+                f = 章料.章档(n, root)
+                if not f:
+                    return (None, None)
+                r = _sp.run(['git', 'show', '%s:%s' % (ref, os.path.relpath(f, root))], cwd=root, capture_output=True, text=True)
+                return (f, r.stdout.split('\n')) if r.returncode == 0 else (None, None)
+        红, 黄, 文, 计 = 验(读单们(单们), 规, 取)
+        if 红:
+            print('还账·随：模拟有红 %d（改前之文不合单——施後须 --旧 HEAD）' % len(红)); sys.exit(1)
+        出 = 随(文)
+        for 处, 片, 源 in 出:
+            print('  ⚠ %s｜「%s」（%s 之旧文）' % (处, 片[:30], 源))
+        print('还账·随：在役诸档仍引旧文 %d 处（史档不扫：%s）' % (len(出), '、'.join(x.split('/')[-1] for x in 史档[:6]) + '…'))
+        sys.exit(1 if 出 else 0)
     if a[:1] in (['--验'], ['--窗'], ['--施']) and len(a) >= 2:
         规 = 读规()
         红, 黄, 文, 计 = 验(读单们([x for x in a[1:] if x != '--全']), 规)

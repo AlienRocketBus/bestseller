@@ -313,6 +313,31 @@ chk2('⑮之d4 回灌·退化局（群不足90章）当场判红',
 chk2('⑮之d5 回灌·退化局（旧式一章不红，则那一次放宽本无可放）当场判红',
      _十五之判(set(), set(), 109), False)
 
+# ⑯【X19·W53·1020】新尺（X01·线照总纲）之下，旧判失据之二章须照新尺补点名：
+#   389（旧尺误作主线、所比 388）→同线前章 387；391（旧尺报「本线之前无章，免测」）→同线前章 389。
+#   今二章之轮记已逐样点新尺之名 → ⑮须绿；回灌旧病（抽去新尺所点之名＝补判前之轮记）→ 须复红。
+#   ⛔不写盘上之轮记（389、391 之轮记他席或正在改）：以临时 ROOT 只换 ⑮所读之轮记一档，正文与总纲仍读盘上。
+_根 = K.ROOT
+for _c, _p in ((389, 387), (391, 389)):
+    chk2('⑯X19 第%d章之同线前章照新尺为第%d章' % (_c, _p), K._prev_same_line(_c), _p)
+    chk2('⑯X19 第%d章轮记已补点新尺之名·⑮绿' % _c, _新判(_c), True)
+    _lj3 = os.path.join(_根, '版本', '第%d章' % _c, '_轮记.md')
+    _o3 = io.open(_lj3, encoding='utf-8').read()
+    _半3 = _o3
+    for _w in _key(_p):
+        _半3 = _半3.replace(_w, '〓')
+    _tmp3 = _tf.mkdtemp()
+    try:
+        _os.makedirs(os.path.join(_tmp3, '版本', '第%d章' % _c))
+        io.open(os.path.join(_tmp3, '版本', '第%d章' % _c, '_轮记.md'), 'w', encoding='utf-8').write(_半3)
+        K.ROOT = _tmp3
+        chk2('⑯X19 第%d章回灌旧病（抽去新尺所点之名）须复红' % _c, _新判(_c), False)
+    finally:
+        K.ROOT = _根
+        _sh.rmtree(_tmp3, ignore_errors=True)
+    chk2('⑯X19 第%d章还原毕·⑮复绿、盘上轮记未动' % _c,
+         (_新判(_c), io.open(_lj3, encoding='utf-8').read() == _o3), (True, True))
+
 
 坏 = [x for x in 案 if not x[1]]
 

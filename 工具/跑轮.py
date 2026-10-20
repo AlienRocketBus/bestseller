@@ -3063,6 +3063,28 @@ def selftest():
         ROOT, JJ_DIR = _R, _J
         shutil.rmtree(tmp, ignore_errors=True)
 
+    # ★1018 X07：造式二代未封之章，阅读器过期只报、指封版 --後（⛔⛔、⛔另跑同步之处方）；他章照旧处方（回灌旧报——一律⛔与同步处方——即红）
+    _旧 = _reader_stale(lambda: '不合')
+    _二 = _reader_stale(lambda: '不合', 交封版=398)
+    chk('X07·二代未封之章：阅读器过期只报、指封版 --後',
+        len(_二) == 1 and '⛔阅读器' not in _二[0] and '推送必被拦' not in _二[0] and '封版.py 398 --後' in _二[0]
+        and '处方：python3 工具/同步全本阅读器.py' not in _二[0])
+    chk('X07·他章照旧处方；合则不报', any('同步全本阅读器.py' in x for x in _旧) and _reader_stale(lambda: '同步检查通过', 交封版=398) == [])
+    import inspect as _ins
+    chk('X07·存版之报经交封版之判（⛔回调旧 _reader_stale()）', '_reader_stale(交封版=n if _阅读器交封版(n) else None)' in _ins.getsource(save))
+    tmp = tempfile.mkdtemp(prefix='zm_x07_')
+    try:
+        ROOT, JJ_DIR = tmp, os.path.join(tmp, '版本')
+        for _k, _式 in ((7, '式：虫洞（造式二代·1013）'), (8, '式：虫洞（造式二代·1013）'), (9, '式：虫洞（一代）')):
+            os.makedirs(os.path.join(JJ_DIR, '第%d章' % _k))
+            open(os.path.join(JJ_DIR, '第%d章' % _k, '_式.md'), 'w', encoding='utf-8').write(_式 + '\n')
+        open(os.path.join(JJ_DIR, '第8章', '_十一轮.json'), 'w', encoding='utf-8').write('{}')
+        chk('X07·判：二代未封者交封版；已封（十一轮在）、一代、无式者照旧',
+            _阅读器交封版(7) is True and _阅读器交封版(8) is False and _阅读器交封版(9) is False and _阅读器交封版(10) is False)
+    finally:
+        ROOT, JJ_DIR = _R, _J
+        shutil.rmtree(tmp, ignore_errors=True)
+
     print('\n  八闸负测（含端到端真跑）：%d/%d' % (ok, ok + fail))
     return 0 if fail == 0 else 1
 
@@ -3075,16 +3097,36 @@ def _reader_check():
     return (r.stdout or '') + (r.stderr or '')
 
 
-def _reader_stale(_check=None):
+def _阅读器交封版(n):
+    """★1018 X07：造式二代之章（造式.是二代）而封版·後未过（`_十一轮.json` 不在）——其阅读器之同步係
+    `封版.py N --後` 之一步（净重对表补之次），合稿／回写之席之令无此器：报而⛔拦、指封版。
+    已封之章（还账改旧章）、一代之章照旧处方。⛔读不出即 False（照旧处方，⛔静）。"""
+    if os.path.exists(os.path.join(JJ_DIR, '第%d章' % n, '_十一轮.json')):
+        return False
+    try:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_zaoshi', os.path.join(os.path.dirname(os.path.abspath(__file__)), '造式.py'))
+        _zm = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_zm)
+        return bool(_zm.是二代(n, os.path.dirname(JJ_DIR)))
+    except Exception:
+        return False
+
+
+def _reader_stale(_check=None, 交封版=None):
     """★阅读器与正文合不合：合则返空，不合则返一行催语（只报不改）。
     ★★取器之函，不自写比对：跑 同步全本阅读器.py --check，认其「同步检查通过」六字。
-    ★★★而认不出即催——一个「看不懂就当没事」的催，比没有更坏。"""
+    ★★★而认不出即催——一个「看不懂就当没事」的催，比没有更坏。
+    交封版＝章号（`_阅读器交封版` 判真者）：只报一行、指 `封版.py N --後`（⛔⛔、⛔推必拦之语、⛔另跑同步之处方）。"""
     try:
         out = (_check or _reader_check)()
     except Exception as e:
         return ['  ⚠阅读器之验跑不起来（%s）——须人自跑一回。' % e]
     if '同步检查通过' in out:
         return []
+    if 交封版:
+        return ['  ·阅读器未同步（正文改了而 HTML 未改）——第%d章係造式二代、未封版：'
+                '其同步在 python3 工具/封版.py %d --後（⛔此处另跑、⛔为此停；报而不拦）' % (交封版, 交封版)]
     return ['  ⛔阅读器已过期（正文改了而 HTML 未改）：'
             '★医生／检察官自测／全书检三项皆据之报红，推送必被拦。',
             '     处方：python3 工具/同步全本阅读器.py（改毕再推）']
@@ -3405,7 +3447,7 @@ def save(n, note=''):
     # ★★★而其治只一条命令，难只在「想不起来」；故不靠记性，靠此处每存一版即报一句。
     # ★★★★而此处只报不改 HTML：改 HTML 之权在人（检察官明书「检察官未改 HTML」），
     #   ★此闸不夺其权，只把「该去改了」这一句摆到眼前。
-    for _l in _reader_stale():
+    for _l in _reader_stale(交封版=n if _阅读器交封版(n) else None):
         print(_l)
     _rs, _miss = rounds_state(ledger)
     print('  ══════════════════════════════════════════')

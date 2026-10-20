@@ -71,6 +71,28 @@ def 跑器(名, args):
     return r.returncode, (r.stdout + r.stderr).decode('utf-8', 'replace')
 
 
+def 红行(out):
+    """out 之⛔行。★W53·X20：⛔行止於冒号者（数闸「⛔ 不符 N 处：」、亮点对表「⛔ …删掉的话 N 处：」），
+    要紧之句在其下——并其下缩进更深、非⛔、非★之行至多两行（以「｜」相隔），⛔只印到冒号。"""
+    行 = [x for x in out.split('\n') if x.strip()]
+    出 = []
+    for i, x in enumerate(行):
+        l = x.strip()
+        if '⛔' not in l:
+            continue
+        if l.endswith(('：', ':')):
+            深 = len(x) - len(x.lstrip())
+            续 = []
+            for y in 行[i + 1:]:
+                z = y.strip()
+                if len(y) - len(y.lstrip()) <= 深 or '⛔' in z or z.startswith('★') or len(续) >= 2:
+                    break
+                续.append(z)
+            l += '｜'.join(续)
+        出.append(l)
+    return 出
+
+
 def 甲层(n):
     """机器判得死的，逐器跑一遍。返回 [(器名, 过没过, 末一行), ...]"""
     章 = 诸章()
@@ -88,7 +110,7 @@ def 甲层(n):
         ('崩坏闸', ['工具/崩坏闸.py', str(n)]),   # 0925 作者令：剧情前後不许崩（亡者在场即红）
     ):
         rc, out = 跑器(名, args)
-        红 = [x.strip() for x in out.split('\n') if '⛔' in x]
+        红 = 红行(out)
         出.append((名, not 红, 红[:3] if 红 else [x.strip() for x in out.split('\n') if '✓' in x][:1]))
     # 硬闸只对本章
     if n in 章:

@@ -435,6 +435,13 @@ def make_card(c):
 - **变**：〔从前会……，现在会……〕
 - **声**：〔一行〕
 
+## ⭐⭐ 问九之二·在场之来（1020 立·瑕疵总账 X18·本格之检在「十五」）
+
+> 其所由来：393 之卡只写「兖与路费放下交点户」，⛔写点户何时、因何在场（391:85 他已退出）——七稿各定：晨来、後半晌来、黄昏檐下等、天黑自来，行家判「料缺」。
+> 主角之外，本章在场之人逐人一顶格行：其在场之拍、其来之由与时、前章退场之句（章:行「原句」——取其人末见之章（状态册之末见），句四字以上，awk 亲印）。状态册无其前迹者方写「初登场」；前章末拍仍在场写「未退·章:行「原句」」；本章只主角一人写「- 无（本章只主角一人在场）」。注写作缩进之子条（「  - 注：…」，⛔顶格）。卡上一定，诸执笔照之，⛔各定。
+
+- **〔某人〕**｜在场：〔拍N（—拍M）〕｜其来：〔何时、因何而来〕｜前章退场：〔章:行「原句」／初登场／未退·章:行「原句」〕
+
 ---
 **★★★★★而此卡须於起草之前填毕（九问）**；**★填毕即抄一行「本章之一事」入轮记之首。**
 
@@ -760,6 +767,258 @@ def _check8(c):
     return [(名, True, '✓四问俱答，且四牙俱过（接第%s章之钩）' % 前)]
 
 
+# ★★★★★1020·W53·十四「卡之自牵」（瑕疵总账 X13·392 五执笔各裁）：**同卡一处⛔、一处令写**
+#   ⛔其病（392 之卡）：⛔「回」字而令照 382:119「刮到头，往回拐了一下」写｜称呼统一「回信」而末节⛔「回信」｜
+#     称呼「那张纹」正文 0 见，章料遂列作内部名（白文⛔照搬）｜⑤量必出数把「本子上那一道之点数」算作出数，同句⛔预写「十一」。
+#   ★393 起记令「卡之引」只治其一形（卡里⛔留已被裁改之旧令）；1020 普查 364—398 之卡：394—397 未再犯，
+#     **398 之卡新犯一形**——「门里那个人」问六「⛔姓、⛔句」，问九·认「零句或一句以内」。
+#   ★四形俱机判：①全禁之词（⛔「甲」、「甲」⛔，其後不带所限之境）落进令写之句（照 N:L「…」写／白文作／称呼／一句之券／声）
+#     ②称呼之名正文 0 见而卡无「白文作」③⑤量必出数之答里⛔一个数 ④同一人之声限一处作零、一处许开口。
+#   ⛔它认不着的：语义之牵扯（「⛔递」与「递了进去」各指一物；⛔限於某人之词）——归记席填毕自读（造章.js 记令 N≥398 令其跑本格）。
+#   ⛔其自 398（⛔回头红已用之卡·坑㉚；364—397 一扫：385 ①一处、392 ①③三处，皆史）。
+#   ★1020 W53 验席所逮四误（俱治）：③⑤之答里「不出之由」一段之⛔数（合法扣住之数）亦判红→只判「出数」至「不出之由」之间｜
+#     ④「一句话也没有」「一句也不说」（义为零句）因「一句」判许开口→认作零｜④限於某拍之禁（「拍三⛔刘二开口」）当作全章之零→⛔收｜
+#     ①「⛔「回」 字」（」後带空格）不收→先去空白再认其尾。
+_自牵自 = 398
+_引串 = r'(?:「[^」\n]{1,40}」)+'
+_全禁之尾 = ('入白文', '出白文', '字', '二字', '一字', '零')
+_数字 = r'[零〇一二两三四五六七八九十百千\d]+'
+_声零 = (r'零句(?!或)|⛔句|⛔开口|⛔一句|不开口|一句不(?:说|出)|零字'
+        r'|[一半]句(?:话)?也(?:不(?:说|出|讲|开口)|没(?:有|说|出)?|无)|一字(?:也)?(?:不(?:说|出|吐|提)|没(?:说|出|有))|一言不发|一声不(?:吭|出)')
+_声有 = r'零句或一句|≤\s*%s\s*(?:字|句)|%s(?:字|句)(?:以内)?' % (_数字, _数字)
+_拍限 = r'拍\s*[\d一二三四五六七八九十]+|第\s*[\d一二三四五六七八九十]+\s*拍'
+_白 = ' 　\t'
+
+
+def _限於拍(前):
+    """前文同一小句（至上一个；。｜，：）里有「拍N／第N拍」——其禁限於某拍，非全章之零。"""
+    return bool(re.search(_拍限, re.split(r'[；;。｜|，,：:]', 前)[-1]))
+
+
+def _卡之禁词(t):
+    """全禁之词：⛔「甲」「乙」…（其後接标点、行末、或「入白文／字／零」——中隔空白亦认）；「甲」「乙」…⛔（⛔後接标点或行末）。⛔「叫」再出叙者之口一类限境之禁⛔收。"""
+    出 = set()
+    for m in re.finditer(r'⛔\s*(%s)' % _引串, t):
+        后 = t[m.end():m.end() + 8].lstrip(_白)
+        if not 后 or 后[:1] in '、；;。，,）)｜|\n' or 后.startswith(_全禁之尾):
+            出.update(re.findall(r'「([^」]+)」', m.group(1)))
+    for m in re.finditer(r'(%s)\s*⛔' % _引串, t):
+        后 = t[m.end():m.end() + 8].lstrip(_白)[:1]
+        if not 后 or 后 in '、；;。，,）)｜|\n':
+            出.update(re.findall(r'「([^」]+)」', m.group(1)))
+    return 出
+
+
+def _卡之令写(t):
+    """令写进白文之句 → [(行, 类, 句)]：照 N:L「…」写／白文作「…」／称呼行之「…」／一句之券／声行之「…」（⛔所禁者⛔收）。"""
+    出 = []
+    for i, l in enumerate(t.split('\n'), 1):
+        for m in re.finditer(r'照\s*\d{1,3}[:：]\d{1,4}\s*「([^」]+)」\s*写', l):
+            出.append((i, '照写', m.group(1)))
+        for m in re.finditer(r'白文作\s*「([^」]+)」', l):
+            出.append((i, '白文作', m.group(1)))
+        类 = '称呼' if '称呼' in l else ('券' if re.match(r'\s*-\s*\*\*本章要挣的那一句\*\*', l)
+                                         else ('声' if re.match(r'\s*-\s*\*\*声\*\*', l) else ''))
+        if 类:
+            for m in re.finditer(r'(⛔\s*)?「([^」]+)」', l):
+                if not m.group(1) and not re.match(r'(?:「[^」]*」)*\s*⛔', l[m.end():]):
+                    出.append((i, 类, m.group(2)))
+    return 出
+
+
+def _卡之声限(t):
+    """同一人之声限：{名: {'零': 行, '有': 行}}（只收两样俱在者）。认／其人其变之「名——」段、声行之「名…零句／一句以内」、「⛔名开口」。
+    零只收全章之零：同一小句里带「拍N」者（「拍三⛔刘二开口」）係一拍之禁，⛔当零。"""
+    限 = {}
+
+    def 记(名, 文, i, 前=''):
+        名 = 名.strip('*')
+        if any(not _限於拍(前 + 文[:z.start()]) for z in re.finditer(_声零, 文)):
+            限.setdefault(名, {}).setdefault('零', i)
+        elif re.search(_声有, 文):
+            限.setdefault(名, {}).setdefault('有', i)
+    for i, l in enumerate(t.split('\n'), 1):
+        hs = list(re.finditer(r'(?:\*\*)?([一-鿿]{1,6})(?:\*\*)?——', l))
+        for k, m in enumerate(hs):
+            记(m.group(1), l[m.end():hs[k + 1].start() if k + 1 < len(hs) else len(l)], i)
+        if re.match(r'\s*-\s*\*\*声\*\*', l):
+            for seg in re.split(r'[；;]', l.split('：', 1)[-1]):
+                m = re.match(r'\s*([一-鿿、]+?)\s*(%s|%s)' % (_声零, _声有), seg)
+                if m:
+                    for 名 in m.group(1).split('、'):
+                        记(名, m.group(2), i)
+        for m in re.finditer(r'⛔([一-鿿]{1,6}?)开口', l):
+            记(m.group(1), '⛔开口', i, l[:m.start()])
+    return {k: v for k, v in 限.items() if len(v) == 2}
+
+
+def _零见之名(名们):
+    """称呼之名里章料将列作内部名者（正文全书 0 见）——照 `章料::内部名` 判，⛔另写一式。"""
+    if not 名们:
+        return set()
+    import importlib.util as _u
+    _s = _u.spec_from_file_location('_章料', os.path.join(os.path.dirname(os.path.abspath(__file__)), '章料.py'))
+    _m = _u.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return set(_m.内部名(''.join('「%s」' % x for x in 名们), ROOT))
+
+
+def _卡之自牵(t):
+    """纯判（除②读正文）·只吃卡之文 → [坏]（⛔读盘外之档，可造局负测）"""
+    坏, 见 = [], set()
+    写 = _卡之令写(t)
+    for w in sorted(_卡之禁词(t)):
+        for i, k, s in 写:
+            if w in s and (w, i, s) not in 见:
+                见.add((w, i, s))
+                坏.append('①⛔「%s」而卡:%d 令写（%s）「%s」' % (w, i, k, s[:20]))
+    称 = sorted({s for _, k, s in 写 if k == '称呼' and re.fullmatch(r'[一-鿿]{2,4}', s)
+                and ('白文作「%s」' % s) not in t})
+    for s in sorted(_零见之名(称)):
+        坏.append('②称呼「%s」正文 0 见（章料列作内部名、白文⛔照搬）而卡令统一用之——须写作「白文作「%s」」或另择' % (s, s))
+    m = re.search(r'-\s*\*\*本章摆出「量」的几处，其中几处把读数交到读者手上\*\*[：:]\s*(.+)', t)
+    if m:   # 只判「出数」至「不出之由」之间（不出之由里⛔数係合法扣住之数）
+        段 = re.split(r'不出之由', m.group(1))[0]
+        段 = 段[段.find('出数'):] if '出数' in 段 else 段
+        for x in re.findall(r'⛔[^「」｜；。]{0,6}「(%s)」' % _数字, 段):
+            坏.append('③⑤量必出数之答里⛔数「%s」——算作出数而⛔其数' % x)
+    for 名, v in sorted(_卡之声限(t).items()):
+        坏.append('④「%s」之声：卡:%d 作零、卡:%d 许开口' % (名, v['零'], v['有']))
+    return 坏
+
+
+def _check14(c):
+    名 = '十四·卡之自牵（同卡一处⛔、一处令写）'
+    if c < _自牵自:
+        return [(名, True, '—本闸自第%d章起看（本章第%d章，其前係史）' % (_自牵自, c))]
+    p = os.path.join(ROOT, '版本', '第%d章' % c, '_开镜卡.md')
+    if not os.path.exists(p):
+        return [(名, False, '⛔开镜卡不在')]
+    try:
+        坏 = _卡之自牵(open(p, encoding='utf-8', errors='replace').read())
+    except Exception as e:
+        return [(名, False, '⛔判不出（%s）——⛔不许当作无牵扯' % e)]
+    return [(名, not 坏, ('⛔' + '；'.join(坏) + '——择一而删其一（392 五执笔各裁）') if 坏 else '✓无一处⛔与令写相抵')]
+
+
+# ★★★★★1020·W53·十五「在场之来」（瑕疵总账 X18·393 行家共病）：**主角之外，凡在场之人，卡上须定其在场之拍、其来之由与时、前章退场之句（章:行）**
+#   ⛔其病（393）：卡只写「兖与路费放下交点户」，点户何时、因何在场一字无（391:85「那人站了一会儿，退了出去」）——
+#     七稿各定：稿七晨来、稿一後半晌来、稿四黄昏檐下等、二三五六天黑自来；行家判「料缺」，胜稿以大进治之（393 行家评·六）。
+#   ★它认的：问九之二之格在；顶格「- 」之行逐人（缩进之子条⛔当一人）有「在场：拍N」「其来：」（四字以上）「前章退场：」——
+#     後者或「初登场」（状态册里其人已见於前章者⛔），或 章:行「原句」：其句四字以上（照 负测_行号引真 之律）、确在正文那一行，
+#     且状态册里其人末见之章在所引之章以後者⛔（退场之句须取其末见之章）。
+#   ⛔它认不着的：来由合不合情理（归行家与逻辑审）；漏写之人（卡之人名单⛔与白文比——白文未写）；状态册未立其人者之初登场真伪。
+#   ★其自 398（⛔回头红已用之卡）；旧卡（其模之前所立）补此格即受检。
+#   ★1020 独立验席所逮三病（X18）（俱治）：①「391:83「那人」」两字泛词钻过「号与句对得上」→句须四字以上｜
+#     ②「钱满｜前章退场：初登场」能过→与状态册之末见比｜③缩进之子条（「  - 注：…」）当作一人连红三条→只认顶格「- 」。
+_在场自 = 398
+_引行 = r'(\d{1,3})[:：](\d{1,4})\s*「([^」]+)」'
+_泛称 = re.compile(r'^(?:一个|那个|这个|那|这)?(?:人|女人|男人|汉子|孩子|老人|后生|姑娘)$')
+
+
+def _册之见(名, c, 册=None):
+    """状态册里「名」其人见於第 c 章之前之末一章（末见章、「K态」取其 < c 之最大者）——认不着或未见回 None。
+    认人：名与别称（去括注、拆「／」）等於卡上之名者；无等者，取称里含卡上之名（二字以上、非泛称）且唯一者。"""
+    if 册 is None:
+        册 = json.load(open(os.path.join(ROOT, '设定', '人物状态册.json'), encoding='utf-8'))
+    名 = re.sub(r'（[^）]*）|\([^)]*\)', '', 名 or '').strip()
+    if len(名) < 2 or _泛称.match(名):
+        return None
+    等, 含 = [], []
+    for v in (册.get('人物') or [] if isinstance(册, dict) else []):
+        if not isinstance(v, dict):
+            continue
+        al = v.get('别称') or []
+        称们 = []
+        for x in [v.get('名') or ''] + (al if isinstance(al, list) else [al]):
+            x = re.sub(r'（[^）]*）|\([^)]*\)', '', str(x)).strip()
+            称们 += [y.strip() for y in re.split(r'[／/]', x) if len(y.strip()) >= 2]
+        if 名 in 称们:
+            等.append(v)
+        elif any(名 in y for y in 称们):
+            含.append(v)
+    人们 = 等 or (含 if len(含) == 1 else [])
+    见 = []
+    for v in 人们:
+        m = re.match(r'\d+', str(v.get('末见章') or ''))
+        见 += [int(m.group())] if m else []
+        见 += [int(k[:-1]) for k in v if re.match(r'\d+态$', k)]
+    见 = [k for k in 见 if 0 < k < c]
+    return max(见) if 见 else None
+
+
+def _正文行(章, 行):
+    """第 章 章正文档之第 行 行（1 起；整档之行，与 awk NR 同）——取不着回 None。"""
+    if 章 not in F:
+        return None
+    L = open(F[章], encoding='utf-8', errors='replace').read().split('\n')
+    return L[行 - 1] if 0 < 行 <= len(L) else None
+
+
+def _在场之来(t, c, 取行=_正文行, 册=None):
+    """纯判（引句之真读正文、末见读状态册，可换 取行、册 造局）·只吃卡之文 → [坏]。"""
+    m = re.search(r'^##[^\n]*在场之来[^\n]*\n(.*?)(?=^## |^---|\Z)', t, re.S | re.M)
+    if not m:
+        return ['卡无「问九之二·在场之来」一格（其模在 `--立`；旧卡照式补一节：「- **某人**｜在场：拍N｜其来：何时、因何｜前章退场：章:行「原句」」）']
+    体 = m.group(1)
+    行们 = [l.strip() for l in 体.split('\n') if re.match(r'-\s', l)]      # 顶格「- 」方是一人（缩进之子条⛔）
+    if '〔' in 体 or not 行们:
+        return ['在场之来未填（%s）' % ('仍有「〔」' if '〔' in 体 else '无一行')]
+    if len(行们) == 1 and re.match(r'-\s*无', 行们[0]):
+        return []
+    坏 = []
+    if 册 is None:      # 读不着即抛——十五判「判不出」（⛔当作初登场俱真）
+        册 = json.load(open(os.path.join(ROOT, '设定', '人物状态册.json'), encoding='utf-8'))
+    for l in 行们:
+        _m = re.search(r'\*\*([^*]+)\*\*', l) or re.search(r'-\s*([^｜|]{1,12})', l)
+        名 = _m.group(1).strip() if _m else l[:12]
+        if not re.search(r'在场[：:]\s*拍\s*\d+', l):
+            坏.append('「%s」无在场之拍（在场：拍N）' % 名)
+        if not re.search(r'其来[：:]\s*[^｜|\s]{4,}', l):
+            坏.append('「%s」无其来之由与时（其来：何时、因何，四字以上）' % 名)
+        r = re.search(r'前章退场[：:]\s*(.+)$', l)
+        if not r:
+            坏.append('「%s」无前章退场之句（前章退场：章:行「原句」／初登场）' % 名)
+            continue
+        见 = _册之见(名, c, 册)
+        if re.match(r'初登场', r.group(1)):
+            if 见:
+                坏.append('「%s」称初登场，而状态册其人已见於第%d章——须写前章退场之句（%d:行「原句」）' % (名, 见, 见))
+            continue
+        q = re.search(_引行, r.group(1))
+        if not q:
+            坏.append('「%s」前章退场无章:行「原句」' % 名)
+            continue
+        章, 行, 句 = int(q.group(1)), int(q.group(2)), q.group(3)
+        if 章 >= c:
+            坏.append('「%s」前章退场引 %d:%d——非前章（本章第%d章）' % (名, 章, 行, c))
+            continue
+        原 = 取行(章, 行)
+        段们 = [x for x in re.split(r'…+|⋯+', 句) if len(x) >= 2]
+        if 原 is None or not 段们 or not all(x in 原 for x in 段们):
+            坏.append('「%s」前章退场 %d:%d「%s」与正文那一行对不上（%s）' % (名, 章, 行, 句[:16], '取不着' if 原 is None else '其行：' + 原[:20]))
+        elif sum(len(x) for x in 段们) < 4:
+            坏.append('「%s」前章退场 %d:%d「%s」不足四字——泛词随处对得上，⛔算引过（负测_行号引真 之律）' % (名, 章, 行, 句))
+        elif 见 and 章 < 见:
+            坏.append('「%s」前章退场引 %d:%d，而状态册其人末见於第%d章——退场之句须取其末见之章' % (名, 章, 行, 见))
+    return 坏
+
+
+def _check15(c):
+    名 = '十五·在场之来（主角之外逐人：在场之拍、其来、前章退场 章:行）'
+    p = os.path.join(ROOT, '版本', '第%d章' % c, '_开镜卡.md')
+    t = open(p, encoding='utf-8', errors='replace').read() if os.path.exists(p) else ''
+    if c < _在场自 and '在场之来' not in t:
+        return [(名, True, '—本闸自第%d章起看（本章第%d章，其前係史）' % (_在场自, c))]
+    if not t:
+        return [(名, False, '⛔开镜卡不在')]
+    try:
+        坏 = _在场之来(t, c)
+    except Exception as e:
+        return [(名, False, '⛔判不出（%s）——⛔不许当作已定' % e)]
+    return [(名, not 坏, ('⛔' + '；'.join(坏) + '——卡上定之，⛔诸执笔各定（393 七稿之病）') if 坏 else '✓在场之人之来俱定、退场之句俱对得上正文')]
+
+
 def run(c, quiet=False):
     rows = []
     rows += check0(c)
@@ -778,6 +1037,8 @@ def run(c, quiet=False):
     rows += _check_gauge(c)
     rows += _check8(c)
     rows += _check9(c)
+    rows += _check14(c)
+    rows += _check15(c)
     bad = sum(1 for _, ok, _ in rows if not ok)
     if quiet:
         print('第零轮通过' if bad == 0 else

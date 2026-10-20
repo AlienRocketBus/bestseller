@@ -737,7 +737,7 @@ def chk_draft_gate_day():
     if neg is None or '全通' not in neg:
         return False, (neg or '').strip().split('\n')[-1] or '负测运行失败'
     return True, ('乙层之日号全书逐章认得出（暗线「第N日」与「零」皆认，章首之日胜过後文回指）'
-                  '｜自测 8/8｜负测_起草闸 12/12 全通'
+                  '｜自测 8/8｜负测_起草闸 全通'
                   '（旧式对 290 印 93、对 293 印 99，全书 41 章印错；今式逐章对）')
 
 
@@ -2342,7 +2342,7 @@ def chk_shiyilun():
       ⛔**不读其内容、不判其过不过**（那是检察官与跑轮的事）。
     ★★★**起＝153 係亲跑得出**：已交回执 262 章、无此档者 79 章，**而其中 78 章尽在 152 之前**
       （持此档之最小章係 153，即此制立起之章）；**153—335 一章不缺**。**今日红者恰一章：336。**
-    ⛔**其治係 `工具/席/救章.js`，不是补一份 `_十一轮.json`**——**补一份凭据而不去走那一庭，
+    ⛔**其治係补走那一庭（`--十一轮 N`；不过照其报治·⛔审改之轮，一代救章席 1020 已汰·X29），不是补一份 `_十一轮.json`**——**补一份凭据而不去走那一庭，
       正是本闸要逮的那一样。**"""
     out = run('十一轮哨·自测', ['工具/十一轮哨.py', '--自测'])
     if out is None:
@@ -3522,6 +3522,21 @@ def chk_shangyin():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_zaozhang_ling():
+    """负测·造章令（1020 W53·瑕疵总账 X13／X14／X26）：造章.js 之令逐字渲染——N≤397 之诸令（连 schema 键序、effort）原序 sha256 同改前之基
+    （续跑之缓存·1017 作者铁律③）；N≥398 之新条（首条消息 Read 料与 Bash 建构思同发、盲读分二类、记席跑十四格）俱在，旧病回灌须红。见 工具/负测_造章令.py。"""
+    out = run('负测·造章令', ['工具/负测_造章令.py'])
+    if out is None:
+        return False, '运行失败'
+    import re as _r
+    m = _r.search(r'负测·造章令 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    if m.group(1) != m.group(2):
+        return False, '%s/%s ⛔有坏：%s' % (m.group(1), m.group(2), '；'.join(l.strip() for l in out.split('\n') if l.strip().startswith('⛔'))[:200])
+    return True, '%s/%s 全通' % (m.group(1), m.group(2))
+
+
 def chk_caishengxiao():
     """裁之生效（2026-09-24 作者令立）：做了的决定须有器守、且那器真在跑。
     ⛔其由：作者当面问「做出来的决定没有生效，那做它的意义是什么？」——只写在纸上的裁不算裁。"""
@@ -3545,7 +3560,7 @@ def chk_xiling_jin():
     m = _r.search(r'席令之禁·自测 (\d+)/(\d+)', out)
     if not m or m.group(1) != m.group(2):
         return False, '%s' % (('%s/%s ⛔有坏' % m.groups()) if m else '未见其数')
-    return True, '%s/%s 全通（十二份席令逐份带禁令）' % m.groups()
+    return True, '%s/%s 全通（`工具/席/*.js` 逐份带禁令·当场 glob）' % m.groups()
 
 
 def chk_buccun_desc():
@@ -4669,6 +4684,7 @@ def 诸项(quick):
         items.append(('负测·自进化环', chk_zijinhua))
         items.append(('进化链', chk_jinhualian))
         items.append(('负测·上瘾四问', chk_shangyin))
+        items.append(('负测·造章令', chk_zaozhang_ling))
         items.append(('席令之禁', chk_xiling_jin))
         items.append(('裁之生效', chk_caishengxiao))
         items.append(('负测·补存说明', chk_buccun_desc))

@@ -17,7 +17,7 @@
 【用法】
     python3 工具/心跳.py --跳 310        # 我在跑第310章，报到（每几分钟一次）
     python3 工具/心跳.py --查            # 别人在跑吗？rc=1 表示「有人在跑，你退出」
-    python3 工具/心跳.py --收            # 我干完了，撤锁（下一坐当场可接手，不必等）
+    python3 工具/心跳.py --收 310        # 我干完了，撤锁（下一坐当场可接手，不必等）；心跳已属後章者⛔清（下一章已有席报到）
     python3 工具/心跳.py --自测
 """
 import os as _o, sys as _s
@@ -100,18 +100,27 @@ def 跳(n):
     return rc
 
 
-def 查(印=True):
-    """返 (有人在跑?, 几分钟前, 第几章)。**先自远端取，不看本地工作区**——
-    ★其由：别坐之心跳只在远端；看本地即是看自己昨天写的那一张纸。"""
+def _远():
+    """→ (档在?, 远端之心跳 dict；读不出为 None)。先 fetch——别坐之心跳只在远端。"""
     _跑('git', 'fetch', '-q', 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (枝, 枝))
     r = _跑('git', 'show', 'origin/%s:%s' % (枝, 档))
     if r.returncode != 0 or not r.stdout.strip():
+        return False, None
+    try:
+        return True, json.loads(r.stdout.strip())
+    except Exception:
+        return True, None
+
+
+def 查(印=True):
+    """返 (有人在跑?, 几分钟前, 第几章)。**先自远端取，不看本地工作区**——
+    ★其由：别坐之心跳只在远端；看本地即是看自己昨天写的那一张纸。"""
+    在, d = _远()
+    if not 在:
         if 印:
             print('✓无人在跑（心跳档不在）——本坐可接手。')
         return False, None, None
-    try:
-        d = json.loads(r.stdout.strip())
-    except Exception:
+    if d is None:
         if 印:
             print('✓无人在跑（心跳读不出，作无人论）——本坐可接手。')
         return False, None, None
@@ -131,8 +140,43 @@ def 查(印=True):
     return False, 差 // 60, d.get('章')
 
 
+def _时(d):
+    try:
+        return int(d.get('时') or 0)
+    except (TypeError, ValueError, AttributeError):
+        return 0
+
+
+def 可收(n, 现们):
+    """⛔纯判（自测以假料跑）：撤第 n 章之锁可否。现们＝[本地之心跳, 远端之心跳]（dict 或 None）。
+    取其新者（「时」大者；同时取前者）：其章在 n 之後 → (False, 由)——下一章已有席报到（他坐已起 N+1，或封版重跑时 N+1 已起），
+      撤 N 之锁⛔清下一章之心跳（X21；旧：撤锁一律写「章＝空」）。
+    ★1020 W53 验席之十：旧判「其一属後章即⛔写」——本地留後章之旧档而远端已撤（且更新）者，仍印「已交出」⛔写；今从其新者。"""
+    新 = max((d for d in 现们 if isinstance(d, dict)), key=_时, default=None)
+    try:
+        c = int((新 or {}).get('章'))
+    except (TypeError, ValueError):
+        return True, ''
+    if c > int(n):
+        return False, '心跳已属第%d章' % c
+    return True, ''
+
+
+def _本地():
+    try:
+        return json.load(open(os.path.join(ROOT, 档), encoding='utf-8'))
+    except Exception:
+        return None
+
+
 def 收(n=None):
-    """撤锁：写一个「章＝空」之心跳，下一坐一看即可当场接手，不必等满四十五分钟。"""
+    """撤锁：写一个「章＝空」之心跳，下一坐一看即可当场接手，不必等满四十五分钟。
+    给 n 而心跳（本地、远端取其新者）已属 n 之後之章者⛔写（可收）。"""
+    if n:
+        可, 由 = 可收(n, [_本地(), _远()[1]])
+        if not 可:
+            print('✓第%s章之锁已交出（%s）——⛔清：撤锁只撤本章自己的。' % (n, 由))
+            return 0
     rc, err = _写({'章': None, '毕': (int(n) if n else None), '时': int(time.time())})
     print('✓已撤锁（第%s章办毕）——下一坐当场可接手。' % (n or '?') if rc == 0
           else '⛔撤锁未推：%s' % err)
@@ -187,6 +231,18 @@ def 自测():
       '而那正是写一章时的常态，遂使锁在最需要它的时候松开）',
       '枝主' not in s.split('def 跳(')[0].split('def _写(')[1])
     T('⑦之五 心跳枝与存底枝、正文枝三者名各不同', 枝 not in ('claude/the-novel-review-4dtuit', '备份/存底'))
+    # ⑧★X21：撤 N 之锁⛔清 N+1 之心跳（本地、远端取其新者，属後章即不写）；收须先问可收（回灌旧收——直写章＝空——即红）
+    T('⑧撤锁⛔清後章之心跳（本地属 N+1／远端属 N+1 皆拦）',
+      可收(394, [{'章': 395, '时': 1}, None])[0] is False and 可收(394, [None, {'章': 395}])[0] is False
+      and 可收(394, [{'章': 394}, {'章': 394}])[0] is True and 可收(394, [{'章': None, '毕': 393}, None])[0] is True
+      and 可收(394, [None, None])[0] is True)
+    # ⑧之三★1020 验席之十：本地留 N+1 之旧档而远端已撤且更新 → 可收（旧判「其一属後章即拦」→ 印「已交出」⛔写，即红）；
+    #   本地 N+1 更新（远端未推上）→ 仍拦；「时」读不出作 0
+    T('⑧之三 本地、远端取其新者（本地旧档属後章而远端新撤 → 可收）',
+      可收(394, [{'章': 395, '时': 100}, {'章': None, '毕': 394, '时': 200}])[0] is True
+      and 可收(394, [{'章': 395, '时': 300}, {'章': None, '时': 200}])[0] is False
+      and 可收(394, [{'章': 395, '时': 'x'}, {'章': None, '时': 5}])[0] is True)
+    T('⑧之二 收先问可收，而後写', '可收(' in s.split('def 收(')[1].split('_写(')[0])
     print('── 负测·心跳 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 

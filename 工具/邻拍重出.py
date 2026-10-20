@@ -26,6 +26,15 @@
     **其治仍在人：第10轮逐段生死检、第11轮小说家席。**
   ★★★★★**此限须写在这儿，免得下一坐把它的绿读成「邻拍无重」。**
 
+★W53·X12（392 合稿所逮）：**称与复沓只报不计**——392 报 13 处、起草闸致命红，合稿逐处答毕十三处皆「两步」：
+  卡令统一之称（「收皮子的那一个」四处、「老头那只眼睛」三处）与立法复沓（玉之法「比心口上还温」立、离、应、失四步）
+  ——**一串在本章三拍以上见，是称、是复沓，不是一句话拆成两拍**；而旧式逐对相计，一串见於 k 拍即计至多 k(k−1)/2 处。
+  ★今其串（或其中任一六字之窗）见於本章三拍以上者另列「称／复沓」，只报不计；⛔线与 rc 只数余下之邻拍重出。
+  ★★其数（全书 397 章，W53 亲跑）：旧式全书 916 处、⛔六处以上 37 章；新式计入 765 处、⛔ 21 章——
+    所去十六章（124 128 194 195 204 206 225 235 237 239 240 242 244 361 366 392）逐对看过：所去之对其串皆见於三拍以上
+    （称：「收皮子的那一个」；复沓：「他说『不知道』」「没有东西冒出来」「两天半多一点」），去後计入俱 ≤5（392 由 13 计入 1）。
+  ⛔其限：「六字之窗见三拍」一路宽於整串——一对真拆两拍之句，若其中六字恰在本章别处又见一回，亦入称沓（361「这一头那一道」）。
+
 ★而其位（令§十一③）：**第10轮·收官轮**（`工具/一坐.py` 之逐轮之器表）——
   **收官轮之逐段生死检，人问其意，此器问其字。**
 
@@ -42,6 +51,7 @@ import io, os, re, sys, glob
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MINLEN = 6
 SPAN = 3
+沓拍 = 3        # ★W53·X12：其串（或其一 MINLEN 字之窗）见於本章 ≥沓拍 拍者＝称／复沓，只报不计
 
 
 def 诸章():
@@ -83,7 +93,14 @@ def 分拍(txt):
             if x.strip() and x.strip() != '＊']
 
 
-def 查(n, p, 报=True):
+def 复沓(b, s):
+    """s 或其任一 MINLEN 字之窗见於 b 之 ≥沓拍 拍——卡令统一之称、立法复沓（W53·X12）。"""
+    return any(sum(1 for x in b if w in x) >= 沓拍
+               for w in {s} | {s[k:k + MINLEN] for k in range(len(s) - MINLEN + 1)})
+
+
+def 查(n, p, 报=True, 分=False):
+    """返诸处 [(拍i, 拍j, 串)]；分=True 则返 (计入, 称沓)——⛔线与 rc 只数计入。"""
     b = 分拍(io.open(p, encoding='utf-8').read())
     out = []
     for i in range(len(b) - 1):
@@ -96,21 +113,27 @@ def 查(n, p, 报=True):
                         best = a[x:y]
             if len(best) >= MINLEN:
                 out.append((i + 1, j + 1, best))
+    沓 = [h for h in out if 复沓(b, h[2])]
+    计 = [h for h in out if h not in 沓]
     if 报:
         print('████ 邻拍重出 · 第%d章 ████' % n)
-        print('  ★其法：逐拍与其後三拍求最长公共子串（先去标点），≥%d字即报。' % MINLEN)
-        print('  ★★本书之群（0906 按行分拍重量）：全书 775 处｜均 2.5｜中位 2｜90分位 6｜顶 17。')
+        print('  ★其法：逐拍与其後三拍求最长公共子串（先去标点），≥%d字即报；其串见於本章%d拍以上者係称／复沓，只报不计。' % (MINLEN, 沓拍))
+        print('  ★★本书之群（W53 全书 397 章亲跑·计入）：765 处｜均 1.9｜中位 1｜90分位 5｜顶 13。')
         print('  ★★★而器只报，不判：一处逐字之重未必是伤（本书之礼多有复沓）；')
         print('     ★★★★须逐处答一句「这两拍分开摆，是两步，还是一句话」——答不出即删其一。')
         if not out:
             print('  ✓ 全章无邻拍逐字重出（≥%d字·隔%d拍以内）。' % (MINLEN, SPAN))
         else:
-            for i, j, s in out:
+            for i, j, s in 计:
                 print('  ⚠ 拍%-4d↔拍%-4d 共%d字：%s' % (i, j, len(s), s))
-            print('  ── 计 %d 处 ──' % len(out))
-            if len(out) >= 6:
+            print('  ── 计 %d 处 ──' % len(计))
+            if 沓:
+                print('  ℹ 称／复沓 %d 处（其串见於本章%d拍以上：卡令统一之称、立法复沓——只报不计）：' % (len(沓), 沓拍))
+                for i, j, s in 沓:
+                    print('     拍%-4d↔拍%-4d 共%d字：%s' % (i, j, len(s), s))
+            if len(计) >= 6:
                 print('  ⛔ 六处以上（全书 90 分位）——**刀没落到底。**')
-    return out
+    return (计, 沓) if 分 else out
 
 
 if __name__ == '__main__':
@@ -118,16 +141,16 @@ if __name__ == '__main__':
     if '--全' in sys.argv:
         tot = 0
         for n in sorted(全):
-            r = 查(n, 全[n], 报=False)
+            r, 沓 = 查(n, 全[n], 报=False, 分=True)
             tot += len(r)
             if r:
                 print('第%d章 %d 处：%s' % (n, len(r), r[:2]))
-        print('── 全书共 %d 处 ──' % tot)
+        print('── 全书计入共 %d 处（称／复沓不计）──' % tot)
         sys.exit(0)
     a = [x for x in sys.argv[1:] if not x.startswith('-')]
     if not a or int(a[0]) not in 全:
         print('⛔ 用：python3 工具/邻拍重出.py N ｜ --全')
         sys.exit(2)
     n = int(a[0])
-    r = 查(n, 全[n])
-    sys.exit(1 if len(r) >= 3 else 0)
+    计, _ = 查(n, 全[n], 分=True)
+    sys.exit(1 if len(计) >= 3 else 0)

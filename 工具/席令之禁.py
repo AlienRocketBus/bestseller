@@ -77,7 +77,7 @@ def 自测():
                   any('律⑳' in x[1] for x in 查([无20]))))
     finally:
         shutil.rmtree(d, ignore_errors=True)
-    R.append(('④真盘·十二份席令逐份过', 查() == []))
+    R.append(('④真盘·诸份席令（当场 glob）逐份过', 查() == []))
     for 名, o in R:
         print(('  ✓ ' if o else '  ⛔ ') + 名)
     过 = sum(1 for _, o in R if o)

@@ -67,6 +67,45 @@ _YZ = io.open(os.path.join(根, '工具', '一坐.py'), encoding='utf-8').read()
 t('⑤其位在一坐之逐轮之器表·第10轮',
   bool(re.search(r'\n    10:\s*\[\(\'工具/邻拍重出\.py', _YZ)), True)
 
+# ⑥—⑨ W53·X12（392 合稿所逮）：卡令统一之称与立法复沓只报不计——392 旧式 13 处、起草闸致命红，十三处皆两步。
+if 392 in 全:
+    计, 沓 = L.查(392, 全[392], 报=False, 分=True)
+    t('⑥392 之称（收皮子的那一个）与复沓（比心口上还温）入「称／复沓」，计入不及⛔线（<6）',
+      (len(计) < 6, any('收皮子的那一个' in h[2] for h in 沓), any('比心口上还温' in h[2] for h in 沓)),
+      (True, True, True))
+    # ⑦旧病回灌：称沓亦计（旧式）则 392 须过⛔线——故⑥非陪跑
+    _沓 = L.复沓
+    L.复沓 = lambda b, s: False
+    try:
+        计旧, _ = L.查(392, 全[392], 报=False, 分=True)
+    finally:
+        L.复沓 = _沓
+    t('⑦旧式（称／复沓亦计）回灌 392 计入 ≥6——⑥之治非陪跑', len(计旧) >= 6, True)
+import tempfile as _tf
+_d = _tf.mkdtemp(prefix='负测_邻拍重出_')
+try:
+    # ⑧不放松：六对各只见於两拍之串（一句话拆两拍之形）照计、照⛔；同章一称见於三拍者只入称沓
+    串 = ['青石板上落雨点', '风从窗缝里钻进', '灶膛里柴火噼啪', '井绳磨得发亮了', '鸡叫过头一遍了', '门槛上蹲着老猫']
+    行 = []
+    for k, s in enumerate(串):
+        行 += ['甲%d%s乙' % (k, s), '丙%d%s丁' % (k, s)]
+    行 += ['收皮子的那一个来了', '收皮子的那一个蹲下', '收皮子的那一个走了']
+    _p = os.path.join(_d, '第九百九十九章.md')
+    io.open(_p, 'w', encoding='utf-8').write('# 第九百九十九章 测\n\n' + '\n\n'.join(行) + '\n')
+    import contextlib as _cl
+    _buf = io.StringIO()
+    with _cl.redirect_stdout(_buf):
+        计8, 沓8 = L.查(999, _p, 分=True)
+    t('⑧六对两拍之串照计（6）、照⛔；一称见於三拍者只入称沓（3）',
+      (len(计8), '⛔ 六处以上' in _buf.getvalue(), len(沓8)), (6, True, 3))
+    # ⑨窗之认：串只见两拍，而其中六字之窗见於三拍（立法复沓「数过十口，比心口上还温」之形）
+    t('⑨长串只见两拍而其六字之窗见三拍——係复沓',
+      L.复沓(['数过十口比心口上还温', '又数过十口比心口上还温', '哪儿都比心口上还温'], '数过十口比心口上还温'), True)
+    t('⑨之b只见两拍之串不是复沓', L.复沓(['青石板上落雨点甲', '乙青石板上落雨点', '无关'], '青石板上落雨点'), False)
+finally:
+    import shutil as _sh
+    _sh.rmtree(_d, ignore_errors=True)
+
 print('════ 负测·邻拍重出 ════')
 for 名, ok, 实, 期 in 过:
     print('  %s %s' % ('✓' if ok else '✗', 名), '' if ok else '（实 %r 期 %r）' % (实, 期))

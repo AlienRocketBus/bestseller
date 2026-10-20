@@ -192,6 +192,10 @@ def 前(n, root=ROOT):
         print('· 回执闸：%s' % ('✓ 键俱在' if _检._receipt_ok(n) else '⛔ 回执（设定/回执_*第%d章*.md）缺键：%s——记席照 396 回执之式补其节（到期账：本章动没动 设定/到期账.json、哨与限）' % (n, '、'.join(_缺) or '（档名不认本章）')))
     except Exception as _e:
         print('· 回执闸：⛔判不出（%s）' % _e)
+    if os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_器物.md')):     # ★1020：398 治 soft-1 删「本子」於拍5，器物册之「出=5」遂错——全测·快不含逐章回灌，推闸方红；左移於此
+        r = subprocess.run([sys.executable, 器('器物点名.py'), str(n)], cwd=root, capture_output=True, text=True)
+        _红 = [l.strip() for l in r.stdout.split('\n') if '⛔ ★' in l]
+        print('· 器物册（器物点名 %d）：%s' % (n, ('⛔ ' + '｜'.join(_红[:3]) + '——改册之拍号照白文亲数') if (_红 or '⛔' in r.stdout) else '✓ 拍号俱对'))
     r = subprocess.run([sys.executable, 器('小说检察官.py'), '--末章', str(n)], cwd=root, capture_output=True, text=True)   # ★1020：398 亮点 5+逗 至封版·後之全测·快（十一分钟後）方红——检察官之末章硬闸单跑（约一分半）左移於此
     print('· 末章硬闸（检察官）：%s' % ('✓ 通过' if r.returncode == 0 else '⛔ ' + '；'.join(l.strip() for l in r.stdout.split('\n')[next((i for i, l in enumerate(r.stdout.split('\n')) if '✗' in l), 0):] if l.strip())[:600] + '——治後再跑 --前'))
     try:                                                     # ★1013：六问（质量三闸①之e）——381 记席未答，封版之全测方红；今於 --前 即印

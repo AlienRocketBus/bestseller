@@ -11,6 +11,8 @@
     想定一样以 cat >> 追记一样、全章之排在档上排（满分之问先落，拍表随第一拍落）；回数之限 28；旧「构思可先落一回」⛔再见。
   ③X14：N≥398 之盲读分二类报——schema 带 prior；①只算本章之卡、①之二前情之指⛔计入读不懂；逻辑审并入回述实证；记席录之。
   ④X13：N≥398 之记令於立卡後跑「第零轮开镜庭.py --静 N+1」，十四格（卡之自牵）红即改卡。
+  ⑥X40（1020 立·裁_1020_推闸二红_399封版後）：args.须厚（自走.py 之派令以 分量闸.须厚 现判）且 N≥401 → 诸执笔令带「【硬项·须厚】本章之事须担得起 2,900 净重」、
+    选令带「须厚之章，净重 <2,900 之稿作底须写其由」；N≤400 传 须厚 亦⛔认（400 之诸令与不传者原序之指同）、401 不传者⛔带。
   回灌：②③④之判拿 397 之令（旧病）去判，须一一红；上回之假前提（读料之 Bash 末接 cat > 构思）、「思考里只想眼下这一拍」之牵灌回须红；
     ①之指换键序须变——证其判咬得住，⛔一律判过。
 ⛔限：渲染证得了「令里写了」，证不了「席守了」——守没守归 `工具/费审.py` 之「构思」「构思隔」两列（首落逾五分、诸写最长隔逾十分即⛔）。
@@ -30,7 +32,7 @@ JS = os.path.join(ROOT, '工具', '席', '造章.js')
 # 假交：label 定其交；逻辑审·1 於「病」路交硬崩与读误，令回写、盲读·2、逻辑审·2 俱跑
 _器 = r"""
 const fs = require('fs')
-const [, , 档, n, 重, 病] = process.argv
+const [, , 档, n, 重, 病, 厚] = process.argv
 const src = fs.readFileSync(档, 'utf8').replace(/^export const meta/m, 'const meta')
 const N = Number(n)
 const 收 = []
@@ -47,7 +49,7 @@ const 交 = (label) => {
 const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); return 交(o.label) }
 const parallel = async (fs_) => Promise.all(fs_.map(f => f()))
 const AF = Object.getPrototypeOf(async function () {}).constructor
-new AF('args', 'agent', 'parallel', 'phase', 'log', src)({ 章: N, 重 }, agent, parallel, () => {}, () => {})
+new AF('args', 'agent', 'parallel', 'phase', 'log', src)(厚 === '厚' ? { 章: N, 重, 须厚: true } : { 章: N, 重 }, agent, parallel, () => {}, () => {})
   .then(r => process.stdout.write(JSON.stringify({ 收, 果: r })))
   .catch(e => { process.stderr.write(String(e && e.stack || e)); process.exit(3) })
 """
@@ -68,8 +70,8 @@ _基 = {"390轻净": "446235d2ae12bfba", "390轻病": "c3b7b946890cc774", "390�
       "397重净": "51e00fda90975036", "397重病": "2ee9fe5da8bd43e0"}
 
 
-def 渲(器, n, 重='中', 病='病', js=JS):
-    o = subprocess.run(['node', 器, js, str(n), 重, 病], capture_output=True, text=True, cwd=ROOT, timeout=60)
+def 渲(器, n, 重='中', 病='病', js=JS, 厚='否'):
+    o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚], capture_output=True, text=True, cwd=ROOT, timeout=60)
     if o.returncode:
         raise RuntimeError('造章.js 渲染不起（%d %s %s）：%s' % (n, 重, 病, o.stderr.strip()[:300]))
     return json.loads(o.stdout)['收']
@@ -112,6 +114,37 @@ def 新条(收, n):
         ('X14·记席录前情之指', '前情之指：' in 记 and '盲读六答' in 记),
         ('X13·记席立卡後跑开镜庭十四格', ('第零轮开镜庭.py --静 %d' % (n + 1)) in 记 and '十四·卡之自牵' in 记),
     ]
+
+
+硬项须厚 = '【硬项·须厚】本章须厚（分量闸·须厚）：本章之事须担得起 2,900 净重——⛔凑字、⛔撒感官；担不起即换一件更大的事，写进构思之满分之问'
+选须厚 = '须厚之章，净重 <2,900 之稿作底须写其由'
+
+
+def 带须厚(收):
+    """→ (诸执笔令俱带其硬项, 有执笔令带其硬项, 选令带其底)。"""
+    笔 = [c['prompt'] for c in _令(收, '执笔')]
+    选 = [c['prompt'] for c in _令(收, '选')]
+    return (bool(笔) and all(硬项须厚 in p for p in 笔), any(硬项须厚 in p for p in 笔),
+            bool(选) and all(选须厚 in p for p in 选))
+
+
+def 须厚之条(器):
+    """★1020 X40：→ [(条, 合否)]。⛔动 N≤400——400 传 须厚 与不传者原序之指须同（args.须厚 於 N≤400 一字不认）。"""
+    出 = []
+    for 重 in ('中', '轻', '重'):
+        a = 带须厚(渲(器, 401, 重, '净', 厚='厚'))
+        出.append(('401（须厚:true·%s）之诸执笔令俱带「本章须厚」之硬项、选令带「须厚之章之底」' % 重, a[0] and a[2]))
+    b = 带须厚(渲(器, 401, '中', '净'))
+    出.append(('401 不传 须厚 者⛔带（执笔令、选令俱无）', not b[1] and not b[2]))
+    c400 = 渲(器, 400, '中', '病', 厚='厚')
+    d = 带须厚(c400)
+    出.append(('400（传 须厚:true）之执笔令、选令⛔带——N≤400 之令⛔动', not d[1] and not d[2]))
+    出.append(('400 传 须厚 与不传者原序之指同（轻中重×净病俱同）',
+              all(指(渲(器, 400, 重, 病, 厚='厚')) == 指(渲(器, 400, 重, 病)) for 重 in ('轻', '中', '重') for 病 in ('净', '病'))))
+    # 回灌：把 401 之硬项抹去（假其被删），本条须红
+    抹 = [dict(c, prompt=c['prompt'].replace(硬项须厚, '')) for c in 渲(器, 401, '中', '净', 厚='厚')]
+    出.append(('回灌·抹去 401 之「本章须厚」硬项 → 本条红', not 带须厚(抹)[0]))
+    return 出
 
 
 def _换笔(收, f):
@@ -163,6 +196,9 @@ def 跑():
         记398 = (_令(收, '记席') or [{'prompt': ''}])[0]['prompt']
         R.append(('399·X33 记令述记料十二节（【十二】canon 卡名在）；398 仍旧式（九件事）',
                   '十二节已汇' in 记399 and '【十二】canon' in 记399 and '九件事要翻' not in 记399 and '九件事要翻' in 记398 and '十二节已汇' not in 记398))
+        # ⑥★1020 X40：须厚入令——401（须厚:true）之执笔令带其硬项、选令带其底；400 传之亦⛔认；401 不传者⛔带
+        for 名, ok in 须厚之条(器):
+            R.append(('X40·' + 名, ok))
     except Exception as e:
         R.append(('⛔渲染不起：%s' % e, False))
     finally:

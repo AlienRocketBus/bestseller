@@ -92,9 +92,20 @@ def 收(n, 诸路, root=ROOT, 再=False):
     return 承, 来
 
 
+def 须厚判(n):
+    try:
+        import 造式验
+        return 造式验.须厚之判(n)[0]
+    except Exception:
+        return None
+
+
 def 造(n, 承, 旧=None, 重=None, 魂路=None, 再=False):
     旧 = 旧 or {}
     a = {'章': n, '重': 重 or 旧.get('重'), '魂路': 魂路 or 旧.get('魂路')}
+    # ★1020 X40 驳席逮：重启续跑之 args 须带 须厚（旧 _承.json 有则承之；无则照 造式验.须厚之判 现算——与自走之派令同尺）；⛔丢则执笔令、选令之须厚条随之消失
+    if 旧.get('须厚') or (n >= 401 and 须厚判(n) is True):
+        a['须厚'] = True
     if not a['重'] or not a['魂路']:
         raise SystemExit('⛔承：无旧 _承.json 可取 重／魂路——须 --重 中 --魂路 物证,回声,不说（照 自走.py 之派令）')
     旧承 = 旧.get('承') or {}
@@ -155,6 +166,7 @@ def 自测():
         a = 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '承': {'补': True, '诸稿': [{'file': f('稿三'), 'words': 3}]}})
         R.append(('④并旧 _承.json：旧稿留、补去、重魂路承旧', len(a['承']['诸稿']) == 3 and '补' not in a['承'] and a['重'] == '中'))
         R.append(('⑤包裹调 造章.js 而带 args', '造章.js' in 包裹(a) and '"章": 9' in 包裹(a)))
+        R.append(('⑤之二·旧 _承.json 带须厚者承之（X40）', 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '须厚': True, '承': {}}).get('须厚') is True and '须厚' not in 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '承': {}})))
         承2, _ = 收(9, [j1, j2, j3, j4], root=t, 再=True)
         a2 = 造(9, 承2, 旧={'重': '中', '魂路': ['物证'], '承': {'回写': True}}, 再=True)
         R.append(('⑦再回写：盲读·2 作盲、回写⛔承（新旧俱去）', 承2.get('盲') == {'x': 1} and '回写' not in a2['承']))

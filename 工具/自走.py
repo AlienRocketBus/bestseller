@@ -171,25 +171,37 @@ def 候时之活():
     return out
 
 
-def 派令(n, root=None):
+def 派令(n, root=None, 厚=None):
     """→ 派第 n 章之命令行们（1013）：段案有其节（重、魂路俱在）→ 造式二代（造章.js，args 取自段案）；否则一代（一章.js）。
-    ⛔其由：二代起於 381，而本器仍印 一章.js——照抄即以一代之法写二代之章（费约五倍）。"""
+    ⛔其由：二代起於 381，而本器仍印 一章.js——照抄即以一代之法写二代之章（费约五倍）。
+    ★1020 X40（瑕疵总账·裁_1020_推闸二红_399封版後）：n≥401 而 `分量闸.须厚` 判「非厚不可」者，args 添 须厚:true 并印其由——
+      ⛔399 之「非厚不可」只写进开镜卡，执笔七席照段案之带写成 2303—2461，推闸红；今其判随令下到执笔与选席（造章.js）。
+      厚：(须, 语) 可直传（自测用）；缺则以 造式验.须厚之判 现算（与推闸同尺）。⛔N≤400 一字不判、不印。"""
     import 章料
     t = 章料.段案行(n, root or ROOT)
     重 = re.search(r'^- 重：(\S+)', t, re.M)
     路 = re.search(r'^- 魂路：(.+)$', t, re.M)
     if 重 and 路 and 重.group(1) in ('轻', '中', '重'):
         路们 = [x.strip() for x in 路.group(1).split('｜') if x.strip()]
+        import 造式验                                          # 须厚起与其判俱取 造式验（⛔另抄一把）
+        须, 须语 = (False, '')
+        if n >= 造式验.须厚起:
+            须, 须语 = 厚 if 厚 is not None else 造式验.须厚之判(n)
+        由 = ['  # ' + x.strip().replace('**', '') for x in 须语.split('\n') if x.strip()]
         # ★1017 承（397 一章两回容器重启）：本章已有起草之稿 → 先收已成之段（⛔重派已交之执笔）
         if n > 末章() and glob.glob(os.path.join(root or ROOT, '版本', '第%d章' % n, '起草_稿*.md')):
             return ['  # 第%d章已有起草之稿（容器重启所余？）——先收诸 journal 已成之段，⛔重派已交之席' % n,
-                    "  python3 工具/承.py %d --重 %s --魂路 %s" % (n, 重.group(1), ','.join(路们)),
+                    "  python3 工具/承.py %d --重 %s --魂路 %s" % (n, 重.group(1), ','.join(路们))] + ([
+                    '  # ⛔本章须厚（分量闸·须厚），而 承.py 之包裹 args 不带 须厚——跑包裹前於 _承.json 与 _承.js 之 args 添 "须厚": true（X40·承.py 未治）'
+                    ] + 由 if 须 is True else []) + [
                     "  Workflow({scriptPath:'%s'})   # 承.py 所写之包裹；诸稿不足三者照其印加「补」" % os.path.join(
                         root or ROOT, '版本', '第%d章' % n, '_承.js')]
         return ['  python3 工具/章料.py %d && python3 工具/造式验.py %d --料   # 料全方派' % (n, n),
-                '  # 开工之闸：设定/方案/W<k>.md 逐环确证 ＋ python3 工具/工作流账.py --开 W<k>（法典二之七步）',
-                "  Workflow({scriptPath:'工具/席/造章.js', args:{章:%d, 重:'%s', 魂路:[%s]}})" % (
-                    n, 重.group(1), ', '.join("'%s'" % x for x in 路们))]
+                '  # 开工之闸：设定/方案/W<k>.md 逐环确证 ＋ python3 工具/工作流账.py --开 W<k>（法典二之七步）'] + (
+                ['  # ★须厚（X40）：args 添 须厚:true——执笔令硬项「本章之事须担得起 2,900」、选令「须厚之章之底」（造章.js）；其由：'] + 由
+                if 须 is True else ['  # ⛔须厚未可判（%s）——先治其由再派' % 须语.lstrip('★')] if 须 is None else []) + [
+                "  Workflow({scriptPath:'工具/席/造章.js', args:{章:%d, 重:'%s', 魂路:[%s]%s}})" % (
+                    n, 重.group(1), ', '.join("'%s'" % x for x in 路们), ', 须厚:true' if 须 is True else '')]
     # ★1017 淘汰之律：一代 一章.js 已淘汰（二代 造章.js 自 381 起、费约五分之一）——无段案之章⛔派一代，先立段案
     return ['  # 第%d章无段案之节（重、魂路）——一代 一章.js 已淘汰（1017 作者铁律·淘汰之律）；先立段案再派二代' % n,
             '  python3 工具/段案验.py   # 立 设定/段案/<起>-<止>.md 之第%d章之节（重：轻／中／重；魂路：三路），验过再跑本器' % n]
@@ -603,6 +615,22 @@ def 自测():
     _派 = 派令(382)
     R.append(('派令·有段案之章印造章.js（二代），其重与魂路取自段案；无段案之章⛔派一代（已淘汰）、印先立段案',
                any("造章.js" in x and "重:'中'" in x and "'换账'" in x for x in _派) and not any('一章.js' in x and 'Workflow' in x for x in 派令(999)) and any('段案' in x for x in 派令(999))))
+    # ★1020 X40：须厚入令——n≥401 而判「非厚不可」者 args 添 须厚:true 並印其由；⛔N≤400 一字不变（厚直传，⛔钉盘上之数）
+    import 章料 as _章料
+    _段旧 = _章料.段案行
+    try:
+        _章料.段案行 = lambda n, root=None: '（设定/段案/9001-9002.md）\n- 重：中\n- 魂路：物证｜换账｜翻个儿'
+        _厚 = 派令(9001, 厚=(True, '⛔**第9001章非厚不可**：其前四篇暗线……\n    ⛔**其治只有一样：换一件更大的事**'))
+        _薄 = 派令(9001, 厚=(False, '★第9001章不须厚'))
+        _未 = 派令(9001, 厚=(None, '★第9001章之须厚未可判'))
+    finally:
+        _章料.段案行 = _段旧
+    R.append(('X40·派令：须厚之章（n≥401）args 添 须厚:true 并印其由；不须者⛔添；未可判者印其由而⛔添；N≤400 传之亦⛔添（与不传者同）',
+               any("Workflow" in x and "args:{章:9001, 重:'中', 魂路:['物证', '换账', '翻个儿'], 须厚:true}" in x for x in _厚)
+               and any('第9001章非厚不可' in x and x.startswith('  # ') for x in _厚) and _厚[-1].lstrip().startswith('Workflow')
+               and not any('须厚:true' in x for x in _薄 + _未) and len(_薄) == 3
+               and any('须厚未可判' in x for x in _未)
+               and 派令(382, 厚=(True, '⛔x')) == _派 and not any('须厚' in x for x in _派)))
     R.append(('①判得出一个字（候／跑／补／救／欠／起／庭／停）',
                判 in ('候', '跑', '补', '救', '欠', '起', '庭', '停')))
     R.append(('②末一行是一条可照抄之命令', any(

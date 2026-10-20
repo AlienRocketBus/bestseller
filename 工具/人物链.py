@@ -14,7 +14,6 @@
   python3 工具/人物链.py --收 <journal.jsonl>   # 从工作流之 journal 收诸段读席之交 → 设定/全书记忆/人物链/_段/a-b.json
   python3 工具/人物链.py --验                   # 诸段之引句核於白文；章之覆盖（缺章照实印）
   python3 工具/人物链.py --并记                 # ★主法：自章记之「在场之人」零 token 并成每人之链（⛔读书）
-  python3 工具/人物链.py --并                   # → 设定/全书记忆/人物链/<名>.md（每人一链）＋ 人物链.md（索引与量）
   python3 工具/人物链.py --样 [每格N]           # 认声之样：照人×段分层抽其句 → 设定/_草/W34/声键.json、声题.json
   python3 工具/人物链.py --自测
 """
@@ -167,66 +166,6 @@ def _段(ns):
             j += 1
         出.append(str(ns[i]) if i == j else '%d—%d' % (ns[i], ns[j])); i = j + 1
     return '、'.join(出)
-
-
-def 并(root=ROOT):
-    人 = {}
-    章之注 = []
-    for s in 诸段(root):
-        for c in sorted(s['章们'], key=lambda c: int(c.get('n'))):
-            n = int(c.get('n')); 文 = 白文(n, root) or ''
-            if c.get('note'):
-                章之注.append('%d｜%s' % (n, c['note']))
-            for x in c.get('cast') or []:
-                名 = 归名(x.get('who'))
-                if not 名:
-                    continue
-                if x.get('line'):
-                    合, 实 = 核句(n, x['line'], x.get('line_ln'), root, 文)
-                    if not 合:
-                        x = dict(x); x['line'] = ''          # 不合之引句⛔入链
-                人.setdefault(名, []).append((n, c.get('pov', ''), x))
-    os.makedirs(os.path.join(root, 链目), exist_ok=True)
-    索 = ['# 人物链·索引（零 token 所并·工具/人物链.py）', '',
-          '> 全书白文一遍之读（W34），逐章记在场每人之做、说、智、反智、记号、关系、变；本档为索引与量，每人之链在同目录 `<名>.md`。'
-          '引句皆机器核於白文（不合者⛔入链）。此後每章之记席添本章之条。', '',
-          '| 人 | 在场章数 | 首见 | 末见 | 开口之章 | 智 | 反智之疑 | 记号 | 链 |', '|---|---|---|---|---|---|---|---|---|']
-    for 名, 条 in sorted(人.items(), key=lambda kv: -len(kv[1])):
-        ns = [n for n, _, _ in 条]
-        说 = sum(1 for _, _, x in 条 if x.get('line'))
-        智 = sum(1 for _, _, x in 条 if x.get('smart'))
-        蠢 = sum(1 for _, _, x in 条 if x.get('dumb'))
-        记 = sum(1 for _, _, x in 条 if x.get('sign'))
-        档 = re.sub(r'[\\/:*?"<>|·\s]', '_', 名)[:30]
-        if len(条) >= 2:
-            体 = ['# 人物链·%s（第 %d—%d 章，在场 %d 章）' % (名, min(ns), max(ns), len(条)), '',
-                  '> 一章一行：〔章·线〕做｜「说」（行）｜智＋｜反智？｜记号｜关系｜变。零 token 所并；引句已核於白文。', '']
-            for n, pov, x in 条:
-                段 = ['〔%d·%s〕%s' % (n, pov or '', x.get('act', '') + ((' :' + str(x.get('ln'))) if x.get('ln') else ''))]
-                if x.get('line'):
-                    段.append('「%s」:%s' % (x['line'], x.get('line_ln', '')))
-                for k, 标 in (('smart', '智＋'), ('dumb', '反智？'), ('sign', '记号'), ('rel', '关系'), ('change', '变')):
-                    if x.get(k):
-                        段.append('%s %s' % (标, x[k]))
-                体.append('- ' + '｜'.join(段))
-            open(os.path.join(root, 链目, '%s.md' % 档), 'w', encoding='utf-8').write('\n'.join(体) + '\n')
-            链 = '`%s.md`' % 档
-        else:
-            链 = '（一章，⛔立链）'
-        索.append('| %s | %d | %d | %d | %d | %d | %d | %d | %s |' % (名, len(条), min(ns), max(ns), 说, 智, 蠢, 记, 链))
-    # 量：主角诸人每百章之开口
-    索 += ['', '## 主角诸人每段之开口（有引句之章／在场之章）', '', '| 人 | 1—100 | 101—200 | 201—300 | 301— |', '|---|---|---|---|---|']
-    for 名 in 主角诸人:
-        条 = 人.get(名, [])
-        格 = []
-        for a, b in ((1, 100), (101, 200), (201, 300), (301, 10 ** 6)):
-            在 = [x for n, _, x in 条 if a <= n <= b]
-            格.append('%d／%d' % (sum(1 for x in 在 if x.get('line')), len(在)))
-        索.append('| %s | %s |' % (名, ' | '.join(格)))
-    if 章之注:
-        索 += ['', '## 读席所注（章级之人物之病）', ''] + ['- ' + x for x in 章之注]
-    open(os.path.join(root, 链目, '人物链.md'), 'w', encoding='utf-8').write('\n'.join(索) + '\n')
-    return 人
 
 
 def 样(每格=6, root=ROOT, 出目=os.path.join('设定', '_草', 'W34')):
@@ -449,8 +388,8 @@ if __name__ == '__main__':
         缺, 错, 计 = 验(); sys.exit(0 if not 错 else 1)
     if a == ['--并记']:
         人, 无 = 并记(); 对, 同 = 写关系(人); print('关系：%d 对（≥3 拍 %d 对）' % (len(对), sum(1 for v in 对.values() if len(v) >= 3))); print('✓ 并记：%d 人（链 %d 条）→ %s/；无在场之人之章 %d' % (len(人), sum(1 for v in 人.values() if len(v) >= 2), 链目, len(无))); sys.exit(0)
-    if a == ['--并']:
-        人 = 并(); print('✓ 并：%d 人（链 %d 条）→ %s/' % (len(人), sum(1 for v in 人.values() if len(v) >= 2), 链目)); sys.exit(0)
+    if a == ['--并']:   # ★1020 淘汰之律：旧法（段读之并）已删——跑之即以段之薄链覆主链（1020 实踩：12 链 1775 行被覆，git 还原）；主法 --并记
+        print('⛔ --并 已删（旧法·段读之并，为 --并记 所代）：python3 工具/人物链.py --并记'); sys.exit(2)
     if a[:1] == ['--样']:
         键, 题 = 样(int(a[1]) if len(a) > 1 else 6); print('✓ 认声之样 %d 句' % len(键)); sys.exit(0)
     print(__doc__); sys.exit(2)

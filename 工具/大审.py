@@ -214,7 +214,7 @@ def 限於(n):
         _cells = [c for c in x.split('|') if '已挂' in c]
         ms = re.findall(r'限\s*(\d+)', _cells[0]) if _cells else []
         if ms and min(int(y) for y in ms) <= n:
-            出.append((x.split('|')[1].strip(), min(int(y) for y in ms), re.sub(r'\s+', ' ', _cells[0]).strip()[:200]))
+            出.append((x.split('|')[1].strip(), min(int(y) for y in ms), re.sub(r'\s+', ' ', _cells[0]).strip()))   # ★1020：⛔截二百字（399 卡问七抄得半句·#47 截於「随改状态册钱满、东」）——卡须逐字抄其全裁
     return 出
 
 

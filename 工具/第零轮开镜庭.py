@@ -972,7 +972,7 @@ def _在场之来(t, c, 取行=_正文行, 册=None):
     for l in 行们:
         _m = re.search(r'\*\*([^*]+)\*\*', l) or re.search(r'-\s*([^｜|]{1,12})', l)
         名 = _m.group(1).strip() if _m else l[:12]
-        if not re.search(r'在场[：:]\s*拍\s*\d+', l):
+        if not re.search(r'在场[：:]\s*拍\s*[\d一二三四五六七八九十]+', l):
             坏.append('「%s」无在场之拍（在场：拍N）' % 名)
         if not re.search(r'其来[：:]\s*[^｜|\s]{4,}', l):
             坏.append('「%s」无其来之由与时（其来：何时、因何，四字以上）' % 名)

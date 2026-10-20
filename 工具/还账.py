@@ -580,7 +580,13 @@ def 记账(ops, 单名们, root=ROOT, 时=None):
     return 账
 
 
-def 施後同步(章们, root=ROOT):
+def 存版之境(单名=''):
+    """★1020 X31：施改已封之章而存版，漂移哨（工作区与 HEAD 不同）必拦——旧式拦而无声（272、273）。
+    还账之施正是漂移哨处方所云「封版之后的改动须走回补并记因」之路：以 ZM_DRIFT_WHY 记其因（只放漂移哨一哨、因挂进本版之说明），⛔ZM_FORCE。"""
+    return dict(os.environ, ZM_DRIFT_WHY='还账施改已封之章（工具/还账.py --施%s·大审之裁·改单在前）' % (('·' + 单名) if 单名 else ''))
+
+
+def 施後同步(章们, root=ROOT, 单名=''):
     """★1014 W26 三回手跑、漏一回（283 净重差 2 而推闸红）：施毕一条命令办毕——全书记忆 sha1、净重对表 --补、阅读器、全书记忆之验。"""
     import hashlib, subprocess
     for 章 in sorted(章们):
@@ -593,8 +599,12 @@ def 施後同步(章们, root=ROOT):
             if t2 != t:
                 open(p, 'w', encoding='utf-8').write(t2)
     for 章 in sorted(章们):      # ★1015 W42 所逮：施改封版之章而⛔存版，正文与末版遂不一（版档指纹不符之积）——施毕即逐章存一版
-        r = subprocess.run([sys.executable, '工具/跑轮.py', '--存', str(章), '还账施改（工具/还账.py --施）'], cwd=root, capture_output=True, text=True)
+        r = subprocess.run([sys.executable, '工具/跑轮.py', '--存', str(章), '还账施改（工具/还账.py --施）'], cwd=root, capture_output=True, text=True, env=存版之境(单名))
         print('  施後·存版 第%d章：rc=%d' % (章, r.returncode))
+        if r.returncode:      # ★X31：拦则当面印其由与处方（⛔只一行 rc）
+            for l in [x for x in r.stdout.split('\n') if '⛔' in x][:6]:
+                print('    ' + l.strip())
+            print('    ⛔第%d章存版被拦——治其由後跑：python3 工具/跑轮.py --存 %d "还账施改"（拦停旗见 版本/第%d章/_拦停.json）' % (章, 章, 章))
     for 令 in (['工具/净重对表.py', '--补'], ['工具/同步全本阅读器.py'], ['工具/剧情链.py'], ['工具/全书记忆.py']):
         r = subprocess.run([sys.executable] + 令, cwd=root, capture_output=True, text=True)
         print('  施後·%s：%s' % (os.path.basename(令[0]), (r.stdout.strip().split('\n') or [''])[-1][:80]))
@@ -762,6 +772,9 @@ def 自测():
         open(os.path.join(_t, '正文', 'x.md'), 'w', encoding='utf-8').write('9:2 边上一圈齐齐的\n【本章亮点】\n引 9:2 边上一圈齐齐的\n')
         _出 = 随({9: ('x', ['', '那是一张饼，边上一圈齐齐的，没有一个缺口。'], ['', '那是一块饼，一边弯，两边是掰出来的茬。'])}, _t)
         共 += 1; ok += sorted({x[0] for x in _出}) == ['正文/x.md:3', '设定/全书记忆/人物.md:2']   # 常句（无章号、片不足十字）⛔认；史档⛔扫；正文白文⛔扫
+    sys.path.insert(0, os.path.join(ROOT, '工具')); import 跑轮 as _跑      # ★1020 X31：施後存版之记因须过漂移哨之判（≥8 字）且带单名
+    _因 = 存版之境('G1020-01.json')['ZM_DRIFT_WHY']
+    共 += 1; ok += _跑.漂移记因之判(_因)[0] and 'G1020-01.json' in _因 and 'ZM_FORCE' not in 存版之境()
     with tempfile.TemporaryDirectory() as _t:      # ★1020 补接坐：隙逾界而无记者补一行、接坐记随即认；再补不重写
         _d = os.path.join(_t, '版本', '第999章'); os.makedirs(_d)
         json.dump({'版本': [{'版': 'v01', '时': '10-15 10:13'}, {'版': 'v02', '时': '10-15 11:00'}, {'版': 'v03', '时': '10-20 06:36'}]}, open(os.path.join(_d, '_台账.json'), 'w', encoding='utf-8'))
@@ -865,8 +878,9 @@ if __name__ == '__main__':
                     open(f, 'w', encoding='utf-8').write('\n'.join(今))
                     print('  施 第%d章 %d 行' % (章, 动[章]))
             记账([o for _, o in 读单们([x for x in a[1:] if x != '--全'])], [os.path.basename(x) for x in a[1:] if x != '--全'])
-            施後同步([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今])
-            补接坐([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今], '、'.join(os.path.basename(x) for x in a[1:] if x != '--全'))
+            _单名 = '、'.join(os.path.basename(x) for x in a[1:] if x != '--全')
+            施後同步([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今], 单名=_单名)
+            补接坐([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今], _单名)
         sys.exit(1 if 红 else 0)
     print(__doc__)
     sys.exit(2)

@@ -40,6 +40,15 @@ def body(c):
 def net(t):
     return len(re.sub(r'\s', '', t))
 
+def 净重(c, b=None):
+    """★1020 X32：本器之净重与 分量闸／锁定行同一把尺（跑轮.score·⛔另抄一把）；取不回即退回旧尺并印其由。"""
+    try:
+        import 跑轮
+        return 跑轮.score(open(F[c], encoding='utf-8').read())[1]['净重']
+    except Exception as e:
+        print('  ⚠质量三闸·净重取不回跑轮之尺（%s）——退回 net(body)' % e)
+        return net(b if b is not None else body(c))
+
 def lunji(c):
     p = os.path.join(ROOT, '版本', '第%d章' % c, '_轮记.md')
     return open(p, encoding='utf-8').read() if os.path.exists(p) else ''
@@ -60,7 +69,7 @@ def gate1(c):
     dark = is_dark(c)
     has = ('本章之一事' in lj)
     out.append(('①之a·轮记有「本章之一事」', has, '✓' if has else '⛔须於轮记之首写明'))
-    w = net(b)
+    w = 净重(c, b)   # ★1020 X32 总编辑裁：一把尺——取 跑轮.score 之净重（分量闸、锁定行同尺）；旧 net(body) 含标头标点而多约二十字，67、312、317、322、327 五章以之过 2000 而实 1909—1999
     # ★★★★★2026-08-17 订·作者令：「字数唯一的要求就是高于2000字，
     # ★其他的不要为了凑字数而凑字数——所有的东西都要为文章质量而让步。」
     # ★★而先前之 5500 为我自己所加（2026-08-16 立三闸时，从179—207之均值倒推），

@@ -159,6 +159,9 @@ def 立(名, 根, 治, 计, 踩='', 费='', root=ROOT):
                    '守': [], '状': '未治' if 计.strip() == '未治' else '已治未守', '计': 计, '复踩': []})
     写(d, root); 同步(root, d)
     print('✓ 立坑 %s（%s）——治落、守立之後：--守 %d <档>' % (圈(n), d['坑'][-1]['状'], n))
+    import glob as _g      # ★1020 ㉞立後推前速检方逮二档之坑之检漏：立坑即当面列须补其排除之档与法典（⛔待推闸）
+    须 = [os.path.basename(f) for f in sorted(_g.glob(os.path.join(ROOT, '设定', '方法升级_*.md')))] + [os.path.basename(法典)]
+    print('  ★须补 %s：%s 之「坑之检」各添一行；法典之坑表添一行（--查 绿方推）' % (圈(n), '、'.join(须)))
     return n
 
 

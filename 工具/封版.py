@@ -233,6 +233,12 @@ def 十一轮已过(n, root=ROOT):
     return os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_十一轮.json'))
 
 
+def 红行(out, 顶=15):
+    """器之印中之红项（「✗」行、行首「⛔」而非 D6 之训者）——封版红时当面印，⛔只印末一行。"""
+    出 = [l.strip() for l in out.split('\n') if l.strip() and ('✗' in l or l.strip().startswith('⛔')) and '永远的痛' not in l]
+    return 出[:顶]
+
+
 def 後之闸(n):
     """席记写毕之後、提交之前之序：→ [(名, 命令)]（红即停）。
     ★1020 X21：⛔於此跳心跳 N+1——N+1 无席而锁在（空锁：自走判候、席在跑吗放行、全测之留字降黄；W53 验席所逮）。
@@ -288,6 +294,8 @@ def 後(n, 试=False, root=ROOT):
         末 = [l for l in out.split('\n') if l.strip()][-1:] or ['']
         print('  %s %-10s rc=%d %5.0fs  %s' % ('✓' if rc == 0 else '⛔', 名, rc, 秒, 末[0].strip()[:150]))
         if rc != 0:
+            for l in 红行(out):      # ★1020 398 封版：全测·快红而只印末一行，须另跑十一分钟方知何项——红则当面印其诸红项
+                print('      ' + l)
             print('⛔ 停：%s 红——⛔提交' % 名); return False
     if 试:
         print('✓ 试毕：诸闸俱过（⛔提交、⛔存底）'); return True
@@ -356,6 +364,7 @@ def 自测():
                        and _跳.可收(400, [{'章': 401, '时': 1}, {'章': None, '毕': 400, '时': 2}])[0] is True)
     except Exception:
         共 += 1
+    共 += 1; ok += 红行('x\n  ✗ 负测·甲  坏\n⛔⛔ 永远的痛·D6\n  ✓ 乙\n⛔ 停') == ['✗ 负测·甲  坏', '⛔ 停']   # ★1020：红则印诸红项、⛔D6 之训
     print('封版·自测 %d/%d' % (ok, 共))
     return ok == 共
 

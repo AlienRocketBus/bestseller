@@ -197,7 +197,8 @@ def 前(n, root=ROOT):
         _红 = [l.strip() for l in r.stdout.split('\n') if '⛔ ★' in l]
         print('· 器物册（器物点名 %d）：%s' % (n, ('⛔ ' + '｜'.join(_红[:3]) + '——改册之拍号照白文亲数') if (_红 or '⛔' in r.stdout) else '✓ 拍号俱对'))
     r = subprocess.run([sys.executable, 器('小说检察官.py'), '--末章', str(n)], cwd=root, capture_output=True, text=True)   # ★1020：398 亮点 5+逗 至封版·後之全测·快（十一分钟後）方红——检察官之末章硬闸单跑（约一分半）左移於此
-    print('· 末章硬闸（检察官）：%s' % ('✓ 通过' if r.returncode == 0 else '⛔ ' + '；'.join(l.strip() for l in r.stdout.split('\n')[next((i for i, l in enumerate(r.stdout.split('\n')) if '✗' in l), 0):] if l.strip())[:600] + '——治後再跑 --前'))
+    _病 = 末章之病(r.stdout) if r.returncode else []
+    print('· 末章硬闸（检察官）：%s' % ('✓ 通过' + ('（第十一轮归 --後）' if r.returncode else '') if not _病 else '⛔ ' + '；'.join(_病)[:600] + '——治後再跑 --前'))
     try:                                                     # ★1013：六问（质量三闸①之e）——381 记席未答，封版之全测方红；今於 --前 即印
         import 质量三闸
         _名, _过, _语 = 质量三闸.gate1e(n)[0]
@@ -237,6 +238,15 @@ def 可提交(n, 路们):
 def 十一轮已过(n, root=ROOT):
     """首回封版已跑过第十一轮（`版本/第N章/_十一轮.json` 在）——本器重跑之认据。"""
     return os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_十一轮.json'))
+
+
+def 末章之病(out):
+    """检察官 --末章 之印 → 诸病（✗ 行之下诸条）；⛔「第十一轮未过」——其归 --後（399 --前 之假红）。"""
+    L = out.split('\n')
+    i = next((k for k, l in enumerate(L) if '✗' in l), None)
+    if i is None:
+        return ['（判不出：无 ✗ 行）']
+    return [l.strip() for l in L[i + 1:] if l.strip() and not l.strip().startswith('第十一轮未过') and not l.strip().startswith('末章硬闸·')]
 
 
 def 红行(out, 顶=15):
@@ -371,6 +381,8 @@ def 自测():
     except Exception:
         共 += 1
     共 += 1; ok += 红行('x\n  ✗ 负测·甲  坏\n⛔⛔ 永远的痛·D6\n  ✓ 乙\n⛔ 停') == ['✗ 负测·甲  坏', '⛔ 停']   # ★1020：红则印诸红项、⛔D6 之训
+    _印 = '  ✗第9章《甲》:\n      第十一轮未过:未见 x\n  末章硬闸·第9章：失败'
+    共 += 1; ok += 末章之病(_印) == [] and 末章之病(_印.replace('      第十一轮', '      5+逗:甲\n      第十一轮')) == ['5+逗:甲']   # ★1020：--前 免第十一轮（其归 --後）、余病照报
     print('封版·自测 %d/%d' % (ok, 共))
     return ok == 共
 

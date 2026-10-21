@@ -1,0 +1,31 @@
+# 零 token 之检（1021 作者令「能在 GitHub 上做的、不耗 token 的，就在 GitHub 上做」）
+# 推上来即在 GitHub 之机上跑全测之快项——沙盒⛔为之候、主环⛔为之读；红绿见 Actions 页与提交旁之标。
+name: checks
+on:
+  push:
+    branches: ['claude/the-novel-review-4dtuit', '备份/存底', 'main']
+  workflow_dispatch:
+jobs:
+  quick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 全测（快）
+        env:
+          CI: '1'
+        run: |
+          set -o pipefail
+          python3 工具/全测.py --快 2>&1 | tee 全测.txt
+      - name: 摘要
+        if: always()
+        run: |
+          { echo '### 全测（快）'; echo '```'; grep -E '✓|✗|████' 全测.txt | tail -60; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

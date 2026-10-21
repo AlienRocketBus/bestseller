@@ -3428,6 +3428,11 @@ def chk_gaidan_neg():
         return False, ('｜'.join(坏) or (m.group(0) if m else '无数') )[:300]
     return True, m.group(0)
 
+def chk_feishao_neg():
+    """负测·费哨（1021·裁_1021_省律）：`工具/费哨.py --自测`——写书／非写书之分、主会话⛔重加、末 N 件、红时非写书之件须「挡路：」「读者可见：」之由。
+    ⛔此只验其器；费哨之红（今局之占）係工作流账 --开 之拦，不入全测之红（全测守器，不守钱之分配）。"""
+    return _自测之项('负测·费哨', '工具/费哨.py')
+
 def chk_seal_proof():
     """负测·封版之凭（2026-09-24 立·见 工具/负测_封版之凭.py）。
 
@@ -4824,6 +4829,7 @@ def 诸项(quick):
         items.append(('负测·接力', chk_jieli_neg))          # ★W60·X33⑦：接力、心跳之 --自测 入全测
         items.append(('负测·心跳', chk_xintiao_neg))
         items.append(('负测·改单', chk_gaidan_neg))         # ★W60·X11：施单之守与式段之约
+        items.append(('负测·费哨', chk_feishao_neg))       # ★1021 省律：费哨之器
         items.append(('器物册·逐章回灌', chk_object_roll_all))
         items.append(('封版留旗', chk_sealed_flags))
         items.append(('负测·开轮六检', chk_open6_gate))

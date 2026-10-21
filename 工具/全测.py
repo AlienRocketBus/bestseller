@@ -3417,6 +3417,17 @@ def chk_gaidan():
     return r.returncode == 0, ' ｜'.join(l.strip() for l in r.stdout.splitlines() if l.strip())[:300]
 
 
+def chk_gaidan_neg():
+    """负测·改单（W60·X11：--施单 之守与剧情庭.js 式段之约 ㉕—㉘ 俱在 `改单.py --自测`；旧只跑 --查，其测不入全测即名义之常驻）：
+    rc=0 且印「负测·改单 n/n」两数相等方绿。"""
+    import subprocess as _sp, re as _re
+    r = _sp.run([sys.executable, '工具/改单.py', '--自测'], cwd=ROOT, capture_output=True, text=True, timeout=600)
+    m = _re.search(r'负测·改单 (\d+)/(\d+)', r.stdout)
+    if r.returncode != 0 or not m or m.group(1) != m.group(2):
+        坏 = [l.strip() for l in r.stdout.splitlines() if l.strip().startswith(('✗', '⛔'))]
+        return False, ('｜'.join(坏) or (m.group(0) if m else '无数') )[:300]
+    return True, m.group(0)
+
 def chk_seal_proof():
     """负测·封版之凭（2026-09-24 立·见 工具/负测_封版之凭.py）。
 
@@ -4566,6 +4577,30 @@ def chk_jieli():
         return False, '接力跑不起来：%s' % e
 
 
+def _自测之项(名, 档):
+    """★W60·X33⑦：跑一器之 --自测，须印「全通」且无「未过」（器崩→None→红）；回印其自印之数（令§一②）。"""
+    out = run(名, [档, '--自测'], timeout=300)
+    if out is None:
+        return False, '运行失败（崩或逾时）'
+    末 = [x.strip() for x in out.strip().split('\n') if x.strip()]
+    if '全通' not in out or '未过' in out:
+        return False, (末[-1] if 末 else '（无印）')[:170]
+    return True, _测数(out, '?/?') + ' 全通'
+
+
+def chk_jieli_neg():
+    """负测·接力（W60·X33⑦·W53 验席所逮：接力之 --自测 未入全测，其守只在改它之坐手跑一回）：
+    `工具/接力.py --自测`——0911 真停摆回灌、暂停令、X21 交棒取晚者、⑯交棒读盘之路（tempdir 造 _十一轮.json 有／无两局）。
+    ⛔与「接力」一项不同：彼跑今盘之判（活态），此跑其自测（注入与 tempdir，不读主仓之现场）。"""
+    return _自测之项('负测·接力', '工具/接力.py')
+
+
+def chk_xintiao_neg():
+    """负测·心跳（W60·X33⑦·同上）：`工具/心跳.py --自测`——限只一处、只推心跳枝不带 -f、mktree 只一 blob、
+    X21 撤 N 之锁⛔清 N+1（本地、远端取其新者）、收先问可收。"""
+    return _自测之项('负测·心跳', '工具/心跳.py')
+
+
 def chk_paozhang():
     """★囤灰闸问「接没接上」，本项问「**跑没跑过**」——两问不同，缺一样都不够。
     ★★其红黄之别由 工具/跑账.py 自己判（立账之日以前无凭者只报黄）；本项只把它的话搬过来。
@@ -4786,6 +4821,9 @@ def 诸项(quick):
         items.append(('负测·冷轮明裁', chk_cold_明裁))
         items.append(('起手哨', chk_起手哨))
         items.append(('负测·器物点名', chk_object_roll))
+        items.append(('负测·接力', chk_jieli_neg))          # ★W60·X33⑦：接力、心跳之 --自测 入全测
+        items.append(('负测·心跳', chk_xintiao_neg))
+        items.append(('负测·改单', chk_gaidan_neg))         # ★W60·X11：施单之守与式段之约
         items.append(('器物册·逐章回灌', chk_object_roll_all))
         items.append(('封版留旗', chk_sealed_flags))
         items.append(('负测·开轮六检', chk_open6_gate))

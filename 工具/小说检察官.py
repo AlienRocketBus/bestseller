@@ -3559,15 +3559,25 @@ def work_order(n):
 #   ★★★★**故本器不再自留一份**：**限与执俱转调 `开轮六检.py`**，取不着时方退回旧法。
 #   ★**其所认者（令§六④之一行）**：**限认三样**——档首之「限N」／通则 N+2／N+5 之上限；
 #     **执认两样**——回执中之「N章冷眼轮」六字与否决记「COLD-N·本章未执」，**否决在先，签核在後**。
+_COLD_SIX = {}
+
+
 def _cold_six():
-    """取 开轮六检 之二函数（限与执）。取不着即返 None，由调用处退回旧法。"""
+    """取 开轮六检 之二函数（限与执）。取不着即返 None，由调用处退回旧法。
+    ★W60 X39：一进程载一回（键＝档之路·mtime·size，档一改即重载）——旧式每调重载一回，
+      `_auto_cold` 逐章四调，--末章 一跑七百余载（cProfile 实测约 6 秒）；载之即同一份码，判一字不改。"""
     try:
         import importlib.util as _iu
         _p = os.path.join(REPO_ROOT, '工具', '开轮六检.py')
         if not os.path.exists(_p):
             return None
+        _st = os.stat(_p)
+        _k = (_p, _st.st_mtime_ns, _st.st_size)
+        if _k in _COLD_SIX:
+            return _COLD_SIX[_k]
         _s = _iu.spec_from_file_location('_klj', _p)
         _m = _iu.module_from_spec(_s); _s.loader.exec_module(_m)
+        _COLD_SIX.clear(); _COLD_SIX[_k] = _m
         return _m
     except Exception:
         return None
@@ -3632,9 +3642,31 @@ def _cold_无面而明裁(n):
         return False
 
 
+_AUTO_COLD = {}
+
+
+def _冷轮之印():
+    """`_auto_cold` 所读之盘之印：设定/回执_*.md、设定/冷轮_COLD*.md、工具/开轮六检.py 之（路, mtime_ns, size）——盘一动即异。"""
+    out = []
+    for _pat in (('设定', '回执_*.md'), ('设定', '冷轮_COLD*.md'), ('工具', '开轮六检.py')):
+        for _fp in sorted(glob.glob(os.path.join(REPO_ROOT, *_pat))):
+            try:
+                _st = os.stat(_fp); out.append((_fp, _st.st_mtime_ns, _st.st_size))
+            except OSError:
+                out.append((_fp, None, None))
+    return tuple(out)
+
+
 def _auto_cold(files):
-    """冷轮自动派生：其限由 开轮六检::_cold_limit 定（档自书之限压倒通则 N+2）。"""
+    """冷轮自动派生：其限由 开轮六检::_cold_limit 定（档自书之限压倒通则 N+2）。
+    ★W60 X39：同一进程内同局只算一回——`--末章` 一跑调两回（启动总控台 print_console、mech_layer 之 due_report），
+      每回逐章（73—末）转调 开轮六检::_cold_done，而其每判一章读遍全部回执（四百余档·七兆字）、逐档跑正则：
+      400 实测每回约 45 秒，两回约 90 秒（cProfile：_auto_cold 2 调 89.97 秒／全程 90.6 秒）。
+      键＝章表＋四判之函（负测换判之沙盘即另算）＋盘之印（回执、冷轮档、开轮六检一动即另算）；⛔减其所查：判仍逐章全跑、一字不改。"""
     if not files: return []
+    _k = (tuple(files), _cold_done, _cold_void, _cold_due, _cold_无面而明裁, _冷轮之印())
+    if _k in _AUTO_COLD:
+        return [dict(x) for x in _AUTO_COLD[_k]]
     cur=max(files)
     out=[]
     for n in sorted(files):
@@ -3645,6 +3677,7 @@ def _auto_cold(files):
             out.append({'id':'COLD-%d'%n,'类':'冷轮(自动)',
                         '事':'第%d章冷眼轮（镜头须避开该章热轮已开者）'%n,
                         '立账章':n,'到期章':due,'状态':'open'})
+    _AUTO_COLD.clear(); _AUTO_COLD[_k] = [dict(x) for x in out]
     return out
 def _load_due():
     p=os.path.join(REPO_ROOT,'设定','到期账.json')

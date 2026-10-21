@@ -107,17 +107,56 @@ _构思档 = r'起草_[^\s/"\'<>|;&]+_构思\.md'
 构思之界 = 5     # 分：首条消息即建构思档（与 Read 料同发）——首落逾此即未守
 构思隔之界 = 10  # 分：构思诸写之最长隔（席起至首写、写与写之间）——逾此即在思考里排全章：392—397 二十一回撞 128k 回回在构思首落之前、一回约二十二分
 
+# ★W60·X33⑤（W53 验席所逮）：旧剔 heredoc 之式 `<<…(\w+)….*?\n\1\b`（re.S）连开头那一行之余一并吃掉，
+#   故「heredoc 在前、导向在後」之形认不着——真例 391 庚（wf_bc5f1caf-503·10-15 15:03）：
+#   `python3 -I - "$S/draft6.md" <<'PYEND' && cp … && cat > 版本/第391章/起草_庚_构思.md <<'ZZEND' && …`。
+#   今只剔其体（自下一行至收尾之行），开头那一行之余留下；一行数 heredoc 依次剔（体依次相接）。
+_体式 = re.compile(r"(?<!<)<<-?[ \t]*(['\"]?)([A-Za-z_]\w*)\1([^\n]*)\n(?:[^\n]*\n)*?[ \t]*\2\b")
+
+
+def _剔体(c):
+    while True:
+        m = _体式.search(c)
+        if not m:
+            return c
+        c = c[:m.start()] + ' ' + m.group(3) + c[m.end():]
+
+
+def _换变(c):
+    """`F=版本/…/起草_戊_构思.md && cat > $F <<'EOF'` 之形（真例 383 戊·wf_db24c946-4a1·10-13 14:24）：简单之赋值代入 $F／${F}。"""
+    变 = {m.group(1): m.group(3) for m in
+         re.finditer(r'(?:^|[;&|\n(])\s*([A-Za-z_]\w*)=(["\']?)([^\s"\';&|()]+)\2(?=\s|$|[;&|)])', c)}
+    return re.sub(r'\$\{?([A-Za-z_]\w*)\}?', lambda m: 变.get(m.group(1), m.group(0)), c) if 变 else c
+
+
 def 是建构思(x):
-    """★1020 W53·X26：一个 tool_use 是否写构思档（起草_<名>_构思.md）——Bash 之 >／>>／tee（先剔 heredoc 之体：体里之字⛔误认）或 Write 之 file_path。"""
+    """★1020 W53·X26：一个 tool_use 是否写构思档（起草_<名>_构思.md）。
+    认：Write／Edit／MultiEdit 之 file_path；Bash 之 >／>>／tee（先剔 heredoc 之体：体里之字⛔误认；heredoc 在前、导向在後亦认）、
+    cp／mv／install 之末参（目的）、sed -i 之末参（W60·X33⑤）。⛔认：读档（cat／head／grep／Read）、cp 之源、体里之字。"""
     if not isinstance(x, dict) or x.get('type') != 'tool_use':
         return False
     i = x.get('input') or {}
-    if x.get('name') == 'Write':
+    if x.get('name') in ('Write', 'Edit', 'MultiEdit'):
         return bool(re.search(_构思档 + r'$', i.get('file_path') or ''))
     if x.get('name') != 'Bash':
         return False
-    c = re.sub(r"<<-?\s*['\"]?(\w+)['\"]?.*?\n\1\b", '', i.get('command') or '', flags=re.S)
-    return bool(re.search(r'(?:>>?|\btee\b(?:\s+-a)?)\s*["\']?[^\s"\'<>|;&]*' + _构思档, c))
+    c = _换变(_剔体(i.get('command') or ''))
+    if re.search(r'(?:>>?|\btee\b(?:\s+-a)?)\s*["\']?[^\s"\'<>|;&]*' + _构思档, c):
+        return True
+    import shlex
+    for 段 in re.split(r'&&|\|\||[;&|\n()]', c):
+        try:
+            a = shlex.split(段)
+        except ValueError:
+            a = 段.split()
+        while a and re.match(r'[A-Za-z_]\w*=', a[0]):
+            a = a[1:]
+        if len(a) < 3:
+            continue
+        if a[0] in ('cp', 'mv', 'install') or (a[0] == 'sed' and any(y == '-i' or y.startswith(('-i', '--in-place')) for y in a[1:-1])):
+            if re.search(_构思档 + r'$', a[-1]):
+                return True
+    return False
 
 
 def _分(a, b):
@@ -509,6 +548,41 @@ def 自测():
         m = re.search(r"cat > \$\{章目\}/起草_\$\{x\.名\}_构思\.md <<'EOF'", js[js.index('首回即落】'):] if '首回即落】' in js else '')
         式 = m.group(0).replace('${章目}', '版本/第398章').replace('${x.名}', '甲') + "\n# x\nEOF" if m else ''
         共 += 1; ok += bool(式 and 是建构思(B(式)) and not 是建构思(读料))
+        # ★W60·X33⑤（W53 验席所逮：heredoc 在前之形与 cp／Edit 认不着）——以真转录片段为样（体有删节，形一字未改）：
+        #   ①391 庚（wf_bc5f1caf-503·10-15 15:03）：一行两 heredoc，构思之导向在第一个 heredoc 之後
+        庚 = ('S=/tmp/claude-0/x/scratchpad && python3 -I - "$S/draft6.md" <<\'PYEND\' && cp "$S/draft6.md" 版本/第391章/起草_稿六.md'
+              ' && cat > 版本/第391章/起草_庚_构思.md <<\'ZZEND\' && wc -c 版本/第391章/起草_庚_构思.md\n'
+              'import sys\np=sys.argv[1]\nt=open(p,encoding=\'utf-8\').read()\nPYEND\n'
+              '魂（回声路）：旧伤不提一字，从离他最近的那只拇指上回来——\nZZEND')
+        共 += 1; ok += 是建构思(B(庚))
+        #   ②验席之形：`cat <<'EOF' >> 构思`／`cat <<'EOF' > 构思`（导向写在 heredoc 开头之後）
+        共 += 1; ok += (是建构思(B("cat <<'EOF' >> 版本/第398章/起草_甲_构思.md\n魂\nEOF"))
+                        and 是建构思(B("cat <<'EOF' > 版本/第398章/起草_甲_构思.md\n魂\nEOF")))
+        #   ③387 己（wf_9adebaa9-58b·10-14 12:25）：cp 至构思档
+        共 += 1; ok += 是建构思(B('cd /home/user/the-novel; S=/tmp/claude-0/x/scratchpad; cp "$S/goushi.md" 版本/第387章/起草_己_构思.md'
+                                 ' && cp "$S/gao.md" 版本/第387章/起草_稿一.md && head -1 版本/第387章/起草_己_构思.md'))
+        #   ④377 甲（wf_feab0f2b-cad·09-26 23:26）：Edit 构思档
+        共 += 1; ok += 是建构思({'type': 'tool_use', 'name': 'Edit', 'input': {
+            'replace_all': False, 'file_path': '/home/user/the-novel/版本/第377章/起草_甲_构思.md',
+            'old_string': '- **咬合**：本章不担。', 'new_string': '- **咬合**：本章不担。\n\n## 动笔中所改'}})
+        #   ⑤383 戊（wf_db24c946-4a1·10-13 14:24）：`F=…构思.md && cat > $F <<'EOF'`；⑥382 丙（wf_24925875-da8·10-13 08:58）：sed -i 构思档
+        共 += 1; ok += 是建构思(B("F=版本/第383章/起草_戊_构思.md && cat > $F <<'EOF'\n魂（速度路）：寨里的账划掉一个人有它的快慢\nEOF"))
+        共 += 1; ok += 是建构思(B('N=$(grep -n x "$F380" | cut -d: -f1); sed -i "s/风哨 380:9 之三处/风哨 380:${N} 之三处/" 版本/第382章/起草_丙_构思.md;'
+                                 ' grep -c "380:${N} 之三处" 版本/第382章/起草_丙_构思.md'))
+        #   ⑦⛔误认（不放松）：cp 之源、读档（399 庚·wf_73644685-437 之 sed -n）、体里之字（heredoc 在前亦然）、
+        #     记席 `_创作记录` 体里列构思档（400·wf_0f2390c8-4d7）、Edit 他档而其文提构思档
+        共 += 1; ok += not any(是建构思(y) for y in (
+            B('cp 版本/第391章/起草_庚_构思.md /tmp/bak.md'),
+            B("sed -n 11,24p 版本/第399章/起草_庚_构思.md; python3 - <<'EOF'\nfor f in sorted(glob.glob('版本/第%d章/起草_*_构思.md'%n)):\nEOF"),
+            B("cat <<'EOF' > 版本/第398章/说明.md\n先 cp x 版本/第398章/起草_乙_构思.md\n再 cat >> 版本/第398章/起草_乙_构思.md\nEOF"),
+            B("cat > 版本/第400章/_创作记录.md <<'EOF'\n> 记席据本章各档逐字写成：`起草_甲／乙／丙／丁／戊_构思.md`、`_行家评.md`\nEOF"),
+            {'type': 'tool_use', 'name': 'Edit', 'input': {'file_path': '/x/工具/费审.py', 'old_string': '起草_甲_构思.md', 'new_string': 'y'}}))
+        #   ⑧量之假绿（验席所述之害）：首回照令 cat > 构思建档首（0.2 分），其後之追记以 heredoc 在前（25 分）与 cp（30 分）落——
+        #     旧式认不着後二者，隔＝0.2 而报✓；今须量出隔 24.8
+        己 = 席('己', [('2026-10-20T11:00:12Z', [读料, B("cat > 版本/第398章/起草_己_构思.md <<'EOF'\n# 执笔·己之构思\nEOF")]),
+                       ('2026-10-20T11:25:00Z', B("cat <<'EOF' >> 版本/第398章/起草_己_构思.md\n魂：…\n| 一 | 到 | 纸 | 句 |\nEOF")),
+                       ('2026-10-20T11:30:00Z', B('cp /tmp/x/己.md 版本/第398章/起草_己_构思.md'))])
+        共 += 1; ok += (己['构思'] == 0.2 and 己['构思隔'] == 24.8)
         # 印：逐行之「构思」「构思隔」两列印其值（⛔只验表头——验席突变：值印作空串，旧格仍过）；汇总两行各逮其逾
         import io as _io, contextlib as _cl
         buf = _io.StringIO()

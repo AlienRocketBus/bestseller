@@ -195,6 +195,7 @@ def 查(印=True, now=None, 末=None, 回执=None, 动=_未注, 跳=None, 续跑
 
 
 def 自测():
+    global ROOT        # ⑯改 ROOT 指 tempdir（读盘之路），finally 还原
     ok, bad = 0, []
 
     def T(x, c, note=''):
@@ -278,6 +279,50 @@ def 自测():
     # ⑮之三 交棒与下一章之新动取其晚者（⛔取早者）：卡 2 分前、交棒 3 时前 → ⛔断流
     坏17, _ = 查(印=False, now=now, 末=397, 回执=True, 动=now - 120, 跳=(False, None, None), 停=(False, ''), 交=now - 180 * 60)
     T('⑮之三 取晚者：下一章刚动而交棒久 → ⛔断流', not 坏17)
+
+    # ⑯★W60·X33④（W53 验席所逮）：⑮诸格皆注入 交=…，**交棒() 读盘之一路无一格守**——
+    #   变异「交棒读第 N+1 章之档」「交棒恒返 None」二式，旧测俱绿。今以 tempdir 造盘两局（_十一轮.json 有／无），
+    #   改 ROOT 而⛔注 交、⛔注 动（交棒、新动皆自盘上读），验断流之有无。
+    import tempfile
+    _根 = ROOT
+    try:
+        with tempfile.TemporaryDirectory(prefix='接力自测_') as td:
+            ROOT = td
+            d97, d98 = (os.path.join(td, '版本', '第%d章' % k) for k in (397, 398))
+            os.makedirs(d97)
+            os.makedirs(d98)
+            卡, 凭 = os.path.join(d98, '_开镜卡.md'), os.path.join(d97, '_十一轮.json')
+            open(卡, 'w', encoding='utf-8').close()
+            t0 = time.time()
+            os.utime(卡, (t0 - 68 * 60, t0 - 68 * 60))
+
+            def 盘(**k):
+                return 查(印=False, now=t0, 末=397, 回执=True, 跳=(False, None, None), 停=(False, ''), 续跑=None, **k)
+            # 有局：_十一轮.json 2 分前、下一章之卡 68 分前 → ⛔断流（交棒自盘上读得）
+            open(凭, 'w', encoding='utf-8').write('{}')
+            os.utime(凭, (t0 - 120, t0 - 120))
+            坏有, _ = 盘()
+            T('⑯盘·有局：_十一轮.json 2 分前、卡 68 分前 → 交棒自盘读得、⛔断流',
+              交棒(397) == t0 - 120 and not 坏有, '交棒=%r 坏=%r' % (交棒(397), 坏有))
+            # 有局之二：_十一轮.json 亦 68 分前 → 照旧断流（⛔因读盘之路而放松）
+            os.utime(凭, (t0 - 68 * 60, t0 - 68 * 60))
+            坏有2, _ = 盘()
+            T('⑯之二 盘·有局：_十一轮.json 68 分前 → 照旧断流', any('断流' in x for x in 坏有2))
+            # 无局：_十一轮.json 不在（而第 396 章之凭刚写、第 398 章亦无凭——只认第 N 章自己的）→ 断流
+            os.remove(凭)
+            os.makedirs(os.path.join(td, '版本', '第396章'))
+            open(os.path.join(td, '版本', '第396章', '_十一轮.json'), 'w', encoding='utf-8').write('{}')
+            坏无, _ = 盘()
+            T('⑯之三 盘·无局：第397章之 _十一轮.json 不在（396 之凭刚写⛔认）→ 交棒 None、断流',
+              交棒(397) is None and any('断流' in x for x in 坏无), '交棒=%r' % (交棒(397),))
+            # 无局之二：下一章目录亦不在 → 断流，报「根本不在」（0911 之局，自盘读）
+            import shutil
+            shutil.rmtree(d98)
+            坏无2, _ = 盘()
+            T('⑯之四 盘·无局：第398章目录亦不在 → 断流、报其根本不在',
+              any('断流' in x and '根本不在' in x for x in 坏无2))
+    finally:
+        ROOT = _根
 
     print('── 负测·接力 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad

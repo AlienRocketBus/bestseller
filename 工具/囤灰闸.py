@@ -143,7 +143,8 @@ def 末章():
 
 
 def 席表(用法):
-    """★`工具/席/用法.md`「诸席之位与末用」表 → {席名: (其位, 末用, 限章或 None)}。限之格无章号（如「—（自走派）」）即无限。"""
+    """★`工具/席/用法.md`「诸席之位与末用」表 → {席名: (其位, 末用, 限章或 None)}。限之格无章号（如「—（自走派）」）返 None——
+    只派令之席许如此；余席限为 None 即红（见 席之判·1020 X29）。"""
     出 = {}
     for l in 用法.split('\n'):
         m = re.match(r'\s*\|\s*`?([^|`\s]+\.js)`?\s*\|([^|]*)\|([^|]*)\|([^|]*)\|', l)
@@ -153,12 +154,109 @@ def 席表(用法):
     return 出
 
 
+def _串终(文, i):
+    """单引、双引之串（自 i 之引号起）→ 其终之後一位；⛔跨行（失步之害只到行尾）。"""
+    q, j, n = 文[i], i + 1, len(文)
+    while j < n and 文[j] != q and 文[j] != '\n':
+        j += 2 if 文[j] == '\\' else 1
+    return j + 1 if j < n and 文[j] == q else j
+
+
+def _模终(文, i):
+    """JS 模板之串（i 在开头反引号之後）→ 其终之後一位；`${…}` 里之码（含嵌套之模板）照括号深浅走过。"""
+    n = len(文)
+    while i < n:
+        if 文[i] == '\\':
+            i += 2
+        elif 文[i] == '`':
+            return i + 1
+        elif 文.startswith('${', i):
+            i, 深 = i + 2, 0
+            while i < n:
+                c = 文[i]
+                if c in '"\'':
+                    i = _串终(文, i)
+                    continue
+                if c == '`':
+                    i = _模终(文, i + 1)
+                    continue
+                if c == '{':
+                    深 += 1
+                elif c == '}':
+                    if 深 == 0:
+                        break
+                    深 -= 1
+                i += 1
+            i += 1
+        else:
+            i += 1
+    return n
+
+
+def _去注(文, 语=None):
+    """★W60·X33⑥：剔注，留码与串——整行注与**行尾注**、**`/* */` 块注**、**Python 之 docstring**（行首起之三引号串）。
+    语＝'py'：`#` 注、三引号串；'js'：`//`、`/* */` 注、反引号模板（`${}` 嵌套）、正则之字面；None（片段）：二家俱认。
+    ⛔串里之 `#`、`//`、`/*`（如 `'工具/席/*.js'`、所印命令行尾之 `# …`）不作注——派令本在串里（`L.append("  Workflow({scriptPath:…})")`）。
+    单引、双引之串⛔跨行：引号失步之害只到行尾。"""
+    py, js = 语 in ('py', None), 语 in ('js', None)
+    出, i, n, 前 = [], 0, len(文), ''
+    while i < n:
+        c = 文[i]
+        if py and 文.startswith(('"""', "\'\'\'"), i):
+            j = 文.find(文[i:i + 3], i + 3)
+            j = n if j < 0 else j + 3
+            if 文[文.rfind('\n', 0, i) + 1:i].strip().lower().strip('rbuf'):
+                出.append(文[i:j])                                  # 码中之三引号串（赋值、传参）：留
+            else:
+                出.append('\n' * 文.count('\n', i, j))           # 行首之三引号串＝docstring：剔（留行数）
+            i, 前 = j, '"'
+        elif c in '"\'':
+            j = _串终(文, i)
+            出.append(文[i:j])
+            i, 前 = j, c
+        elif js and c == '`':
+            j = _模终(文, i + 1)
+            出.append(文[i:j])
+            i, 前 = j, c
+        elif (py and c == '#') or (js and 文.startswith('//', i)):
+            j = 文.find('\n', i)
+            i = n if j < 0 else j
+        elif js and 文.startswith('/*', i):
+            j = 文.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            出.append('\n' * 文.count('\n', i, j))
+            i = j
+        elif js and c == '/' and 前 in '(,=:[!&|?{};':
+            m = re.compile(r'/(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^/\\\n\[])+/[a-z]*').match(文, i)   # 正则之字面：其中之引号、// ⛔认
+            j = m.end() if m else i + 1
+            出.append(文[i:j])
+            i, 前 = j, '/'
+        else:
+            出.append(c)
+            if not c.isspace():
+                前 = c
+            i += 1
+    return ''.join(出)
+
+
 def 派令之席(派令之文):
     """★派令之文里**真被调**之席名集（1020 X29 再治）：只认 `scriptPath:'工具/席/<名>.js'`（容一个反斜杠转义——
-    与 `自走.py` ⑬之八 `_死席` 同一把尺），且**注行（# 或 // 起）不算**。
-    ⛔只提其名（「一代在 工具/席/一章.js」之注、自测之串 `工具/席/救章.js`）不是派令——旧式子串之判凭此把已彻删之席判作有路。"""
-    文 = '\n'.join(l for l in 派令之文.split('\n') if not l.lstrip().startswith(('#', '//')))
-    return set(os.path.basename(p) for p in re.findall(r"scriptPath:\\?'(工具/席/[^'\\]+\.js)", 文))
+    与 `自走.py` ⑬之八 `_死席` 同一把尺），且**注不算**：整行注、行尾注、`/* */` 块注、docstring（W60·X33⑥·见 `_去注`）；
+    **子目录之派令**（`工具/席/_旧/X.js`）不算顶层之 X.js 有路（旧取 basename 而混同·W60·X33⑥）。
+    ⛔只提其名（「一代在 工具/席/一章.js」之注、自测之串 `工具/席/救章.js`）不是派令——旧式子串之判凭此把已彻删之席判作有路。
+    派令之文：一串（片段·二家之注俱认），或诸档之列——其项为串，或 (档名, 文)（照其扩展名定 py／js，逐档剔注）。"""
+    诸 = [派令之文] if isinstance(派令之文, str) else list(派令之文)
+    出 = set()
+    for x in 诸:
+        名, 文 = x if isinstance(x, tuple) else ('', x)
+        语 = 'py' if 名.endswith('.py') else 'js' if 名.endswith('.js') else None
+        出 |= set(re.findall(r"scriptPath:\\?'工具/席/([^'\\/]+\.js)", _去注(文, 语)))
+    return 出
+
+
+def _派令之档():
+    """派令之文＝造章.js、自走.py——逐档带名（照扩展名剔其家之注）。"""
+    return [(p, _读(p)) for p in ('工具/席/造章.js', '工具/自走.py')]
 
 
 def 席之判(席们, 派令之文, 用法, 末):
@@ -249,7 +347,7 @@ def 查(印=True):
 
     # 乙·席（1020 X29：派令之路＝造章.js、自走.py 之 scriptPath；余者须在 用法.md「诸席之位与末用」表有行、限系於末用且未到——见 席之判）
     席们 = sorted(os.path.basename(f) for f in glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))
-    for s, 语 in 席之判(席们, _读('工具/席/造章.js') + _读('工具/自走.py'), _读('工具/席/用法.md'), 末章()):
+    for s, 语 in 席之判(席们, _派令之档(), _读('工具/席/用法.md'), 末章()):
         (黄 if s in 账 else 红).append('乙·席囤灰：工具/席/%s %s%s' % (
             s, 语, ('　已挂账：' + 账[s]) if s in 账 else ''))
 
@@ -303,7 +401,7 @@ def 查(印=True):
         print('════ 囤灰闸 ════')
         print('  甲·器 %d 样，跑得着 %d，囤灰 %d' % (len(tools), len(reach), len(灰)))
         print('  乙·席 %d 张（派令之路 %d 张，余照 用法.md 之表）' % (
-            len(席们), len(set(席们) & 派令之席(_读('工具/席/造章.js') + _读('工具/自走.py')))))
+            len(席们), len(set(席们) & 派令之席(_派令之档()))))
         新章 = [d for d in glob.glob(os.path.join(ROOT, '版本', '第*章'))
                 if re.search(r'第(\d+)章', os.path.basename(d))
                 and int(re.search(r'第(\d+)章', os.path.basename(d)).group(1)) >= 起用章]
@@ -446,6 +544,35 @@ def 自测():
       and 席之判(['某席.js'], '', _行('立後未用', '409'), 400) != []
       and 席之判(['某席.js'], '', _行('379（某事）', '409'), 400) == []
       and 席之判(['某席.js'], '', _行('390', '400'), 399) == [])
+    # ⑧之十一【W60·X33⑥·W53 验席之攻（scratchpad W53验_G5/r2/攻.py）逐式回灌】行尾注（# 与 //）、docstring 内、
+    #   JS 块注内、子目录之派令——旧判（只滤整行注、取 basename）俱绿；今须红。
+    _攻 = {'行尾 # 注': "foo()  # Workflow({scriptPath:'工具/席/X.js'})\n",
+          '行尾 // 注': "foo();  // Workflow({scriptPath:'工具/席/X.js'})\n",
+          'docstring 内': '"""\n  说明：旧时 Workflow({scriptPath:\'工具/席/X.js\'})\n"""\n',
+          '块注内': "/*\n Workflow({scriptPath:'工具/席/X.js'})\n*/\n",
+          '子目录': "Workflow({scriptPath:'工具/席/_旧/X.js'})\n"}
+    _旧派 = lambda 文: set(os.path.basename(p) for p in re.findall(
+        r"scriptPath:\\?'(工具/席/[^'\\]+\.js)", '\n'.join(l for l in 文.split('\n') if not l.lstrip().startswith(('#', '//')))))
+    T('⑧之十一 行尾注、docstring、块注、子目录之派令——旧判俱绿，今俱红',
+      all('X.js' in _旧派(v) for v in _攻.values())
+      and [k for k, v in _攻.items() if 席之判(['X.js'], v, '', 1) == []] == [],
+      '今判绿者：%s' % [k for k, v in _攻.items() if 席之判(['X.js'], v, '', 1) == []])
+    # ⑧之十一之二 不放松：串里之 # 、//、/*（所印命令之行尾注、glob 之 '工具/席/*.js'）⛔作注而吞掉其後之真派令；
+    #   块注、docstring 之後之码行照认；模板嵌套（`${…`…`…}`）与正则之字面不使引号失步；逐档带名（py／js）与片段同判
+    _真 = ("    _诸 = glob.glob('工具/席/*.js')   # 席之全集\n"
+           "    L.append(\"  Workflow({scriptPath:'%s'})   # 承.py 所写之包裹\" % p)\n"
+           "    L.append(\"  Workflow({scriptPath:'工具/席/甲席.js', args:{}})   # 每章\")\n"
+           '    """说明：Workflow({scriptPath:\'工具/席/丁席.js\'})"""\n'
+           "    L.append('  Workflow({scriptPath:\\'工具/席/乙席.js\\', args:{}})')\n")
+    _js = ("const 令 = `${N >= 398 ? `【落笔】# 一节 // 非注 ${x.名}` : ''}` + 'a'   // 行尾之注\n"
+           "const 正 = /'\"`/.test(s) || /\\/\\//.test(s)\n"
+           "/* 块注 Workflow({scriptPath:'工具/席/丁席.js'}) */\n"
+           "Workflow({scriptPath:'工具/席/丙席.js', args:{}})\n")
+    T('⑧之十一之二 串里之 #／//／/* ⛔吞真派令；docstring、块注照剔；模板嵌套与正则不失步；逐档与片段同判',
+      派令之席(_真) == {'甲席.js', '乙席.js'} and 派令之席([('x.py', _真)]) == {'甲席.js', '乙席.js'}
+      and 派令之席([('x.js', _js)]) == {'丙席.js'} and 派令之席(_js) == {'丙席.js'}
+      and 派令之席(_派令之档()) == 派令之席(_派),
+      '%s｜%s｜%s' % (sorted(派令之席(_真)), sorted(派令之席([('x.js', _js)])), sorted(派令之席(_js))))
     # ⑧之八 末章读得出（限之判赖之）：认得「三百一十」（⛔「三百十」），且今末章 ≥ 起用章
     T('⑧之八 末章读得出（今 %d）、「三百一十」认作 310' % 末章(),
       末章() >= 起用章 and _汉转数('三百一十') == 310 and _汉转数('三百九十七') == 397)

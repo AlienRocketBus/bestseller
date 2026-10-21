@@ -17,7 +17,15 @@
   甲·自本器立日起，凡提交**改动已有之正文章**（非新添）或圣经／canon／人物状态册，而提交说明无「改单#」者 → **红**。
      ★例外唯一：新章封版之追记（圣经入册、状态册同步、施工表锁定行），提交说明标「封版#N」——那是添，不是改。
   乙·单立而七日未结 → 黄。
-用法：--立 ｜ --毕 ｜ --查 ｜ --单（列清单）｜ --自测
+【施单（W60·X11 立）】席⛔亲改诸档，只交一份「改之单」（JSON 之列 [{档, 原, 新, 由}]），主环以本器施之：
+  `python3 工具/改单.py --施单 <单.json> [--落] [--号 <单号>] [--根 <仓根>]`
+  默认只验并印每条之 diff，⛔写；--落 方写。每条：原须在档中恰一见（重叠之见亦计；0 或 ≥2 即⛔并指出其行）、⛔跨行；
+  新⛔含换行（⛔改行数——要添者以行内接写）、⛔同原、施後须恰一见。一条不过，全单⛔写。
+  档⛔：出仓、.git、改单备份、正文/（列二稿账）、剧情庭之裁档 设定/剧情庭_*.md、改单账、修改清单、单档本身、未在之档。
+  --落：写前照 --立 之法备份所动之档於 `设定/改单备份/<单号>/`（无 --号 则 `施单_<时>/`；已有之备份⛔覆），
+        验後写前再核盘上未变（他席并写即⛔）；写後再读盘逐条验新恰一见、行数未变。--根：以他目录为仓根（试於副本）。
+  --自测 另渲染 工具/席/剧情庭.js 式段之令（node·假交）验其与本器之约：题档首行之认、单之四键、自验 --施单、守原写空单。
+用法：--立 ｜ --毕 ｜ --查 ｜ --单（列清单）｜ --施单 ｜ --自测
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -138,6 +146,301 @@ def 查(印=True):
     return not 坏, 坏
 
 
+# ★W60·X11：施单——391 段裁席亲改十一档 164 回 $20.94（复盘 1015_W43），今裁席只交单、本器施
+_键 = ('档', '原', '新', '由')
+_断行 = '\n\r\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029'   # str.splitlines 所认之断行俱⛔
+
+
+def _窗(行文, 起, 长, 宽=36):
+    """行文中 [起, 起+长) 一段，前後各带 宽 字，过长者以 … 截。"""
+    a, b = max(0, 起 - 宽), min(len(行文), 起 + 长 + 宽)
+    return ('…' if a > 0 else '') + 行文[a:b] + ('…' if b < len(行文) else '')
+
+
+def _见数(t, s):
+    """s 在 t 中之见数——**重叠之见亦计**（逐位步一而 find）。⛔str.count：它只数不相重叠者，「哈哈」於「哈哈哈」只算 1 见，实则 0、1 两处俱见。"""
+    n, i = 0, t.find(s)
+    while i >= 0:
+        n += 1; i = t.find(s, i + 1)
+    return n
+
+
+def _行号们(t, s):
+    """s 在 t 中所见之行（同行多见者记「×n」；至多列八行）。"""
+    数, i, 前, n = {}, t.find(s), 0, 1
+    while i >= 0 and len(数) <= 8:   # 逐见累计行号（⛔每见从头数——三兆之圣经、常字千见即卡）
+        n += t.count('\n', 前, i); 前 = i
+        数[n] = 数.get(n, 0) + 1; i = t.find(s, i + 1)
+    出 = ['%d%s' % (n, '×%d' % k if k > 1 else '') for n, k in list(数.items())[:8]]
+    return 出 + (['…'] if len(数) > 8 else [])
+
+
+_禁施 = re.compile(r'^(\.git(/|$)|设定/改单备份/)')
+_禁施_正文 = re.compile(r'^正文/')
+_禁施_裁档 = re.compile(r'^设定/剧情庭_[^/]*\.md$')
+
+
+def _档路(p, 禁=()):
+    """单之「档」→ (仓根相对路径, 绝对路径, 错)。⛔出仓、⛔.git、⛔改单备份、档须已在（⛔新立档）；
+    ⛔正文/（正文之改列入二稿账）、⛔剧情庭之裁档（设定/剧情庭_*.md：裁席自写，⛔以单改）、
+    ⛔改单账／修改清单（--号 之补登写之，单再写即覆其登）、⛔单档本身（禁：诸绝对路）。"""
+    根 = os.path.realpath(ROOT)
+    a = os.path.realpath(p if os.path.isabs(p) else os.path.join(根, p))
+    if a != 根 and not a.startswith(根 + os.sep):
+        return None, None, '出仓（%s）' % p
+    rel = os.path.relpath(a, 根).replace(os.sep, '/')
+    if _禁施.match(rel):
+        return None, None, '⛔施於 %s' % rel
+    if _禁施_正文.match(rel):
+        return None, None, '⛔施於正文（%s）——正文之改列入二稿账，⛔入单' % rel
+    if _禁施_裁档.match(rel):
+        return None, None, '⛔施於剧情庭之裁档（%s）——裁档裁席自写，⛔入单' % rel
+    if a in {os.path.realpath(账档), os.path.realpath(清单)} or rel in ('设定/改单账.json', '设定/修改清单.md'):
+        return None, None, '⛔施於改单之账（%s）——账与清单只由本器之 --立／--号 登，⛔入单' % rel
+    if a in 禁:
+        return None, None, '⛔施於单档本身（%s）' % rel
+    if not os.path.isfile(a):
+        return None, None, '档不在（%s）——单只改已有之档，⛔新立' % rel
+    return rel, a, None
+
+
+def _读文(a):
+    with open(a, encoding='utf-8', newline='') as f:   # newline='' 守其原之行尾
+        return f.read()
+
+
+def _写文(a, t):
+    tmp = a + '.施单tmp'
+    with open(tmp, 'w', encoding='utf-8', newline='') as f:
+        f.write(t)
+    shutil.copymode(a, tmp)
+    os.replace(tmp, a)
+
+
+def 施单(单档, 落=False, 号=None, _写後=None, _验後=None):
+    """验（并於 落 时写）一份改之单。→ True／False。_写後、_验後：自测之钩（写後再验前／验毕落前调之）。"""
+    try:
+        with open(单档, encoding='utf-8') as f:
+            单 = json.load(f)
+    except FileNotFoundError:
+        print('⛔ 单不在：%s' % 单档); return False
+    except Exception as e:
+        print('⛔ 单非合法 JSON（%s）：%s' % (单档, e)); return False
+    if not isinstance(单, list):
+        print('⛔ 单须是 JSON 之列 [{档, 原, 新, 由}]，今为 %s' % type(单).__name__); return False
+    if not 单:
+        print('✓ 单空（0 条），无可施'); return True
+    错, 原文, 内, 记 = [], {}, {}, []
+    for i, x in enumerate(单, 1):
+        名 = '第%d条' % i
+        if not isinstance(x, dict):
+            错.append('%s 非对象' % 名); continue
+        缺 = [k for k in _键 if not isinstance(x.get(k), str) or x.get(k) == '' or (k in ('档', '由') and not x[k].strip())]
+        多 = sorted(set(x) - set(_键))
+        if 缺 or 多:
+            错.append('%s 键%s%s（须恰 档／原／新／由 四键，俱非空之串）' % (名, ('缺或空：' + '、'.join(缺)) if 缺 else '', ('；多：' + '、'.join(多)) if 多 else '')); continue
+        rel, a, e = _档路(x['档'], 禁={os.path.realpath(单档)})
+        if e:
+            错.append('%s %s' % (名, e)); continue
+        名 = '%s %s' % (名, rel)
+        原, 新 = x['原'], x['新']
+        if any(c in 原 for c in _断行):
+            错.append('%s 原跨行（⛔：原只许一行之内）' % 名); continue
+        if any(c in 新 for c in _断行):
+            错.append('%s 新含换行（⛔改行数：要添者以行内接写）' % 名); continue
+        if 原 == 新:
+            错.append('%s 新同原' % 名); continue
+        if rel not in 内:
+            try:
+                原文[rel] = 内[rel] = _读文(a)
+            except Exception as e2:
+                错.append('%s 读不动（%s）' % (名, e2)); continue
+        t = 内[rel]
+        n = _见数(t, 原)
+        if n != 1:
+            错.append('%s 原%s（须恰一见）：「%s」%s' % (名, '零见' if n == 0 else ' %d 见' % n, 原[:40] + ('…' if len(原) > 40 else ''),
+                                             ('於行 ' + '、'.join(map(str, _行号们(t, 原)))) if n else ''))
+            continue
+        p = t.index(原)
+        行 = t.count('\n', 0, p) + 1
+        头 = t.rfind('\n', 0, p) + 1
+        尾 = t.find('\n', p); 尾 = len(t) if 尾 < 0 else 尾
+        前行 = t[头:尾]
+        内[rel] = t[:p] + 新 + t[p + len(原):]
+        後行 = 内[rel][头:尾 - len(原) + len(新)]
+        记.append({'i': i, 'rel': rel, 'a': a, '行': 行, '由': x['由'], '新': 新,
+                   '前': _窗(前行, p - 头, len(原)), '後': _窗(後行, p - 头, len(新))})
+    for rel in 内:
+        if 内[rel].count('\n') != 原文[rel].count('\n') or len(内[rel].splitlines()) != len(原文[rel].splitlines()):
+            错.append('%s 行数变（%d→%d）' % (rel, len(原文[rel].splitlines()), len(内[rel].splitlines())))
+    for r in 记:   # 施後之新须恰一见（後条覆了前条之新、或新本就撞他处者⛔）
+        n = _见数(内[r['rel']], r['新'])
+        if n != 1:
+            错.append('第%d条 %s 新於施後 %d 见（须恰一见：带足上下文；同一处之改并作一条）' % (r['i'], r['rel'], n))
+    for r in 记:
+        print('@@ %s:%d ｜第%d条｜由：%s' % (r['rel'], r['行'], r['i'], r['由']))
+        print('- ' + r['前'])
+        print('+ ' + r['後'])
+    诸档 = sorted(内)
+    if 错:
+        for e in 错:
+            print('⛔ ' + e)
+        print('⛔ 施单：%d 条，⛔ %d 处——一条不过，全单⛔写' % (len(单), len(错)))
+        return False
+    if not 落:
+        print('✓ 施单（只验）：%d 条俱过，%d 档（%s）；行数俱守——加 --落 方写' % (len(单), len(诸档), ' '.join(诸档)))
+        return True
+    # —— 落 ——
+    if _验後:
+        _验後()
+    d = 读()
+    单记 = None
+    if 号:
+        单记 = next((x for x in d['单'] if x['号'] == 号), None)
+        if not 单记:
+            print('⛔ 无此改单：%s（先 --立）——⛔写' % 号); return False
+    for rel in 诸档:   # 验後盘上又变者⛔（并跑之席正写）
+        if _读文(os.path.join(ROOT, rel)) != 原文[rel]:
+            print('⛔ %s 验後盘上已变——⛔写，重跑验' % rel); return False
+    目 = os.path.join(备份, 号 or ('施单_' + time.strftime('%m%d-%H%M%S')))
+    os.makedirs(目, exist_ok=True)
+    新备 = []
+    for rel in 诸档:
+        dst = os.path.join(目, rel.replace('/', '__'))
+        if not os.path.exists(dst):   # 已有者（--立 时所存）係真改前之原，⛔覆
+            shutil.copy2(os.path.join(ROOT, rel), dst); 新备.append(rel)
+        if not os.path.isfile(dst):
+            print('⛔ 备份未成：%s——⛔写' % dst); return False
+    if 单记 is not None:
+        添 = [rel for rel in 诸档 if rel not in 单记.setdefault('档', [])]
+        if 添:
+            单记['档'].extend(添); 写(d)
+            with open(清单, 'a', encoding='utf-8') as f:
+                f.write('- **%s 施单补备**：%s（改前原文存 `设定/改单备份/%s/`；单 `%s`）\n' % (号, '、'.join(添), 号, os.path.relpath(os.path.abspath(单档), ROOT)))
+    for rel in 诸档:
+        _写文(os.path.join(ROOT, rel), 内[rel])
+    if _写後:
+        _写後()
+    坏 = []
+    for rel in 诸档:   # 再验：读盘
+        t = _读文(os.path.join(ROOT, rel))
+        if len(t.splitlines()) != len(原文[rel].splitlines()):
+            坏.append('%s 行数变' % rel)
+    for r in 记:
+        n = _见数(_读文(r['a']), r['新'])
+        if n != 1:
+            坏.append('第%d条 %s 新於盘上 %d 见' % (r['i'], r['rel'], n))
+    if 坏:
+        for e in 坏:
+            print('⛔ 再验：' + e)
+        print('⛔ 施单已写而再验不过——改前原文在 %s，逐档核之' % os.path.relpath(目, ROOT)); return False
+    print('✓ 施单已落：%d 条於 %d 档；备份 %s（新存 %d 档）；再验 %d/%d%s' % (
+        len(单), len(诸档), os.path.relpath(目, ROOT), len(新备), len(记), len(记),
+        '' if 号 else '｜⚠未带 --号：提交说明仍须写「改单#」（先 --立）'))
+    return True
+
+
+# 剧情庭.js 式段之令与本器之约（W60·X11 驳後立：剧情庭.js 无自测，其令以 node 渲染、诸席以假交代之——
+#   验题席之交，以其令中之命令真跑 bash 而得，非手编之首行）
+_庭器 = r"""
+const fs = require('fs'), cp = require('child_process')
+const [, , 档, 案档] = process.argv
+const src = fs.readFileSync(档, 'utf8').replace(/^export const meta/m, 'const meta')
+const AF = Object.getPrototypeOf(async function () {}).constructor
+const 出 = []
+;(async () => {
+  for (const c of JSON.parse(fs.readFileSync(案档, 'utf8'))) {
+    const 令 = [], logs = []
+    const 验 = (prompt) => {
+      const m = /`(f='[^`]*)`/.exec(prompt)
+      const o = cp.execFileSync('bash', ['-c', m[1]], { cwd: c.cwd, encoding: 'utf8' })
+      if (/^题档不在$/m.test(o)) return { topic_exists: false, first_line: '', liao_path: '', liao_exists: false }
+      const 首 = (/^首行=(.*)$/m.exec(o) || [, ''])[1], 料 = /^料=(.*) (有|无)$/m.exec(o) || [, '', '无']
+      return { topic_exists: true, first_line: 首, liao_path: 料[1], liao_exists: 料[2] === '有' }
+    }
+    const 案 = n => ({ name: n, plan: 'p', why_better: 'w', soundness: 's' })
+    const agent = async (prompt, o) => {
+      令.push({ label: o.label, prompt, phase: o.phase })
+      if (o.label === '验题·首行') return c.首 || 验(prompt)
+      if (o.label.startsWith('出案')) return c.keep ? { current_judgement: 'x', current_appeal: 9, current_sound: 9, keep: true, proposals: [] }
+        : { current_judgement: 'x', current_appeal: 7, current_sound: 7, keep: false, proposals: [案('a'), 案('b'), 案('c')] }
+      if (o.label === '刺·并攻') return { attacks: ['小说家1', '小说家2', '小说家3', '剧本师1', '剧本师2', '剧本师3'].map(id => ({ id, flaw: 'f', level: '轻', better_claim_true: 'y' })) }
+      if (o.label.startsWith('复评')) return { scores: ['小说家1', '小说家2', '小说家3', '剧本师1', '剧本师2', '剧本师3'].map(id => ({ id, appeal: id === '剧本师1' ? 9 : 6, sound: 8, beats_current: id === '剧本师1', reason: 'r' })), current_appeal: 7, first_choice: '剧本师1' }
+      return '摘要'
+    }
+    let r = null, err = null
+    try { r = await new AF('args', 'agent', 'parallel', 'phase', 'log', src)(c.args, agent, async ts => Promise.all(ts.map(f => f())), () => {}, m => logs.push(m)) }
+    catch (e) { err = String(e && e.message || e) }
+    出.push({ err, r, 令, logs })
+  }
+  process.stdout.write(JSON.stringify(出))
+})().catch(e => { process.stderr.write(String(e && e.stack || e)); process.exit(3) })
+"""
+
+
+def _庭单之约():
+    """→ [(名, 合否)]。剧情庭.js 式段：①题档首行之认（真题档逐一、带／不带反引号、缺、段料不在、题不在、无 W）；
+    ②段裁令与本器之约（单之四键＝_键、自验 --施单、⛔亲改、⛔诸册同步之旧句、⛔grep -c）；③守原之支写空单。"""
+    import tempfile
+    js = os.path.join(ROOT, '工具', '席', '剧情庭.js')
+    if not os.path.isfile(js):
+        return [('㉕约·剧情庭.js 不在（%s）' % js, False)]
+    if not shutil.which('node'):
+        return [('㉕约·node 不在——剧情庭.js 之令渲染不起（⛔以不跑作过）', False)]
+    沙 = tempfile.mkdtemp()
+    os.makedirs(os.path.join(沙, '设定', '剧情庭题')); os.makedirs(os.path.join(沙, '设定', '段案'))
+    open(os.path.join(沙, '设定', '段案', '_料_1-10.md'), 'w', encoding='utf-8').write('料\n')
+    首们 = {'无反引号': '料：设定/段案/_料_1-10.md（段料.py 所汇）', '带反引号': '料：`设定/段案/_料_1-10.md`（段料.py 所汇）',
+           '无料': '# 剧情庭题·势·第 1—10 段', '料不在': '料：`设定/段案/_料_11-20.md`'}
+    for k, 首 in 首们.items():
+        open(os.path.join(沙, '设定', '剧情庭题', k + '.md'), 'w', encoding='utf-8').write(首 + '\n正文\n')
+    真题 = []
+    目 = os.path.join(ROOT, '设定', '剧情庭题')
+    for f in sorted(os.listdir(目)) if os.path.isdir(目) else []:
+        p = os.path.join(目, f)
+        if f.endswith('.md') and os.path.isfile(p):
+            with open(p, encoding='utf-8') as fh:
+                if fh.readline().startswith('料'):
+                    真题.append('设定/剧情庭题/' + f)
+    段 = lambda 题, **k: dict({'题': 题, '名': '试', '式': '段', 'W': 'W99'}, **k)
+    案 = [{'cwd': ROOT, 'args': 段(x), 'keep': False} for x in 真题]
+    案 += [{'cwd': 沙, 'args': 段('设定/剧情庭题/%s.md' % k), 'keep': False} for k in 首们]
+    案 += [{'cwd': 沙, 'args': 段('设定/剧情庭题/无此题.md'), 'keep': False},
+          {'cwd': 沙, 'args': {'题': '设定/剧情庭题/无反引号.md', '名': '试', '式': '段'}, 'keep': False},
+          {'cwd': 沙, 'args': 段('设定/剧情庭题/带反引号.md'), 'keep': True},
+          {'cwd': 沙, 'args': 段('设定/剧情庭题/无反引号.md'), 'keep': False,   # 验题席所报之段料路与首行所点不合（席抄错）⛔认
+           '首': {'topic_exists': True, 'first_line': 首们['无反引号'], 'liao_path': '设定/段案/_料_2-3.md', 'liao_exists': True}}]
+    案档 = os.path.join(沙, '案.json'); 器 = os.path.join(沙, '器.js')
+    open(案档, 'w', encoding='utf-8').write(json.dumps(案, ensure_ascii=False)); open(器, 'w', encoding='utf-8').write(_庭器)
+    try:
+        o = subprocess.run(['node', 器, js, 案档], capture_output=True, text=True, timeout=60)
+        果 = json.loads(o.stdout) if o.returncode == 0 else None
+    except Exception as e:
+        o, 果 = e, None
+    shutil.rmtree(沙, ignore_errors=True)
+    if not 果:
+        return [('㉕约·剧情庭.js 渲染不起：%s' % str(getattr(o, 'stderr', o))[:300], False)]
+    真, 无引, 带引, 无料, 料缺, 无题, 无W, 守, 错路 = 果[:len(真题)], *果[len(真题):]
+    开 = lambda x, 料='设定/段案/_料_1-10.md': not x['err'] and x['r'] and x['r'].get('料') == 料 and x['r'].get('单') == '设定/_草/W99/剧情庭单.json'
+    闭 = lambda x, 句: bool(x['err']) and '⛔式段不开' in x['err'] and 句 in x['err'] and [c['label'] for c in x['令']] == ['验题·首行']
+    裁令 = next((c['prompt'] for c in 带引['令'] if c['label'] == '裁'), '')
+    守令 = next((c['prompt'] for c in 守['令'] if c['label'] == '裁·守原'), '')
+    键 = '{%s}' % ','.join('"%s"' % k for k in _键)
+    return [
+        ('㉕约·真题档首行点段料者俱开庭（%s）' % '、'.join(os.path.basename(x) for x in 真题),
+         bool(真题) and all(not x['err'] and x['r'] and (x['r'].get('料') or '').startswith('设定/段案/_料_') for x in 真)),
+        ('㉖约·首行之认：带／不带反引号俱开；无料、段料不在、题不在、验题席报路不合俱⛔开且只派验题一席；无 W ⛔开、一席不派',
+         开(无引) and 开(带引) and 闭(无料, '首行须写') and 闭(料缺, '段料不在') and 闭(无题, '题档不在') and 闭(错路, '不合')
+         and bool(无W['err']) and 'args.W' in 无W['err'] and not 无W['令']),
+        ('㉗约·段裁令：单之四键＝本器之键、自验 --施单、⛔亲改、⛔立改单；旧「须同步更新圣经」「当场」「grep -c -F」⛔见',
+         键 in 裁令 and 'python3 工具/改单.py --施单 设定/_草/W99/剧情庭单.json' in 裁令 and '⛔亲改圣经' in 裁令
+         and '⛔`python3 工具/改单.py --立`' in 裁令 and '须同步更新圣经' not in 裁令 and '当场以' not in 裁令 and '当场改' not in 裁令
+         and 'grep -c -F' not in 裁令 and '★段料（题档首行所点）：`设定/段案/_料_1-10.md`' in 裁令),
+        ('㉘约·式段守原之支：带段料、单写空列 []、返回单与料', '单写空列 `[]`' in 守令 and '★段料（题档首行所点）' in 守令
+         and '须同步更新圣经' not in 守令 and 守['r'] and 守['r'].get('结') == '守原' and 守['r'].get('单') == '设定/_草/W99/剧情庭单.json'),
+    ]
+
+
 def 自测():
     import tempfile
     global 账档, 清单, 备份, ROOT
@@ -153,7 +456,102 @@ def 自测():
     r.append(('③改前原文整份备份', open(os.path.join(备份, 号, '正文__a.md'), encoding='utf-8').read() == '改前原文'))
     r.append(('④入修改清单', 号 in open(清单, encoding='utf-8').read()))
     r.append(('⑤结单', 毕(号, '改一处·过硬闸')))
+    # —— 施单（W60·X11）——
+    import io, contextlib
+    def 写档(rel, s):
+        p = os.path.join(t, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
+        open(p, 'w', encoding='utf-8', newline='').write(s); return p
+    def 读档(rel):
+        return open(os.path.join(t, rel), encoding='utf-8', newline='').read()
+    n单 = [0]
+    def 单(条, 生=None):
+        n单[0] += 1; p = os.path.join(t, '设定', '单%d.json' % n单[0])
+        open(p, 'w', encoding='utf-8').write(生 if 生 is not None else json.dumps(条, ensure_ascii=False)); return p
+    def 跑(*a, **k):
+        o = io.StringIO()
+        with contextlib.redirect_stdout(o):
+            v = 施单(*a, **k)
+        return v, o.getvalue()
+    甲 = '设定/甲.md'; 甲文 = '第一行：老头在梁上。\n第二行：钱满收皮子。\n第三行：老头在梁下。\n'
+    写档(甲, 甲文)
+    条 = {'档': 甲, '原': '钱满收皮子', '新': '钱满当面成交', '由': '据 剧情庭_试·一'}
+    v, o = 跑(单([条]))
+    r.append(('⑥施单·原恰一见则验过、印其 diff', v and '@@ 设定/甲.md:2' in o and '- 第二行：钱满收皮子。' in o and '+ 第二行：钱满当面成交。' in o))
+    r.append(('⑦施单·无 --落 不写', 读档(甲) == 甲文))
+    v, o = 跑(单([dict(条, 原='老头在梁')]), 落=True)
+    r.append(('⑧施单·原不唯一（2 见）⛔并指其行、不写', not v and '2 见' in o and '於行 1、3' in o and 读档(甲) == 甲文))
+    v, o = 跑(单([dict(条, 原='霍钧')]), 落=True)
+    r.append(('⑨施单·原零见⛔、不写', not v and '零见' in o and 读档(甲) == 甲文))
+    v, o = 跑(单([dict(条, 新='钱满当面成交。\n新添一行')]), 落=True)
+    r.append(('⑩施单·新含换行（行数变）⛔、不写', not v and '新含换行' in o and 读档(甲) == 甲文))
+    v, o = 跑(单([dict(条, 原='收皮子。\n第三行')]), 落=True)
+    r.append(('⑪施单·原跨行⛔', not v and '原跨行' in o and 读档(甲) == 甲文))
+    v, o = 跑(单(None, 生='[{"档": "设定/甲.md", "原": "钱满"'), 落=True)
+    v2, o2 = 跑(单({'档': 甲, '原': '钱满', '新': '钱', '由': 'x'}), 落=True)
+    v3, o3 = 跑(单([{'档': 甲, '原': '钱满收皮子', '新': '钱满当面成交'}]), 落=True)
+    r.append(('⑫施单·坏 JSON／非列／缺键⛔、不写', not v and '非合法 JSON' in o and not v2 and '须是 JSON 之列' in o2
+              and not v3 and '缺或空：由' in o3 and 读档(甲) == 甲文))
+    v, o = 跑(单([条, dict(条, 原='梁下', 新='梁下\n')]), 落=True)
+    r.append(('⑬施单·一条不过全单⛔写（亦⛔备份）', not v and 读档(甲) == 甲文 and not any(d.startswith('施单_') for d in os.listdir(备份))))
+    v, o = 跑(单([dict(条, 新='老头在梁')]))
+    r.append(('⑭施单·新於施後不恰一见⛔', not v and '新於施後 3 见' in o))
+    v, o = 跑(单([dict(条, 档='../外.md')]))
+    v2, o2 = 跑(单([dict(条, 档='设定/无此档.md')]))
+    r.append(('⑮施单·出仓／档不在⛔', not v and '出仓' in o and not v2 and '档不在' in o2))
+    号2 = 立('施单之试', '391 裁席亲改十一档 164 回，今交单器施，裁席不再碎改', [])
+    v, o = 跑(单([条, {'档': 甲, '原': '梁下', '新': '梁下（据 剧情庭_试·二）', '由': '二'}]), 落=True, 号=号2)
+    后 = '第一行：老头在梁上。\n第二行：钱满当面成交。\n第三行：老头在梁下（据 剧情庭_试·二）。\n'
+    r.append(('⑯施单·--落 依序施两条、行数守、再验过', v and 读档(甲) == 后 and '再验 2/2' in o))
+    备 = os.path.join(备份, 号2, '设定__甲.md')
+    r.append(('⑰施单·写前备份在（照 --立 之法）且係改前原文、补登入其单', os.path.isfile(备) and open(备, encoding='utf-8').read() == 甲文
+              and 甲 in [x for x in 读()['单'] if x['号'] == 号2][0]['档']))
+    写档(甲, 后)   # 已有之备份⛔覆：再施一回（改他处），备份仍係最初之原
+    v, o = 跑(单([{'档': 甲, '原': '第一行', '新': '首行', '由': '三'}]), 落=True, 号=号2)
+    r.append(('⑱施单·已有之备份⛔覆', v and open(备, encoding='utf-8').read() == 甲文))
+    def 撞():
+        with open(os.path.join(t, 甲), 'a', encoding='utf-8') as f:
+            f.write('又：老头在梁下（据 剧情庭_试·四）')
+    v, o = 跑(单([{'档': 甲, '原': '梁下（据 剧情庭_试·二）', '新': '梁下（据 剧情庭_试·四）', '由': '四'}]), 落=True, 号=号2, _写後=撞)
+    r.append(('⑲施单·写後再验（盘上新不恰一见）⛔', not v and '再验' in o and '新於盘上 2 见' in o))
+    乙 = '设定/乙.md'; 写档(乙, 'a甲\r\nb乙\r\n')
+    v, o = 跑(单([{'档': 乙, '原': 'b乙', '新': 'b乙丙', '由': '五'}]), 落=True)
+    r.append(('⑳施单·无 --号 亦备份（施单_<时>）、守 CRLF', v and 读档(乙) == 'a甲\r\nb乙丙\r\n'
+              and any(os.path.isfile(os.path.join(备份, d, '设定__乙.md')) for d in os.listdir(备份) if d.startswith('施单_'))))
+    v, o = 跑(单([]))
+    v2, o2 = 跑(单([{'档': 乙, '原': 'a甲', '新': 'a甲丁', '由': '六'}]), 落=True, 号='G0000-99')
+    r.append(('㉑施单·单空即过；--号 不在⛔、不写', v and not v2 and '无此改单' in o2 and 读档(乙) == 'a甲\r\nb乙丙\r\n'))
+    # —— W60·X11 驳後所补 ——
+    丙 = '设定/丙.md'; 丙文 = '第一行：哈哈哈。\n'; 写档(丙, 丙文)
+    戊 = '设定/戊.md'; 戊文 = '第一行：甲哈乙。\n'; 写档(戊, 戊文)
+    v, o = 跑(单([{'档': 丙, '原': '哈哈', '新': '嘿嘿', '由': '七'}]), 落=True)
+    v2, o2 = 跑(单([{'档': 戊, '原': '甲', '新': '哈哈', '由': '八'}]), 落=True)   # 施後「哈哈哈乙」：新「哈哈」重叠两见（str.count 只算 1）
+    r.append(('㉒施单·重叠之见亦计：原「哈哈」於「哈哈哈」⛔（2 见）、新施後重叠两见⛔，俱不写',
+              not v and '原 2 见' in o and '於行 1×2' in o and not v2 and '新於施後 2 见' in o2 and 读档(丙) == 丙文 and 读档(戊) == 戊文))
+    丁 = '设定/丁.md'; 丁文 = '一：老井。\n二：新坟。\n'; 写档(丁, 丁文)
+    备前 = sorted(os.listdir(备份))
+    def 并写():
+        with open(os.path.join(t, 丁), 'a', encoding='utf-8') as f:
+            f.write('三：他席并写之行。\n')
+    v, o = 跑(单([{'档': 丁, '原': '老井', '新': '老井（据 剧情庭_试·九）', '由': '九'}]), 落=True, _验後=并写)
+    r.append(('㉓施单·验後盘上已变（他席并写）⛔写、⛔备份，盘上留他席之文', not v and '验後盘上已变' in o
+              and 读档(丁) == 丁文 + '三：他席并写之行。\n' and sorted(os.listdir(备份)) == 备前))
+    写档('正文/第1章.md', '老井在村东。\n'); 写档('设定/剧情庭_势_第1段.md', '裁：守原。\n'); 写档('设定/修改清单.md', '清单\n')
+    open(账档, 'a', encoding='utf-8').close()
+    自单 = os.path.join(t, '设定', '自指单.json')
+    open(自单, 'w', encoding='utf-8').write(json.dumps([{'档': '设定/自指单.json', '原': '自指单', '新': '他单', '由': 'x'}], ensure_ascii=False))
+    禁果 = {}
+    for 档, 期 in (('正文/第1章.md', '施於正文'), ('设定/剧情庭_势_第1段.md', '剧情庭之裁档'), (os.path.relpath(账档, t), '改单之账'),
+                   ('设定/修改清单.md', '改单之账')):
+        原 = {'正文/第1章.md': '老井', '设定/剧情庭_势_第1段.md': '守原', '设定/修改清单.md': '清单'}.get(档, '单')
+        before = 读档(档)
+        v, o = 跑(单([{'档': 档, '原': 原, '新': 原 + '甲', '由': 'x'}]), 落=True)
+        禁果[档] = (not v and 期 in o and 读档(档) == before)
+    v, o = 跑(自单, 落=True)
+    禁果['单档本身'] = not v and '单档本身' in o
+    r.append(('㉔施单·正文／剧情庭裁档／改单账／修改清单／单档本身俱⛔、不写', all(禁果.values()) and len(禁果) == 5))
     账档, 清单, 备份, ROOT = 旧
+    shutil.rmtree(t, ignore_errors=True)
+    r += _庭单之约()
     for n, v in r:
         print(('  ✓ ' if v else '  ⛔ ') + n)
     print('负测·改单 %d/%d' % (sum(v for _, v in r), len(r)))
@@ -164,6 +562,20 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if '--自测' in a:
         sys.exit(0 if 自测() else 1)
+    if '--施单' in a:
+        def _参(k):
+            if k not in a:
+                return None
+            i = a.index(k)
+            if i + 1 >= len(a) or a[i + 1].startswith('--'):
+                print('⛔ %s 须带其值' % k); sys.exit(2)
+            return a[i + 1]
+        单档 = _参('--施单')
+        根 = _参('--根')
+        if 根:
+            ROOT = os.path.realpath(根)
+            账档 = os.path.join(ROOT, '设定', '改单账.json'); 清单 = os.path.join(ROOT, '设定', '修改清单.md'); 备份 = os.path.join(ROOT, '设定', '改单备份')
+        sys.exit(0 if 施单(单档, 落='--落' in a, 号=_参('--号')) else 1)
     if '--查' in a:
         sys.exit(0 if 查()[0] else 1)
     if '--立' in a:

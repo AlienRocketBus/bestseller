@@ -3433,6 +3433,11 @@ def chk_feishao_neg():
     ⛔此只验其器；费哨之红（今局之占）係工作流账 --开 之拦，不入全测之红（全测守器，不守钱之分配）。"""
     return _自测之项('负测·费哨', '工具/费哨.py')
 
+def chk_zhangxian_neg():
+    """负测·账限哨（1021）：`工具/账限哨.py --自测`——瑕疵总账之限（段前／开镜前／封版前／记席前）与下一章之比、延之例外、已治之节不读。
+    ⛔此只验其器；限到之欠係 自走 之拦，不入全测之红。"""
+    return _自测之项('负测·账限哨', '工具/账限哨.py')
+
 def chk_seal_proof():
     """负测·封版之凭（2026-09-24 立·见 工具/负测_封版之凭.py）。
 
@@ -4830,6 +4835,7 @@ def 诸项(quick):
         items.append(('负测·心跳', chk_xintiao_neg))
         items.append(('负测·改单', chk_gaidan_neg))         # ★W60·X11：施单之守与式段之约
         items.append(('负测·费哨', chk_feishao_neg))       # ★1021 省律：费哨之器
+        items.append(('负测·账限哨', chk_zhangxian_neg))   # ★1021：瑕疵总账之限由器催
         items.append(('器物册·逐章回灌', chk_object_roll_all))
         items.append(('封版留旗', chk_sealed_flags))
         items.append(('负测·开轮六检', chk_open6_gate))

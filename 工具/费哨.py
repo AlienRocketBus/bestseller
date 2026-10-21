@@ -9,6 +9,7 @@
 用法：
   python3 工具/费哨.py            # 印末十件之占；红则 rc=1
   python3 工具/费哨.py --件 20    # 看末二十件
+  python3 工具/费哨.py --章       # 开章之检（自走.py 每回首印之）
   python3 工具/费哨.py --自测
 """
 import os as _o, sys as _s
@@ -101,6 +102,40 @@ def 许开(名, 有效之据, root=ROOT):
     return False, 述 + '——此件非写书，有效之据须写「挡路：<挡哪一章之料或闸>」或「读者可见：<哪一处之病>」'
 
 
+def 章检(root=ROOT):
+    """★1021 作者令「每一章只要一开始就看看原来的方法还行不行……一想能想出来，⛔过度消耗」：零 token 印数行——
+    末五章之费与其势、主环之占、写书之占、账限之欠，并三问（章末简式复盘照答）。返 [行]。"""
+    L = ['── 开章之检（零 token·省律）──']
+    try:
+        行 = json.load(open(os.path.join(root, '设定', '费账.json'), encoding='utf-8'))['行']
+    except Exception:
+        行 = []
+    表 = 类表(root)
+    章费 = {}
+    for r in 行:
+        if str(r.get('键', '')).startswith('主会话'):
+            continue
+        w, 写 = 判类(r.get('名', ''), 表)
+        if not w or not re.search(r'第?\d{3}章?造式|二代', r.get('名', '')):
+            continue
+        a = 章费.setdefault(w, {'名': r.get('名', ''), '席': 0.0, '主': 0.0})
+        a['主' if str(r.get('键', '')).startswith('主环') else '席'] += float(r.get('美元') or 0)
+    末 = sorted(章费, key=lambda x: int(x[1:]))[-5:]
+    if 末:
+        L.append('  末五章：' + '｜'.join('%s $%.0f（主环 %.0f%%）' % (re.sub(r'^W\d+·', '', 章费[w]['名'])[:8], 章费[w]['席'] + 章费[w]['主'],
+                 100 * 章费[w]['主'] / max(0.01, 章费[w]['席'] + 章费[w]['主'])) for w in 末))
+        均 = sum(章费[w]['席'] + 章费[w]['主'] for w in 末) / len(末)
+        L.append('  每章均 $%.0f；的 ≤$30、主环 ≤$5（裁_1021_省律）' % 均)
+    L.append('  ' + 判(root)[1])
+    try:
+        import 账限哨
+        L.append('  ' + 账限哨.印(root)[1][0])
+    except Exception:
+        pass
+    L.append('  三问（章末 `复盘.py W 题 runs --简` 一句一答）：法行否｜最贵之席值否｜进化（入账 X 号或已行或无）')
+    return L
+
+
 def 自测():
     r = []
     def T(名, 条):
@@ -139,6 +174,8 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if '--自测' in a:
         sys.exit(0 if 自测() else 1)
+    if '--章' in a:
+        print('\n'.join(章检())); sys.exit(0)
     n = int(a[a.index('--件') + 1]) if '--件' in a else 10
     红, 述, 诸 = 判(ROOT, n)
     print(述)

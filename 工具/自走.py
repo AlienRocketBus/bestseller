@@ -354,6 +354,11 @@ def 断(印=True):
         L.append('  ── 下一条命令 ──')
         L.append('  python3 工具/暂停令.py --查')
         return '停', L
+    try:   # ★1021 开章之检（作者令「每一章只要一开始就看看原来的方法还行不行」）——零 token 数行
+        import 费哨
+        L.extend(费哨.章检(ROOT))
+    except Exception:
+        pass
     跑, ch, 分 = 有人在跑()
     if 跑 and 锁滞(ch):
 
@@ -402,6 +407,18 @@ def 断(印=True):
         L.append('  python3 工具/小说检察官.py --十一轮 %d' % 末)
         return '补', L
 
+    # ★1021 账限哨（作者问「为什么还是我自己发现」）：瑕疵总账之限到即欠——⛔凭主环记得
+    try:
+        import 账限哨
+        _限拦, _限L = 账限哨.印(ROOT, 末 + 1)
+    except Exception:
+        _限拦, _限L = False, []
+    if _限拦:
+        L.append('  【判】欠。瑕疵总账之限压在第%d章头上——先治（或於其行写「延：<由>」），再起笔：' % (末 + 1))
+        L.extend('  ' + x for x in _限L)
+        L.append('  ── 下一条命令 ──')
+        L.append('  python3 工具/账限哨.py')
+        return '欠', L
     欠 = 逾期之欠(末 + 1)
     下 = 末 + 1
     if 欠:

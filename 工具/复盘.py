@@ -10,6 +10,7 @@
   python3 工具/复盘.py W12 380造式 wf_e7912fa3-a0c [其他 Run ID…] [--自 2026-10-08T09:01]
       → 写 设定/复盘/<月日>_W12_380造式.md（已在则⛔覆）；自＝任务起时（缺则取工作流账之「起」）
   python3 工具/复盘.py 主环 二代定稿 --自 2026-10-09T03:05 [--至 2026-10-09T04:05]   # 非工作流之任务（总编辑亲手）亦须复盘
+  python3 工具/复盘.py W61 401造式 wf_… --简   # ★1021 章之简式：数归器、判只三问三句（作者令「总结⛔过度消耗」）
   python3 工具/复盘.py --验     # 闸：设定/复盘/ 诸档须有 耗费／无用功／改进方案／坑 四节，坑节须点坑账之号或写「无新坑」
   python3 工具/复盘.py --效账   # 诸复盘之「效」汇一表：总费、服务目标之费与其占、浪费、机器能办而花token；按类比上回
   python3 工具/复盘.py --自测
@@ -80,7 +81,10 @@ def 验(root=ROOT):
     for f in sorted(glob.glob(os.path.join(root, '设定', '复盘', '*.md'))):
         t = open(f, encoding='utf-8').read()
         名 = os.path.basename(f)
-        for 节 in ('## 耗费', '## 无用功', '## 改进方案', '## 坑'):
+        # ★1021 作者令「总结不要过度消耗……轻轻松松一想能想出来」：1021 起带「## 三问」之简式——数归器、判只三句
+        _日 = re.match(r'(\d{4})_', 名)
+        简 = bool(_日 and _日.group(1) >= '1021' and '## 三问' in t)
+        for 节 in (('## 耗费', '## 三问', '## 坑') if 简 else ('## 耗费', '## 无用功', '## 改进方案', '## 坑')):
             if 节 not in t:
                 坏.append('%s 缺「%s」' % (名, 节))
         效 = re.search(r'^## 效[^\n]*\n(.*?)(?=^## |\Z)', t, re.M | re.S)
@@ -95,7 +99,15 @@ def 验(root=ROOT):
                 if not re.search(r'^- %s：\$\d' % 项, 效.group(1), re.M):
                     坏.append('%s 之效「%s」须是 $ 之数' % (名, 项))
         m日 = re.match(r'(\d{4})_', 名)
-        if m日 and m日.group(1) >= '1015':                 # ★1015 起之复盘须答虹吸之问（旧档⛔追）
+        if 简:
+            问 = re.search(r'^## 三问[^\n]*\n(.*?)(?=^## |\Z)', t, re.M | re.S)
+            for 项 in ('法行否', '最贵之席值否', '进化'):
+                m = re.search(r'^- %s：(.*)$' % 项, 问.group(1), re.M) if 问 else None
+                if not m or not m.group(1).strip() or m.group(1).strip().startswith('（填'):
+                    坏.append('%s 之三问缺「%s」' % (名, 项))
+                elif 项 == '进化' and not re.search(r'X\d+|Y\d+|已行|无[：:]', m.group(1)):
+                    坏.append('%s 之三问「进化」须引瑕疵总账 X 号（带限）、或「已行：…」、或「无：<由>」' % 名)
+        elif m日 and m日.group(1) >= '1015':                 # ★1015 起之复盘须答虹吸之问（旧档⛔追）
             虹 = re.search(r'^## 虹吸之问[^\n]*\n(.*?)(?=^## |\Z)', t, re.M | re.S)
             if not 虹:
                 坏.append('%s 缺「## 虹吸之问」（重付、可流、顺势、下一回之法）' % 名)
@@ -111,6 +123,9 @@ def 验(root=ROOT):
                     m = re.search(r'^- B＋C 之候：(.*)$', 虹.group(1), re.M)
                     if not m or m.group(1).strip().startswith('（填') or not ('效' in m.group(1) and '费' in m.group(1)):
                         坏.append('%s 之虹吸之问缺「B＋C 之候」（一条效↑费↓之候选新法，效与费各写其计——1017 作者铁律·开发不停）' % 名)
+                    # ★1021 作者问「为什么还是我自己发现」：B＋C 之候写了七回只行二回——1021 起须入瑕疵总账（引 X 号）或写「已行」，账限哨按其限催
+                    elif m日.group(1) >= '1021' and not re.search(r'X\d+|Y\d+|已行', m.group(1)):
+                        坏.append('%s 之「B＋C 之候」未入账：须引瑕疵总账之 X 号（带限）或写「已行：<提交或器>」——账限哨按限催（1021）' % 名)
         if m日 and m日.group(1) >= '1015':                 # ★1015 起之复盘须答完美之问
             完 = re.search(r'^## 完美之问[^\n]*\n(.*?)(?=^## |\Z)', t, re.M | re.S)
             if not 完:
@@ -153,7 +168,7 @@ def 效账(root=ROOT):
     return 行
 
 
-def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None):
+def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False):
     日 = 日 or time.strftime('%m%d', time.gmtime())
     出 = os.path.join(root, '设定', '复盘', '%s_%s_%s.md' % (日, W, 题))
     if os.path.exists(出):
@@ -250,8 +265,19 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None):
          '- 独立之眼：（填：谁验——驳席、盲读、负测、对照之试；逮了什么、治了没有）',
          '- 未验之断：（填：未经跑或测之断语；无则写「无」，有则逐条写其验之计）', '',
          '## 坑', '', '（每条点坑账之号：新坑先 `python3 工具/方法坑账.py --立 名 根 治 计`；旧坑复踩 `--复踩 号 "……；治：……"`；并入法典。无则写「无新坑」）', '']
+    if 简:   # ★1021 简式：任务、流程、制作、耗费、效（数俱器填）＋三问三句＋坑；长节俱去（作者令「总结不要过度消耗」）
+        止 = 文.index('## 与上回比（一次比一次好·1009）')
+        文 = [x for x in 文[:止] if not x.startswith('## 产出') and not x.startswith('（总编辑填：成了什么')]
+        文 = [('- 类：一章' if x.startswith('- 类：（填') else '- 目标：写%s，以最少之钱写到最好' % 题 if x.startswith('- 目标：（填') else
+              '- 服务目标之费：$%.2f（自动：诸席）' % 总金 if x.startswith('- 服务目标之费：') else
+              '- 机器能办而花token：$0（机器自认等待 %d 回 $%.2f）' % 等 if x.startswith('- 机器能办而花token：') else x) for x in 文]
+        文 += ['## 三问（1021 作者令：每章之始与末一想即得，⛔长文）', '',
+              '- 法行否：（填一句：原法还靠谱否——费比上章、致命、盲读）',
+              '- 最贵之席值否：（填一句：最贵之席值不值，可省之数）',
+              '- 进化：（填一句：一条更省更好之改——入瑕疵总账 X 号带限，或「已行：…」，或「无：<由>」）', '',
+              '## 坑', '', '- 无新坑']
     open(出, 'w', encoding='utf-8').write('\n'.join(文))
-    print('✓ 起草 %s——「产出」「与上回比」「无用功」之判「刀刃」「改进方案」「坑」须总编辑亲填' % os.path.relpath(出, root))
+    print('✓ 起草 %s——%s' % (os.path.relpath(出, root), '三问三句与「浪费」之数须总编辑亲填（简式）' if 简 else '「产出」「与上回比」「无用功」之判「刀刃」「改进方案」「坑」须总编辑亲填'))
     return 出
 
 
@@ -293,10 +319,12 @@ if __name__ == '__main__':
         print('✓ 复盘：诸档四节俱在、坑节俱点坑账之号' if o else '⛔ 复盘：\n  ' + '\n  '.join(坏))
         sys.exit(0 if o else 1)
     自 = 至 = None
+    简 = '--简' in a
+    a = [x for x in a if x != '--简']
     if '--自' in a:
         i = a.index('--自'); 自 = a[i + 1]; a = a[:i] + a[i + 2:]
     if '--至' in a:
         i = a.index('--至'); 至 = a[i + 1]; a = a[:i] + a[i + 2:]
     if len(a) < 2:
         print(__doc__); sys.exit(2)
-    起草(a[0], a[1], a[2:], 自=自, 至=至)
+    起草(a[0], a[1], a[2:], 自=自, 至=至, 简=简)

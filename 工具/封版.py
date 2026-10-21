@@ -409,7 +409,7 @@ def 阶段之数(n, root=ROOT):
     """★X53·1021：README 阶段句与提示词系统:20「--开拍 N+1」随封版自改（零 token；旧由记席／主环手改，401 漏之即红於全测·快）。"""
     改 = []
     for 档, 式, 新 in (('README.md', r'第 1—\d+ 章已经同步封版；第 \d+ 章开写前', '第 1—%d 章已经同步封版；第 %d 章开写前' % (n, n + 1)),
-                       ('工具/镇冢秘术_防前后矛盾提示词系统.md', r'(?m)^python3 工具/小说检察官\.py --开拍 \d+$', 'python3 工具/小说检察官.py --开拍 %d' % (n + 1))):
+                       ('工具/镇冢秘术_防前后矛盾提示词系统.md', '(?m)^' + re.escape('python3 工具/小说检察官.py --开拍 ') + r'\d+$', 'python3 工具/小说检察官.py --开拍 %d' % (n + 1))):
         fp = os.path.join(root, 档)
         t = open(fp, encoding='utf-8').read()
         t2 = re.sub(式, 新, t, count=1)

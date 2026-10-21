@@ -618,6 +618,8 @@ def 报():
         _sp9.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), '工作流账.py')])
     except Exception as _e9:
         print('  ⛔工作流账印不出：%s' % _e9)
+    # ★1021 X54：W11 之器（D1 换齐随 W11 逐节同改）——自走 --全 印其命令，W11 开时照办（对位闸之孤器二件由此有路）
+    print('· W11 之器（D1 老头年岁换齐随 W11 同改）：`python3 工具/D1施.py --核` → `python3 工具/D1施.py --施 --根 副本 --批 全` → `python3 工具/行号随移.py --施 --根 副本`')
     print('· 推送：一律 `python3 工具/推.py`（文件锁、不排队、被拦即停；⛔自写排队脚本、⛔pgrep 猜进程）')
     print('════ 自走 · 此刻该干哪一件 ════')
     for x in L:

@@ -100,13 +100,15 @@ def 跑():
     #   ★而294一有正文，末章即为294——**又是把断言钉在今天的天气上**。
     #   ★★故改断其理：**末章须是「有正文者之最大」，且须不认「只有开镜卡而无正文」之目录。**
     import os as _os
-    _有文 = [k for k in range(1, 400)
-            if _os.path.isdir(_os.path.join(ROOT, '版本', '第%d章' % k))
-            and (_m._mb._白(k) or '')]
+    # ★401封版实踩：原写 range(1, 400)——上限钉死，401 一有正文即假红（又一钉今日天气）；
+    #   ★故改自盘上之版本目录展出全部章号，不设上限。
+    import re as _re
+    _诸目 = sorted(int(_mm.group(1)) for _mm in
+                 (_re.match(r'第(\d+)章$', _f) for _f in _os.listdir(_os.path.join(ROOT, '版本')))
+                 if _mm)
+    _有文 = [k for k in _诸目 if (_m._mb._白(k) or '')]
     _t('⑥末章＝有正文者之最大', _m._末章(), max(_有文))
-    _空 = [k for k in range(1, 400)
-          if _os.path.isdir(_os.path.join(ROOT, '版本', '第%d章' % k))
-          and not (_m._mb._白(k) or '')]
+    _空 = [k for k in _诸目 if not (_m._mb._白(k) or '')]
     _t('⑥之b 只有卡而无正文之目录不入末章', all(k != _m._末章() for k in _空), True)
 
     # ⑦★★★★此闸不许变成催字数之闸（令§二）

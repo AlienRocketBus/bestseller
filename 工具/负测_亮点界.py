@@ -31,10 +31,19 @@ def t(名, 实, 期):
 提交 = 'fe37e08f^'
 
 
+# ★401封版实踩：本仓係浅克隆（仅数十提交），fe37e08f 不在本地 → git show 取空，①三条假红。
+#   ★治：治前原物冻存於 工具/_负测料/亮点界_fe37e08f父/{133,134}.原（取自 GitHub 7dd4cf0e 之 blob，
+#     即 fe37e08f^）——⛔不再依赖本地历史之深浅；git 取得着则仍以 git 为准，冻本只作後备。
+冻本 = os.path.join(根, '工具', '_负测料', '亮点界_fe37e08f父')
+
+
 def 旧本(n):
     rel = os.path.relpath(章[n], 根)
-    return subprocess.run(['git', '-C', 根, 'show', '%s:%s' % (提交, rel)],
-                          capture_output=True).stdout.decode('utf-8')
+    r = subprocess.run(['git', '-C', 根, 'show', '%s:%s' % (提交, rel)],
+                       capture_output=True)
+    if r.returncode == 0 and r.stdout:
+        return r.stdout.decode('utf-8')
+    return io.open(os.path.join(冻本, '%d.原' % n), encoding='utf-8').read()
 
 
 def 验(a, b, 文):

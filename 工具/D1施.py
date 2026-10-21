@@ -37,6 +37,10 @@
         # 批：一＝B 独之 61 章；二＝A 行数不变之 29 章；三＝五章；全＝95 章。--亮：并施 C1（C2 送信两行留待撰）；--同步：施後接 还账.施後同步、补接坐
   python3 工具/D1施.py --行数守 [--根 R] [--旧 HEAD]          # 正文、设定逐档行数比 HEAD（git show）；五章之变须合映（行数、内容锚）
   python3 工具/D1施.py --终验 [--根 R] [--旧 HEAD]            # 六式（二稿账 D1 节）残 0 ＋ canon 禁式（F002、F154、F168）新命中 0 ＋ 护三拍未压
+  python3 工具/D1施.py --改单 单.json --根 副本 [--验] [--落]
+        # ★1021·W58 环2：4b／4c／4d 之模型之改照单施——单＝JSON 列 [{档, 行（施後之号）, 原（该行里恰一见）, 新, 据（4b|4c|4d）, 由}]
+        # 该行恰一见即施；该行无则容 ±3 之移而恰一见；原已不在而新在＝已施（二跑零改）；余即红、全单一字不写
+        # ⛔无 --根 即拒；--根 为主树须另加 --落（--验 只核不写，许）；⛔插行、⛔删行；施毕印改数。负测：工具/负测_D1施改单.py
   python3 工具/D1施.py --自测
 """
 import os as _o, sys as _s
@@ -465,6 +469,7 @@ def 施章(ls, 诸op, 星):
     添 = collections.defaultdict(list)
     删 = set()
     动 = set()
+    随 = {}                                           # ★1021·W58 环2：旧行 → 其原文所落之添段（添[i] 之下标）——映随原文
     for o in sorted(诸op, key=lambda o: (o['行'], o['式'] == '删')):
         i, 式 = o['行'], o['式']
         标 = '%d［%s］' % (i, 式)
@@ -494,6 +499,11 @@ def 施章(ls, 诸op, 星):
             余 = 段[1:]
             if 余:
                 余[-1] += 後
+            # ★1021·W58 环2（干跑所逮·317:133）：改作之後段即原文（「钱满……走到水边。〔另起段〕纸角翘起来。没有人去压它。」）
+            #   ——原文实落於所添之段，旧行之映须随原文（133→137），⛔留在首段（行号随移之互证以 difflib 等块判之）
+            k原 = next((k for k, s in enumerate(余) if s.strip() == 原.strip()), None)
+            if k原 is not None and 段[0].strip() != 原.strip():
+                随[i] = len(添[i]) + k原
             添[i] += 余
         elif 式 == '后添':
             if (原 == '＊' and l.strip() != '＊') or (原 != '＊' and l.count(原) != 1):
@@ -521,8 +531,16 @@ def 施章(ls, 诸op, 星):
             continue
         新.append(改.get(i, ls[i - 1]))
         映.append(len(新))
-        for p in 添.get(i, []):
+        for k, p in enumerate(添.get(i, [])):
             新 += (['', '＊', '', p] if 星 else ['', p])
+            if 随.get(i) == k:
+                映[-1] = len(新)                     # 旧行随原文落於此段
+    for i, j in enumerate(映, 1):                    # 随原文者：新行与旧行同文即非「行内改」（余字随段者仍记动）
+        if i in 随 and j is not None:
+            if 新[j - 1] == ls[i - 1]:
+                动.discard(i)
+            else:
+                动.add(i)
     def 连空(xs):
         return sum(1 for k in range(1, len(xs)) if not xs[k].strip() and not xs[k - 1].strip())
     def 连星(xs):
@@ -797,6 +815,190 @@ def 拒根(根, 落=False):
     if os.path.realpath(根) == os.path.realpath(主树) and not 落:
         return '⛔--根 为主树（%s）：W58 只干跑於副本；落归 W59，另加 --落' % 主树
     return ''
+
+
+# ───────── 改单（★1021·W58 环2：4b 亮点撰、4c 设定层义判、4d 待判单与器物册——模型之改以单记之，器照单施） ─────────
+# 单：JSON 列 [{"档": 相对路径, "行": 施後之行号, "原": 该行里之原片（恰一见）, "新": 新片, "据": "4b|4c|4d", "由": "…"}]
+# 施：逐条於「档」之「行」找「原」→「新」；该行恰一见即施（合），该行无则容 ±3 之移而窗内恰一见（移·黄）；
+#   「原已不在而新在」＝已施（二跑零改；新含原者——史料行照留加行内注——以「新」所盖之原⛔算）；余即红、全单一字不写。
+#   ⛔插行、⛔删行：原、新俱⛔含换行，施後逐档行数比施前；施毕在内存再判一回（二跑之模拟），条条须已施，否则红。
+改单据 = ('4b', '4c', '4d')
+改单容 = 3
+
+
+def _见(l, s):
+    """s 在 l 之诸起位（含叠见）"""
+    出, i = [], l.find(s)
+    while i >= 0:
+        出.append(i)
+        i = l.find(s, i + 1)
+    return 出
+
+
+def _原见(l, 原, 新):
+    """该行里「原」之起位，减去落在「新」之内者（新含原：史料行加注之後，原在新中⛔再算一见）"""
+    盖 = [(q, q + len(新)) for q in _见(l, 新)] if 原 in 新 else []
+    return [p for p in _见(l, 原) if not any(a <= p and p + len(原) <= b for a, b in 盖)]
+
+
+def 读单(条们):
+    """→ (条们, 红)：逐条核其式（键、类、据、换行、重条、出根）"""
+    红 = []
+    if not isinstance(条们, list):
+        return [], ['单须为 JSON 列（[{档, 行, 原, 新, 据, 由}, …]）']
+    见 = set()
+    for k, o in enumerate(条们, 1):
+        标 = '#%d' % k
+        if not isinstance(o, dict):
+            红.append('%s 非 {…}' % 标); continue
+        缺 = [x for x in ('档', '行', '原', '新', '据', '由') if x not in o]
+        if 缺:
+            红.append('%s 缺键 %s' % (标, '、'.join(缺))); continue
+        档, 行, 原, 新 = o['档'], o['行'], o['原'], o['新']
+        if not isinstance(档, str) or not 档 or os.path.isabs(档) or '\\' in 档 or \
+                any(x in ('..', '.git') for x in 档.split('/')) or 档 != os.path.normpath(档).replace(os.sep, '/'):
+            红.append('%s 档「%s」须为根下之相对路径（⛔绝对、⛔..、⛔.git）' % (标, 档)); continue
+        if not isinstance(行, int) or isinstance(行, bool) or 行 < 1:
+            红.append('%s %s 行「%s」须为正整数' % (标, 档, 行)); continue
+        标 = '#%d %s:%d' % (k, 档, 行)
+        if not isinstance(原, str) or not isinstance(新, str) or not 原:
+            红.append('%s 原、新须为字串，原⛔空' % 标); continue
+        if any(c in 原 + 新 for c in '\n\r\u2028\u2029'):
+            红.append('%s 原或新含换行——⛔插行、⛔删行（行数守）' % 标); continue
+        if not 新:
+            红.append('%s 新为空——删片须连其邻字作原、新（否则二跑判不出已施）' % 标); continue
+        if 新 == 原:
+            红.append('%s 新＝原（空改）' % 标); continue
+        if o['据'] not in 改单据:
+            红.append('%s 据「%s」不认（只认 %s）' % (标, o['据'], '、'.join(改单据))); continue
+        if not isinstance(o['由'], str) or not o['由'].strip():
+            红.append('%s 由⛔空' % 标); continue
+        键 = (档, 行, 原)
+        if 键 in 见:
+            红.append('%s 重条（同档、同行、同原）' % 标); continue
+        见.add(键)
+    return 条们, 红
+
+
+def 判条(ls, o, 容=改单容):
+    """→ (状, 行, 位, 注)。状 ∈ 合、移、已施、多见、两可、不见。行：施於／已施於之行号；位：原在该行之起位"""
+    n, 原, 新 = o['行'], o['原'], o['新']
+    if 1 <= n <= len(ls):
+        l = ls[n - 1]
+        u = _原见(l, 原, 新)
+        if len(u) == 1:
+            return ('合', n, u[0], '')
+        if len(u) > 1:
+            return ('多见', n, None, '原在该行 %d 见' % len(u))
+        if 新 in l:
+            return ('已施', n, None, '')
+    窗 = [i for i in range(max(1, n - 容), min(len(ls), n + 容) + 1) if i != n]
+    原们 = [(i, p) for i in 窗 for p in _原见(ls[i - 1], 原, 新)]
+    新们 = [i for i in 窗 if 新 in ls[i - 1]]
+    if len(原们) == 1 and not 新们:
+        i, p = 原们[0]
+        return ('移', i, p, '%+d' % (i - n))
+    if len(原们) == 1:
+        return ('两可', None, None, '该行无原；±%d 内原一见（%d 行）而新亦在（%s 行）——已施与否⛔猜' % (容, 原们[0][0], '、'.join(map(str, 新们))))
+    if len(原们) > 1:
+        return ('多见', None, None, '该行无原；±%d 内原 %d 见（%s 行）——⛔猜' % (容, len(原们), '、'.join(str(i) for i, _ in 原们[:6])))
+    if 新们:
+        return ('已施', 新们[0], None, '於 %s 行' % '、'.join(map(str, 新们)))
+    return ('不见', None, None, '该行与 ±%d 内俱无原、亦无新' % 容)
+
+
+def 施改单(根, 条们, 容=改单容):
+    """内存施之、内存二跑验之。→ (红, 黄, 计, 写们[(绝对路, 新文)])——一字不写，写由跑改单"""
+    红, 黄 = [], []
+    根r = os.path.realpath(根)
+    文, 旧, 尾, 败 = {}, {}, {}, set()
+    for o in 条们:
+        档 = o['档']
+        if 档 in 文 or 档 in 败:
+            continue
+        p = os.path.realpath(os.path.join(根r, 档))
+        if not (p + os.sep).startswith(根r + os.sep) or not os.path.isfile(p):
+            红.append('%s 不在根下（或非档）' % 档); 败.add(档); continue
+        try:
+            t = open(p, encoding='utf-8', newline='').read()
+        except Exception as e:
+            红.append('%s 读不出（%s）' % (档, repr(e)[:60])); 败.add(档); continue
+        旧[档] = t
+        文[档], 尾[档] = 拆(t)
+        文[档] = list(文[档])
+    计 = collections.Counter()
+    施们 = []
+    for k, o in enumerate(条们, 1):
+        if o['档'] in 败:
+            continue
+        ls = 文[o['档']]
+        状, i, p, 注 = 判条(ls, o, 容)
+        标 = '#%d %s:%d［%s］' % (k, o['档'], o['行'], o['据'])
+        计[状] += 1
+        if 状 in ('合', '移'):
+            l = ls[i - 1]
+            ls[i - 1] = l[:p] + o['新'] + l[p + len(o['原']):]
+            施们.append((k, o, i))
+            if 状 == '移':
+                黄.append('%s 移 → %d 行（%s；±%d 内恰一见）' % (标, i, 注, 容))
+            n = 章号(o['档']) if o['档'].startswith('正文/') else None
+            if n and i <= 白界(ls) and 白(ls[i - 1]):
+                黄.append('%s 改在第%d章白文（白文归 D1施 之 A／B；改单只该动亮点层、设定——查其由）' % (标, n))
+        elif 状 != '已施':
+            红.append('%s %s：%s' % (标, 状, 注))
+    for 档, ls in 文.items():                          # 行数守：⛔插行、⛔删行（合而再拆——行内夹换行者，list 之长不变而档之行数变）
+        前n, 后n = len(拆(旧[档])[0]), len(拆(合(ls, 尾[档]))[0])
+        if 前n != 后n:
+            红.append('%s 行数 %d→%d（⛔变）' % (档, 前n, 后n))
+    for k, o in enumerate(条们, 1):                    # 二跑之模拟：施後条条须判「已施」，否则二跑必再改（叠改、互吞）
+        if o['档'] in 文:
+            状 = 判条(文[o['档']], o, 容)[0]
+            if 状 != '已施' and not 红:
+                红.append('#%d %s:%d 施後再判作「%s」——⛔二跑零改不成（与同单他条相叠？）' % (k, o['档'], o['行'], 状))
+    写们 = [(os.path.join(根r, 档), 合(ls, 尾[档])) for 档, ls in sorted(文.items()) if 合(ls, 尾[档]) != 旧[档]]
+    计['档'] = len(写们)
+    计['施'] = len(施们)
+    return 红, 黄, 计, 写们
+
+
+def 跑改单(根, a, 配=默配, 主=主树):
+    """--改单 <单.json> --根 <根> [--验] [--落]"""
+    单 = _参(a, '--改单')
+    if not 单 or 单.startswith('--'):
+        单 = next((x for x in a if x.endswith('.json') and x != _参(a, '--根')), None)
+    验 = '--验' in a
+    if not 根:
+        print('⛔--改单 无 --根 即拒：改单只在 --根 所指之副本施（主树另加 --落）'); return 2
+    if not os.path.isdir(os.path.join(根, '正文')) or not os.path.isdir(os.path.join(根, '设定')):
+        print('⛔--根 %s 不是本书之仓（无 正文/、设定/）' % 根); return 2
+    if os.path.realpath(根) == os.path.realpath(主) and not 验 and '--落' not in a:
+        print('⛔--根 为主树（%s）：改单之施只在副本；落主树另加 --落（--验 只核不写，许）' % 主); return 2
+    if not 单 or not os.path.isfile(单):
+        print('⛔--改单 须给单之 JSON 档（%s 不在）' % 单); return 2
+    try:
+        条们 = json.load(open(单, encoding='utf-8'))
+    except Exception as e:
+        print('⛔单 %s 读不出（%s）' % (单, repr(e)[:80])); return 1
+    print('════ D1施 --改单%s · %s · 单 %s ════' % (' --验' if 验 else '', _头(根), 单))
+    条们, 红 = 读单(条们)
+    if 红:
+        _印(红, [], 200)
+        print('D1施·改单：单之式有红 %d，⛔施（一字未写）' % len(红)); return 1
+    红, 黄, 计, 写们 = 施改单(根, 条们)
+    _印(红, 黄, 200)
+    据计 = collections.Counter(o['据'] for o in 条们)
+    摘 = '条 %d（%s）：合 %d、移 %d、已施 %d' % (len(条们), '、'.join('%s %d' % kv for kv in sorted(据计.items())),
+                                         计['合'], 计['移'], 计['已施'])
+    if 红:
+        print('D1施·改单：%s｜有红 %d，⛔施（一字未写）' % (摘, len(红))); return 1
+    if 验:
+        print('D1施·改单 --验：%s｜将改 %d 条、%d 档；只核不写 ✓' % (摘, 计['施'], 计['档'])); return 0
+    for p, t in 写们:
+        open(p + '.d1tmp', 'w', encoding='utf-8', newline='').write(t)
+    for p, t in 写们:
+        os.replace(p + '.d1tmp', p)
+    print('D1施·改单：%s｜✓ 改 %d 条、写 %d 档（行数俱不变）' % (摘, 计['施'], 计['档']))
+    return 0
 
 
 # ───────── 入口 ─────────
@@ -1218,6 +1420,22 @@ def 自测():
     o移 = dict(章=1, 行=4, 式='改', 原='甲乙。', 改='丙丁。', 出='测')
     s1, s2 = 核一(o移, ['甲。', '★批注：甲乙。', '', '丙。', '甲乙。']), 核一(o移, ['甲。', '★批注：甲乙。', '', '丙。'])
     T('㉟移只认白文：★ 批注之行另见原文⛔算一见、⛔移去批注', s1[:2] == ('移', 5) and s2[0] == '无', (s1, s2))
+    # ★1021·W58 环2：改段而改作之後段即原文（317:133 之形）→ 旧行之映随原文（133→137），与 difflib 之等块（行号随移之互证）相合
+    import difflib
+    旧 = ['甲。', '', '纸角翘起来。没有人去压它。', '', '乙。']
+    o317 = dict(行=3, 式='改＋后添', 原='纸角翘起来。没有人去压它。', 改='钱满走到水边。〔另起段〕〔另起段〕纸角翘起来。没有人去压它。')
+    新, m, r, y, k = 施章(旧, [o317], True)
+    等 = {}
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, 旧, 新, autojunk=False).get_opcodes():
+        if tag == 'equal':
+            等.update({i1 + q + 1: j1 + q + 1 for q in range(i2 - i1)})
+    证 = all(等[i] == j for i, j in enumerate(m, 1) if i in 等 and 旧[i - 1].strip())
+    新b, mb, rb, yb, kb = 施章(['纸角。'], [dict(行=1, 式='改＋后添', 原='纸角。', 改='钱满。〔另起段〕纸角。')], False)
+    新c, mc, rc_, yc, kc = 施章(['他说：纸角。'], [dict(行=1, 式='改＋后添', 原='纸角。', 改='钱满。〔另起段〕纸角。')], False)
+    T('㊱改段而改作之後段即原文（三一七章一三三行之形）：旧行映随原文（星章 3→7、非星 1→3）、与 difflib 等块相合；原文落处同文则⛔记动、带余字则记动',
+      新 == ['甲。', '', '钱满走到水边。', '', '＊', '', '纸角翘起来。没有人去压它。', '', '乙。'] and m == [1, 2, 7, 8, 9] and 证
+      and k['动'] == [] and not r and 新b == ['钱满。', '', '纸角。'] and mb == [3] and kb['动'] == []
+      and 新c == ['他说：钱满。', '', '纸角。'] and mc == [3] and kc['动'] == [1], (新, m, 证, k['动'], mb, mc, kc['动']))
     print('D1施·自测 %d/%d' % (ok, 共))
     print('自测 %d/%d' % (ok, 共))
     return 0 if ok == 共 else 1
@@ -1227,6 +1445,8 @@ def main(a):
     根 = _参(a, '--根')
     if a and a[0] == '--自测':
         return 自测()
+    if '--改单' in a:
+        return 跑改单(根, a)
     if a and a[0] == '--施':
         return 跑施(根, a)
     根 = os.path.realpath(根) if 根 else ROOT

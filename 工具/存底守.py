@@ -88,7 +88,9 @@ def 跑():
     while True:
         time.sleep(间)
         try:
-            一回()
+            # 每回另起一进程跑：器一改即下一回生效（⛔守里缓存旧码）；一回崩⛔拖垮守
+            subprocess.run([sys.executable, os.path.abspath(__file__), '--一回'], cwd=ROOT, timeout=间,
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
             _记('⛔一回崩：%s' % e)
 
@@ -153,6 +155,7 @@ def 自测():
     锁档 = 旧锁
     s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     T('④一回之存：⛔续心跳（续锁归 该续）、树未改即不推', "存('存底守·定时', 续心跳=False, 跳同=True)" in s)
+    T('④之三 每回另起一进程跑（器改即生效、一回崩⛔拖垮守）', "'--一回'], cwd=ROOT, timeout=间" in s)
     T('④之二 间係五分（作者 1021 令·零 token）', 间 == 5 * 60)
     try:
         st = json.load(open(os.path.join(ROOT, '.claude', 'settings.json'), encoding='utf-8'))

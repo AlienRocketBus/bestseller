@@ -184,6 +184,8 @@ def 存(说明='', 续心跳=True, 跳同=False):
     try:
         env = {'GIT_INDEX_FILE': idx}
         r = _跑('git', 'add', '-A', env=env)
+        # 跳同只比诸账之外之树：存底一跑，跑账即添一行——以全树比，则五分一回之存底守回回自见「有改」而空推（1021）
+        t0 = _跑('git', 'write-tree', env=env).stdout.strip()
         # ★两本账在 .gitignore 里（免得主枝永远是脏的），故须**强塞**进这一份临时索引——
         #   **存底枝要是没有它们，续跑之账就断了**（东西保住而进度丢了，仍是断）。
         for _档 in ('_跑账.json', '_任务流.json', '_器之账.json', '_器之迹.jsonl'):
@@ -196,7 +198,7 @@ def 存(说明='', 续心跳=True, 跳同=False):
             return 2, 'write-tree 无果'
         if 跳同:
             try:
-                if open(末树档).read().strip() == t:
+                if open(末树档).read().strip() == t0:
                     return 0, '无改·不推'
             except Exception:
                 pass
@@ -229,7 +231,7 @@ def 存(说明='', 续心跳=True, 跳同=False):
         if 去 is None:
             return 2, '三回 lease 俱败（他坐连推），未推'
         try:
-            open(末树档, 'w').write(t)
+            open(末树档, 'w').write(t0)
         except Exception:
             pass
         # ★存底既已上云，顺手把「任务流跑到哪儿了」也记一步——
@@ -363,6 +365,7 @@ def 防覆之演():
             subprocess.run(['git', '-C', 工, 'config', k, v], check=True)
         subprocess.run(['git', '-C', 工, 'remote', 'add', 'origin', 远], check=True)
         open(os.path.join(工, 'a.md'), 'w').write('一')
+        open(os.path.join(工, '.gitignore'), 'w').write('_跑账.json\n_任务流.json\n')   # 同真仓：诸账⛔入主枝
         subprocess.run(['git', '-C', 工, 'add', '-A'], check=True)
         subprocess.run(['git', '-C', 工, 'commit', '-q', '-m', 'c0'], check=True)
         g['ROOT'], g['末树档'], g['_档肿哨'] = 工, os.path.join(d, '末树'), (lambda: None)
@@ -401,6 +404,9 @@ def 防覆之演():
         果.append(('⑭之二 逾期之锁⛔复活', rc == 0 and len(写们) == n))
         rc, m = 存('t', 跳同=True)
         果.append(('⑮跳同：树未改即不推', rc == 0 and '无改' in m))
+        open(os.path.join(工, '_跑账.json'), 'w').write('[1]')
+        rc, m = 存('t', 跳同=True)
+        果.append(('⑮之二 跳同：只诸账（跑账）有改 → 仍不推（⛔五分一回空推）', rc == 0 and '无改' in m))
         真远底, 次 = _远底, [0]
         def 旧影():
             次[0] += 1

@@ -91,6 +91,8 @@ def 止损(件, 今=None):
 def 查(root=ROOT, 今=None):
     红 = []
     for 件 in 读(root)['件']:
+        if 件['状态'] != '已成' and not str(件.get('续之令', '')).strip():
+            红.append('%s %s：缺续之令（断後无从续）' % (件['id'], 件['名']))
         if 件['状态'] == '已成':
             缺 = 核件(件, root)
             if 缺:
@@ -117,7 +119,7 @@ def 印(root=ROOT):
         for x in 组:
             print('  %s %s——%s' % (x['id'], x['名'], x['目的']))
             if x['状态'] != '已成' or 类.startswith('✓') is False:
-                print('     续之令：' + x['续之令'])
+                print('     续之令：' + x.get('续之令', '（缺——⛔见账红）'))
             if x['状态'] == '进行' and x.get('起') and x.get('时限'):
                 跑 = 已跑时(x)
                 print('     ⏱ 已跑 %.1f 时／时限 %s 时｜停止线：%s｜换法：%s%s' % (

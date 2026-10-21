@@ -22,7 +22,7 @@ try:
     import _账
 except Exception:
     pass
-import os, sys, json, glob, tempfile, shutil
+import os, sys, io, re, json, glob, tempfile, shutil
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 账档 = os.path.join('设定', '工作流账.json')
@@ -233,6 +233,33 @@ def 有复盘(i, root=ROOT):
     return False
 
 
+def 登方法账(i, 由, root=ROOT, 今=None):
+    """★1021 作者令「要有一条升级链」：--裁 W 取 即於 设定/方法账.md 末之「## 升级链」添一行（零 token；已登者⛔重登）。"""
+    p = os.path.join(root, '设定', '方法账.md')
+    文 = io.open(p, encoding='utf-8').read() if os.path.exists(p) else '# 方法账\n'
+    if re.search(r'^\| %s·' % re.escape(i), 文, re.M):
+        return False
+    名 = next((x.get('名', '') for x in 读(root)['件'] if x['id'] == i), '')
+    费 = 0.0
+    try:
+        for r in json.load(io.open(os.path.join(root, '设定', '费账.json'), encoding='utf-8')).get('行', []):
+            if (r.get('名') or '').startswith(i + '·'):
+                费 += float(r.get('美元') or 0)
+    except (OSError, ValueError):
+        pass
+    清 = lambda t, n: re.sub(r'[|\n]', '／', t.strip())[:n]
+    k = 由.find('所废'); j = 由.find('较旧')
+    法 = 清(由[k:] if k >= 0 else 由, 100)
+    旧 = 清(由[j:] if j >= 0 else '', 100) or '—'
+    if '## 升级链' not in 文:
+        文 = 文.rstrip('\n') + ('\n\n## 升级链（1021 立·`工具/工作流账.py --裁 W 取` 自添一行，零 token；作者令「升级之的只一：写出全中国最好看的小说」）\n\n'
+                               '| 件 | 法（所废後） | 费 | 较旧 | 日 | 判 |\n|---|---|---|---|---|---|\n')
+    日 = (今 or _今()).strftime('%m%d')
+    文 = 文.rstrip('\n') + '\n| %s·%s | %s | %s | %s | %s | 取 |\n' % (i, 清(名, 40), 法, ('$%.2f' % 费) if 费 else '未记', 旧, 日)
+    io.open(p, 'w', encoding='utf-8').write(文)
+    return True
+
+
 def 裁(i, 法, 由, 新时限=None, root=ROOT, 今=None):
     if 法 == '守原':
         print('⛔ 无「守原」之出口——作者 1008：留下烂摊子不干了即烂尾。原文果真已达标，以「取」裁之并写由；否则「重造」'); return False
@@ -273,7 +300,13 @@ def 裁(i, 法, 由, 新时限=None, root=ROOT, 今=None):
         else:
             x['状态'] = '已成'
         记.append({'时': 今s, '法': 法, '由': 由.strip(), '起': x.get('起')})
-        _存(账, root); print('✓ %s 裁：%s' % (i, 法)); return True
+        _存(账, root); print('✓ %s 裁：%s' % (i, 法))
+        if 法 == '取':
+            try:
+                登方法账(i, 由, root, 今)
+            except Exception as e:
+                print('⚠ 升级链未登：%s' % e)
+        return True
     print('⛔ 无此件：' + i); return False
 
 
@@ -339,6 +372,8 @@ def 自测():
         共 += 1; ok += (裁('A', '取', '达标', None, t, H(20)) is False)   # ★1017 淘汰之律：取而无「所废」即拒
         共 += 1; ok += (裁('A', '取', '达标；所废：无（新增）', None, t, H(20)) is False)   # 缺「较旧」即拒
         共 += 1; ok += (裁('A', '取', '达标；所废：无（新增）；较旧：无（新增）', None, t, H(20)) is True and 读(t)['件'][0]['状态'] == '已成')
+        _链 = io.open(os.path.join(t, '设定', '方法账.md'), encoding='utf-8').read()   # ★1021 升级链：取即自登一行、⛔重登
+        共 += 1; ok += ('## 升级链' in _链 and _链.count('| A·甲 |') == 1 and 登方法账('A', '再', t) is False)
     finally:
         shutil.rmtree(t)
     print('工作流账·自测 %d/%d' % (ok, 共))

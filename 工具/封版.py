@@ -405,6 +405,19 @@ def 後之存(n):
             ('存底包', [器('存底包.py')]), ('撤锁', [器('心跳.py'), '--收', str(n)])]
 
 
+def 阶段之数(n, root=ROOT):
+    """★X53·1021：README 阶段句与提示词系统:20「--开拍 N+1」随封版自改（零 token；旧由记席／主环手改，401 漏之即红於全测·快）。"""
+    改 = []
+    for 档, 式, 新 in (('README.md', r'第 1—\d+ 章已经同步封版；第 \d+ 章开写前', '第 1—%d 章已经同步封版；第 %d 章开写前' % (n, n + 1)),
+                       ('工具/镇冢秘术_防前后矛盾提示词系统.md', '(?m)^' + re.escape('python3 工具/小说检察官.py --开拍 ') + r'\d+$', 'python3 工具/小说检察官.py --开拍 %d' % (n + 1))):
+        fp = os.path.join(root, 档)
+        t = open(fp, encoding='utf-8').read()
+        t2 = re.sub(式, 新, t, count=1)
+        if t2 != t:
+            open(fp, 'w', encoding='utf-8').write(t2); 改.append(档)
+    return 改
+
+
 def 後(n, 试=False, root=ROOT):
     print('════ 封版·後（第%d章）%s════' % (n, '·试（⛔写、⛔提交）' if 试 else ''))
     缺 = 记之缺(n, root)
@@ -412,6 +425,7 @@ def 後(n, 试=False, root=ROOT):
         print('⛔ 记席之档未齐：%s——回记席补（⛔本器代写）' % '、'.join(缺)); return False
     步 = []
     if not 试:
+        print('  ✓ 阶段之数    %s' % ('、'.join(阶段之数(n, root)) or '已是 %d／%d' % (n, n + 1)))
         步 += [('净重对表 --补', [器('净重对表.py'), '--补'], False), ('同步全本阅读器', [器('同步全本阅读器.py')], False),
               ('剧情链', [器('剧情链.py')], False),          # ★1015 作者令：每章精读之详记串成从头到尾之链，封版即重生、随提交上 GitHub
               ('人物链', [器('人物链.py'), '--并记'], False),   # ★1015 作者议：每人从头到尾之链与每两人之关系——自记席之「在场之人」零 token 重并（虹吸）

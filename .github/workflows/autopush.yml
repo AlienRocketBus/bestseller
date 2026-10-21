@@ -1,0 +1,42 @@
+# 主枝之自推（1021 作者令「GitHub 自己去推」）：存底枝之正文一变（一章封版），GitHub 之机照 pre-push 之闸全跑；绿即把主枝快进到存底之父（真之末笔）。零 token、沙盒⛔候。
+name: autopush
+on:
+  push:
+    branches: ['备份/存底']
+    paths: ['正文/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: autopush
+  cancel-in-progress: true
+jobs:
+  advance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 取真末笔（存底之父）
+        run: |
+          git checkout -q "$(git rev-parse HEAD^)"
+          git config user.name autopush
+          git config user.email autopush@users.noreply.github.com
+      - name: 推闸（与 工具/githooks/pre-push 同）
+        run: bash 工具/githooks/pre-push
+      - name: 快进主枝
+        run: |
+          T=$(git rev-parse HEAD)
+          git fetch -q origin claude/the-novel-review-4dtuit
+          if git merge-base --is-ancestor FETCH_HEAD "$T"; then
+            git push origin "$T:refs/heads/claude/the-novel-review-4dtuit"
+          else
+            echo "主枝非真末笔之祖：不强推，候会话 推.py 兜底"; exit 1
+          fi

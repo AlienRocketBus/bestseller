@@ -87,8 +87,98 @@ def _档肿哨():
         print('  ⚠档肿哨跑不动（不拦存底）：%s' % e)
 
 
-def 存(说明='', 续心跳=True):
-    """★其法之要：另用一份临时索引，故**工作区、索引、HEAD 三样一样不碰**。"""
+旧链 = 底枝 + '-旧'      # 被顶下之他机之底，逐一挂进此链（不强推、只快进）——⛔一份底被覆而无存
+
+
+def _机():
+    """本机（容器）之号。⛔只认会话号：一会话复开即换新机，旧机之稿新机没有（402 之失正是此形）。"""
+    v = os.environ.get('CLAUDE_CODE_CONTAINER_ID', '').strip()
+    return re.sub(r'^container_', '', v).split('--')[0][:24] or '未名'
+
+
+def _坐():
+    try:
+        import 心跳
+        return 心跳.坐()
+    except Exception:
+        return '未名'
+
+
+def 旁枝(坐=None):
+    return '%s-%s' % (底枝, (坐 or _坐())[:12])
+
+
+def _锁():
+    """→ (锁新鲜?, 坐, 章)：云端心跳之锁。读不出作 (False, '', None)。"""
+    try:
+        import 心跳 as _hb
+        在, d = _hb._远()
+        if not 在 or not isinstance(d, dict) or d.get('章') is None:
+            return False, '', None
+        return (int(time.time()) - int(d.get('时', 0) or 0) <= _hb.限), str(d.get('坐') or ''), d.get('章')
+    except Exception:
+        return False, '', None
+
+
+def _远底():
+    """→ (读得出?, 远端存底之 sha 或 None, 其信)。⛔看本地之 origin/ 引——那是上回取的旧影。"""
+    r = _跑('git', 'ls-remote', 'origin', 'refs/heads/' + 底枝)
+    if r.returncode != 0:
+        return False, None, ''
+    sha = r.stdout.split()[0] if r.stdout.strip() else None
+    if not sha:
+        return True, None, ''
+    _跑('git', 'fetch', '-q', 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (底枝, 底枝))
+    return True, sha, _跑('git', 'log', '-1', '--format=%B', sha).stdout
+
+
+def 判底(远sha, 远信, 我机, 他持):
+    """⛔纯判（1021·402 之失）：此回之底推往何处。回 '主'｜'旁'｜'存旧再主'。
+    ①他坐持写书之锁 → '旁'：主存底枝归写书之坐，余坐各推己之旁枝，⛔顶之；
+    ②远端之底即本机所存（信中「机」同）→ '主'：顶自己之旧底无失；
+    ③余（他机之底、旧式无「机」之底）→ '存旧再主'：先把它挂进 旧链（不强推），挂成方顶——⛔一份底被覆而无存。
+    ⛔以会话号认「己」：会话复开即新机，旧机之底有新机所无之稿。"""
+    if 他持:
+        return '旁'
+    if not 远sha:
+        return '主'
+    m = re.search(r'｜机 (\S+)', 远信 or '')
+    if m and 我机 != '未名' and m.group(1) == 我机:
+        return '主'
+    return '存旧再主'
+
+
+def 存旧(sha, 信=''):
+    """把被顶下之底挂进 旧链：新提交以 旧链之顶 与 sha 为二父，只快进推（⛔--force）。已挂过即免。"""
+    for _ in range(3):
+        r = _跑('git', 'ls-remote', 'origin', 'refs/heads/' + 旧链)
+        if r.returncode != 0:
+            return False
+        顶 = r.stdout.split()[0] if r.stdout.strip() else None
+        if 顶:
+            _跑('git', 'fetch', '-q', 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (旧链, 旧链))
+            if _跑('git', 'merge-base', '--is-ancestor', sha, 顶).returncode == 0:
+                return True
+        t = _跑('git', 'rev-parse', sha + '^{tree}').stdout.strip()
+        a = ['git', 'commit-tree', t, '-m', '存旧 %s｜%s' % (sha[:8], (信 or '').strip().split('\n')[0][:80])]
+        if 顶:
+            a += ['-p', 顶]
+        a += ['-p', sha]
+        c = _跑(*a).stdout.strip()
+        if not c:
+            return False
+        if _跑('git', 'push', '--no-verify', '-q', 'origin', '%s:refs/heads/%s' % (c, 旧链)).returncode == 0:
+            return True
+    return False
+
+
+末树档 = os.path.join(ROOT, '.git', '存底.末树')
+
+
+def 存(说明='', 续心跳=True, 跳同=False):
+    """★其法之要：另用一份临时索引，故**工作区、索引、HEAD 三样一样不碰**。
+    1021 添防覆（402 之失）：推前取云端之底与心跳之锁，照 `判底` 推往主枝或己之旁枝；顶他机之底前先挂进 旧链；
+    主枝之推带 lease（他坐抢先一步即重判，⛔盲覆）。跳同：此树与上回所推者同即不推（存底守之定时用）。"""
     _档肿哨()
     idx = tempfile.mktemp(prefix='存底idx_')
     try:
@@ -104,14 +194,44 @@ def 存(说明='', 续心跳=True):
         t = _跑('git', 'write-tree', env=env).stdout.strip()
         if not t:
             return 2, 'write-tree 无果'
-        msg = '存底 %s｜%s' % (time.strftime('%m-%d %H:%M:%S', time.gmtime()), 说明 or '')
+        if 跳同:
+            try:
+                if open(末树档).read().strip() == t:
+                    return 0, '无改·不推'
+            except Exception:
+                pass
+        我坐, 我机 = _坐(), _机()
+        msg = '存底 %s｜%s｜坐 %s｜机 %s' % (time.strftime('%m-%d %H:%M:%S', time.gmtime()), 说明 or '', 我坐, 我机)
         c = _跑('git', 'commit-tree', t, '-p', 'HEAD', '-m', msg).stdout.strip()
         if not c:
             return 2, 'commit-tree 无果'
-        p = _跑('git', 'push', '--no-verify', '-q', '--force',
-                'origin', '%s:refs/heads/%s' % (c, 底枝))
-        if p.returncode != 0:
-            return 2, (p.stderr or p.stdout).strip()[:160]
+        鲜, 锁坐, 锁章 = _锁()
+        他持 = 鲜 and 锁坐 != 我坐
+        去 = None
+        for _ in range(3):
+            读得, 远, 远信 = _远底()
+            向 = 判底(远, 远信, 我机, 他持) if 读得 else '旁'
+            if 向 == '存旧再主' and not 存旧(远, 远信):
+                向 = '旁'                                # 挂不进旧链即⛔顶，退推己之旁枝
+            if 向 == '旁':
+                底枝旁 = 旁枝(我坐)
+                p = _跑('git', 'push', '--no-verify', '-q', '--force',
+                        'origin', '%s:refs/heads/%s' % (c, 底枝旁))
+                if p.returncode != 0:
+                    return 2, (p.stderr or p.stdout).strip()[:160]
+                去 = '旁枝 %s（%s）' % (底枝旁, '第%s章之锁为他坐 %s 所持' % (锁章, 锁坐[:12]) if 他持 else '云端之底读不出或挂旧链未成')
+                break
+            p = _跑('git', 'push', '--no-verify', '-q', '--force-with-lease=refs/heads/%s:%s' % (底枝, 远 or ''),
+                    'origin', '%s:refs/heads/%s' % (c, 底枝))
+            if p.returncode == 0:
+                去 = 底枝 + ('（先挂他机之底 %s 进 %s）' % (远[:8], 旧链) if 向 == '存旧再主' else '')
+                break
+        if 去 is None:
+            return 2, '三回 lease 俱败（他坐连推），未推'
+        try:
+            open(末树档, 'w').write(t)
+        except Exception:
+            pass
         # ★存底既已上云，顺手把「任务流跑到哪儿了」也记一步——
         #   **东西保住了而进度丢了，下一坐仍得从头猜**（作者 0910 令）。
         try:
@@ -122,24 +242,18 @@ def 存(说明='', 续心跳=True):
             续跑.记('存底·' + (说明 or ''), None, c[:8])
             # ★并顺手续一次心跳：0910 实见其锁逾期九十一分钟，而自走 Routine
             #   再过十五分钟就要判「无人在跑」而动手——**差一点撞车**。
-            #   存底是全仓跑得最勤的一样（每席一回、每二十三分钟一回），**正好当心跳之脚**。
             import 心跳 as _hb
             try:
-                _有, _分, _章 = _hb.查(印=False)
-                # ⛔★★★★★2026-09-24 治·**存底替一把死锁续命**（本坐当日所逮·其害至大）：
-                #   ★此处原假定「调存底的必是一个在跑的席」——**0924 之前确然**；
-                #   ⛔**而 0924 立的自进化环 L0 每三十分钟自动存底，本坐亦手动存了十几回**——
-                #     **每一回都给 363 那一把早已跑完的锁续了命**，`自走` 遂永判「候」，
-                #     **永不派下一章——这本书会静悄悄地停下来。**
-                #   ★**故加一闸：非席之存（L0 自修／人手）不续心跳**——`续心跳=False` 或 `--不续心跳`。
-                if _章 and 续心跳 and os.environ.get('ZM_存底不续心跳') != '1':
-                    _hb._写({'章': int(_章), '时': int(time.time()),
-                             '坐': os.environ.get('CLAUDE_SESSION_ID', '')[:24] or '未名'})
+                # ⛔★★★★★2026-09-24 治·**存底替一把死锁续命**：非席之存（L0 自修／人手）不续心跳——`续心跳=False` 或 `--不续心跳`。
+                # ⛔1021 治·**存底替他坐之锁改主**：旧只问「有锁」即以本坐之名重写其锁——他坐之锁被本坐夺去；
+                #   今只续**本坐所持、尚新鲜**之锁（逾期之锁⛔复活——0924 之病）。
+                if 鲜 and 锁章 and 锁坐 == 我坐 and 续心跳 and os.environ.get('ZM_存底不续心跳') != '1':
+                    _hb._写({'章': int(锁章), '时': int(time.time()), '坐': 我坐})
             except Exception:
                 pass
         except Exception:
             pass
-        return 0, c[:8]
+        return 0, '%s → %s' % (c[:8], 去)
     finally:
         if os.path.exists(idx):
             os.remove(idx)
@@ -232,6 +346,97 @@ def 演(章=None):
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def 防覆之演():
+    """真跑：临时之 bare 远端＋工作仓；心跳、续跑、档肿哨以假者代（⛔碰真仓）。回 [(名, 过否)]。"""
+    import types
+    g = globals()
+    旧 = {k: g[k] for k in ('ROOT', '末树档', '_档肿哨', '_锁', '_远底')}
+    旧模 = {k: sys.modules.get(k) for k in ('心跳', '续跑')}
+    旧环 = {k: os.environ.get(k) for k in ('CLAUDE_CODE_CONTAINER_ID', 'ZM_存底不续心跳')}
+    果, 写们, 状 = [], [], {'坐': 'SIDA', '锁': (False, '', None)}
+    d = tempfile.mkdtemp(prefix='防覆之演_')
+    try:
+        远, 工 = os.path.join(d, 'r.git'), os.path.join(d, 'w')
+        subprocess.run(['git', 'init', '-q', '--bare', 远], check=True)
+        subprocess.run(['git', 'init', '-q', 工], check=True)
+        for k, v in (('user.name', 't'), ('user.email', 't@t'), ('commit.gpgsign', 'false')):
+            subprocess.run(['git', '-C', 工, 'config', k, v], check=True)
+        subprocess.run(['git', '-C', 工, 'remote', 'add', 'origin', 远], check=True)
+        open(os.path.join(工, 'a.md'), 'w').write('一')
+        subprocess.run(['git', '-C', 工, 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', 工, 'commit', '-q', '-m', 'c0'], check=True)
+        g['ROOT'], g['末树档'], g['_档肿哨'] = 工, os.path.join(d, '末树'), (lambda: None)
+        g['_锁'] = lambda: 状['锁']
+        sys.modules['心跳'] = types.SimpleNamespace(坐=lambda: 状['坐'], _写=lambda x: 写们.append(x), 限=2700,
+                                                  _远=lambda: (False, None), 查=lambda 印=False: (False, None, None))
+        sys.modules['续跑'] = types.SimpleNamespace(记=lambda *a, **k: None)
+        os.environ.pop('ZM_存底不续心跳', None)
+        远顶 = lambda b: (subprocess.run(['git', '-C', 远, 'rev-parse', '-q', '--verify', 'refs/heads/' + b],
+                                         capture_output=True, text=True).stdout.strip() or None)
+        含 = lambda a, b: subprocess.run(['git', '-C', 远, 'merge-base', '--is-ancestor', a, b]).returncode == 0
+        def 写(x):
+            open(os.path.join(工, 'a.md'), 'w').write(x)
+        os.environ['CLAUDE_CODE_CONTAINER_ID'] = 'container_JIA--x'
+        写('甲一'); rc, m = 存('t')
+        甲一 = 远顶(底枝)
+        果.append(('⑩远端无底 → 推主存底枝（信带坐与机）', rc == 0 and 甲一 and '｜机 JIA' in _跑('git', 'log', '-1', '--format=%B', 甲一).stdout))
+        写('甲二'); rc, m = 存('t')
+        果.append(('⑪同机再存 → 顶己之旧底、⛔挂旧链', rc == 0 and 远顶(底枝) != 甲一 and 远顶(旧链) is None))
+        甲二 = 远顶(底枝)
+        os.environ['CLAUDE_CODE_CONTAINER_ID'] = 'container_YI--x'   # 同一会话复开於新机——402 之形
+        写('乙一'); rc, m = 存('t')
+        果.append(('⑫同会话新机 → 先把旧机之底挂进旧链、再推主（⛔以会话号认己）',
+                   rc == 0 and 远顶(旧链) and 含(甲二, 远顶(旧链)) and 远顶(底枝) not in (甲二, None)))
+        乙一 = 远顶(底枝)
+        状['锁'] = (True, 'SIDB', 402)
+        写('乙二'); rc, m = 存('t')
+        果.append(('⑬他坐持写书之锁 → 推己之旁枝，主存底枝⛔动',
+                   rc == 0 and 远顶(底枝) == 乙一 and 远顶(旁枝('SIDA')) and '旁枝' in m))
+        果.append(('⑬之二 他坐之锁⛔续（⛔夺锁）', not 写们))
+        状['锁'] = (True, 'SIDA', 402)
+        写('乙三'); rc, m = 存('t')
+        果.append(('⑭本坐持鲜锁 → 推主、续己之锁（坐不改）', rc == 0 and 写们 and 写们[-1].get('坐') == 'SIDA' and 写们[-1].get('章') == 402))
+        n = len(写们); 状['锁'] = (False, 'SIDA', 402)
+        写('乙四'); rc, m = 存('t')
+        果.append(('⑭之二 逾期之锁⛔复活', rc == 0 and len(写们) == n))
+        rc, m = 存('t', 跳同=True)
+        果.append(('⑮跳同：树未改即不推', rc == 0 and '无改' in m))
+        真远底, 次 = _远底, [0]
+        def 旧影():
+            次[0] += 1
+            return (True, 甲一, '') if 次[0] == 1 else 真远底()
+        g['_远底'] = 旧影
+        前 = 远顶(底枝)
+        写('乙五'); rc, m = 存('t')
+        g['_远底'] = 真远底
+        果.append(('⑯lease：判时所见之底已非云端之顶 → 推被拒、重判再推（⛔盲覆）', rc == 0 and 次[0] >= 2 and 远顶(底枝) != 前))
+        状['锁'] = (False, '', None)
+        g['_远底'] = lambda: (False, None, '')
+        前, 旁前 = 远顶(底枝), 远顶(旁枝('SIDA'))
+        写('乙五之二'); rc, m = 存('t')
+        g['_远底'] = 真远底
+        果.append(('⑰云端之底读不出（推尚通）→ 推己之旁枝，主存底枝⛔动', rc == 0 and 远顶(底枝) == 前 and 远顶(旁枝('SIDA')) != 旁前))
+        subprocess.run(['git', '-C', 工, 'remote', 'set-url', 'origin', os.path.join(d, '无此远端')], check=True)
+        写('乙六'); rc, m = 存('t')
+        果.append(('⑰之二 云端全断 → 报败（rc=2）', rc == 2))
+    except Exception as e:
+        果.append(('⑩—⑰防覆之演跑不起来：%s' % e, False))
+    finally:
+        g.update(旧)
+        for k, v in 旧模.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+        for k, v in 旧环.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        shutil.rmtree(d, ignore_errors=True)
+    return 果
+
+
 def 自测():
     ok, bad = 0, []
 
@@ -271,14 +476,17 @@ def 自测():
       'import 心跳' in s and '_hb._写(' in s)
     # ⛔旧格作 `'if _章:' in s`——**钉的是那一行的字样**；0924 其行改作带二闸之式，意未变而字样变，旧格遂红。
     #   ★**改问其意**：续心跳之条件里须仍有 `_章`（只在已有人在跑时续）。
-    T('⑨之二 续心跳只在「已有人在跑」时续，不许无中生有立一把锁',
-      'if _章 and 续心跳' in s)
+    T('⑨之二 续心跳只续本坐所持、尚新鲜之锁（⛔无中生有、⛔夺他坐之锁、⛔复活逾期之锁）',
+      'if 鲜 and 锁章 and 锁坐 == 我坐 and 续心跳' in s)
     T('⑨之三·⛔非席之存不续心跳（0924：L0 与人手之存曾令 363 之死锁永活，自走永判「候」）',
       "续心跳=True" in s and "ZM_存底不续心跳" in s)
     T('⑧两本账虽在 .gitignore，存底仍强塞进临时索引（少了它们续跑之账就断）',
       "'add', '-f'" in s and '_跑账.json' in s and '_任务流.json' in s)
     T('⑦每存一回，顺手记一步续跑（东西保住而进度丢了仍是断）',
       'import 续跑' in s and '续跑.记(' in s)
+    # ⑩—⑯·1021 防覆（402 之失）：真起一个临时之远端与工作仓，两机一锁，逐形跑一遍（⛔只看字样）
+    for 名, 条 in 防覆之演():
+        T(名, 条)
     print('── 负测·存底 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 

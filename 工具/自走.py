@@ -788,5 +788,25 @@ def 自测():
 if __name__ == '__main__':
     if '--自测' in sys.argv:
         sys.exit(0 if 自测() else 1)
-    报()
+    if '--全' in sys.argv:
+        报()
+        sys.exit(0)
+    # ★1021 作者令「⛔运行跟弱智一样」＋省律：旧每跑印百五十余行、新人每回通读——今默只印前置诸哨之红与「此刻该干哪一件」一节；
+    #   诸哨照旧全跑（其副作用如存底、自推照旧），只是⛔把绿的与说教之文灌进上下文。全文：--全。
+    import subprocess as _sp0
+    _r0 = _sp0.run([sys.executable, os.path.abspath(__file__), '--全'], capture_output=True, text=True, timeout=900)
+    _出0 = _r0.stdout.splitlines()
+    _i0 = next((k for k, l in enumerate(_出0) if '════ 自走 · 此刻该干哪一件' in l), None)
+    _头0, _尾0 = (_出0[:_i0], _出0[_i0:]) if _i0 is not None else ([], _出0)
+    _见0, _红0 = set(), []
+    for _l0 in _头0:
+        _x0 = _l0.strip()[:160]
+        if _x0.startswith(('⛔', '⚠')) and '永远的痛' not in _x0 and _x0 not in _见0:   # 只取真报警之行（行首⛔／⚠），说教与已成之件⛔取
+            _见0.add(_x0); _红0.append(_x0)
+    if _红0:
+        print('── 前置诸哨之红 %d 条（全文：python3 工具/自走.py --全）──' % len(_红0))
+        print('\n'.join('  ' + x for x in _红0[:12]) + ('\n  ……另 %d 条' % (len(_红0) - 12) if len(_红0) > 12 else ''))
+    print('\n'.join(_尾0))
+    if _r0.returncode != 0 and _r0.stderr.strip():
+        print('  ⛔自走自身之错：' + _r0.stderr.strip().splitlines()[-1][:200])
     sys.exit(0)

@@ -15,14 +15,33 @@
   python3 工具/存底守.py --状     # 在跑否、末回何时
   python3 工具/存底守.py --自测
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os, sys, time, json, glob, fcntl, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, '工具'))
 间 = 5 * 60            # 秒：两回之隔（1021 作者令「不费 token 即五分一回」——纯 git、零 token；树未改即不推）
 活界 = 15 * 60         # 秒：转录此内有写即「在干活」
-锁档 = os.path.join(ROOT, '.git', '存底守.lock')
-日志 = os.path.join(ROOT, '.git', '存底守.log')
+
+
+def _仓目():
+    """git 之公目（工作副本里 .git 係一档，⛔径接 ROOT/.git——全测之副本即如此）。"""
+    try:
+        p = subprocess.run(['git', 'rev-parse', '--git-common-dir'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+        if p:
+            return p if os.path.isabs(p) else os.path.join(ROOT, p)
+    except Exception:
+        pass
+    return os.path.join(ROOT, '.git')
+
+
+锁档 = os.path.join(_仓目(), '存底守.lock')
+日志 = os.path.join(_仓目(), '存底守.log')
 
 
 def _记(s):
@@ -138,10 +157,10 @@ def 自测():
     T('②之三 逾期之锁 → ⛔续（⛔复活）', not 该续(False, 'A', 402, 'A', True))
     T('②之四 无人在写 → ⛔续（0924：替死锁续命）', not 该续(True, 'A', 402, 'A', False))
     T('②之五 撤过之锁（章空）、未名之坐 → ⛔续', not 该续(True, 'A', None, 'A', True) and not 该续(True, '', 402, '', True))
-    global 锁档
-    旧锁 = 锁档
+    global 锁档, 日志
+    旧锁, 旧志 = 锁档, 日志
     with tempfile.TemporaryDirectory() as d:
-        锁档 = os.path.join(d, 'l')
+        锁档, 日志 = os.path.join(d, 'l'), os.path.join(d, 'log')
         起们 = []
         f = open(锁档, 'a+')
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -152,7 +171,8 @@ def 自测():
         起(开=lambda *a, **k: 起们.append(k))
         T('③之二 无守 → 起一个，脱离（新 session）、⛔占钩之管', len(起们) == 1 and 起们[0].get('start_new_session')
           and 起们[0].get('stdin') == subprocess.DEVNULL and 起们[0].get('stdout') not in (None, subprocess.PIPE))
-    锁档 = 旧锁
+    锁档, 日志 = 旧锁, 旧志
+    T('⑥锁与日志落 git 之公目（全测之工作副本里 .git 係一档亦通）', 锁档.startswith(_仓目()) and os.path.isdir(_仓目()))
     s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     T('④一回之存：⛔续心跳（续锁归 该续）、树未改即不推', "存('存底守·定时', 续心跳=False, 跳同=True)" in s)
     T('④之三 每回另起一进程跑（器改即生效、一回崩⛔拖垮守）', "'--一回'], cwd=ROOT, timeout=间" in s)

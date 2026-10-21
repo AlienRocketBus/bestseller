@@ -14,6 +14,12 @@
   其余（unarchive、get_session、list 诸器）放。钩自身出错：①照拦（fail closed）；②③亦拦并印由。
 用法：钩自 stdin 取 JSON；`python3 工具/会话之守.py --自测`
 """
+import os as _o, sys as _s
+_s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+try:
+    import _账  # 跑账·自记（工具/跑账.py）
+except Exception:
+    pass
 import os, sys, json, re, time, subprocess
 from datetime import datetime
 

@@ -35,6 +35,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/user/the-novel && echo '【作者常令·1021】钱只花在造上，一次写到满分，⛔事後大审补救；零 token 能办的⛔花一分；跑中之件逾估 1.5 倍即停；主环每章 ≤$5，封一章即换会话。' && python3 工具/费哨.py --章 2>/dev/null | head -8"
+          }
+        ]
+      }
     ]
   },
   "_说明_链": "1013 立（坑⑰复踩之守）：PreToolUse 钩，主环之 Bash 命令有「python3 工具/X.py … | … && 下一步」而无 pipefail 者拦——管道之後之 && 判的是 tail 之码，工具败了下一步照跑。见 工具/链之检.py 之头注。",

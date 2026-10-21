@@ -228,7 +228,7 @@ def 有复盘(i, root=ROOT):
     ★档名须 <日>_<W>_<题>.md 而精确认 W（旧以 *W1* 认，W1 会错认 W12 之复盘）。"""
     for f in glob.glob(os.path.join(root, '设定', '复盘', '*_%s_*.md' % i)):
         t = open(f, encoding='utf-8').read()
-        if all(k in t for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑')):
+        if all(k in t for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑')) or all(k in t for k in ('## 耗费', '## 三问', '## 坑')):   # ★1021 简式
             return True
     return False
 

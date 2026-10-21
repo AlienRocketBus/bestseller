@@ -4286,7 +4286,49 @@ def _冷轮逾期俱有否决记(raw):
     return all(any(('COLD-%d·本章未执' % n) in t for t in rcs) for n in 过期)
 
 
+# 【X55·1021 作者亲授】推闸分二等：读者可见之闸（正文、圣经、改单、诸正文之检）红即拦；
+#   器之负测、跑账、对位、囤灰诸器之红只报不拦，入 设定/器红账.json 限三章治（⛔删一检）。
+读者可见之闸 = {
+    '全书检', '书级体检', '质量三闸', '改单', '抄袭闸', '圣经引号', '分量闸', '字数闸',
+    '含拍', '数闸', '外声闸', 'FS沉默闸', '亮点在', '亮点界', '净重对表', '版档指纹',
+    '钩子挂载', '负测留字',
+}
+
+
+def 分等(fails):
+    """★返回 (读者可见之红, 器之红)。"""
+    return [f for f in fails if f in 读者可见之闸], [f for f in fails if f not in 读者可见之闸]
+
+
+def _器红入账(器红, 章):
+    import json as _j
+    fp = os.path.join(ROOT, '设定', '器红账.json')
+    try:
+        账 = _j.load(open(fp, encoding='utf-8'))
+    except (OSError, ValueError):
+        账 = {}
+    for k in list(账):
+        if k not in 器红:
+            del 账[k]  # 绿了即销
+    for f in 器红:
+        账.setdefault(f, {'首见': 章, '限': 章 + 3})
+    try:
+        _j.dump(账, open(fp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+    except OSError:
+        pass
+    return [k for k, v in 账.items() if 章 > v['限']]
+
+
 def 推闸(fails):
+    读红, 器红 = 分等(fails)
+    if not 读红:
+        逾 = _器红入账(器红, _末章() or 0)
+        return True, ('✓推闸·分等：放行——只器之红 %d（%s），只报不拦，已入 设定/器红账.json 限三章治%s'
+                      % (len(器红), '、'.join(器红), ('；⚠逾限：' + '、'.join(逾)) if 逾 else ''))
+    return _推闸旧(fails)
+
+
+def _推闸旧(fails):
     """★返回 (放行否, 语)。★★只在「本章回执未交」时才许放行，且只放行那两项。"""
     cur = _末章()
     if not cur:

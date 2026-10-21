@@ -27,6 +27,10 @@ if [ $rc -eq 0 ]; then
   echo "✓ 全测通过,放行。"
   exit 0
 fi
+if echo "$OUT" | grep -q '✓推闸·分等：放行'; then
+  echo "✓ 只器之红，只报不拦（X55·读者可见之闸俱绿）；器红入 设定/器红账.json 限三章治。"
+  exit 0
+fi
 if echo "$OUT" | grep -q '✓推闸·跑轮档：放行'; then
   echo "✓ 跑轮档放行(非全绿;所放行者只结构性之二项,详见上「推闸」之语)。"
   echo "  ★而本章回执一交,此二项自销,届时须全绿方许推。"

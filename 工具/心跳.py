@@ -90,10 +90,20 @@ def _写(d):
             os.remove(tf)
 
 
+def 坐():
+    """本会话之号（去 cse_／session_ 之前缀；1021 治：旧读 CLAUDE_SESSION_ID，本环境无此变量，坐恒作「未名」——
+    别坐看锁不知是谁，会话之守、存底之防覆遂无从比）。"""
+    import re as _re
+    for k in ('CLAUDE_CODE_REMOTE_SESSION_ID', 'CLAUDE_SESSION_ID', 'CLAUDE_CODE_SESSION_ID'):
+        v = os.environ.get(k, '').strip()
+        if v:
+            return _re.sub(r'^(session_|cse_)', '', v)[:32]
+    return '未名'
+
+
 def 跳(n):
     """报到：把 {章, 时, 坐} 写进仓根之心跳档并推。"""
-    d = {'章': int(n), '时': int(time.time()),
-         '坐': os.environ.get('CLAUDE_SESSION_ID', '')[:24] or '未名'}
+    d = {'章': int(n), '时': int(time.time()), '坐': 坐()}
     rc, err = _写(d)
     print('✓心跳已报：第%d章｜%s' % (d['章'], time.strftime('%H:%M:%S', time.gmtime(d['时'])))
           if rc == 0 else '⛔心跳未推：%s' % err)

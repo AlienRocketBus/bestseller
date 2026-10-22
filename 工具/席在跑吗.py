@@ -173,7 +173,7 @@ def 流在跑(根=None, 今=None, 界=30 * 60):
     return False
 
 
-守书之号 = ('01HCXDm7LtSf4nECX75WCL3D', '01BFuD1GJM5avGrcaUg1REwV')   # 守书之会话（定时之保·小模型·只查⛔写）；换坐即改此行
+守书之号 = ('01BFuD1GJM5avGrcaUg1REwV',)   # 守书之会话（定时之保·小模型·只查⛔写）；换坐即改此行
 
 
 def 守书之坐():

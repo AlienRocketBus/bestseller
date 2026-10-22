@@ -115,6 +115,19 @@ def 速检(root=ROOT):
     return 红
 
 
+def 枝正(root=ROOT):
+    """★1022（405 之推三回 non-fast-forward）：会话起於游离之 HEAD，本地之枝停在旧提交——`git push origin 枝` 推的是那旧枝而非 HEAD。
+    → 红之行或 None：游离而枝为 HEAD 之祖即把枝挪到 HEAD 并检出（零 token）；枝不在 HEAD 之祖上即红（⛔盲挪）。"""
+    当 = _跑(['git', 'symbolic-ref', '-q', '--short', 'HEAD'], root).stdout.strip()
+    if 当 == 枝:
+        return None
+    if _跑(['git', 'merge-base', '--is-ancestor', 'refs/heads/' + 枝, 'HEAD'], root).returncode not in (0, 128):
+        return '  ✗ 枝正：HEAD 不在 %s 上（今 %s），且枝不是 HEAD 之祖——先并而後推' % (枝, 当 or '游离')
+    _跑(['git', 'checkout', '-q', '-B', 枝, 'HEAD'], root)
+    print('· 枝正：HEAD 原%s，已把 %s 挪到 HEAD 并检出' % ('游离' if not 当 else '在 ' + 当, 枝))
+    return None
+
+
 def 推(root=ROOT, 推法=None, 最多=5):
     """→ 0 推平｜1 被拦｜2 已有人在推（已登记待推）。"""
     待 = os.path.join(_git目录(root), '推.待')
@@ -130,6 +143,10 @@ def 推(root=ROOT, 推法=None, 最多=5):
                 os.remove(待)
             if 心跳章(root):   # 无挂着之章（已撤锁）⛔跳——跳了即凭空造一个在跑之席
                 _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', str(心跳章(root))], root)
+            if 推法 is None:
+                _歪 = 枝正(root)
+                if _歪:
+                    print('⛔ ' + _歪.strip()); _记(root, _歪.strip()); return 1
             if 推法 is None:   # ★1016 先行之速检（392 後二回推被拦於全测第六分钟——改单之缺、工作流账逾时）：数秒之闸先跑，红即止
                 速红 = 速检(root)
                 if 速红:
@@ -231,7 +248,16 @@ def 自测():
     open(os.path.join(_u, '工具', '复盘.py'), 'w').write("print('ok')")
     _r = 速检(_u)
     共 += 1; ok += (len(_r) == 1 and '改单' in _r[0] and '而无改单' in _r[0])   # ★1016 速检：红者印其末行，绿者⛔报，缺器⛔跑
-    print('推·自测 %d/%d' % (ok, 共))
+    _g = tempfile.mkdtemp()                                                  # ★1022 枝正：游离之 HEAD、枝在其祖 → 挪枝检出
+    for _c in (['git', 'init', '-q', '-b', 枝], ['git', 'commit', '-q', '--allow-empty', '-m', 'a'], ['git', 'checkout', '-q', '--detach'],
+               ['git', 'commit', '-q', '--allow-empty', '-m', 'b']):
+        subprocess.run(_c, cwd=_g, capture_output=True, env=dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t'))
+    import io as _io, contextlib as _cl
+    with _cl.redirect_stdout(_io.StringIO()):
+        _e = 枝正(_g)
+    共 += 1; ok += (_e is None and _跑(['git', 'symbolic-ref', '--short', 'HEAD'], _g).stdout.strip() == 枝
+                    and _跑(['git', 'log', '-1', '--format=%s', 枝], _g).stdout.strip() == 'b')
+    print('推·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' ⛔未过'))
     return ok == 共
 
 

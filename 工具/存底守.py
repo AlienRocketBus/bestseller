@@ -125,6 +125,13 @@ def 跑():
 
 
 def 起(开=subprocess.Popen):
+    # 1022：会话开头先承云端诸存底之跑账（新机之账空，封版之跑账闸判「从没跑过」而停——404 实踩）；後台、⛔候
+    try:
+        with open(日志, 'a') as lf:
+            开([sys.executable, os.path.join(ROOT, '工具', '跑账.py'), '--承'], cwd=ROOT, stdin=subprocess.DEVNULL,
+               stdout=lf, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
+    except Exception:
+        pass
     if 在跑():
         print('✓存底守在跑（每五分自存底·.git/存底守.log）')
         return 0
@@ -177,12 +184,13 @@ def 自测():
         f = open(锁档, 'a+')
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
         起(开=lambda *a, **k: 起们.append(a))
-        T('③已有一守在跑 → ⛔再起', not 起们 and 在跑())
+        T('③已有一守在跑 → ⛔再起守（唯承账一回）', len(起们) == 1 and '--承' in 起们[0][0] and 在跑())
+        起们.clear()
         fcntl.flock(f, fcntl.LOCK_UN)
         f.close()
         起(开=lambda *a, **k: 起们.append(k))
-        T('③之二 无守 → 起一个，脱离（新 session）、⛔占钩之管', len(起们) == 1 and 起们[0].get('start_new_session')
-          and 起们[0].get('stdin') == subprocess.DEVNULL and 起们[0].get('stdout') not in (None, subprocess.PIPE))
+        T('③之二 无守 → 承账一回＋起一守，俱脱离（新 session）、⛔占钩之管', len(起们) == 2 and 起们[-1].get('start_new_session')
+          and 起们[-1].get('stdin') == subprocess.DEVNULL and 起们[-1].get('stdout') not in (None, subprocess.PIPE))
     锁档, 日志 = 旧锁, 旧志
     T('⑥锁与日志落 git 之公目（全测之工作副本里 .git 係一档亦通）', 锁档.startswith(_仓目()) and os.path.isdir(_仓目()))
     s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]

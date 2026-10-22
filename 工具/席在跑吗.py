@@ -98,17 +98,40 @@ def 完本了吗():
         return False, ''
 
 
-def 锁之主():
-    """→ (锁坐, 锁章)：云端心跳之锁为谁所持（问心跳 判「有人在跑」之後方问）。读不出作 ('', None)。"""
+def 锁之档():
+    """→ 云端心跳之 dict（读不出作 None）。"""
     try:
         sys.path.insert(0, os.path.join(ROOT, '工具'))
         import 心跳
         在, d = 心跳._远()
         if 在 and isinstance(d, dict):
-            return str(d.get('坐') or ''), d.get('章')
+            return d
     except Exception:
         pass
+    return None
+
+
+def 锁之主(d=None):
+    """→ (锁坐, 锁章)：云端心跳之锁为谁所持。读不出作 ('', None)。"""
+    d = d if d is not None else 锁之档()
+    if isinstance(d, dict):
+        return str(d.get('坐') or ''), d.get('章')
     return '', None
+
+
+交棒之宽 = 30 * 60    # 秒：撤锁後此内作「交棒中」（与 接棒守.交棒之宽分 同）
+
+
+def 交棒之状(d, 今=None):
+    """→ (交棒中?, 撤锁者, 毕章)：锁空而撤锁未满三十分。"""
+    今 = 今 or time.time()
+    if isinstance(d, dict) and d.get('章') is None:
+        try:
+            if 今 - int(d.get('时') or 0) < 交棒之宽:
+                return True, str(d.get('坐') or ''), d.get('毕')
+        except (TypeError, ValueError):
+            pass
+    return False, '', None
 
 
 def 我之坐():
@@ -142,7 +165,8 @@ def 後台之活(根='/proc'):
     return sorted(set(在))
 
 
-def 判路(叫停=False, 暂停=False, 有席=False, 锁坐='', 我坐='', 转录活=False, 後台活=False, 完本=False):
+def 判路(叫停=False, 暂停=False, 有席=False, 锁坐='', 我坐='', 转录活=False, 後台活=False, 完本=False,
+        交棒中=False, 撤锁者=''):
     """⛔纯判（main 只走此一条路）：回 (rc, 由)。rc=0 放行｜2 拦（无席）｜3 拦（己持锁而闲——402 封後书停之形）。"""
     if 叫停:
         return 0, '叫停'
@@ -158,6 +182,12 @@ def 判路(叫停=False, 暂停=False, 有席=False, 锁坐='', 我坐='', 转�
         if 锁坐 and 我坐 and 锁坐 == 我坐 and 我坐 != '未名':
             return 3, '己持锁而闲'
         return 0, '他坐在跑'
+    if 交棒中:
+        # ★1022：撤锁未满三十分——他坐撤者作「交棒中」放行（守书之会话⛔误起一坐）；
+        #   己撤者须 `接棒守.py --候` 在跑（上已认後台之活）——否则拦：交了棒⛔不看人接住即收工。
+        if 撤锁者 and 我坐 and 撤锁者 == 我坐 and 我坐 != '未名':
+            return 4, '己撤锁而未候接棒'
+        return 0, '交棒中'
     if 完本:
         return 0, '完本'
     return 2, '无席'
@@ -173,16 +203,22 @@ def main():
         print('✓席在跑吗：%s——放行（⛔派席；作者令下方 `python3 工具/暂停令.py --解`）。' % 停由[:120])
         return 0
     有席, 行 = 问心跳()
-    锁坐, 锁章 = 锁之主() if 有席 else ('', None)
+    锁 = 锁之档()
+    锁坐, 锁章 = 锁之主(锁) if 有席 else ('', None)
+    交, 撤者, 毕章 = (False, '', None) if 有席 else 交棒之状(锁)
     转, 档 = 席之转录在写()
     後 = 後台之活()
-    rc, 由 = 判路(有席=有席, 锁坐=锁坐, 我坐=我之坐(), 转录活=转, 後台活=bool(後),
-                完本=(False if (有席 or 转 or 後) else 完本了吗()[0]))
+    rc, 由 = 判路(有席=有席, 锁坐=锁坐, 我坐=我之坐(), 转录活=转, 後台活=bool(後), 交棒中=交, 撤锁者=撤者,
+                完本=(False if (有席 or 转 or 後 or 交) else 完本了吗()[0]))
     if rc == 0:
         print('✓席在跑吗：%s——放行。%s' % (由, ('（%s）' % '、'.join(後)) if 後 else ''))
         if 行:
             print('   心跳印：%s' % 行)
         return 0
+    if rc == 4:
+        print('⛔⛔⛔ 席在跑吗：**本坐已撤第%s章之锁（交棒），而未候新会话接住——⛔交了棒不看就收工**（1022）。' % ((毕章 or 0) + 1), file=sys.stderr)
+        print('   跑 `python3 工具/接棒守.py --候 %s`（run_in_background）；未开新会话则先照总章三之5 开之。' % ((毕章 or 0) + 1), file=sys.stderr)
+        return 2
     if rc == 3:
         _o = sys.stdout
         sys.stdout = sys.stderr
@@ -254,7 +290,14 @@ def 自测():
     报('⑬己持锁而封版／推／接棒守在後台 → 放行', 判路(有席=True, 锁坐='A', 我坐='A', 後台活=True)[0], 0)
     报('⑬之二 已收锁而接棒守在候 → 放行', 判路(有席=False, 後台活=True)[0], 0)
     报('⑭未名之坐（旧锁）⛔认作己锁', 判路(有席=True, 锁坐='未名', 我坐='未名')[0], 0)
-    报('⑮main 只走 判路、真认後台与锁主', '判路(' in src2 and '後台之活()' in src2 and '锁之主()' in src2, True)
+    报('⑮main 只走 判路、真认後台与锁主', '判路(' in src2 and '後台之活()' in src2 and '锁之主(' in src2 and '交棒之状(' in src2, True)
+    报('⑰他坐撤锁未满三十分（交棒中）→ 放行（守书之会话⛔误起一坐）', 判路(交棒中=True, 撤锁者='B', 我坐='A')[0], 0)
+    报('⑰之二 己撤锁而未候接棒 → 拦（rc=4）', 判路(交棒中=True, 撤锁者='A', 我坐='A')[0], 4)
+    报('⑰之三 己撤锁而接棒守在候 → 放行', 判路(交棒中=True, 撤锁者='A', 我坐='A', 後台活=True)[0], 0)
+    _今 = 100000
+    报('⑱交棒之状：撤锁十分 → 交棒中', 交棒之状({'章': None, '毕': 403, '时': _今 - 600, '坐': 'A'}, _今)[0], True)
+    报('⑱之二 撤锁逾三十分 → ⛔交棒中（停写，归定时之保）', 交棒之状({'章': None, '毕': 403, '时': _今 - 1900}, _今)[0], False)
+    报('⑱之三 锁在（章非空）→ ⛔交棒中', 交棒之状({'章': 404, '时': _今}, _今)[0], False)
     import tempfile as _t2
     _p = _t2.mkdtemp()
     for _pid, _c in (('11', b'python3\0/x/\xe5\xb7\xa5\xe5\x85\xb7/\xe5\xb0\x81\xe7\x89\x88.py\0601\0--\xe5\xbe\x8c'), ('12', b'sleep\0' + b'9')):

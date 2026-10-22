@@ -187,7 +187,7 @@ def 收(n=None):
         if not 可:
             print('✓第%s章之锁已交出（%s）——⛔清：撤锁只撤本章自己的。' % (n, 由))
             return 0
-    rc, err = _写({'章': None, '毕': (int(n) if n else None), '时': int(time.time())})
+    rc, err = _写({'章': None, '毕': (int(n) if n else None), '时': int(time.time()), '坐': 坐()})   # 1022：记撤锁者（Stop 钩认「己撤而未候接棒」）
     print('✓已撤锁（第%s章办毕）——下一坐当场可接手。' % (n or '?') if rc == 0
           else '⛔撤锁未推：%s' % err)
     return rc

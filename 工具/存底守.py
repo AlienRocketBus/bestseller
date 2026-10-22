@@ -188,6 +188,13 @@ def 自测():
     s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     T('④一回之存：⛔续心跳（续锁归 该续）、树未改即不推', "存('存底守·定时', 续心跳=False, 跳同=True)" in s)
     T('④之三 每回另起一进程跑（器改即生效、一回崩⛔拖垮守）', "'--一回'], cwd=ROOT, timeout=间" in s)
+    段一回 = s.split('def 一回')[1].split('\ndef ')[0]
+    T('④之四 一回把後台之活交给该续（1022 复核：删之即复 403 封後之假停写，而旧自测照绿）', '在写(), _後台())' in 段一回)
+    try:
+        import 席在跑吗
+        T('④之五 _後台 真调得着 席在跑吗.後台之活（⛔吞了导入之错而永判无後台）', isinstance(席在跑吗.後台之活('/无此目'), list) and 'import 席在跑吗' in s)
+    except Exception as e:
+        T('④之五 席在跑吗导入不得：%s' % e, False)
     T('④之二 间係五分（作者 1021 令·零 token）', 间 == 5 * 60)
     try:
         st = json.load(open(os.path.join(ROOT, '.claude', 'settings.json'), encoding='utf-8'))

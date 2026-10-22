@@ -97,6 +97,13 @@ def 解(言, root=ROOT):
     d['解'] = {'时': time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime()), '言': 言}
     json.dump(d, open(os.path.join(root, 档), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print('✓ 暂停令已解（%s）：%s' % (d['解']['时'], 言))
+    if root == ROOT:                    # 1022：停锁换空锁——守书三十分後见停写即派，书自续（自测之临时仓⛔动云端）
+        try:
+            import 心跳, 自走
+            rc, m = 心跳.解停(自走.末章() + 1)
+            print('  心跳：%s' % ('停锁已解，交第%d章之棒' % (自走.末章() + 1) if rc == 0 and not m else (m or '解停未推')))
+        except Exception as e:
+            print('  ⚠ 解停锁未成（%s）——跑 `python3 工具/心跳.py --收`' % e)
     return True
 
 

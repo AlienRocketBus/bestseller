@@ -33,6 +33,7 @@ import re
 import sys
 import json
 import glob
+import subprocess
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -59,6 +60,66 @@ def _读账():
         return json.load(open(账档, encoding='utf-8'))
     except Exception:
         return {}
+
+
+def 合账(a, b):
+    """⛔纯：二账合一——头回取早、末跑取晚、次取大（同一器两机各记，⛔相加重计）。"""
+    out = dict(a or {})
+    for k, v in (b or {}).items():
+        if not isinstance(v, dict):
+            continue
+        o = dict(out.get(k) or {})
+        if not o:
+            out[k] = dict(v)
+            continue
+        if v.get('头回') and (not o.get('头回') or str(v['头回']) < str(o['头回'])):
+            o['头回'] = v['头回']
+        if v.get('末跑') and (not o.get('末跑') or str(v['末跑']) > str(o['末跑'])):
+            o['末跑'] = v['末跑']
+        try:
+            o['次'] = max(int(o.get('次') or 0), int(v.get('次') or 0))
+        except (TypeError, ValueError):
+            pass
+        out[k] = o
+    return out
+
+
+def 承(印=True):
+    """1022（404 封版被拦）：一章一会话，新机之 `_跑账.json` 空（.gitignore），席里点名之器百余样俱判「从没跑过」而封版停。
+    其账本在云端诸存底之中（存底.py 强塞之）——自 `备份/存底`、`备份/存底-旧`、`备份/存底-<坐>` 诸枝取其账，合入本账。
+    ⛔弱化判法：甲路照旧「全史无一笔」即红，只是全史今由诸机之账合成。读不出即⛔动本账。"""
+    def 跑(*a):
+        return subprocess.run(a, cwd=ROOT, capture_output=True, text=True, timeout=120)
+    try:
+        r = 跑('git', 'ls-remote', 'origin', 'refs/heads/备份/存底*')
+        诸 = [l.split() for l in r.stdout.strip().splitlines() if l.strip()] if r.returncode == 0 else []
+        if not 诸:
+            if 印:
+                print('⚠ 承账：云端存底诸枝读不出——本账⛔动')
+            return 0
+        跑('git', 'fetch', '-q', 'origin', *[ref for _, ref in 诸])
+        合 = _读账()
+        前 = len(合)
+        得 = 0
+        for sha, ref in 诸:
+            g = 跑('git', 'show', '%s:_跑账.json' % sha)
+            if g.returncode != 0:
+                continue
+            try:
+                合 = 合账(合, json.loads(g.stdout))
+                得 += 1
+            except Exception:
+                continue
+        tmp = 账档 + '.承'
+        json.dump(合, open(tmp, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
+        os.replace(tmp, 账档)
+        if 印:
+            print('✓ 承账：自云端 %d 份存底合入——本账 %d → %d 器' % (得, 前, len(合)))
+        return 0
+    except Exception as e:
+        if 印:
+            print('⚠ 承账未成（%s）——本账⛔动' % e)
+        return 0
 
 
 def 诸器():
@@ -251,7 +312,7 @@ def 自测():
     # ①记账之器绝不许把正事弄挂
     T('①_账 全程吞异常（记账绝不许抛）', a.count('except Exception') >= 2 and 'pass' in a)
     T('①之二 _账 不碰仓里别的档（只写 _跑账.json）',
-      a.count("open(") <= 2 and '_跑账.json' in a and 'rmtree' not in a and 'remove' not in a)
+      a.count("open(") <= 3 and '_跑账.json' in a and '_器之迹' in a and 'rmtree' not in a and 'remove' not in a)   # 1015 添器之迹一档
     # ②判据当场从源头抽，不写死
     T('②席点之器当场自 工具/席/*.js 抽（判据之源律）',
       "glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))" in s and 'python3' in s)
@@ -283,6 +344,14 @@ def 自测():
       s.count("startswith('_')") >= 3 and 'isinstance(一, dict)' in s)
     T('⑦丙路只报黄，不入坏（久不跑不等於它坏了）',
       '黄 = []' in s and '坏.append' not in s.split('# 丙·久不跑')[1].split('if 印')[0])
+    合 = 合账({'甲.py': {'头回': '2026-10-01 00:00:00', '末跑': '2026-10-05 00:00:00', '次': 3}},
+             {'甲.py': {'头回': '2026-09-01 00:00:00', '末跑': '2026-10-02 00:00:00', '次': 7}, '乙.py': {'头回': 'x', '末跑': 'y', '次': 1}})
+    T('⑳合账：头回取早、末跑取晚、次取大、他机独有之器并入（1022 一章一会话、新机账空）',
+      合['甲.py'] == {'头回': '2026-09-01 00:00:00', '末跑': '2026-10-05 00:00:00', '次': 7} and '乙.py' in 合)
+    _s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
+    _m = open(os.path.abspath(__file__), encoding='utf-8').read().split("if __name__ == '__main__':")[1]
+    T('⑳之三 判红先承史再判（新机自愈；⛔弱化判法）', '承()' in _m and _m.index('承()') < _m.rindex('查()'))
+    T('⑳之二 承：自云端诸存底枝（备份/存底*）取账、合入、原子换档', "'refs/heads/备份/存底*'" in _s and 'os.replace(tmp, 账档)' in _s)
     print('── 负测·跑账 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 
@@ -291,11 +360,16 @@ if __name__ == '__main__':
     a = sys.argv
     if '--自测' in a:
         sys.exit(0 if 自测() else 1)
+    if '--承' in a:
+        sys.exit(承())
     if '--注' in a:
         注()
         sys.exit(0)
     if '--册' in a:
         册()
         sys.exit(0)
+    ok, _ = 查(印=False)
+    if not ok:
+        承()                      # 1022：新机之账空即自云端诸存底承史再判（⛔弱化判法）
     ok, _ = 查()
     sys.exit(0 if ok else 1)

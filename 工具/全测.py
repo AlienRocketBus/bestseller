@@ -4953,17 +4953,7 @@ def 只跑(名们, 出, quick):
     return 0 if (not 未认 and all(x[1] for x in 果)) else 1
 
 
-def 补浅克隆():
-    """★1022 W64（403 推闸逮）：云端会话係浅克隆，负测之钉於旧笔者（负测·全测崩绿之 a73c8836、负测·含拍）git show 得空而诬红——先补全史一回（零 token；已全者不动）。"""
-    try:
-        if subprocess.run(['git', 'rev-parse', '--is-shallow-repository'], cwd=ROOT, capture_output=True, text=True).stdout.strip() == 'true':
-            subprocess.run(['git', 'fetch', '-q', '--unshallow', 'origin'], cwd=ROOT, capture_output=True, timeout=600)
-    except Exception:
-        pass
-
-
 def main():
-    补浅克隆()
     quick = '--快' in sys.argv
     if '--只' in sys.argv:
         _a = sys.argv

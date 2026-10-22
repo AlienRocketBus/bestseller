@@ -1,16 +1,15 @@
-# 主枝之自推（1021 作者令「GitHub 自己去推」；1022 改）：一章封版即推一枝「章-N」（不动之标），GitHub 之机把它并进主枝、照 pre-push 之闸全跑；绿即推主枝。零 token、沙盒⛔候。
-# 1022 之改（403 封後主枝未进、书停）：旧以「存底枝之正文一变」触发——存底守五分一推，每推即触一回而 cancel 前一回，
-#   推闸跑二十分，五回俱被消、末回又败，主枝终未进。今以「章-N」之推触发（一章一回、⛔互消），且由此机自并（主枝已前进亦可并）。
+# 主枝之自推（1021 作者令「GitHub 自己去推」）：存底枝之正文一变（一章封版），GitHub 之机照 pre-push 之闸全跑；绿即把主枝快进到存底之父（真之末笔）。零 token、沙盒⛔候。
 name: autopush
 on:
   push:
-    branches: ['章-*']
+    branches: ['备份/存底']
+    paths: ['正文/**']
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
   group: autopush
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   advance:
     runs-on: ubuntu-latest
@@ -18,7 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: claude/the-novel-review-4dtuit
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -26,17 +24,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: 并入封版之章
+      - name: 取真末笔（存底之父）
         run: |
+          git checkout -q "$(git rev-parse HEAD^)"
+          # 1021：存底守五分一存，正文之稿未提交亦触此——末笔已在主枝即无可进，⛔空跑推闸（GitHub 之分钟亦⛔虚耗）
+          git fetch -q origin claude/the-novel-review-4dtuit
+          if git merge-base --is-ancestor HEAD FETCH_HEAD; then echo "SKIP=1" >> "$GITHUB_ENV"; echo "末笔已在主枝，免跑"; fi
           git config user.name autopush
           git config user.email autopush@users.noreply.github.com
-          T="${GITHUB_SHA}"
-          git fetch -q origin "$T" || true
-          if git merge-base --is-ancestor "$T" HEAD; then echo "SKIP=1" >> "$GITHUB_ENV"; echo "封版之章已在主枝，免跑"; exit 0; fi
-          git merge --no-edit "$T" -m "autopush：并入 ${GITHUB_REF_NAME}（封版之章）"
       - name: 推闸（与 工具/githooks/pre-push 同）
         if: env.SKIP != '1'
         run: bash 工具/githooks/pre-push
-      - name: 推主枝
+      - name: 快进主枝
         if: env.SKIP != '1'
-        run: git push origin HEAD:refs/heads/claude/the-novel-review-4dtuit
+        run: |
+          T=$(git rev-parse HEAD)
+          git fetch -q origin claude/the-novel-review-4dtuit
+          if git merge-base --is-ancestor FETCH_HEAD "$T"; then
+            git push origin "$T:refs/heads/claude/the-novel-review-4dtuit"
+          else
+            echo "主枝非真末笔之祖：不强推，候会话 推.py 兜底"; exit 1
+          fi

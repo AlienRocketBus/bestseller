@@ -26,6 +26,7 @@ from datetime import datetime
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 鲜限 = 300          # 秒：get_session 须在此内
 禁 = ('archive_session',)
+守书之记 = '【守书·⛔写书】'     # 令中带此记之会话只查不写，他坐持锁亦许开
 
 
 def 器名(n):
@@ -101,6 +102,8 @@ def 判(入, 转录读=新查, 锁读=锁之主, 我=None):
                           % (参.get('session_id'), '末查 %d 秒前' % 秒 if 秒 is not None else '本会话未查过'))
         return False, ''
     if 名 == 'create_session':
+        if 守书之记 in str(参.get('prompt') or ''):
+            return False, ''          # 守书之会话（只查、⛔写书）⛔与写书之坐争锁（1022）
         try:
             持, 坐, 章 = 锁读()
         except Exception as e:
@@ -157,6 +160,7 @@ def 自测():
     T('③新开：无锁 → 放', not 判(建, 锁读=无锁, 我='016MINE')[0])
     T('③之二 新开：他坐持锁 → 拦', 判(建, 锁读=他锁, 我='016MINE')[0])
     T('③之三 新开：本坐持锁 → 放（封毕自开接班）', not 判(建, 锁读=我锁, 我='cse_016MINE')[0])
+    T('③之六 守书之会话（令带【守书·⛔写书】）他坐持锁亦许开', not 判({'tool_name': 'mcp__X__create_session', 'tool_input': {'prompt': '你是' + 守书之记 + '……'}}, 锁读=他锁, 我='016MINE')[0])
     def 坏():
         raise RuntimeError('网断')
     T('③之四 心跳读不出 → 拦（fail closed）', 判(建, 锁读=坏, 我='016MINE')[0])

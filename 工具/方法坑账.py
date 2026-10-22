@@ -17,6 +17,7 @@
   python3 工具/方法坑账.py --同步                    # 四入口档之坑之账一行照本源重生
   python3 工具/方法坑账.py --立 名 根 治 计 [踩] [费]   # 新坑（状＝已治未守；计写「未治」二字则状＝未治）
   python3 工具/方法坑账.py --守 号 档 [档…]           # 守已落：档俱在则状＝已守
+  python3 工具/方法坑账.py --格 号 格 [格…]           # ㊲起坑必有格：点名守它的全测之格（须在读者可见之闸）
   python3 工具/方法坑账.py --复踩 号 "何时何事；治：……"
   python3 工具/方法坑账.py --自测
 """
@@ -85,6 +86,52 @@ def 同步(root=ROOT, d=None):
     return t
 
 
+有格之起 = 37        # ㊲（402 之失）起：坑必有格
+
+
+def _全测之格(root=ROOT):
+    """→ (全测所列诸格之名, 读者可见之闸之名)——读 工具/全测.py 之源（⛔ import 之：全测.py 甚重）。"""
+    import re as _re
+    try:
+        src = open(os.path.join(root, '工具', '全测.py'), encoding='utf-8').read()
+    except Exception:
+        return set(), set()
+    名们 = set(_re.findall(r"items\.append\(\('([^']+)'", src))
+    m = _re.search(r'^读者可见之闸 = \{(.*?)^\}', src, _re.M | _re.S)
+    拦们 = set(_re.findall(r"'([^']+)'", m.group(1))) if m else set()
+    return 名们, 拦们
+
+
+def _格之器(root=ROOT):
+    """→ {格名: {所跑之器之档}}：全测之格所调之函，其体中所点之「工具/x.py」。读不出者不在表（不判）。"""
+    import re as _re
+    try:
+        src = open(os.path.join(root, '工具', '全测.py'), encoding='utf-8').read()
+    except Exception:
+        return {}
+    函之体 = {}
+    for m in _re.finditer(r'^def (chk_\w+)\(\):\n(.*?)(?=^def |\Z)', src, _re.M | _re.S):
+        函之体[m.group(1)] = set(_re.findall(r"工具/[^'\"\s]+?\.py", m.group(2)))
+    表 = {}
+    for 名, 函 in _re.findall(r"items\.append\(\('([^']+)',\s*(chk_\w+)\)", src):
+        if 函之体.get(函):
+            表[名] = 函之体[函]
+    return 表
+
+
+def 格(号, 格们, root=ROOT):
+    d = 读(root)
+    k = d['坑'][号 - 1]
+    名们, 拦们 = _全测之格(root)
+    缺 = [g for g in 格们 if g not in 名们]
+    if 缺:
+        print('⛔ 全测无此格：%s' % '、'.join(缺)); return False
+    k['格'] = sorted(set(k.get('格', []) + 格们))
+    写(d, root); 同步(root, d)
+    print('✓ %s 之格：%s%s' % (圈(号), '、'.join(k['格']), '' if all(g in 拦们 for g in k['格']) else '（⚠ 有格不在读者可见之闸）'))
+    return True
+
+
 def 验(root=ROOT):
     坏 = []
     try:
@@ -108,6 +155,22 @@ def 验(root=ROOT):
                     坏.append('%s 守之档不在：%s' % (号, p))
         elif not str(k.get('计', '')).strip():
             坏.append('%s %s而无计（改哪档哪条、拿什么数验）' % (号, k.get('状')))
+        # ★1022 作者令「遇上的问题都要防止它再次发生，机制越来越成熟」：坑必有格——㊲起之坑已守，须点名守它的全测之格，
+        #   且其格在读者可见之闸（红即拦推）；⛔只守档：档在而无格验其意，守可被悄悄改坏。
+        # 1022 复核所逮：①已治未守亦须有格（旧只查已守——停在已治未守即永无格）；②格须真验此坑之守（格所跑之器须在其守之档）
+        if k.get('号', 0) >= 有格之起 and k.get('状') != '未治':
+            格们 = k.get('格') or []
+            if not 格们:
+                坏.append('%s %s而无格（坑必有格：--格 %d <全测之格名>）' % (号, k.get('状'), k.get('号', 0)))
+            名们, 拦们 = _全测之格(root)
+            器之 = _格之器(root)
+            for g in 格们:
+                if g not in 名们:
+                    坏.append('%s 之格「%s」不在全测' % (号, g))
+                elif g not in 拦们:
+                    坏.append('%s 之格「%s」不在读者可见之闸（红不拦推，守可被悄悄改坏）' % (号, g))
+                elif k.get('状') == '已守' and 器之.get(g) and not (器之[g] & set(k.get('守', []))):
+                    坏.append('%s 之格「%s」所验之器（%s）不在其守之档——格⛔借他坑之格充数' % (号, g, '、'.join(sorted(器之[g]))))
         for r in k.get('复踩', []):
             if '治' not in str(r.get('事', '')):
                 坏.append('%s 复踩（%s）未写其治——守失效须加强，⛔只记' % (号, r.get('时', '')))
@@ -225,6 +288,38 @@ def 自测():
         r10 = 验(t)[0]
         共 += 1; ok += (r9[0] is False and any('坑之检漏：②' in x for x in r9[1]) and r10 is True)   # 新法漏一坑即红
         共 += 1; ok += (圈(1) == '①' and 圈(20) == '⑳' and 圈(21) == '㉑' and 圈(36) == '㊱' and 圈(51) == '坑51')
+        # ★1022 坑必有格：起号之後已守之坑，无格即红；格不在全测即红；格不在读者可见之闸即红；三者俱合方绿
+        global 有格之起
+        旧起 = 有格之起
+        try:
+            有格之起 = 1
+            open(os.path.join(t, '工具', '全测.py'), 'w', encoding='utf-8').write(
+                "读者可见之闸 = {\n    '负测·甲',\n}\nitems.append(('负测·甲', f))\nitems.append(('负测·乙', g))\n")
+            d = 读(t); d['坑'][1]['状'] = '已守'; d['坑'][1]['守'] = ['工具/甲.py']; 写(d, t); 同步(t, d)
+            with contextlib.redirect_stdout(io.StringIO()):
+                g0 = 验(t)
+                g1 = 格(1, ['负测·无'], t)
+                格(1, ['负测·乙'], t); 格(2, ['负测·甲'], t)
+                g2 = 验(t)
+                d = 读(t); d['坑'][0]['格'] = ['负测·甲']; 写(d, t); 同步(t, d)
+                g3 = 验(t)[0]
+            共 += 1; ok += (g0[0] is False and any('而无格' in x for x in g0[1]) and g1 is False
+                          and g2[0] is False and any('不在读者可见之闸' in x for x in g2[1]) and g3 is True)
+            # 1022 复核：已治未守亦须格；格所验之器不在守之档即红（⛔借格）
+            open(os.path.join(t, '工具', '全测.py'), 'w', encoding='utf-8').write(
+                "读者可见之闸 = {\n    '负测·甲', '负测·丙',\n}\ndef chk_a():\n    return _自测之项('负测·甲', '工具/甲.py')\n\n"
+                "def chk_c():\n    return _自测之项('负测·丙', '工具/丙.py')\n\nitems.append(('负测·甲', chk_a))\nitems.append(('负测·丙', chk_c))\n")
+            d = 读(t); d['坑'][1]['状'] = '已治未守'; d['坑'][1]['计'] = '某计'; d['坑'][1]['格'] = []; 写(d, t); 同步(t, d)
+            with contextlib.redirect_stdout(io.StringIO()):
+                h0 = 验(t)
+                d = 读(t); d['坑'][1]['状'] = '已守'; d['坑'][1]['格'] = ['负测·丙']; 写(d, t); 同步(t, d)
+                h1 = 验(t)
+                d = 读(t); d['坑'][1]['格'] = ['负测·甲']; 写(d, t); 同步(t, d)
+                h2 = 验(t)[0]
+            共 += 1; ok += (h0[0] is False and any('已治未守而无格' in x for x in h0[1])
+                          and h1[0] is False and any('借他坑之格' in x for x in h1[1]) and h2 is True)
+        finally:
+            有格之起 = 旧起
     finally:
         shutil.rmtree(t)
     print('方法坑账·自测 %d/%d' % (ok, 共))
@@ -247,6 +342,8 @@ if __name__ == '__main__':
         立(*a[1:]); sys.exit(0)
     if a[:1] == ['--守'] and len(a) >= 3 and a[1].isdigit():
         sys.exit(0 if 守(int(a[1]), a[2:]) else 1)
+    if a[:1] == ['--格'] and len(a) >= 3 and a[1].isdigit():
+        sys.exit(0 if 格(int(a[1]), a[2:]) else 1)
     if a[:1] == ['--复踩'] and len(a) == 3 and a[1].isdigit():
         sys.exit(0 if 复踩(int(a[1]), a[2]) else 1)
     print(__doc__); sys.exit(2)

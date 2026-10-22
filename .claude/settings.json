@@ -73,6 +73,15 @@
         ]
       },
       {
+        "matcher": "Edit|Write|Bash|NotebookEdit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/user/the-novel && python3 工具/推闸中.py"
+          }
+        ]
+      },
+      {
         "matcher": "mcp__.*(archive|interrupt|create)_session",
         "hooks": [
           {

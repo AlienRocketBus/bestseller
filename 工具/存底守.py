@@ -65,9 +65,19 @@ def 在写(今=None, 界=活界, 根=None):
     return False
 
 
-def 该续(鲜, 锁坐, 章, 我坐, 写着):
-    """⛔纯判：续锁只续本坐所持、尚新鲜、且真在干活者（0924：替死锁续命，自走永判候；1021：⛔夺他坐之锁）。"""
-    return bool(鲜 and 章 is not None and 锁坐 and 锁坐 == 我坐 and 写着)
+def 该续(鲜, 锁坐, 章, 我坐, 写着, 後台=False):
+    """⛔纯判：续锁只续本坐所持、尚新鲜、且真在干活者（0924：替死锁续命，自走永判候；1021：⛔夺他坐之锁）。
+    1022（403 封後之假停写）：「干活」兼认流程之後台活（接棒守 --候主／封版／推／全测）——持锁者候 GitHub 推主枝时
+    无转录之写，锁遂陈，守书判停写而重派一坐；今候时锁亦续，机死则续断、陈之即真停。"""
+    return bool(鲜 and 章 is not None and 锁坐 and 锁坐 == 我坐 and (写着 or 後台))
+
+
+def _後台():
+    try:
+        import 席在跑吗
+        return bool(席在跑吗.後台之活())
+    except Exception:
+        return False
 
 
 def 一回():
@@ -75,7 +85,7 @@ def 一回():
     rc, m = 存底.存('存底守·定时', 续心跳=False, 跳同=True)
     续 = ''
     鲜, 锁坐, 章 = 存底._锁()
-    if 该续(鲜, 锁坐, 章, 心跳.坐(), 在写()):
+    if 该续(鲜, 锁坐, 章, 心跳.坐(), 在写(), _後台()):
         rc2, err = 心跳._写({'章': int(章), '时': int(time.time()), '坐': 锁坐})
         续 = '｜续锁第%s章' % 章 if rc2 == 0 else '｜⛔续锁未成：%s' % err
     _记('%s %s%s' % ('✓' if rc == 0 else '⛔', m, 续))
@@ -115,6 +125,13 @@ def 跑():
 
 
 def 起(开=subprocess.Popen):
+    # 1022：会话开头先承云端诸存底之跑账（新机之账空，封版之跑账闸判「从没跑过」而停——404 实踩）；後台、⛔候
+    try:
+        with open(日志, 'a') as lf:
+            开([sys.executable, os.path.join(ROOT, '工具', '跑账.py'), '--承'], cwd=ROOT, stdin=subprocess.DEVNULL,
+               stdout=lf, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
+    except Exception:
+        pass
     if 在跑():
         print('✓存底守在跑（每五分自存底·.git/存底守.log）')
         return 0
@@ -157,6 +174,8 @@ def 自测():
     T('②之三 逾期之锁 → ⛔续（⛔复活）', not 该续(False, 'A', 402, 'A', True))
     T('②之四 无人在写 → ⛔续（0924：替死锁续命）', not 该续(True, 'A', 402, 'A', False))
     T('②之五 撤过之锁（章空）、未名之坐 → ⛔续', not 该续(True, 'A', None, 'A', True) and not 该续(True, '', 402, '', True))
+    T('②之六 本坐持鲜锁、无转录而接棒守／封版在後台 → 续（403 封後候推之假停写）', 该续(True, 'A', 404, 'A', False, True))
+    T('②之七 後台在而锁属他坐 → ⛔续', not 该续(True, 'B', 404, 'A', False, True))
     global 锁档, 日志
     旧锁, 旧志 = 锁档, 日志
     with tempfile.TemporaryDirectory() as d:
@@ -165,17 +184,25 @@ def 自测():
         f = open(锁档, 'a+')
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
         起(开=lambda *a, **k: 起们.append(a))
-        T('③已有一守在跑 → ⛔再起', not 起们 and 在跑())
+        T('③已有一守在跑 → ⛔再起守（唯承账一回）', len(起们) == 1 and '--承' in 起们[0][0] and 在跑())
+        起们.clear()
         fcntl.flock(f, fcntl.LOCK_UN)
         f.close()
         起(开=lambda *a, **k: 起们.append(k))
-        T('③之二 无守 → 起一个，脱离（新 session）、⛔占钩之管', len(起们) == 1 and 起们[0].get('start_new_session')
-          and 起们[0].get('stdin') == subprocess.DEVNULL and 起们[0].get('stdout') not in (None, subprocess.PIPE))
+        T('③之二 无守 → 承账一回＋起一守，俱脱离（新 session）、⛔占钩之管', len(起们) == 2 and 起们[-1].get('start_new_session')
+          and 起们[-1].get('stdin') == subprocess.DEVNULL and 起们[-1].get('stdout') not in (None, subprocess.PIPE))
     锁档, 日志 = 旧锁, 旧志
     T('⑥锁与日志落 git 之公目（全测之工作副本里 .git 係一档亦通）', 锁档.startswith(_仓目()) and os.path.isdir(_仓目()))
     s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     T('④一回之存：⛔续心跳（续锁归 该续）、树未改即不推', "存('存底守·定时', 续心跳=False, 跳同=True)" in s)
     T('④之三 每回另起一进程跑（器改即生效、一回崩⛔拖垮守）', "'--一回'], cwd=ROOT, timeout=间" in s)
+    段一回 = s.split('def 一回')[1].split('\ndef ')[0]
+    T('④之四 一回把後台之活交给该续（1022 复核：删之即复 403 封後之假停写，而旧自测照绿）', '在写(), _後台())' in 段一回)
+    try:
+        import 席在跑吗
+        T('④之五 _後台 真调得着 席在跑吗.後台之活（⛔吞了导入之错而永判无後台）', isinstance(席在跑吗.後台之活('/无此目'), list) and 'import 席在跑吗' in s)
+    except Exception as e:
+        T('④之五 席在跑吗导入不得：%s' % e, False)
     T('④之二 间係五分（作者 1021 令·零 token）', 间 == 5 * 60)
     try:
         st = json.load(open(os.path.join(ROOT, '.claude', 'settings.json'), encoding='utf-8'))

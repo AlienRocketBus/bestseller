@@ -277,8 +277,9 @@ def main():
             print('⛔⛔⛔ 席在跑吗：**本坐持第%s章之锁，而手上无席、无後台之活——收了，书就停**（1022·402 封後书停五时半之形）。' % 锁章)
             print('   ①第%s章未写：跑 `cd /home/user/the-novel && python3 工具/自走.py`，照其令派席。' % 锁章)
             print('   ②上一章已封、第%s章该由新会话写（总章三之5 接棒）：' % 锁章)
-            print('      `python3 工具/心跳.py --收 %s` → create_trigger 入总编辑会话 session_016Hgfc2SSNvGktFmk2LX825（run_once_at 一分後；'
-                  '令「【派】开第 %s 章之写书会话」）→ `python3 工具/接棒守.py --候 %s`（run_in_background）。⛔候人。' % (锁章, 锁章, 锁章))
+            print('      `python3 工具/接棒守.py --候主 %s`（run_in_background；报主枝已含方续）→ `python3 工具/心跳.py --收 %s` → create_trigger 入总编辑会话 session_016Hgfc2SSNvGktFmk2LX825（run_once_at 一分後；'
+                  '令「【派】开第 %s 章之写书会话」）→ `python3 工具/接棒守.py --候 %s`（run_in_background）。⛔候人。'
+                  % ((锁章 or 1) - 1 if str(锁章).isdigit() else 锁章, 锁章, 锁章, 锁章))
         finally:
             sys.stdout = _o
         return 2

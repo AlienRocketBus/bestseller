@@ -212,6 +212,11 @@ def 自测():
     T('⑤候主：第三查含 → rc=0（候了四分）', 候主(404, 隔=120, 查=lambda n: next(序), 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x)) == 0 and 钟[0] == 240)
     钟[0] = 0.0
     T('⑤之二 九十分不含 → rc=2（推.py 兜底）', 候主(404, 隔=120, 查=lambda n: False, 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x)) == 2)
+    src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
+    段主含 = src.split('def 主含(')[1].split('\ndef ')[0]
+    段候主 = src.split('def 候主(')[1].split('\ndef ')[0]
+    T('⑥候主之默认查係 主含（1022 复核：⛔以注入之假查充其验）', '查 = 查 or 主含' in 段候主)
+    T('⑥之二 主含真查云端：章-N 之标为主枝之祖', all(k in 段主含 for k in ("'merge-base', '--is-ancestor'", "'refs/heads/章-%d'", 'ls-remote')))
     ok = sum(r)
     print('── 负测·接棒守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)

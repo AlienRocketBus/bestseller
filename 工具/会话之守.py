@@ -88,6 +88,53 @@ def 锁之主():
     return (差 <= 心跳.限), str(d.get('坐') or ''), d.get('章')
 
 
+def 章号(令):
+    m = re.search(r'第\s*(\d+)\s*章', 令 or '')
+    return int(m.group(1)) if m else None
+
+
+def 前派(转录, 章, 今=None, 限=3600):
+    """转录中 限 秒内有无 create_session 之令含同章号者。回其几分前（无则 None）。"""
+    今 = 今 or time.time()
+    最 = None
+    try:
+        with open(转录, encoding='utf-8') as f:
+            for l in f:
+                if 'create_session' not in l:
+                    continue
+                try:
+                    d = json.loads(l)
+                except Exception:
+                    continue
+                for c in ((d.get('message') or {}).get('content') or []):
+                    if isinstance(c, dict) and c.get('type') == 'tool_use' and 器名(c.get('name')) == 'create_session' \
+                            and 章号(str((c.get('input') or {}).get('prompt') or '')) == 章:
+                        t = _时(d.get('timestamp'))
+                        if t and 0 <= 今 - t <= 限 and (最 is None or t > 最):
+                            最 = t
+    except Exception:
+        return None
+    return None if 最 is None else int((今 - 最) // 60)
+
+
+def 停读():
+    try:
+        sys.path.insert(0, os.path.join(ROOT, '工具'))
+        import 暂停令
+        return bool(暂停令.在(ROOT)[0])
+    except Exception:
+        return False
+
+
+def 立停读():
+    try:
+        sys.path.insert(0, os.path.join(ROOT, '工具'))
+        import 心跳
+        心跳.立停()
+    except Exception:
+        pass
+
+
 def 判(入, 转录读=新查, 锁读=锁之主, 我=None):
     """纯判：回 (拦?, 由)。"""
     名 = 器名(入.get('tool_name'))
@@ -102,8 +149,19 @@ def 判(入, 转录读=新查, 锁读=锁之主, 我=None):
                           % (参.get('session_id'), '末查 %d 秒前' % 秒 if 秒 is not None else '本会话未查过'))
         return False, ''
     if 名 == 'create_session':
-        if 守书之记 in str(参.get('prompt') or ''):
+        令 = str(参.get('prompt') or '')
+        if 守书之记 in 令:
             return False, ''          # 守书之会话（只查、⛔写书）⛔与写书之坐争锁（1022）
+        # 1022 复核：①作者暂停令在 → ⛔开写书之会话，并立停锁令守书⛔每时空派；②一时内已派同章之会话 → ⛔再派（一派数令之重）
+        if 停读():
+            立停读()
+            return True, '⛔会话之守：作者暂停令在——⛔开写书之会话（已立停锁，守书⛔再派；解令 `暂停令.py --解` 即续）'
+        章 = 章号(令)
+        if 章 is not None and '【重派】' not in 令:
+            前 = 前派(入.get('transcript_path') or '', 章)
+            if 前 is not None:
+                return True, ('⛔会话之守：%d 分前已派第%d章之会话——⛔再派（数令同至）。先 get_session 看其状；'
+                              '确已死或被拦方於令中加「【重派】」再开' % (前, 章))
         try:
             持, 坐, 章 = 锁读()
         except Exception as e:
@@ -161,6 +219,31 @@ def 自测():
     T('③之二 新开：他坐持锁 → 拦', 判(建, 锁读=他锁, 我='016MINE')[0])
     T('③之三 新开：本坐持锁 → 放（封毕自开接班）', not 判(建, 锁读=我锁, 我='cse_016MINE')[0])
     T('③之六 守书之会话（令带【守书·⛔写书】）他坐持锁亦许开', not 判({'tool_name': 'mcp__X__create_session', 'tool_input': {'prompt': '你是' + 守书之记 + '……'}}, 锁读=他锁, 我='016MINE')[0])
+    with tempfile.TemporaryDirectory() as d2:
+        p2 = os.path.join(d2, 't.jsonl')
+        now2 = time.time()
+        def 派行(秒前, 令):
+            ts = datetime.utcfromtimestamp(now2 - 秒前).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            return json.dumps({'type': 'assistant', 'timestamp': ts, 'message': {'content': [
+                {'type': 'tool_use', 'name': 'mcp__Claude_Code_Remote__create_session', 'input': {'prompt': 令}}]}}) + '\n'
+        open(p2, 'w').write(派行(1200, '写《镇冢秘术》第 404 章：先……'))
+        g = globals()
+        旧停 = g['停读']; g['停读'] = lambda: False
+        try:
+            建2 = lambda 令: {'tool_name': 'mcp__X__create_session', 'transcript_path': p2, 'tool_input': {'prompt': 令}}
+            T('⑥二十分前已派第404章 → 再派第404章拦（数令同至之重）', 判(建2('写第404章'), 锁读=无锁, 我='M')[0])
+            T('⑥之二 令带【重派】 → 放（确已死方用）', not 判(建2('【重派】写第404章'), 锁读=无锁, 我='M')[0])
+            T('⑥之三 他章（第405章）→ 放', not 判(建2('写第 405 章'), 锁读=无锁, 我='M')[0])
+            open(p2, 'w').write(派行(4000, '写第 404 章'))
+            T('⑥之四 逾一时之前派 → 放', not 判(建2('写第404章'), 锁读=无锁, 我='M')[0])
+            g['停读'] = lambda: True
+            立了 = []
+            旧立 = g['立停读']; g['立停读'] = lambda: 立了.append(1)
+            T('⑦作者暂停令在 → 拦写书之会话，并立停锁', 判(建2('写第406章'), 锁读=无锁, 我='M')[0] and 立了)
+            T('⑦之二 暂停中守书之会话照开', not 判(建2(守书之记 + '巡'), 锁读=无锁, 我='M')[0])
+            g['立停读'] = 旧立
+        finally:
+            g['停读'] = 旧停
     def 坏():
         raise RuntimeError('网断')
     T('③之四 心跳读不出 → 拦（fail closed）', 判(建, 锁读=坏, 我='016MINE')[0])

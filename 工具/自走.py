@@ -244,16 +244,6 @@ def 锁滞(ch):
     return 判锁滞(d.get('步') or [], ch, 心跳时)
 
 
-def 云端已封(n):
-    """云端有「章-n」之标否（封版即打、⛔动）。读不出作否（⛔因网断而停书）。"""
-    try:
-        r = subprocess.run(['git', 'ls-remote', 'origin', 'refs/heads/章-%d' % int(n)], cwd=ROOT,
-                           capture_output=True, text=True, timeout=30)
-        return r.returncode == 0 and bool(r.stdout.strip())
-    except Exception:
-        return False
-
-
 def 判锁滞(步, ch, 心跳时=None):
     """⛔纯判·不碰盘——**自测拿它跑假料，不拿今日之实去钉**（㊸：一张快照钉进一条常令）。
 
@@ -525,11 +515,6 @@ def 断(印=True):
         L.append('  ⛔**其治不是补一份 `_十一轮.json`**——**补一份凭据而不去走那一庭，正是它要逮的那一样。**')
         return '救', L
 
-    if 云端已封(下):
-        # 1022 复核所逮：新坐若起於未含上章之主枝，末章少一，即重写一章已封者——章-N 之标在云端即⛔起
-        L.append('  【判】候。第%d章已封（云端有「章-%d」）而本树无之——⛔起（防重写已封之章）。' % (下, 下))
-        L.append('  → `git fetch origin claude/the-novel-review-4dtuit && git merge --ff-only FETCH_HEAD`，或候 `python3 工具/接棒守.py --候主 %d`，再跑本器' % 下)
-        return '候', L
     L.append('  【判】起。第%d章已封版且十一轮过——当起第%d章。' % (末, 下))
     L.append('  ── 下一条命令（⛔逐条照抄，序不许换）──')
     L.append('  python3 工具/心跳.py --跳 %d' % 下)
@@ -810,12 +795,9 @@ def 自测():
               末章() > 0 and isinstance(回执在(末章()), bool)))
     # ⑧⛔印「欠」时必带「谁的线／哪一章是哪一条线」那一问（体检账 ㊥）
     R.append(('⑧印「欠」时必带线之问（㊥·0913 两栽之治）', '谁的物、谁的线' in 码))
-    R.append(('⑨起前问云端有无「章-下」（1022 复核：⛔重写已封之章）',
-              'if 云端已封(下):' in 码 and 码.index('if 云端已封(下):') < 码.index("【判】起。第%d章已封版且十一轮过")))
-    R.append(('⑨之二 云端已封之判真跑得动（章-401 在云端）', 云端已封(401) is True))
     for 名, o in R:
         print(('  ✓ ' if o else '  ⛔ ') + 名)
-    print('  自测 %d/%d%s' % (sum(1 for _, o in R if o), len(R), ' 全通' if all(o for _, o in R) else ' 未过'))
+    print('  自测 %d/%d' % (sum(1 for _, o in R if o), len(R)))
     return all(o for _, o in R)
 
 

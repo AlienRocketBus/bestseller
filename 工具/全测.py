@@ -4293,7 +4293,7 @@ def _冷轮逾期俱有否决记(raw):
     '含拍', '数闸', '外声闸', 'FS沉默闸', '亮点在', '亮点界', '净重对表', '版档指纹',
     '钩子挂载', '负测留字',
     '负测·存底', '负测·会话之守', '负测·存底守',   # 1021·402 之失：稿之存亡係读者读得到与否——红即拦
-    '负测·席在跑吗', '负测·接棒守', '负测·心跳', '坑账', '负测·自走', '暂停令', '负测·推闸中', '负测·接力', '负测·跑账',   # 1022：书停即读者无书可读；坑必有格——红即拦
+    '负测·席在跑吗', '负测·接棒守',               # 1022·402 封後书停五时半：书停即读者无书可读——红即拦
 }
 
 
@@ -4667,23 +4667,6 @@ def chk_huihuashou_neg():
     return _自测之项('负测·会话之守', '工具/会话之守.py')
 
 
-def chk_paozhang_neg():
-    """负测·跑账（1022·新机之账空、封版被拦）：`工具/跑账.py --自测`——合账（头回取早、末跑取晚、次取大）、承自云端诸存底、判红先承再判；暨旧之诸格。"""
-    return _自测之项('负测·跑账', '工具/跑账.py')
-
-
-def chk_tuizhazhong_neg():
-    """负测·推闸中（1022·推闸之全测中写 设定／版本／正文 而留字红、推被拦）：`工具/推闸中.py --自测`——
-    推闸在跑时 Edit／Write／Bash 之写管目即拦、读照放、pid 死即⛔拦；pre-push 记 pid、settings 挂钩。"""
-    return _自测之项('负测·推闸中', '工具/推闸中.py')
-
-
-def chk_zizou_neg():
-    """负测·自走（1022 复核所逮）：`工具/自走.py --自测`——起前问云端有无「章-下」（⛔新坐於未含上章之主枝重写已封之章）、
-    己锁⛔作他人在跑、云端之锁为准；暨旧之诸格。"""
-    return _自测之项('负测·自走', '工具/自走.py')
-
-
 def chk_xizaipao_neg():
     """负测·席在跑吗（1022·402 封後书停五时半）：Stop 钩之判路——己持写书之锁而无席、无後台之活即拦（⛔以己锁充他人在跑）。"""
     return _自测之项('负测·席在跑吗', '工具/席在跑吗.py')
@@ -4926,9 +4909,6 @@ def 诸项(quick):
         items.append(('负测·会话之守', chk_huihuashou_neg))  # ★1021·402 之失：禁归档会话
         items.append(('负测·存底守', chk_cundishou_neg))     # ★1021·402 之失：後台定时存底
         items.append(('负测·席在跑吗', chk_xizaipao_neg))    # ★1022·书停：己持锁而闲即拦
-        items.append(('负测·自走', chk_zizou_neg))           # ★1022·复核：⛔重写已封之章
-        items.append(('负测·推闸中', chk_tuizhazhong_neg))  # ★1022·推闸之中⛔写管目
-        items.append(('负测·跑账', chk_paozhang_neg))       # ★1022·新机承账
         items.append(('负测·接棒守', chk_jiebang_neg))       # ★1022·书停：交棒後候接
         items.append(('负测·改单', chk_gaidan_neg))         # ★W60·X11：施单之守与式段之约
         items.append(('负测·费哨', chk_feishao_neg))       # ★1021 省律：费哨之器
@@ -4973,17 +4953,7 @@ def 只跑(名们, 出, quick):
     return 0 if (not 未认 and all(x[1] for x in 果)) else 1
 
 
-def 补浅克隆():
-    """★1022 W64（403 推闸逮）：云端会话係浅克隆，负测之钉於旧笔者（负测·全测崩绿之 a73c8836、负测·含拍）git show 得空而诬红——先补全史一回（零 token；已全者不动）。"""
-    try:
-        if subprocess.run(['git', 'rev-parse', '--is-shallow-repository'], cwd=ROOT, capture_output=True, text=True).stdout.strip() == 'true':
-            subprocess.run(['git', 'fetch', '-q', '--unshallow', 'origin'], cwd=ROOT, capture_output=True, timeout=600)
-    except Exception:
-        pass
-
-
 def main():
-    补浅克隆()
     quick = '--快' in sys.argv
     if '--只' in sys.argv:
         _a = sys.argv

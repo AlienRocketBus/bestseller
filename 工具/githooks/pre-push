@@ -18,9 +18,6 @@ if [ "$ZM_SKIP_HOOK" = "1" ]; then
   fi
   exit 0
 fi
-# 【1022·推闸中】全测之中写 设定／版本／正文 即令「负测留字」红而拦推（1022 实踩）：起时记 pid，PreToolUse 钩（工具/推闸中.py）见之即拦其写；毕即删
-GD="$(git rev-parse --git-common-dir)"; case "$GD" in /*) ;; *) GD="$ROOT/$GD" ;; esac
-echo $$ > "$GD/推闸中.pid"; trap 'rm -f "$GD/推闸中.pid"' EXIT
 echo "── pre-push:全测中(批115)……"
 # 【W51·1017】全测改并行（工具/全测并.py：工作副本隔离、同表同判；副本建不成即自退串行）——一处试：同一 HEAD 串 1153 秒、并 408 秒，186 项过否全同，主仓库 sha256 同
 OUT=$(ZM_STREAM="${ZM_STREAM:-streamA-cli}" python3 工具/全测并.py 2>&1)

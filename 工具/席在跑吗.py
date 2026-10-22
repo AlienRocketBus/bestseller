@@ -98,6 +98,71 @@ def 完本了吗():
         return False, ''
 
 
+def 锁之主():
+    """→ (锁坐, 锁章)：云端心跳之锁为谁所持（问心跳 判「有人在跑」之後方问）。读不出作 ('', None)。"""
+    try:
+        sys.path.insert(0, os.path.join(ROOT, '工具'))
+        import 心跳
+        在, d = 心跳._远()
+        if 在 and isinstance(d, dict):
+            return str(d.get('坐') or ''), d.get('章')
+    except Exception:
+        pass
+    return '', None
+
+
+def 我之坐():
+    try:
+        sys.path.insert(0, os.path.join(ROOT, '工具'))
+        import 心跳
+        return 心跳.坐()
+    except Exception:
+        return '未名'
+
+
+後台之器 = ('工具/封版.py', '工具/推.py', '工具/全测.py', '工具/全测并.py', '工具/接棒守.py', 'git push')
+
+
+def 後台之活(根='/proc'):
+    """本机有无流程之後台活（封版 --後、推、全测、git push、接棒守 --候）——候其通知係正当之候，⛔拦。"""
+    在 = []
+    try:
+        for pid in os.listdir(根):
+            if not pid.isdigit() or int(pid) == os.getpid():
+                continue
+            try:
+                c = open(os.path.join(根, pid, 'cmdline'), 'rb').read().replace(b'\0', b' ').decode('utf-8', 'ignore')
+            except Exception:
+                continue
+            for k in 後台之器:
+                if k in c and '--自测' not in c:
+                    在.append(k)
+    except Exception:
+        pass
+    return sorted(set(在))
+
+
+def 判路(叫停=False, 暂停=False, 有席=False, 锁坐='', 我坐='', 转录活=False, 後台活=False, 完本=False):
+    """⛔纯判（main 只走此一条路）：回 (rc, 由)。rc=0 放行｜2 拦（无席）｜3 拦（己持锁而闲——402 封後书停之形）。"""
+    if 叫停:
+        return 0, '叫停'
+    if 暂停:
+        return 0, '暂停令'
+    if 转录活:
+        return 0, '转录在写'
+    if 後台活:
+        return 0, '後台之活'
+    if 有席:
+        # ★1022（402 封後书停五时半）：旧只问「有人在跑」——而那人是本坐自己（封版时 --跳 N+1 自持其锁），遂放行收工。
+        #   今：锁为本坐所持而手上无席、无後台之活 → 拦；⛔以己锁充「他人在跑」。
+        if 锁坐 and 我坐 and 锁坐 == 我坐 and 我坐 != '未名':
+            return 3, '己持锁而闲'
+        return 0, '他坐在跑'
+    if 完本:
+        return 0, '完本'
+    return 2, '无席'
+
+
 def main():
     if os.path.exists(叫停):
         print('✓席在跑吗：作者已叫停（设定/_作者叫停.flag 在盘上）——放行。')
@@ -108,18 +173,28 @@ def main():
         print('✓席在跑吗：%s——放行（⛔派席；作者令下方 `python3 工具/暂停令.py --解`）。' % 停由[:120])
         return 0
     有席, 行 = 问心跳()
-    if 有席:
-        print('✓席在跑吗：有席在跑——放行。')
-        print('   心跳印：%s' % 行)
-        return 0
+    锁坐, 锁章 = 锁之主() if 有席 else ('', None)
     转, 档 = 席之转录在写()
-    if 转:
-        print('✓席在跑吗：工作流之席十五分钟内写过转录（%s）——放行。' % os.path.basename(os.path.dirname(档)))
+    後 = 後台之活()
+    rc, 由 = 判路(有席=有席, 锁坐=锁坐, 我坐=我之坐(), 转录活=转, 後台活=bool(後),
+                完本=(False if (有席 or 转 or 後) else 完本了吗()[0]))
+    if rc == 0:
+        print('✓席在跑吗：%s——放行。%s' % (由, ('（%s）' % '、'.join(後)) if 後 else ''))
+        if 行:
+            print('   心跳印：%s' % 行)
         return 0
-    完, out = 完本了吗()
-    if 完:
-        print('✓席在跑吗：自走.py 判「完本」——放行。')
-        return 0
+    if rc == 3:
+        _o = sys.stdout
+        sys.stdout = sys.stderr
+        try:
+            print('⛔⛔⛔ 席在跑吗：**本坐持第%s章之锁，而手上无席、无後台之活——收了，书就停**（1022·402 封後书停五时半之形）。' % 锁章)
+            print('   ①第%s章未写：跑 `cd /home/user/the-novel && python3 工具/自走.py`，照其令派席。' % 锁章)
+            print('   ②上一章已封、第%s章该由新会话写（总章三之5 接棒）：' % 锁章)
+            print('      `python3 工具/心跳.py --收 %s` → create_session（源 claude/the-novel-review-4dtuit；令照总章三之5）'
+                  ' → `python3 工具/接棒守.py --候 %s`（run_in_background）。⛔候人。' % (锁章, 锁章))
+        finally:
+            sys.stdout = _o
+        return 2
     # ⛔拦（★印到 stderr：Stop 钩只把 stderr 给模型——1013 实踩，印在 stdout 则模型只见「No stderr output」）
     _o = sys.stdout
     sys.stdout = sys.stderr
@@ -147,18 +222,8 @@ def 自测():
     def 报(名, 得, 期): 格.append((名, 得 == 期, 得, 期))
 
     def 判(有席, 有叫停, 完本, 转录活=False, 暂停=False):
-        """把 main 之判逐条摆出来（与 main 同一条路，⛔不另写一份）。"""
-        if 有叫停:
-            return 0
-        if 暂停:
-            return 0
-        if 有席:
-            return 0
-        if 转录活:
-            return 0
-        if 完本:
-            return 0
-        return 2
+        """⛔不另写一份：直调 main 所走之 判路（他坐之锁）。"""
+        return 判路(叫停=有叫停, 暂停=暂停, 有席=有席, 锁坐='B', 我坐='A', 转录活=转录活, 完本=完本)[0]
 
     报('①有席即放行', 判(True, False, False), 0)
     报('②⛔无席即拦', 判(False, False, False), 2)
@@ -182,11 +247,25 @@ def 自测():
     报('⑩拦时印到 stderr', 'sys.stdout = sys.stderr' in src2, True)
     报('⑪盘上暂停令在即放行（坑⑭：与自走、接力同认）', 判(False, False, False, False, True), 0)
     报('⑪之二·main 真调暂停令之判', '暂停令在()' in src2 and 'import 暂停令' in inspect.getsource(暂停令在), True)
+    # ⑫—⑮·1022（402 封後书停五时半）：己持锁而闲即拦；後台之活、他坐之锁放行
+    报('⑫己持锁、无席无後台 → 拦（rc=3）', 判路(有席=True, 锁坐='A', 我坐='A')[0], 3)
+    报('⑫之二 他坐持锁 → 放行', 判路(有席=True, 锁坐='B', 我坐='A')[0], 0)
+    报('⑫之三 己持锁而席在写 → 放行', 判路(有席=True, 锁坐='A', 我坐='A', 转录活=True)[0], 0)
+    报('⑬己持锁而封版／推／接棒守在後台 → 放行', 判路(有席=True, 锁坐='A', 我坐='A', 後台活=True)[0], 0)
+    报('⑬之二 已收锁而接棒守在候 → 放行', 判路(有席=False, 後台活=True)[0], 0)
+    报('⑭未名之坐（旧锁）⛔认作己锁', 判路(有席=True, 锁坐='未名', 我坐='未名')[0], 0)
+    报('⑮main 只走 判路、真认後台与锁主', '判路(' in src2 and '後台之活()' in src2 and '锁之主()' in src2, True)
+    import tempfile as _t2
+    _p = _t2.mkdtemp()
+    for _pid, _c in (('11', b'python3\0/x/\xe5\xb7\xa5\xe5\x85\xb7/\xe5\xb0\x81\xe7\x89\x88.py\0601\0--\xe5\xbe\x8c'), ('12', b'sleep\0' + b'9')):
+        os.makedirs(os.path.join(_p, _pid)); open(os.path.join(_p, _pid, 'cmdline'), 'wb').write(_c)
+    报('⑯後台之活：/proc 之 cmdline 认得 封版.py', 後台之活(_p), ['工具/封版.py'])
+    _sh.rmtree(_p)
     过 = sum(1 for _, ok, _, _ in 格 if ok)
     for 名, ok, 得, 期 in 格:
         if not ok:
             print('  ⛔%s：得 %r，期 %r' % (名, 得, 期))
-    print('%s 席在跑吗·自测 %d/%d' % ('✓' if 过 == len(格) else '⛔', 过, len(格)))
+    print('%s 席在跑吗·自测 %d/%d%s' % ('✓' if 过 == len(格) else '⛔', 过, len(格), ' 全通' if 过 == len(格) else ' 未过'))
     return 0 if 过 == len(格) else 1
 
 

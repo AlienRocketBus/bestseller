@@ -33,6 +33,7 @@
       "Bash(python3 工具/大审.py:*)",
       "Bash(python3 工具/还账.py:*)",
       "Bash(python3 工具/会话之守.py:*)",
+      "Bash(python3 工具/接棒守.py:*)",
       "Bash(git fetch:*)",
       "Bash(git status:*)",
       "Bash(git log:*)",

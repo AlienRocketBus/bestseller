@@ -76,8 +76,8 @@ def 候(n, 限分=30, 隔=60, 读=None, 我=None, 今=time.time, 睡=time.sleep)
             print('✓接棒成：第%s章之锁已为坐 %s 所持——交棒者可收工' % (n, 坐))
             return 0
         if 今() - 始 >= 限分 * 60:
-            print('⛔接棒未成：第%s章 %d 分无人接锁——新会话或被拦或未起：get_session 看其实时之状；'
-                  '拦则另开合规之会话（总章「遇卡自通」），再 `接棒守.py --候 %s`；⛔候人' % (n, 限分, n))
+            print('⛔接棒未成：第%s章 %d 分无人接锁——再发「【派】开第 %s 章之写书会话」入总编辑会话（create_trigger，'
+                  'persistent_session_id session_016Hgfc2SSNvGktFmk2LX825，run_once_at 一分後），再 `接棒守.py --候 %s`；⛔本坐自写、⛔候人' % (n, 限分, n, n))
             return 2
         睡(隔)
 
@@ -149,8 +149,8 @@ def 哨():
             except Exception:
                 N = '?'
         print('  下一章 N=%s' % N)
-        print('  → 照总章三之5 开写书之会话：create_session（model claude-opus-5-5；源 claude/the-novel-review-4dtuit；'
-              '令「写第 N 章：先 `python3 工具/心跳.py --跳 N`，再读总章、跑自走、照办；末了照总章三之5 接棒；⛔候人」）→ `python3 工具/接棒守.py --候 N`（run_in_background）')
+        print('  → 子会话无开会话之器：create_trigger（persistent_session_id session_016Hgfc2SSNvGktFmk2LX825，总编辑之会话；'
+              'run_once_at 一分後；令「【派】开第 %s 章之写书会话」）→ `python3 工具/接棒守.py --候 %s`（run_in_background）' % (N, N))
     return rc
 
 

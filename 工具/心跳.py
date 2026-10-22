@@ -101,8 +101,27 @@ def 坐():
     return '未名'
 
 
+def 他持(d, 我, 今=None):
+    """⛔纯判（1022）：云端之锁为他坐所持且新鲜否——跳⛔夺、收⛔抹。回 (他持?, 其坐)。"""
+    今 = 今 or int(time.time())
+    if not isinstance(d, dict) or d.get('章') is None:
+        return False, ''
+    他 = str(d.get('坐') or '')
+    try:
+        鲜 = 今 - int(d.get('时') or 0) <= 限
+    except (TypeError, ValueError):
+        鲜 = False
+    return (bool(他) and 他 != 我 and 鲜), 他
+
+
 def 跳(n):
-    """报到：把 {章, 时, 坐} 写进仓根之心跳档并推。"""
+    """报到：把 {章, 时, 坐} 写进仓根之心跳档并推。
+    1022：他坐持鲜锁即⛔报（旧无主之查，两坐各跳各的、後跳者覆前者之锁，同写一章）。"""
+    在, 远 = _远()
+    持, 他 = 他持(远 if 在 else None, 坐())
+    if 持:
+        print('⛔心跳未报：第%s章之锁为他坐 %s 所持——⛔两坐同写；逾 %d 分不报方可接' % (远.get('章'), 他[:12], 限 // 60))
+        return 1
     d = {'章': int(n), '时': int(time.time()), '坐': 坐()}
     rc, err = _写(d)
     print('✓心跳已报：第%d章｜%s' % (d['章'], time.strftime('%H:%M:%S', time.gmtime(d['时'])))
@@ -163,6 +182,9 @@ def 可收(n, 现们):
       撤 N 之锁⛔清下一章之心跳（X21；旧：撤锁一律写「章＝空」）。
     ★1020 W53 验席之十：旧判「其一属後章即⛔写」——本地留後章之旧档而远端已撤（且更新）者，仍印「已交出」⛔写；今从其新者。"""
     新 = max((d for d in 现们 if isinstance(d, dict)), key=_时, default=None)
+    持, 他 = 他持(新, 坐())
+    if 持:
+        return False, '锁为他坐 %s 所持（⛔抹他坐之鲜锁·1022）' % 他[:12]
     try:
         c = int((新 or {}).get('章'))
     except (TypeError, ValueError):
@@ -187,10 +209,22 @@ def 收(n=None):
         if not 可:
             print('✓第%s章之锁已交出（%s）——⛔清：撤锁只撤本章自己的。' % (n, 由))
             return 0
-    rc, err = _写({'章': None, '毕': (int(n) if n else None), '时': int(time.time())})
+    rc, err = _写({'章': None, '毕': (int(n) if n else None), '时': int(time.time()), '坐': 坐()})   # 1022：记撤锁者（Stop 钩认「己撤而未候接棒」）
     print('✓已撤锁（第%s章办毕）——下一坐当场可接手。' % (n or '?') if rc == 0
           else '⛔撤锁未推：%s' % err)
     return rc
+
+
+def _防夺之测():
+    今, r = 100000, []
+    r.append(('⑮他持：他坐之鲜锁 → 是', 他持({'章': 404, '时': 今 - 60, '坐': 'B'}, 'A', 今)[0]))
+    r.append(('⑮之二 己锁、陈锁、空锁 → 否', not 他持({'章': 404, '时': 今 - 60, '坐': 'A'}, 'A', 今)[0]
+              and not 他持({'章': 404, '时': 今 - 限 - 1, '坐': 'B'}, 'A', 今)[0]
+              and not 他持({'章': None, '时': 今, '坐': 'B'}, 'A', 今)[0]))
+    s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
+    r.append(('⑯跳先问他持（⛔两坐同写）', '持, 他 = 他持(远 if 在 else None, 坐())' in s.split('def 跳(')[1].split('\ndef ')[0]))
+    r.append(('⑯之二 可收先问他持（⛔抹他坐之鲜锁）', '他持(新, 坐())' in s.split('def 可收(')[1].split('\ndef ')[0]))
+    return r
 
 
 def 自测():
@@ -256,6 +290,8 @@ def 自测():
       and 可收(394, [{'章': 395, '时': 300}, {'章': None, '时': 200}])[0] is False
       and 可收(394, [{'章': 395, '时': 'x'}, {'章': None, '时': 5}])[0] is True)
     T('⑧之二 收先问可收，而後写', '可收(' in s.split('def 收(')[1].split('_写(')[0])
+    for 名, 条 in _防夺之测():
+        T(名, 条)
     print('── 负测·心跳 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 

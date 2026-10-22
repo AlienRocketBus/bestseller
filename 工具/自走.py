@@ -67,16 +67,30 @@ def 末章():
 
 
 def 有人在跑():
-    """返回 (在跑?, 第几章, 停了几分钟)。⛔其限之数自 心跳.py 现取，不写死。"""
-    p = os.path.join(ROOT, '_心跳.json')
-    if not os.path.exists(p):
-        return False, None, None
+    """返回 (在跑?, 第几章, 停了几分钟)。⛔其限之数自 心跳.py 现取，不写死。
+    1022（复核所逮）：①先取云端之锁——新机无本地之 `_心跳.json`（.gitignore），旧判「无人」→ 两坐同写；
+    ②锁为本坐所持⛔作「他人在跑」——旧印「候」，持锁者遂闲（402 封後书停五时半之同族）。"""
+    d, 我 = None, ''
     try:
-        d = json.load(io.open(p, encoding='utf-8'))
+        sys.path.insert(0, os.path.join(ROOT, '工具'))
+        import 心跳 as _hb
+        在, d = _hb._远()
+        d = d if (在 and isinstance(d, dict)) else None
+        我 = _hb.坐()
     except Exception:
-        return True, None, None          # 读不出，作有人论（宁可候，不可抢）
+        d = None
+    if d is None:
+        p = os.path.join(ROOT, '_心跳.json')
+        if not os.path.exists(p):
+            return False, None, None
+        try:
+            d = json.load(io.open(p, encoding='utf-8'))
+        except Exception:
+            return True, None, None          # 读不出，作有人论（宁可候，不可抢）
     if d.get('章') is None:
         return False, None, None         # 已撤锁
+    if 我 and 我 != '未名' and str(d.get('坐') or '') == 我:
+        return False, d.get('章'), None  # 己锁：⛔作他人在跑
     s = io.open(os.path.join(ROOT, '工具', '心跳.py'), encoding='utf-8').read()
     m = re.search(r'^限\s*=\s*(\d+)\s*\*\s*60', s, re.M)
     lim = int(m.group(1)) * 60 if m else 45 * 60

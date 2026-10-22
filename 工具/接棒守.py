@@ -13,6 +13,7 @@
   python3 工具/接棒守.py --候主 403 [分]   # 封版後候主枝含 403（run_in_background；零 token）
   python3 工具/接棒守.py --候 404 [分]     # 交棒後以 run_in_background 跑
   python3 工具/接棒守.py --在候            # rc=0 在候
+  python3 工具/接棒守.py --立守书          # 守书之会话首回立之（⛔写书之坐立之）
   python3 工具/接棒守.py --哨              # 定时之保用：有人在写或交棒中 rc=0；停写 rc=2 并印开写书会话之令
   python3 工具/接棒守.py --自测
 """
@@ -212,6 +213,11 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if '--自测' in a:
         sys.exit(0 if 自测() else 1)
+    if '--立守书' in a:
+        # 守书之会话立之（只查、⛔写书）：Stop 钩见之⛔令此坐写书。⛔写书之坐立之——其 Stop 钩之守即失。
+        open(os.path.join(_仓目(), '守书.flag'), 'w').write('守书之会话（定时之保）\n')
+        print('✓本机立为守书之坐（%s）' % os.path.join(_仓目(), '守书.flag'))
+        sys.exit(0)
     if '--候主' in a:
         i = a.index('--候主')
         sys.exit(候主(int(a[i + 1]), int(a[i + 2]) if len(a) > i + 2 and a[i + 2].isdigit() else 90))

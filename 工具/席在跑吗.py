@@ -173,8 +173,13 @@ def 流在跑(根=None, 今=None, 界=30 * 60):
     return False
 
 
+守书之号 = ('01BFuD1GJM5avGrcaUg1REwV',)   # 守书之会话（定时之保·小模型·只查⛔写）；换坐即改此行
+
+
 def 守书之坐():
-    """守书之会话（定时之保·只查与开会话、⛔写书）於其机立 <git 公目>/守书.flag——本钩⛔令其写书。"""
+    """守书之会话（定时之保·只查与派、⛔写书）——本钩⛔令其写书。认其坐号（守书之号），或其机之 <git 公目>/守书.flag。"""
+    if 我之坐() in 守书之号:
+        return True
     try:
         p = subprocess.run(['git', 'rev-parse', '--git-common-dir'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
         gd = p if os.path.isabs(p) else os.path.join(ROOT, p or '.git')

@@ -8,8 +8,9 @@
   ①Stop 钩（`工具/席在跑吗.py`）：本坐持写书之锁而手上无席、无後台之活 → 拦（⛔再认己锁作「他人在跑」）。
   ②本器 `--候 N`：交棒者收锁、开新会话之後，後台跑之（零 token）；每分取云端心跳——见第 N 章之锁为他坐所持且新鲜
     → ✓接棒成（rc=0）；逾限（默三十分）无人接 → rc=2，醒交棒者重开。候时 Stop 钩认之放行。
-  ③定时之保：守书之会话（小模型）每二时被唤一回，跑 `--哨`：有人在写或交棒中即止；停写即开写书之会话（总章三之5）。
+  ③定时之保：守书之会话（小模型）每时被唤一回，跑 `--哨`：有人在写或交棒中即止；停写即开写书之会话（总章三之5）。
 用法：
+  python3 工具/接棒守.py --候主 403 [分]   # 封版後候主枝含 403（run_in_background；零 token）
   python3 工具/接棒守.py --候 404 [分]     # 交棒後以 run_in_background 跑
   python3 工具/接棒守.py --在候            # rc=0 在候
   python3 工具/接棒守.py --哨              # 定时之保用：有人在写或交棒中 rc=0；停写 rc=2 并印开写书会话之令
@@ -80,6 +81,38 @@ def 候(n, 限分=30, 隔=60, 读=None, 我=None, 今=time.time, 睡=time.sleep)
         睡(隔)
 
 
+主枝 = 'claude/the-novel-review-4dtuit'
+
+
+def 主含(n):
+    """云端主枝已含第 n 章之封版否（章-n 之标係其封版之提交，为主枝之祖即含）。"""
+    def 跑(*a):
+        return subprocess.run(a, cwd=ROOT, capture_output=True, text=True)
+    r = 跑('git', 'ls-remote', 'origin', 'refs/heads/章-%d' % int(n))
+    sha = r.stdout.split()[0] if r.returncode == 0 and r.stdout.strip() else ''
+    if not sha:
+        return False
+    跑('git', 'fetch', '-q', 'origin', 'refs/heads/章-%d' % int(n), 'refs/heads/' + 主枝)
+    f = 跑('git', 'ls-remote', 'origin', 'refs/heads/' + 主枝)
+    主 = f.stdout.split()[0] if f.returncode == 0 and f.stdout.strip() else ''
+    return bool(主) and 跑('git', 'merge-base', '--is-ancestor', sha, 主).returncode == 0
+
+
+def 候主(n, 限分=90, 隔=120, 查=None, 今=time.time, 睡=time.sleep):
+    """封版之後、交棒之前：候 GitHub autopush 把第 n 章推进主枝（零 token；Stop 钩认本器之进程放行）。
+    rc=0 已含→即交棒（总章三之5）；rc=2 逾限→跑 `python3 工具/推.py` 兜底、逐红治。"""
+    查 = 查 or 主含
+    始 = 今()
+    while True:
+        if 查(n):
+            print('✓主枝已含第%s章——即照总章三之5 交棒（收锁、开新会话、--候）' % n)
+            return 0
+        if 今() - 始 >= 限分 * 60:
+            print('⛔主枝 %d 分未含第%s章——跑 `python3 工具/推.py` 兜底、推闸之红逐条治；治毕再交棒' % (限分, n))
+            return 2
+        睡(隔)
+
+
 交棒之宽分 = 30     # 撤锁後此内无人接，作「交棒中」（⛔误判停写而另开一坐）
 
 
@@ -97,8 +130,8 @@ def 哨判(d, 今, 限):
             return 0, '✓有人在写：第%s章（坐 %s，%d 分前报到）' % (d.get('章'), str(d.get('坐') or '')[:12], 分)
         return 2, '⛔停写：第%s章之锁 %d 分未续（逾 %d 分）' % (d.get('章'), 分, 限 // 60)
     if 今 - 时 < 交棒之宽分 * 60:
-        return 0, '✓交棒中：第%s章已毕、撤锁 %d 分（宽 %d 分）' % (d.get('毕'), 分, 交棒之宽分)
-    return 2, '⛔停写：第%s章毕後撤锁已 %d 分无人接' % (d.get('毕'), 分)
+        return 0, '✓交棒中：交第%s章之棒、撤锁 %d 分（宽 %d 分）' % (d.get('毕'), 分, 交棒之宽分)
+    return 2, '⛔停写：交第%s章之棒、撤锁已 %d 分无人接' % (d.get('毕'), 分)
 
 
 def 哨():
@@ -108,7 +141,7 @@ def 哨():
     print(由)
     if rc:
         print('  → 照总章三之5 开写书之会话：`python3 工具/自走.py` 定章号 N → create_session（model claude-opus-5-5；源 claude/the-novel-review-4dtuit；'
-              '令「写第 N 章：读总章、跑自走、照办；末了照总章三之5 接棒；⛔候人」）→ `python3 工具/接棒守.py --候 N`（run_in_background）')
+              '令「写第 N 章：先 `python3 工具/心跳.py --跳 N`，再读总章、跑自走、照办；末了照总章三之5 接棒；⛔候人」）→ `python3 工具/接棒守.py --候 N`（run_in_background）')
     return rc
 
 
@@ -165,6 +198,11 @@ def 自测():
     T('④之三 撤锁十分（交棒中）→ rc=0（⛔另开一坐）', 哨判({'章': None, '毕': 403, '时': 今 - 600}, 今, 限)[0] == 0)
     T('④之四 撤锁逾三十分无人接 → rc=2 停写（402 封後书停之形）', 哨判({'章': None, '毕': 402, '时': 今 - 31 * 60}, 今, 限)[0] == 2)
     T('④之五 心跳读不出 → rc=2', 哨判(None, 今, 限)[0] == 2)
+    钟 = [0.0]
+    序 = iter([False, False, True])
+    T('⑤候主：第三查含 → rc=0（候了四分）', 候主(404, 隔=120, 查=lambda n: next(序), 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x)) == 0 and 钟[0] == 240)
+    钟[0] = 0.0
+    T('⑤之二 九十分不含 → rc=2（推.py 兜底）', 候主(404, 隔=120, 查=lambda n: False, 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x)) == 2)
     ok = sum(r)
     print('── 负测·接棒守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)
@@ -174,6 +212,9 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if '--自测' in a:
         sys.exit(0 if 自测() else 1)
+    if '--候主' in a:
+        i = a.index('--候主')
+        sys.exit(候主(int(a[i + 1]), int(a[i + 2]) if len(a) > i + 2 and a[i + 2].isdigit() else 90))
     if '--哨' in a:
         sys.exit(哨())
     if '--在候' in a:

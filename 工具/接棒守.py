@@ -141,7 +141,15 @@ def 哨():
     rc, 由 = 哨判(d if 在 else None, int(time.time()), 心跳.限)
     print(由)
     if rc:
-        print('  → 照总章三之5 开写书之会话：`python3 工具/自走.py` 定章号 N → create_session（model claude-opus-5-5；源 claude/the-novel-review-4dtuit；'
+        N = (d or {}).get('章') or (d or {}).get('毕') if (在 and isinstance(d, dict)) else None
+        if not N:
+            try:
+                import 自走
+                N = 自走.末章() + 1
+            except Exception:
+                N = '?'
+        print('  下一章 N=%s' % N)
+        print('  → 照总章三之5 开写书之会话：create_session（model claude-opus-5-5；源 claude/the-novel-review-4dtuit；'
               '令「写第 N 章：先 `python3 工具/心跳.py --跳 N`，再读总章、跑自走、照办；末了照总章三之5 接棒；⛔候人」）→ `python3 工具/接棒守.py --候 N`（run_in_background）')
     return rc
 

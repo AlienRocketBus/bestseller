@@ -206,9 +206,9 @@ def 派令(n, root=None, 厚=None):
         if n > 末章() and glob.glob(os.path.join(root or ROOT, '版本', '第%d章' % n, '起草_稿*.md')):
             return ['  # 第%d章已有起草之稿（容器重启所余？）——先收诸 journal 已成之段，⛔重派已交之席' % n,
                     "  python3 工具/承.py %d --重 %s --魂路 %s" % (n, 重.group(1), ','.join(路们))] + ([
-                    '  # ⛔本章须厚（分量闸·须厚），而 承.py 之包裹 args 不带 须厚——跑包裹前於 _承.json 与 _承.js 之 args 添 "须厚": true（X40·承.py 未治）'
+                    '  # ★本章须厚（分量闸·须厚）：承.py 之包裹自带 须厚（旧 _承.json 承之、无则照 造式验.须厚之判 现算·X40）——跑後验 _承.js 之 args 有 "须厚": true'
                     ] + 由 if 须 is True else []) + [
-                    "  Workflow({scriptPath:'%s'})   # 承.py 所写之包裹；诸稿不足三者照其印加「补」" % os.path.join(
+                    "  Workflow({scriptPath:'%s'})   # 承.py 所写之包裹（补自带：缺席之执笔造章自判补否）；⛔resumeFromRunId 直续（坑㊻·续跑之守拦）" % os.path.join(
                         root or ROOT, '版本', '第%d章' % n, '_承.js')]
         return ['  python3 工具/章料.py %d && python3 工具/造式验.py %d --料   # 料全方派' % (n, n),
                 '  # 开工之闸：设定/方案/W<k>.md 逐环确证 ＋ python3 工具/工作流账.py --开 W<k>（法典二之七步）'] + (

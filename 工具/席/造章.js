@@ -136,7 +136,7 @@ if ((!承.诸稿 || 承.补 === true) && 诸稿.length < 宽 && !宽足) {   // 
     agent(交缺(执笔令(x)), { phase: '造', label: '执笔·' + x.名 + '·补', schema: 加缺(稿式), effort: 'max' })
       .then(r => r ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean))
 }
-if (诸稿.length < 3) throw new Error('造：交稿不足三（' + 诸稿.length + '）——造式之实必不全，停（主环查明再续：resumeFromRunId）')
+if (诸稿.length < 3) throw new Error('造：交稿不足三（' + 诸稿.length + '）——造式之实必不全，停（主环查明再续：python3 工具/承.py ' + N + ' --重 ' + 重 + ' --魂路 ' + 段案路.join(',') + ' → 其 _承.js；⛔resumeFromRunId 直续·坑㊻）')
 log('造：' + 诸稿.map(d => 蒙号(d.名) + '·' + d.路 + '·' + d.words + '字·抄' + (d.copy_rate === undefined ? '见选' : d.copy_rate + '%')).join('｜'))
 if (须厚 && 诸稿.every(d => !(d.words >= 厚线))) log('⛔须厚（分量闸·须厚）：诸稿自报之净重俱 <' + 厚线 + '——选席照令交总编辑（⛔认其量；其治在事之择）')
 
@@ -295,7 +295,7 @@ ${限(16)}
   if (N >= 393 && 审.misread) 盲 = (await agent(交缺(盲读令(2)), { phase: '验', label: '盲读·2', schema: 加缺(盲读式) })) || 盲
   审 = await agent(交缺(逻辑审令(2, 盲)), { phase: '验', label: '逻辑审·2', schema: 加缺(崩式), effort: 'high' })
 }
-// ★1013：总编辑之裁（args.裁）——停於「致命未净」之後，总编辑亲治其余病、存版，以 resumeFromRunId 续：前诸席之令不变，俱自缓存回放，只记席新跑
+// ★1013：总编辑之裁（args.裁）——停於「致命未净」之後，总编辑亲治其余病、存版，以 resumeFromRunId 续：前诸席之令不变，俱自缓存回放，只记席新跑（1023 坑㊻：其前有败席者续跑之守拦——改 `承.py N --裁 '…'` → _承.js）
 const 裁 = (args && typeof args.裁 === 'string' && args.裁.trim()) ? args.裁.trim() : ''
 if (病(审) && !裁) {
   log('⛔逻辑审回写一回仍有' + ((审.hard || []).length ? ' ' + 审.hard.length + ' 处硬崩' : '') + (审.misread ? ' 读误' : '') + '——不许封版，交总编辑（治毕以 args.裁 续）')

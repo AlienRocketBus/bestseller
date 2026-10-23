@@ -479,7 +479,7 @@ def 录(run, a=None, b=None):
             裁 = str(x.get('ruling', ''))
             if '已挂' in 裁 and x.get('limit') and '限' not in 裁:
                 裁 += '·限%s' % x['limit']
-            L.append('| 前册#%s | %s | %s |' % (x.get('old_no', ''), 裁, str(x.get('reason', '')).replace('|', '／').replace('\n', ' ')))
+            L.append('| 前册#%s | %s | %s |' % (str(x.get('old_no', '')).replace('前册#', ''), 裁, str(x.get('reason', '')).replace('|', '／').replace('\n', ' ')))
     L += ['\n## 四·本回之数（器出，非估）\n', '见 `设定/_草/大审%d/包.md` 甲节（零 token 先行诸器之红）。\n' % b,
           '## 五·本回之得（一句话）\n', str(裁果.get('verdict_line', '〔裁席未交〕')) + '\n',
           '## 六·出口归造（入下一段之剧情庭题与段案）\n'] + ['- %s' % x for x in (裁果.get('to_next_segment') or [])]

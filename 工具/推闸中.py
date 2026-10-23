@@ -56,7 +56,7 @@ def 触管(入):
                 return os.path.relpath(p, ROOT)
         return ''
     if 名 == 'Bash':
-        c = str(参.get('command') or '')
+        c = re.sub(r'[0-9&]*>>?\s*(/dev/null\b|&[0-9])', ' ', str(参.get('command') or ''))   # 1023：2>/dev/null、2>&1 非写（只读之令被误拦）
         if not 写之状.search(c):
             return ''
         for d in 管目:
@@ -100,6 +100,8 @@ def 自测():
     T('②之三 Bash 只读 设定/（cat、grep、git show）→ 放', not 判(B('cat 设定/甲.md | head'), 在)[0]
       and not 判(B("git show origin/x:设定/甲.md"), 在)[0])
     T('②之四 Bash git merge（改工作区）而点到 正文/ → 拦', 判(B('git merge origin/x && ls 正文/'), 在)[0])
+    T('②之五 只读之令带 2>/dev/null、2>&1 而点到 设定/ → 放（1023 误拦）；真写 > 设定/ 仍拦',
+      not 判(B('grep -c 417 设定/甲.json 2>/dev/null; ls 设定/ 2>&1 | head'), 在)[0] and 判(B('echo x > 设定/甲.md 2>/dev/null'), 在)[0])
     T('③推闸未跑 → 一概放', not 判(E('设定/甲.md'), lambda: None)[0])
     with tempfile.TemporaryDirectory() as d:
         f = os.path.join(d, 'p')

@@ -136,7 +136,7 @@ if ((!承.诸稿 || 承.补 === true) && 诸稿.length < 宽 && !宽足) {   // 
     agent(交缺(执笔令(x)), { phase: '造', label: '执笔·' + x.名 + '·补', schema: 加缺(稿式), effort: 'max' })
       .then(r => r ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean))
 }
-if (诸稿.length < 3) throw new Error('造：交稿不足三（' + 诸稿.length + '）——造式之实必不全，停（主环查明再续：python3 工具/承.py ' + N + ' → 其 _承.js；⛔resumeFromRunId 直续·坑㊻）')
+if (诸稿.length < 3) throw new Error('造：交稿不足三（' + 诸稿.length + '）——造式之实必不全，停（主环查明再续：python3 工具/承.py ' + N + ' --重 ' + 重 + ' --魂路 ' + 段案路.join(',') + ' → 其 _承.js；⛔resumeFromRunId 直续·坑㊻）')
 log('造：' + 诸稿.map(d => 蒙号(d.名) + '·' + d.路 + '·' + d.words + '字·抄' + (d.copy_rate === undefined ? '见选' : d.copy_rate + '%')).join('｜'))
 if (须厚 && 诸稿.every(d => !(d.words >= 厚线))) log('⛔须厚（分量闸·须厚）：诸稿自报之净重俱 <' + 厚线 + '——选席照令交总编辑（⛔认其量；其治在事之择）')
 

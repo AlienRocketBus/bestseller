@@ -9,7 +9,8 @@
 【其法】钩自 stdin 取 PreToolUse 之 JSON，tool_name 为 Workflow 者：
   ①带 resumeFromRunId：找其 journal；按调用之序（首 started 之序），首个无果之席其後若有已成之席，
     而此 run 係造章（有「执笔·」之席）→ 拦，印将重跑之席与续之正路（承.py → _承.js）。
-    无果之席在末（如选席跑中而断）→ 放（只重跑那一席）；journal 不见 → 放（⛔凭猜拦）。
+    无果之席在末（如选席跑中而断）→ 放（只重跑那一席）。
+    包裹（_承.js）之 run 而续带 args.裁 → 拦（包裹定死 args、外之裁丢，复停於致命未净）：改 `承.py N --裁 '…'` 重写包裹再新派。
   ②新派造章——scriptPath 係 造章.js、或係包裹（_承.js 等，其文以 workflow() 调造章、args 定死於文）、或内联 script 调之——
     其 args 之 承 未盖尽 承.收(N) 所得（已交之稿、选、草、盲、审）→ 拦：无承即「新派即重写之」，有承即「承已旧、重跑承.py」。
     确要毁稿重造者，args 加 重造:true（总编辑之裁）：放行，并记重造之时（承.py 自此⛔收旧轮）。
@@ -177,6 +178,12 @@ def 判(入, 根=None, root=None, 收=None, 记=None):
                                   '改走承之路：%s（收诸 journal 已成之段与盘稿、写 版本/第%s章/_承.js，补自带）→ '
                                   "Workflow({scriptPath:'%s'})。" % (首缺, len(将重), '、'.join(将重), _令(n, a), n,
                                                                      os.path.join(root or ROOT, '版本', '第%s章' % n, '_承.js')))
+                sp = str(参.get('scriptPath') or '')
+                if isinstance(a.get('裁'), str) and a['裁'].strip() and sp and os.path.basename(sp) != '造章.js':
+                    n = str(章) if 章 else 'N'
+                    return True, ('⛔续跑之守（坑㊻）：此续之 scriptPath 係包裹（%s），其 args 定死於文——外传之 args.裁 到不了造章，复停於「致命未净」。'
+                                  '改：%s（裁写入新包裹）→ Workflow({scriptPath:\'%s\'})（新派、⛔带 resumeFromRunId）。' % (
+                                      os.path.basename(sp), _令(n, a), os.path.join(root or ROOT, '版本', '第%s章' % n, '_承.js')))
                 if not (isinstance(a.get('章'), int) and 章 and a['章'] != 章):
                     return False, ''          # 造章之续、无缺：俱自缓存回放
         # journal 不见、非造章、或属他章 → 落到②（续错 run 号即全重跑）
@@ -208,6 +215,10 @@ def 判(入, 根=None, root=None, 收=None, 记=None):
         return False, ''
     包 = os.path.join(root or ROOT, '版本', '第%d章' % n, '_承.js')
     缺 = '、'.join([os.path.basename(str(d.get('file', ''))) for d in 缺稿] + 缺段)
+    共病 = (已.get('选') or {}).get('common_fatal') if isinstance(已.get('选'), dict) else ''
+    if 共病:
+        return True, ('⛔续跑之守（坑㊻）：第%d章所成之选有共病（%s）——承之即复停於共病，⛔走承.py。治料之後以 args 加 重造:true 新派'
+                      '（总编辑之裁；承.py 自此⛔收旧轮）。' % (n, str(共病)[:80]))
     if not 承:
         return True, ('⛔续跑之守（坑㊻）：第%d章已有已成之段（%s）——新派造章即重写之。走承之路：%s → Workflow({scriptPath:\'%s\'})；'
                       '确要毁稿重造，args 加 重造:true（总编辑之裁；承.py 自此⛔收旧轮）。' % (n, 缺, _令(n, x), 包))
@@ -263,7 +274,7 @@ def 自测():
         席(行, '2', '攻·二')
         写j('wf_other-01', 行)
         T('④非造章之 workflow（无执笔）同式 → 放（其无承之路，⛔停书）', not 判(R('wf_other-01'), 根=d)[0])
-        T('⑤journal 不见、run 号不合式（路径之注）→ 放', not 判(R('wf_none-001'), 根=d)[0] and not 判(R('../../etc'), 根=d)[0])
+        T('⑤journal 不见、run 号不合式（路径之注）而无 args.章 → 放（有 args.章 者落②，见⑬）', not 判(R('wf_none-001'), 根=d)[0] and not 判(R('../../etc'), 根=d)[0])
         行 = []
         席(行, '1', '执笔·甲', '败')
         席(行, '1', '执笔·甲')
@@ -336,6 +347,14 @@ def 自测():
           and not 判(Rr('wf_done-001', 406), 根=d, 收=有, 记=记)[0])
         T('⑭续之令带 --裁（致命未净之後总编辑之续：承之路接得住裁）', '--裁' in 判({'tool_name': 'Workflow', 'tool_input': {
             'scriptPath': '工具/席/造章.js', 'resumeFromRunId': 'wf_406a-001', 'args': {'章': 406, '重': '重', '魂路': ['换账'], '裁': '已亲治'}}}, 根=d)[1])
+        包档2 = os.path.join(d, '_承二.js')
+        open(包档2, 'w', encoding='utf-8').write("return await workflow({ scriptPath: '/r/工具/席/造章.js' }, {\"章\": 406})\n")
+        拦, 由 = 判({'tool_name': 'Workflow', 'tool_input': {'scriptPath': 包档2, 'resumeFromRunId': 'wf_done-001', 'args': {'裁': '已亲治'}}}, 根=d)
+        T('⑮包裹之 run 无缺而续带 args.裁 → 拦（包裹定死 args，裁到不了造章）、令带 --裁；不带裁 → 放', 拦 and "--裁 '已亲治'" in 由
+          and not 判({'tool_name': 'Workflow', 'tool_input': {'scriptPath': 包档2, 'resumeFromRunId': 'wf_done-001'}}, 根=d)[0])
+        病 = lambda n: {'诸稿': [{'file': '/x/版本/第9章/起草_稿甲.md'}], '选': {'common_fatal': '料之病'}}
+        拦, 由 = 判(F(), 收=病, 记=记)
+        T('⑯所成之选有共病 → 拦而只指 重造（承之即复停於共病）', 拦 and '重造:true' in 由 and 'python3 工具/承.py' not in 由)
         env = dict(os.environ, ZM_STREAM='自测', ZM_JOURNAL_ROOT=d)
         p = subprocess.run([sys.executable, os.path.abspath(__file__)], input='{坏', capture_output=True, text=True, env=env)
         T('⑩入坏 → rc=0（⛔挡书）', p.returncode == 0)

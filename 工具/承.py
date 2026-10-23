@@ -10,9 +10,10 @@
   python3 工具/承.py --自测
 
 1023（坑㊻·续跑之守之审所逮）：
-  ①补自带：承.补 恒为 true——缺席之执笔由 造章.js 自判补否（宽足⛔补）；旧之「手加补」写不进 _承.js（包裹定死 args）、致不足三之环。
-  ②重造之界：续跑之守放行 args.重造 之新派时记其时（git 公目 承_重造.json）；此前之 journal 与稿档⛔收（旧轮之选、草⛔混入新轮）。
-  ③盘稿：journal 无果（他机之 journal、执笔交了稿而败於 StructuredOutput）而 版本/第N章/起草_稿*.md 在（≥200 字节、界後）者亦收。
+  ①补自带：选未成者承.补 为 true——缺席之执笔由 造章.js 自判补否（宽足⛔补）；旧之「手加补」写不进 _承.js（包裹定死 args）、致不足三之环。
+     选已成者⛔补（选不读补来之稿，补即白耗一执笔）。
+  ②重造之界：续跑之守放行 args.重造 之新派时记其时（git 公目 承_重造.json）；此前之 journal、稿档与旧 _承.json（只留 重、魂路、须厚）⛔收。
+  ③盘稿：journal 无果（他机之 journal、执笔交了稿而败於 StructuredOutput）而 版本/第N章/起草_稿*.md 在（≥200 字节、界後、有【本章亮点】——稿半⛔收）者亦收。
   ④盲读之壳（未交、被截）⛔收——承之即令造章.js 当场停於「盲读未交」、续之复停。
 
 所收（label → 承之键）：执笔·*→诸稿（以 file 认，後者覆前者）；选·行家兼两眼／选·补→选；合稿／合稿·补→草；
@@ -81,7 +82,7 @@ def 记重造(n, 档=None, 时=None):
 def 读(路):
     行 = []
     try:
-        with open(路, encoding='utf-8') as f:
+        with open(路, encoding='utf-8', errors='replace') as f:   # 截於半字之 journal ⛔崩（一份坏即诸章之承俱死）
             for l in f:
                 try:
                     行.append(json.loads(l))
@@ -97,7 +98,7 @@ def 首令属(路, 诸id, n):
     记 = '你是第 %d 章的**' % n
     for i in 诸id:
         try:
-            with open(os.path.join(os.path.dirname(路), 'agent-%s.jsonl' % i), encoding='utf-8') as f:
+            with open(os.path.join(os.path.dirname(路), 'agent-%s.jsonl' % i), encoding='utf-8', errors='replace') as f:
                 if 记 in f.readline():
                     return True
         except OSError:
@@ -145,7 +146,13 @@ def 收(n, 诸路, root=ROOT, 再=False, 界=None):
         try:
             if f in 稿 or os.path.getsize(f) < 盘稿之下限 or os.path.getmtime(f) < 界:
                 continue
-            字 = len(re.findall(r'[\u4e00-\u9fff]', open(f, encoding='utf-8', errors='replace').read()))
+            if '【本章亮点】' not in open(f, encoding='utf-8', errors='replace').read():
+                continue                         # 稿半（397「一席稿半」）⛔作已交——亮点与稿同一回写，无之即未写完，交补
+            try:
+                import 净重对表
+                字 = 净重对表.净重(f)
+            except Exception:
+                字 = len(re.findall(r'[\u4e00-\u9fff]', open(f, encoding='utf-8', errors='replace').read()))
         except OSError:
             continue
         稿[f] = {'file': f, 'words': 字, 'beats': 0, 'soul': '（盘稿：journal 无其果）', '盘': True}
@@ -164,7 +171,7 @@ def 须厚判(n):
         return None
 
 
-def 造(n, 承, 旧=None, 重=None, 魂路=None, 再=False, 裁=None, 补=True):
+def 造(n, 承, 旧=None, 重=None, 魂路=None, 再=False, 裁=None, 补=True, 界=0):
     旧 = 旧 or {}
     a = {'章': n, '重': 重 or 旧.get('重'), '魂路': 魂路 or 旧.get('魂路')}
     # ★1020 X40 驳席逮：重启续跑之 args 须带 须厚（旧 _承.json 有则承之；无则照 造式验.须厚之判 现算——与自走之派令同尺）；⛔丢则执笔令、选令之须厚条随之消失
@@ -178,19 +185,28 @@ def 造(n, 承, 旧=None, 重=None, 魂路=None, 再=False, 裁=None, 补=True):
     旧承 = 旧.get('承') or {}
     合 = dict(旧承)
     合.pop('补', None)
-    if 补:
-        合['补'] = True                          # 1023：缺席之执笔由 造章.js 自判补否（宽足⛔补）
     if 承.get('诸稿') or 旧承.get('诸稿'):
-        by = {x['file']: x for x in (旧承.get('诸稿') or []) if os.path.exists(x.get('file', ''))}
+        by = {x['file']: x for x in (旧承.get('诸稿') or []) if os.path.exists(x.get('file', '')) and os.path.getmtime(x['file']) >= 界}
         by.update({x['file']: x for x in 承.get('诸稿', [])})
         合['诸稿'] = list(by.values())
     for k in ('选', '草', '盲', '审', '回写'):
         if k in 承:
             合[k] = 承[k]
+    if isinstance(合.get('盲'), dict) and 盲未交(合['盲']):
+        合.pop('盲')                             # 旧 _承.json 所带之盲读之壳⛔承（承之即停於盲读未交）
+    if 补 and '选' not in 合:
+        合['补'] = True                          # 1023：缺席之执笔由 造章.js 自判补否（宽足⛔补）；选已成⛔补（补来之稿选不读）
     if 再:
         合.pop('回写', None)
     a['承'] = 合
     return a
+
+
+def 旧之滤(旧, 旧路, 界):
+    """重造前之 _承.json：旧轮之选、草、盲、审、裁、稿⛔承，只留章之设（重、魂路、须厚）——1023 复核逮：只滤 收 而⛔滤旧档，重造之界形同虚设。"""
+    if 旧 and 界 and os.path.getmtime(旧路) < 界:
+        return {k: 旧[k] for k in ('重', '魂路', '须厚') if k in 旧}
+    return 旧
 
 
 def 包裹(a):
@@ -233,7 +249,7 @@ def 自测():
         R.append(('②诸稿以 file 认、稿档不在者⛔收', sorted(x['file'] for x in 承['诸稿']) == [f('稿一'), f('稿二')]))
         R.append(('③盲读·2 ⛔收；回写记 true', '盲' not in 承 and 承.get('回写') is True))
         a = 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '承': {'补': True, '诸稿': [{'file': f('稿三'), 'words': 3}]}})
-        R.append(('④并旧 _承.json：旧稿留、补恒带（1023·缺席由造章自判）、重魂路承旧', len(a['承']['诸稿']) == 3 and a['承'].get('补') is True and a['重'] == '中'
+        R.append(('④并旧 _承.json：旧稿留、旧补去（所收有选⛔补·⑬）、重魂路承旧', len(a['承']['诸稿']) == 3 and '补' not in a['承'] and a['重'] == '中'
                   and '补' not in 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '承': {'补': True}}, 补=False)['承']))
         R.append(('⑤包裹调 造章.js 而带 args', '造章.js' in 包裹(a) and '"章": 9' in 包裹(a)))
         R.append(('⑤之二·旧 _承.json 带须厚者承之（X40）', 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '须厚': True, '承': {}}).get('须厚') is True and '须厚' not in 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '承': {}})))
@@ -250,15 +266,38 @@ def 自测():
         承6, 来6 = 收(9, [j1, j2, j3, j4, j5], root=t, 界=4.5)
         R.append(('⑨重造之界：界前之 journal（旧轮之选、草）⛔收', 来6 == [j5] and '选' not in 承6 and '草' not in 承6))
         盘 = f('稿五')
-        open(盘, 'w', encoding='utf-8').write('她' * 300)
+        open(盘, 'w', encoding='utf-8').write('第9章 甲\n' + '她' * 300 + '\n【本章亮点】一')
+        半 = f('稿六')
+        open(半, 'w', encoding='utf-8').write('她' * 400)
         承7, _ = 收(9, [], root=t, 界=0)
-        R.append(('⑩盘稿：journal 无果而稿档在（≥200 字节）→ 收；空档（稿三）⛔收', [x['file'] for x in 承7.get('诸稿', [])] == [盘]
-                  and 承7['诸稿'][0]['words'] == 300))
+        R.append(('⑩盘稿：journal 无果而稿档在（≥200 字节、有亮点）→ 收、量净重；空档（稿三）、稿半（稿六·无亮点）⛔收',
+                  [x['file'] for x in 承7.get('诸稿', [])] == [盘] and 承7['诸稿'][0]['words'] == 300))
         os.utime(盘, (3, 3))
         R.append(('⑩之二 盘稿在界前（旧轮）→ ⛔收', not 收(9, [], root=t, 界=4)[0].get('诸稿')))
         a3 = 造(9, 承, 旧={'重': '中', '魂路': ['物证']}, 裁='已亲治读误')
         R.append(('⑪--裁 入 args（造章.js 越致命未净而续记）；旧 _承.json 之裁承之', a3.get('裁') == '已亲治读误'
                   and 造(9, 承, 旧={'重': '中', '魂路': ['物证'], '裁': '旧裁'}).get('裁') == '旧裁' and '裁' not in 造(9, 承, 旧={'重': '中', '魂路': ['物证']})))
+        R.append(('⑬选已成 → ⛔补（补来之稿选不读，白耗一执笔）；选未成 → 补', '补' not in 造(9, {'选': {'ranking': []}}, 旧={'重': '中', '魂路': ['物证']})['承']
+                  and 造(9, {}, 旧={'重': '中', '魂路': ['物证']})['承'].get('补') is True))
+        旧稿 = f('稿七')
+        open(旧稿, 'w').write('x')
+        os.utime(旧稿, (3, 3))
+        a8 = 造(9, {}, 旧={'重': '中', '魂路': ['物证'], '承': {'诸稿': [{'file': 旧稿}], '盲': {'happened': '未交'}}}, 界=4)
+        R.append(('⑭造：界前之旧稿⛔承、旧 _承.json 之盲读之壳⛔承', not a8['承'].get('诸稿') and '盲' not in a8['承']))
+        旧路 = os.path.join(t, '_承.json')
+        open(旧路, 'w').write('{}')
+        os.utime(旧路, (3, 3))
+        旧9 = {'重': '中', '魂路': ['物证'], '裁': '旧裁', '承': {'选': {'common_fatal': '旧之共病'}, '诸稿': [{'file': f('稿一')}]}}
+        a9 = 造(9, {}, 旧之滤(旧9, 旧路, 4), 界=4)
+        R.append(('⑭之二 重造後之全路（旧之滤→造）：旧 _承.json 之共病之选、裁、稿俱⛔承，重魂路留；界前不滤', '选' not in a9['承']
+                  and '裁' not in a9 and not a9['承'].get('诸稿') and a9['重'] == '中' and 旧之滤(旧9, 旧路, 2) is 旧9 and 旧之滤(旧9, 旧路, 0) is 旧9))
+        坏 = os.path.join(t, 'r4', 'bad.jsonl')
+        open(坏, 'wb').write(json.dumps({'type': 'started', 'key': 'k', 'label': '执笔·甲'}, ensure_ascii=False).encode('utf-8') + b'\n\xe5\x9b')
+        try:
+            收(9, [坏], root=t, 界=0)
+            R.append(('⑮截於半字之 journal ⛔崩（一份坏即诸章之承俱死）', True))
+        except Exception:
+            R.append(('⑮截於半字之 journal ⛔崩（一份坏即诸章之承俱死）', False))
         档 = os.path.join(t, '承_重造.json')
         记重造(9, 档=档, 时=123.0)
         R.append(('⑫记重造／重造之时 往返；他章 0', 重造之时(9, 档) == 123.0 and 重造之时(8, 档) == 0))
@@ -290,14 +329,18 @@ def main():
     章目 = os.path.join(ROOT, '版本', '第%d章' % n)
     旧路 = os.path.join(章目, '_承.json')
     旧 = json.load(open(旧路, encoding='utf-8')) if os.path.exists(旧路) else None
+    界 = 重造之时(n)
+    旧 = 旧之滤(旧, 旧路, 界)
     魂路 = 取('--魂路').split(',') if 取('--魂路') else None
-    args = 造(n, 承, 旧, 取('--重'), 魂路, 再=再, 裁=取('--裁'), 补='--不补' not in a)
+    args = 造(n, 承, 旧, 取('--重'), 魂路, 再=再, 裁=取('--裁'), 补='--不补' not in a, 界=界)
     print('承·第%d章：journal %d 份；诸稿 %d（%s）；%s' % (
         n, len(来), len(args['承'].get('诸稿', [])),
         '、'.join('%s·%s字' % (os.path.basename(x['file']), x.get('words')) for x in args['承'].get('诸稿', [])),
         '、'.join(k for k in ('选', '草', '盲', '审', '回写') if k in args['承']) or '其後诸段俱未成'))
     if len(args['承'].get('诸稿', [])) < 3:
-        print('  ⚠ 诸稿不足三——包裹已带「补」，造章.js 补派缺席之执笔' if args['承'].get('补') else '  ⛔诸稿不足三而 --不补——造章.js 必停')
+        print('  ⚠ 诸稿不足三——包裹已带「补」，造章.js 补派缺席之执笔' if args['承'].get('补') else '  ⛔诸稿不足三而无补——造章.js 必停')
+    if (args['承'].get('选') or {}).get('common_fatal'):
+        print('  ⛔所承之选有共病（%s）——承之即复停於共病；治料後以 args 重造:true 新派' % str(args['承']['选']['common_fatal'])[:60])
     if '--印' in a:
         return
     with open(旧路, 'w', encoding='utf-8') as o:

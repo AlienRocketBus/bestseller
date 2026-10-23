@@ -483,7 +483,8 @@ def 断(印=True):
             if _钩 is not None:
                 L.append("  Workflow({scriptPath:'工具/席/大审.js', args:{起:%d, 止:%d, 孤钩:%s}})"
                          % (_上 + 1, 末, _钩))
-            L.append('  ★其後再跑 python3 工具/大审.py --立 %d 造其册并当场填判；' % 末)
+            L.insert(-1, '  python3 工具/大审.py --包 %d %d   ← 瘦式·零 token 先行（先跑；诸席同读其包）' % (_上 + 1, 末))
+            L.append('  ★其後跑 python3 工具/大审.py --录 <runId> 自 journal 成册（X27·录册归器）；')
             L.append('  ⛔**只造册不填判者，`大审.py::空模子()` 当场滤掉它，不算一回大审**（㊧）。')
             L.append('  ★★办毕再跑一回本器，它自会印「起第%d章」。' % 下)
             return '庭', L

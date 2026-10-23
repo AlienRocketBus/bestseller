@@ -168,6 +168,17 @@ def q2_jing(c):
         _逾 = sorted([(k, v) for k, v in _挂.items()
                       if v <= c and k in _欠 and k not in _已还 and k not in _废],
                      key=lambda x: x[1])
+        # ★1023·407 封版之治：限＝本章、而本章开镜卡已当面认之（卡中有其名）者——是「当面说」，⛔判红
+        #   （旧判：407 封版·後 必红於 408 之挂，而 408 未写、无从还——封不得）；限＜本章（该还未还）照旧红。
+        try:
+            _卡 = io.open(os.path.join(ROOT, '版本', '第%d章' % c, '_开镜卡.md'), encoding='utf-8').read()
+        except Exception:
+            _卡 = ''
+        _认 = [(k, v) for k, v in _逾 if v == c and k in _卡]
+        _逾 = [(k, v) for k, v in _逾 if (k, v) not in _认]
+        for _k, _v in _认:
+            out.append(('二之b·⚠限本章、卡已认 %s' % _k, True,
+                        '限%d｜本章之卡已当面认之——起草须还（白文还了方销）' % _v))
         if _逾:
             out.append(('二之b·⛔非还不可（其限已到或已过）', False,
                         '%d 样：%s' % (len(_逾),

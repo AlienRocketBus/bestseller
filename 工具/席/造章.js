@@ -34,7 +34,7 @@ const 正文式 = k => '正文/镇冢秘术_第' + 汉数(k) + '章_*.md'
 const 加缺 = o => 新令 ? { ...o, properties: { ...o.properties, flaws: { type: 'string', description: '此法之缺' } } } : o
 if (!Number.isInteger(N)) throw new Error('造章：须 args.章（整数）')
 const 重 = (args && args.重) || '中'
-const 宽 = { 轻: 3, 中: 5, 重: 7 }[重]
+const 宽 = { 轻: 3, 中: 5, 重: N >= 407 ? 5 : 7 }[重]   // ★1023 X57（406 执笔七席 $76、选只取一底三嫁）：重章 7→5 试於 407；408 验——致命、盲读、拍库之分劣於 404／406 即复 7
 if (!宽) throw new Error('造章：args.重 须为 轻／中／重')
 // ★造式二代之席记诸段（工具/囤灰闸.py 据此验 _席记.json；工具/造式.py::造式之段 认二代之章即读这一行）
 const 造式之段 = ['料', '造', '选', '合', '验', '记', '封版']

@@ -30,6 +30,8 @@
     python3 工具/大审.py            ← 报：距上次大审几章、该不该开、上次之判清了没有
     python3 工具/大审.py --闸        ← 只出判（供全测调用）
     python3 工具/大审.py --立 293    ← 造一份大审之册（其模在下）
+    python3 工具/大审.py --包 398 407 ← 瘦式·零 token 先行：诸器之红＋十章白文＋已付之盲读、逻辑审 → 设定/_草/大审407/包.md
+    python3 工具/大审.py --录 <runId> ← 瘦式·录册归器（X27）：自 journal 排册之一、二、三节，⛔一席抄档
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -47,19 +49,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 册目 = os.path.join(ROOT, '设定')
 
 # ★席之表：其名·其所独见（甲律：说不出「独见」者不许占位）
+# ★1023 瘦式（X51·裁_1021_省律 九）：十二席并作四席一裁——诸旧席之问俱并入其一，⛔丢问：
+#   连读客←生客·冷起手、生客·三章空降、连读客、评委、类型读者、弃卷席；小说家←白描、繁复、结构、编辑；
+#   逻辑闭环←立得住、主线、悬念账、复述（并孤钩之兑删）；人物←人物之审六席（读人物链＋十章）；裁←录册之判。
+#   所废：二十余席各读十章（W50 约 $75）、录册一席抄档（$21）、驳席重读、认声盲测（去名之器 X25 随之去）。
 席表 = [
-    ('生客·冷起手', '只拿到这一章，没读过前面——他是唯一一个「不知道前情」的输入'),
-    ('生客·三章空降', '自某一章空降读三章——他是唯一一个「半路进来」的输入'),
-    ('连读客·十章', '连读十章——唯一看得见「同一个意思说了几遍」的输入'),
-    ('小说家·白描', '删到不能再删那一路——他独见「哪几拍是意思已尽而字还在」'),
-    ('小说家·繁复', '密度与句子的音乐性那一路——他独见「哪几拍是以为在克制其实是没东西」'),
-    ('小说家·结构', '势能与咬合那一路——他独见「哪一章是多的、哪两章可并」'),
-    ('评委', '手上三十部要读、时间极短——他独见「读到第几拍决定放下」'),
-    ('编辑', '要让书被读完——他独见「读者最可能在哪一拍弃书」与「信息负担」'),
-    ('类型读者', '冲着这类故事来——他独见「期待与所得之差」（⛔不看书名·裁_0927）'),
-    ('弃卷席', '逐拍只答一句「到这儿要停，我合上书吗」——唯一字面上就是「好不好看」的问'),
-    ('悬念账席', '逐拍记「此刻读者脑子里悬着什么」——唯一看得见「开了几个、结了几个」的输入'),
-    ('复述席', '合上书凭记忆复述五句，然後才对「本章之一事」——唯一量得出「读者带走的与作者所图之差」'),
+    ('连读客', '十章连读之读者之眼——拖、腻、弃卷、钩；并冷起手、半路进来、评委、类型读者之问：唯一看得见「同一个意思说了几遍」与「读到第几拍合书」'),
+    ('小说家', '白描、繁复、结构、编辑四路合一——独见「意思已尽而字还在」「看着克制其实是空」「哪一章是多的」「信息负担」'),
+    ('逻辑闭环', '立得住、主线、悬念账、复述——对圣经、canon、全书记忆：独见「凑出来的因」「线丢」「开了几个结了几个」'),
+    ('人物', '诸人合一席，读人物链（全程而薄）与十章——独见「人前後不一、智之降、关系之断」'),
+    ('裁', '只读四席之报与上册逾限之笔，⛔重读十章——逐笔落裁，出口归造'),
 ]
 
 
@@ -268,6 +267,226 @@ def 印(只闸=False):
     return 判
 
 
+
+def _汉(n):
+    d = '零一二三四五六七八九'
+    if n < 10:
+        return d[n]
+    if n < 20:
+        return '十' + (d[n % 10] if n % 10 else '')
+    if n < 100:
+        return d[n // 10] + '十' + (d[n % 10] if n % 10 else '')
+    h, r = n // 100, n % 100
+    if r == 0:
+        return d[h] + '百'
+    if r < 10:
+        return d[h] + '百零' + d[r]
+    return d[h] + '百' + d[r // 10] + '十' + (d[r % 10] if r % 10 else '')
+
+
+def 章档(n):
+    for f in sorted(os.listdir(os.path.join(ROOT, '正文'))):
+        if ('_第%s章_' % _汉(n)) in f:
+            return os.path.join(ROOT, '正文', f)
+    return None
+
+
+def 白文(n):
+    p = 章档(n)
+    if not p:
+        return None
+    out = []
+    for i, l in enumerate(io.open(p, encoding='utf-8', errors='replace').read().split('\n'), 1):
+        if '【本章亮点】' in l:
+            break
+        out.append('%d\t%s' % (i, l))
+    return '\n'.join(out)
+
+
+def _节(t, 题, 末=True):
+    """轮记中题含 题 之 ## 节（末＝取末一回）。"""
+    ps = re.split(r'(?m)^(?=## )', t)
+    hs = [x for x in ps if x.startswith('## ') and 题 in x.split('\n', 1)[0]]
+    return (hs[-1] if 末 else hs[0]).strip() if hs else ''
+
+
+包目 = lambda b: os.path.join(ROOT, '设定', '_草', '大审%d' % b)
+零先之器 = [('抄袭闸', ['抄袭闸.py', '--段']), ('刻意之疲', ['刻意之疲.py']), ('悬念哨', ['悬念哨.py']),
+          ('线限哨', ['线限哨.py']), ('清偿章哨', ['清偿章哨.py'])]
+
+
+def 包(a, b):
+    """★1023 X51·瘦式之一「零 token 先行」与之三「虹吸」：诸器先跑、其红汇一页；十章白文（带行号）与各章已付之盲读、
+    逻辑审之读误之判同入一包——诸席一读即得，⛔各自重找。→ 设定/_草/大审B/包.md"""
+    import subprocess
+    os.makedirs(包目(b), exist_ok=True)
+    L = ['# 大审之包 · 第%d—%d章（零 token 所汇·诸席同读此一档）\n' % (a, b),
+         '## 甲·器之红（零 token 先行：机械之病已由器逮，⛔再劳你找；你只判其中读者可见者）\n']
+    for 名, 令 in 零先之器:
+        a_ = ['python3', os.path.join(ROOT, '工具', 令[0])] + 令[1:] + ([str(a), str(b)] if 令[-1] == '--段' else [])
+        try:
+            r = subprocess.run(a_, cwd=ROOT, capture_output=True, text=True, timeout=300)
+            o = (r.stdout or '') + (r.stderr or '')
+        except Exception as e:
+            o = '（跑不成：%s）' % e
+        红 = [x for x in o.splitlines() if re.search(r'⛔|⚠|✗|红', x) and '只报不拦' not in x[:6]]
+        L.append('- **%s**：%s' % (名, ('红 %d 行' % len(红)) if 红 else '✓'))
+        L += ['    ' + x.strip()[:240] for x in 红[:12]]
+    for n in range(a, b + 1):
+        try:
+            r = subprocess.run(['python3', os.path.join(ROOT, '工具', '整句复述哨.py'), str(n)], cwd=ROOT,
+                               capture_output=True, text=True, timeout=120)
+            o = r.stdout or ''
+        except Exception:
+            o = ''
+        if '本章无一句' not in o and o.strip():
+            L.append('- **整句复述哨·%d**：' % n)
+            L += ['    ' + x.strip()[:240] for x in o.splitlines()[2:10] if x.strip()]
+    L.append('\n## 乙·十章白文（带原行号；引句一律「章:行」）与各章已付之盲读、逻辑审之末判\n')
+    缺 = []
+    for n in range(a, b + 1):
+        t = 白文(n)
+        if t is None:
+            缺.append(n)
+            continue
+        L.append('### 第%d章 · %s\n' % (n, os.path.basename(章档(n))))
+        L.append(t)
+        rp = os.path.join(ROOT, '版本', '第%d章' % n, '_轮记.md')
+        if os.path.exists(rp):
+            rt = io.open(rp, encoding='utf-8', errors='replace').read()
+            盲 = _节(rt, '盲读')
+            审 = _节(rt, '逻辑审')
+            误 = ''
+            if 审:
+                m = re.search(r'(?ms)^### 读误之判.*', 审)
+                误 = m.group(0) if m else ''
+            if 盲:
+                L.append('\n#### 第%d章·已付之盲读（末回）\n%s' % (n, 盲[:3000]))
+            if 误:
+                L.append('\n#### 第%d章·已付之逻辑审·读误之判（末回）\n%s' % (n, 误[:1500]))
+        L.append('')
+    if 缺:
+        raise SystemExit('⛔包缺章：%s' % 缺)
+    p = os.path.join(包目(b), '包.md')
+    io.open(p, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
+    # 上册「已挂」限 ≤b 之笔（逐字·裁席当面裁之，⛔静静顺延）
+    旧 = 限於(b)
+    io.open(os.path.join(包目(b), '旧笔.md'), 'w', encoding='utf-8').write(
+        '# 上册「已挂」限 ≤%d 之笔（%d 笔·逐字自上册三节）\n\n' % (b, len(旧)) + '\n\n'.join(
+            '- 前册#%s 限%d｜%s' % (号, l, c) for 号, l, c in 旧) + '\n')
+    print('★上册逾限之笔：%d 笔 → %s' % (len(旧), os.path.relpath(os.path.join(包目(b), '旧笔.md'), ROOT)))
+    print('★大审之包：%s（%d 字）' % (os.path.relpath(p, ROOT), sum(len(x) for x in L)))
+    return p
+
+
+def 连带(引):
+    """★1023 X46：改一处先知其伤谁——引中「N:L」之原句取其≥6字之段，grep 全书正文他处同段 → 连带之单（零 token）。"""
+    out = []
+    for n, l in re.findall(r'(\d{1,3})[:：](\d+)', 引 or ''):
+        p = 章档(int(n))
+        if not p:
+            continue
+        ls = io.open(p, encoding='utf-8', errors='replace').read().split('\n')
+        if not (0 < int(l) <= len(ls)):
+            continue
+        句 = ls[int(l) - 1]
+        段 = [x for x in re.split(r'[，。；：？！、“”「」\s]+', 句) if len(x) >= 6][:3]
+        for x in 段:
+            hit = []
+            for f in sorted(os.listdir(os.path.join(ROOT, '正文'))):
+                fp = os.path.join(ROOT, '正文', f)
+                for i, y in enumerate(io.open(fp, encoding='utf-8', errors='replace').read().split('\n'), 1):
+                    if x in y and not (fp == p and i == int(l)):
+                        m = re.search(r'第([零一二三四五六七八九十百]+)章', f)
+                        hit.append('%s:%d' % (m.group(1) if m else f, i))
+            if hit:
+                out.append('%s:%s「%s」亦见 %s' % (n, l, x, '、'.join(hit[:8]) + ('…' if len(hit) > 8 else '')))
+    return out
+
+
+def 录(run, a=None, b=None):
+    """★1023 X27：自 workflow 之 journal 排册之一、二节（逐席之判）与三节（裁席之裁）——⛔一席抄档（W50 录册一席 $20.96）。"""
+    import glob
+    import json
+    js = glob.glob(os.path.expanduser('~/.claude/projects/*/*/subagents/workflows/%s/journal.jsonl' % run))
+    if not js:
+        raise SystemExit('⛔无此 run 之 journal：%s' % run)
+    行 = []
+    for l in io.open(js[0], encoding='utf-8', errors='replace'):
+        try:
+            行.append(json.loads(l))
+        except ValueError:
+            pass
+    标 = {d.get('key'): d.get('label', '') for d in 行 if d.get('type') == 'started'}
+    果 = {}
+    for d in 行:
+        if d.get('type') == 'result':
+            r = d.get('result')
+            if isinstance(r, str):
+                try:
+                    r = json.loads(r)
+                except ValueError:
+                    pass
+            果[标.get(d.get('key'), '')] = r
+    席果 = {k.split('·', 1)[1]: v for k, v in 果.items() if k.startswith('大审·')}
+    裁果 = 果.get('裁') or {}
+    if not b:
+        b = int(裁果.get('to') or 0) or _末章()
+    a = a or b - 每 + 1
+    p = os.path.join(册目, '大审_至第%d章.md' % b)
+    L = ['# 大审 · 至第%d章（第%d—%d章）\n' % (b, a, b),
+         '> 瘦式（X51·裁_1021_省律 九）：零 token 先行（`设定/_草/大审%d/包.md` 甲）＋四席一裁；本册一、二、三节由 `大审.py --录 %s` 自 journal 排出，⛔一席抄档。\n' % (b, run),
+         '> 律三：甲·独见｜乙·不强制出负，强制留痕｜丙·每笔落拍号或原句、逐笔落裁。\n',
+         '## 一·本回之席（其名｜其独见｜其所读）\n', '| 席 | 其独见 | 所读 |', '|---|---|---|']
+    for 名, 独 in 席表:
+        r = 席果.get(名) if 名 != '裁' else 裁果
+        读 = (r or {}).get('read', '未交') if isinstance(r, dict) else '未交'
+        L.append('| %s | %s | %s |' % (名, 独, str(读).replace('|', '／').replace('\n', ' ')))
+    L.append('\n## 二·逐席之判（乙律·留痕；丙律·落拍号）\n')
+    for 名, _ in 席表[:-1]:
+        r = 席果.get(名)
+        L.append('### %s\n' % 名)
+        if not isinstance(r, dict):
+            L.append('未交。\n')
+            continue
+        fs = r.get('findings') or []
+        if not fs:
+            L.append('本席无致命之判：%s\n' % r.get('no_fatal_note', ''))
+        for i, f in enumerate(fs, 1):
+            L.append('%d. 〔%s〕%s:%s「%s」——%s｜拟治：%s' % (i, f.get('severity', ''), f.get('ch', ''), f.get('beat', ''),
+                                                       str(f.get('quote', '')).replace('\n', ' '), f.get('issue', ''), f.get('fix', '')))
+        if r.get('summary'):
+            L.append('\n总：%s' % r['summary'])
+        if r.get('hooks'):
+            L.append('\n孤钩：' + '；'.join('%s→%s %s %s' % (h.get('id'), h.get('verdict'), h.get('chapter', ''), h.get('form', '')) for h in r['hooks']))
+        L.append('')
+    L += ['## 三·逐笔裁定（丙律·不许只挂）\n', '| # | 判（席·题） | 据（章·拍·原句） | 裁 | 其由 | 连带（器·X46） |', '|---|---|---|---|---|---|']
+    for i, x in enumerate(裁果.get('rows') or [], 1):
+        裁 = str(x.get('ruling', ''))
+        if 裁 == '已挂' and x.get('limit'):
+            裁 = '已挂·限%s' % x['limit']
+        elif 裁 == '还账':   # 已写章之读者可见致命：一单器施（还账.py），限下一章
+            裁 = '已挂·限%s（还账·器施）' % (x.get('limit') or b + 1)
+        if x.get('to_segment'):
+            裁 += '（入段案·%s）' % x['to_segment']
+        带 = '；'.join(连带(x.get('evidence', ''))[:4]) if x.get('repay') else ''
+        L.append('| %d | %s | %s | %s | %s | %s |' % (i, *(str(v).replace('|', '／').replace('\n', ' ') for v in (
+            x.get('judgment', ''), x.get('evidence', ''), 裁, x.get('reason', ''), 带))))
+    cs = 裁果.get('carried') or []
+    if cs:
+        L += ['\n### 上册逾限之笔·当面裁\n', '| 旧号 | 裁 | 其由 |', '|---|---|---|']
+        for x in cs:
+            裁 = str(x.get('ruling', ''))
+            if '已挂' in 裁 and x.get('limit') and '限' not in 裁:
+                裁 += '·限%s' % x['limit']
+            L.append('| 前册#%s | %s | %s |' % (str(x.get('old_no', '')).replace('前册#', ''), 裁, str(x.get('reason', '')).replace('|', '／').replace('\n', ' ')))
+    L += ['\n## 四·本回之数（器出，非估）\n', '见 `设定/_草/大审%d/包.md` 甲节（零 token 先行诸器之红）。\n' % b,
+          '## 五·本回之得（一句话）\n', str(裁果.get('verdict_line', '〔裁席未交〕')) + '\n',
+          '## 六·出口归造（入下一段之剧情庭题与段案）\n'] + ['- %s' % x for x in (裁果.get('to_next_segment') or [])]
+    io.open(p, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
+    print('★大审之册已录：%s（席 %d、裁 %d 行、旧笔 %d）' % (os.path.relpath(p, ROOT), len(席果), len(裁果.get('rows') or []), len(cs)))
+    return p
+
 if __name__ == '__main__':
     if '--限' in sys.argv:                 # 开镜卡问七：python3 工具/大审.py --限 N → 上一册「已挂」限 ≤N 之笔
         n = int(sys.argv[sys.argv.index('--限') + 1])
@@ -276,6 +495,13 @@ if __name__ == '__main__':
         for 号, l, c in r:
             print('  #%s 限%d｜%s' % (号, l, c))
         print('  （零笔）' if not r else '  共 %d 笔' % len(r))
+        raise SystemExit(0)
+    if '--包' in sys.argv:
+        i = sys.argv.index('--包')
+        包(int(sys.argv[i + 1]), int(sys.argv[i + 2]))
+        raise SystemExit(0)
+    if '--录' in sys.argv:
+        录(sys.argv[sys.argv.index('--录') + 1])
         raise SystemExit(0)
     if '--立' in sys.argv:
         raise SystemExit(0 if 立(int(sys.argv[sys.argv.index('--立') + 1])) else 2)

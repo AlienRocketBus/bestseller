@@ -14,6 +14,7 @@
 【用法】
     from 硬闸 import 硬项
     hard = 硬项(全文)          # → {格名: 处数}
+    处 = 硬项之处(全文)        # → [(格, 段, 行, 片, 位)]（1024 立·其数逐格＝硬项）
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -93,6 +94,95 @@ def 硬项(txt):
         '亮点段永禁': sum(hl.count(w) for w in 永禁词()),
     }
 
+
+
+# ★1024·省审 seats 三：--量 旧只印数（「五逗句 1、亮点段五逗 1」），执笔遂翻器源、grep、自写 python 找句（400 甲、399 己各三回，cr 逾百万）。
+#   且骨记一句五逗同计「五逗句」「亮点段五逗」二格，执笔以为白文另有一句——今印其处，并注同句二格。
+#   ★另立一器，⛔改 硬项() 之返（硬闸、造式验、全测皆用之）；二器同式，负测_硬闸 ④拿全书逐格对其数，漂即红。
+_字格 = (('破折', '—'), ('半角逗', ','), ('半角冒', ':'), ('半角引号', '"'), ('半角问', '?'),
+        ('半角叹', '!'), ('半角分', ';'), ('半角撇', "'"))
+
+
+def 硬项之处(txt):
+    """→ [(格, 段, 行, 片, 位)]：段 白文／骨记；行 1 起；片 为原句（五逗）或前後十二字；位 为档内之偏移（同位者即同一处）。
+
+    ★每格之条数＝硬项()之数（全书对过）。"""
+    prose = txt.split('【本章亮点】')[0]
+    m = re.match(r'^.*?第.+?章[^\n]*\n', prose, flags=re.S)
+    b0 = m.end() if m else 0                       # body 之起（与 拆() 同式）
+    body = prose[b0:]
+    h0 = txt.find('【本章亮点】') if '【本章亮点】' in txt else len(txt)
+    hl = txt[h0:]
+    处 = []
+
+    def 记(格, 位, 片=None):
+        行 = txt.count('\n', 0, 位) + 1
+        if 片 is None:
+            a = txt.rfind('\n', 0, 位) + 1
+            z = txt.find('\n', 位)
+            z = len(txt) if z < 0 else z
+            l, r = max(a, 位 - 12), min(z, 位 + 13)
+            片 = ('…' if l > a else '') + txt[l:r] + ('…' if r < z else '')
+        处.append((格, '骨记' if 位 >= h0 else '白文', 行, 片, 位))
+
+    def 句(格, 文, 偏):
+        o = 0
+        for s in re.split(r'(?<=[。！？…])', 文):
+            if s.count('，') >= 5:
+                k = len(s)   # ★句起於上一句终处，常带前段之尾（”、题行）——取末几行中仍足五逗之最短者为其句
+                while s.rfind('\n', 0, k) >= 0 and s[s.rfind('\n', 0, k) + 1:].count('，') < 5:
+                    k = s.rfind('\n', 0, k)
+                k = s.rfind('\n', 0, k) + 1
+                k += len(s[k:]) - len(s[k:].lstrip())
+                记(格, 偏 + o + k, s[k:].strip())
+            o += len(s)
+
+    def 字(格, 文, 偏, 字们):
+        for w in 字们:
+            i = 文.find(w)
+            while i >= 0:
+                记(格, 偏 + i)
+                i = 文.find(w, i + len(w))
+
+    for 格, c in _字格:
+        字(格, txt, 0, (c,))
+    句('五逗句', txt, 0)
+    for x in re.finditer(r'[A-Za-z]', txt):
+        记('英文', x.start())
+    for x in re.finditer(r'(?:[一二三四五六七八九十百零〇]+|\d+)章', body):
+        记('章号入正文', b0 + x.start())
+    字('禁抖', body, b0, ('抖', '颤'))
+    字('永禁词', body, b0, 永禁词())
+    for x in 叠词式.finditer(body):
+        记('叠词粘连', b0 + x.start())
+    for x in re.finditer(r'[。！？”＊]\n(?!\n)[^\n]', body):
+        记('段间空行病', b0 + x.start())
+    字('亮点段破折', hl, h0, ('—',))
+    句('亮点段五逗', hl, h0)
+    字('亮点段半角', hl, h0, (',', '"'))
+    字('亮点段永禁', hl, h0, 永禁词())
+    return 处
+
+
+def 处之印(处, 只=None, 缩='  '):
+    """→ 行之列：同位而计入二格者并一行，注「同一句／同一处，计二格」；同行同格者合为 ×n（片至多三）。"""
+    位格 = {}
+    for 格, 段, 行, 片, 位 in 处:
+        if 只 is None or 格 in 只:
+            位格.setdefault((位, 段, 行, 片), []).append(格)
+    组 = {}
+    for (位, 段, 行, 片), 格们 in sorted(位格.items()):
+        e = 组.setdefault((段, 行, tuple(格们)), [0, []])
+        e[0] += 1
+        if 片 not in e[1]:
+            e[1].append(片)
+    出 = []
+    for (段, 行, 格们), (n, 片们) in 组.items():
+        名 = '＝'.join(格们) + ('×%d' % n if n > 1 else '')
+        if len(格们) > 1:   # ★骨记之五逗、破折、半角，白文之格亦数之——同一处计二格，⛔当作两处去找
+            名 += '（同一%s，计二格）' % ('句' if '五逗' in 格们[0] else '处')
+        出.append('%s%s L%d %s：%s' % (缩, 段, 行, 名, '／'.join(片们[:3]) + ('／…' if len(片们) > 3 else '')))
+    return 出
 
 _CN = {'零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
 

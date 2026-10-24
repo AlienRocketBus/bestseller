@@ -30,6 +30,7 @@
     python3 工具/净重对表.py            # 全书
     python3 工具/净重对表.py --补        # 把锁定行之数改成实数（逐行印其改）
     python3 工具/净重对表.py --自测
+    python3 工具/净重对表.py --量 <稿>   # 一稿之净重与硬项；有红则逐条印其处（1024 立）
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -229,6 +230,10 @@ if __name__ == '__main__':
         路 = sys.argv[sys.argv.index('--量') + 1]
         n, 红 = 稿之量(路)
         print('净重 %d｜硬项 %s' % (n, '零' if not 红 else '、'.join('%s %d' % kv for kv in 红.items())))
+        if 红:   # ★1024·省审 seats 三：并印其处（白文／骨记 L行＋原句），执笔⛔翻器源找句；同句二格者注明
+            from 硬闸 import 硬项之处, 处之印
+            for l in 处之印(硬项之处(io.open(路, encoding='utf-8').read()), 只=红):
+                print(l)
         sys.exit(0)
     if '--自测' in sys.argv:
         sys.exit(0 if 自测() else 1)

@@ -4730,6 +4730,28 @@ def chk_cundishou_neg():
     return _自测之项('负测·存底守', '工具/存底守.py')
 
 
+def chk_gaocha_neg():
+    """负测·稿差（1024 省 token·A 组）：`工具/稿差.py --自测`——窄审之门所跑，印逻辑审第1回所据之稿与今稿之差。"""
+    return _自测之项('负测·稿差', '工具/稿差.py')
+
+
+def chk_jiluo_neg():
+    """负测·记落（1024 省 token·B 组）：`工具/记落.py --自测`——以 405—410 封版之提交真料回放，器格与已封之档逐字比（约 96 秒）。
+    ★其末行作「✓ 记落·自测 a/b」，无「全通」二字，故⛔走 _自测之项，自认其数。"""
+    out = run('负测·记落', ['工具/记落.py', '--自测'], timeout=300)
+    if out is None:
+        return False, '运行失败（崩或逾时）'
+    m = re.search(r'([✓⛔]) 记落·自测 (\d+)/(\d+)', out)
+    if not m:
+        return False, '未见其数'
+    return (m.group(1) == '✓' and m.group(2) == m.group(3)), '%s/%s%s' % (m.group(2), m.group(3), ' 全通' if m.group(1) == '✓' else ' ⛔有坏')
+
+
+def chk_chongqu_neg():
+    """负测·重取（1024 省 token·C 组·盘坏之哨）：`工具/重取.py --自测`——见盘坏之旗只印重 clone 换目之步，⛔自跑。"""
+    return _自测之项('负测·重取', '工具/重取.py')
+
+
 def chk_paozhang():
     """★囤灰闸问「接没接上」，本项问「**跑没跑过**」——两问不同，缺一样都不够。
     ★★其红黄之别由 工具/跑账.py 自己判（立账之日以前无凭者只报黄）；本项只把它的话搬过来。
@@ -4960,6 +4982,9 @@ def 诸项(quick):
         items.append(('负测·推闸中', chk_tuizhazhong_neg))  # ★1022·推闸之中⛔写管目
         items.append(('负测·续跑之守', chk_xupaoshou_neg))  # ★1023·坑㊻ 续跑⛔重跑已成之席
         items.append(('负测·承', chk_cheng_neg))           # ★1023·坑㊻ 之正路
+        items.append(('负测·稿差', chk_gaocha_neg))        # ★1024 省 token·A：窄审之稿差
+        items.append(('负测·记落', chk_jiluo_neg))         # ★1024 省 token·B：记席机械之格归器
+        items.append(('负测·重取', chk_chongqu_neg))       # ★1024 省 token·C：盘坏之哨
         items.append(('负测·段序之守', chk_duanxu_neg))    # ★1023 作者令·段序
         items.append(('负测·跑账', chk_paozhang_neg))       # ★1022·新机承账
         items.append(('负测·推', chk_tui_neg))              # ★1022·坑㊺ 枝正

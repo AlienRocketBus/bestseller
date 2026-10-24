@@ -578,6 +578,13 @@ def 前哨():
         出 += 暂停令.守书之哨()
     except Exception as e:
         出.append('⚠ 守书之哨跑不起来：%s' % e)
+    try:   # 1024 盘坏之哨：<git 公目>/盘坏.flag 在即首印（存底守 06:25 起每回败而只入日志之教）
+        import 重取
+        l = 重取.印()
+        if l:
+            出.insert(0, l)
+    except Exception as e:
+        出.append('⚠ 盘坏之哨跑不起来：%s' % e)
     return 出
 
 
@@ -843,15 +850,23 @@ def 自测():
     R.append(('⑨之二 云端已封之判真跑得动（章-401 在云端）', 云端已封(401) is True))
     import 暂停令 as _停t
     _旧哨, _旧在, _旧记 = _停t.守书之哨, _停t.在, _停t.守书停记
+    import 重取 as _重t
+    _旧印 = _重t.印
+    _重t.印 = lambda 目=None: ''
     try:   # ⑩1024：令已解而守书已停之记仍在 → 前哨红（行首⛔）；令在而未记停 → 停之判印 enabled=false 之参与 --守书已停
         _停t.守书之哨 = lambda root=ROOT: ['⛔ 守书之巡仍停：x']
         _红 = 前哨()
+        _重t.印 = lambda 目=None: '⛔ 盘坏：试——照 python3 工具/重取.py 之法重 clone 换目'
+        _红盘 = 前哨()
+        _重t.印 = lambda 目=None: ''
         _停t.在, _停t.守书停记 = (lambda root=ROOT: (True, '暂停令在（试）')), (lambda root=ROOT: None)
         _判停, _L停 = 断(印=False)
         _停t.守书停记 = lambda root=ROOT: {'时': 't'}
         _判停2, _L停2 = 断(印=False)
     finally:
         _停t.守书之哨, _停t.在, _停t.守书停记 = _旧哨, _旧在, _旧记
+        _重t.印 = _旧印
+    R.append(('⑪盘坏之旗在 → 前哨首行⛔ 盘坏（1024）', _红盘[:1] == ['⛔ 盘坏：试——照 python3 工具/重取.py 之法重 clone 换目']))
     R.append(('⑩守书之巡：令解而停记在 → 前哨⛔红且接於报之首；令在未记停 → 停判印 enabled=false 之参与 --守书已停；已记 ⛔复印',
               _红 == ['⛔ 守书之巡仍停：x'] and 'for _l in 前哨():' in 码.split('def 报():')[1][:80]
               and _判停 == '停' and any('"enabled": false' in x for x in _L停) and any('--守书已停' in x for x in _L停)

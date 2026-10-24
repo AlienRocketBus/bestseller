@@ -377,6 +377,12 @@ def 断(印=True):
         L.append('  作者令下方解：python3 工具/暂停令.py --解 "作者令：……"；解毕再跑一回本器。')
         L.append('  ── 下一条命令 ──')
         L.append('  python3 工具/心跳.py --立停     # 停锁（时在远後）：守书⛔每时空派、新坐⛔跳；解令时自换空锁')
+        try:   # ★1024·省审 sessions 四：停锁之下守书每唤只判「止」——关其定时之令，调毕记之（解令时 --解 印复开之参）
+            if not _停.守书停记():
+                L.append('  %s     # 停守书之巡（此为工具之调，非 shell）' % _停.守书之参(False))
+                L.append('  python3 工具/暂停令.py --守书已停     # 上一调毕即记')
+        except Exception:
+            pass
         L.append('  python3 工具/暂停令.py --查')
         return '停', L
     try:   # ★1021 开章之检（作者令「每一章只要一开始就看看原来的方法还行不行」）——零 token 数行
@@ -564,7 +570,20 @@ def 断(印=True):
     return ('欠' if 欠 else '起'), L
 
 
+def 前哨():
+    """→ 零 token 之红行（1024）：守书之巡停而令已解（书断流之险）。行首⛔，默印即收入「前置诸哨之红」。"""
+    出 = []
+    try:
+        import 暂停令
+        出 += 暂停令.守书之哨()
+    except Exception as e:
+        出.append('⚠ 守书之哨跑不起来：%s' % e)
+    return 出
+
+
 def 报():
+    for _l in 前哨():
+        print(_l)
     判, L = 断()
     # ★★★★★2026-09-24 作者当面令（律⑳）——**每一坐一开眼先看见这两句，不许再停下来问作者**：
     print('⭐【律⑳·总编辑之权】你是这本书的总负责人：凡须裁之事，照「让书更好看、成中国第一」当场裁定、落账、执行；'
@@ -822,6 +841,21 @@ def 自测():
     R.append(('⑨起前问云端有无「章-下」（1022 复核：⛔重写已封之章）',
               'if 云端已封(下):' in 码 and 码.index('if 云端已封(下):') < 码.index("【判】起。第%d章已封版且十一轮过")))
     R.append(('⑨之二 云端已封之判真跑得动（章-401 在云端）', 云端已封(401) is True))
+    import 暂停令 as _停t
+    _旧哨, _旧在, _旧记 = _停t.守书之哨, _停t.在, _停t.守书停记
+    try:   # ⑩1024：令已解而守书已停之记仍在 → 前哨红（行首⛔）；令在而未记停 → 停之判印 enabled=false 之参与 --守书已停
+        _停t.守书之哨 = lambda root=ROOT: ['⛔ 守书之巡仍停：x']
+        _红 = 前哨()
+        _停t.在, _停t.守书停记 = (lambda root=ROOT: (True, '暂停令在（试）')), (lambda root=ROOT: None)
+        _判停, _L停 = 断(印=False)
+        _停t.守书停记 = lambda root=ROOT: {'时': 't'}
+        _判停2, _L停2 = 断(印=False)
+    finally:
+        _停t.守书之哨, _停t.在, _停t.守书停记 = _旧哨, _旧在, _旧记
+    R.append(('⑩守书之巡：令解而停记在 → 前哨⛔红且接於报之首；令在未记停 → 停判印 enabled=false 之参与 --守书已停；已记 ⛔复印',
+              _红 == ['⛔ 守书之巡仍停：x'] and 'for _l in 前哨():' in 码.split('def 报():')[1][:80]
+              and _判停 == '停' and any('"enabled": false' in x for x in _L停) and any('--守书已停' in x for x in _L停)
+              and _判停2 == '停' and not any('enabled' in x for x in _L停2)))
     for 名, o in R:
         print(('  ✓ ' if o else '  ⛔ ') + 名)
     print('  自测 %d/%d%s' % (sum(1 for _, o in R if o), len(R), ' 全通' if all(o for _, o in R) else ' 未过'))

@@ -54,7 +54,7 @@ def 读(路):
     return 行
 
 
-造章之席 = re.compile(r'^(执笔·|选·(行家兼两眼|补)$|合稿(·补)?$|盲读(·2|·补)?$|逻辑审·[12]$|回写$|记席(·补)?$)')
+造章之席 = re.compile(r'^(执笔·|选·(行家兼两眼|补)$|合稿(·补)?$|盲读(·2|·补)?$|逻辑审·[12](·补)?$|回写$|记席(·补)?$)')   # 1024：逻辑审·1·补／·2·补（N≥411 交空即补）
 
 
 def 令首之章(路, 行):
@@ -84,6 +84,8 @@ def 续之判(行):
         elif t == 'result' and k and d.get('result') is not None:
             成.add(k)
             r = d.get('result')
+            if isinstance(r, dict) and isinstance(r.get('draft'), dict):
+                r = r['draft']                   # ★1024 通式（N≥411）：执笔之交为 {draft: {file…}, flaws}——拆键而认章
             m = re.search(r'版本/第(\d+)章/', str(r.get('file', '')) if isinstance(r, dict) else '')
             if m and 章 is None:
                 章 = int(m.group(1))
@@ -258,6 +260,12 @@ def 自测():
         拦, 由 = 判(R('wf_406a-001'), 根=d)
         T('①406 之实：丙败、丁至补已成、选断 → 拦，点名将重跑之五席与补、印承.py 406',
           拦 and '执笔·丁·速度' in 由 and '执笔·丙·补' in 由 and '承.py 406' in 由 and '执笔·甲' not in 由)
+        # ★1024 通式（N≥411）：执笔之交包於 draft 之键——拆而认章；逻辑审·1·补 认作造章之席
+        通行 = [{'type': 'started', 'key': 'a', 'label': '执笔·甲·换账'}, {'type': 'result', 'key': 'a', 'result': {'draft': {'file': '/x/版本/第411章/起草_稿一.md'}, 'flaws': '无'}},
+                {'type': 'started', 'key': 'b', 'label': '逻辑审·1·补'}, {'type': 'started', 'key': 'c', 'label': '记席'}, {'type': 'result', 'key': 'c', 'result': {'record': {}}}]
+        已成, 首缺, 章号, 是造 = 续之判(通行)
+        T('①之二 通式之交（draft 键）拆而认章 411；逻辑审·1·补 无果 → 其後已成之记席点名', 章号 == 411 and 是造 and 首缺 == '逻辑审·1·补' and 已成 == ['记席']
+          and 续之判([{'type': 'started', 'key': 'z', 'label': '逻辑审·2·补'}])[3])
         行 = []
         for k, 名 in [('1', '执笔·甲'), ('2', '执笔·乙'), ('3', '执笔·丙')]:
             席(行, k, 名)

@@ -13,6 +13,12 @@
   ④X13：N≥398 之记令於立卡後跑「第零轮开镜庭.py --静 N+1」，十四格（卡之自牵）红即改卡。
   ⑥X40（1020 立·裁_1020_推闸二红_399封版後）：args.须厚（自走.py 之派令以 分量闸.须厚 现判）且 N≥401 → 诸执笔令带「【硬项·须厚】本章之事须担得起 2,900 净重」、
     选令带「须厚之章，净重 <2,900 之稿作底须写其由」；N≤400 传 须厚 亦⛔认（400 之诸令与不传者原序之指同）、401 不传者⛔带。
+  ⑦★1024 省 token 之审（records②③／seats①②／failures①②）——N≥411 之新行，N≤410 一字不变：
+    ①之二：398—410 诸令之 sha256（改前之造章.js·c2659cdc 之版所渲，轻中重×净病择四局、401 起另带须厚）逐一同；
+    通式：411 诸席（连回写、查席）传同一 schema（键 ASCII、各子式之 required 同 410 之旧式、顶层 minProperties:1）、令末「只填『X』一键」；
+    交空对象即补派（执笔先查後补、选、合、盲、逻辑审·1、记席）；查收盘稿即⛔补；逻辑审·1 二回空即停；布尔严判（misread 交「否」⛔作读误，410 照旧）；
+    回写之令实一字不动（411 去交之一句＝410 之令换号）；记令四刀（{done,left}、式取记料【一】、--前 --红 复跑）；
+    窄审：第1回只读误者逻辑审·2 带窄审之门（稿差.py）、第1回之令记「据 正文＝vNN」、soft 并入第1回；有硬崩者照旧全审；承能拆键（承.py 之必填表＝通式之 required）。
   回灌：②③④之判拿 397 之令（旧病）去判，须一一红；上回之假前提（读料之 Bash 末接 cat > 构思）、「思考里只想眼下这一拍」之牵灌回须红；
     ①之指换键序须变——证其判咬得住，⛔一律判过。
 ⛔限：渲染证得了「令里写了」，证不了「席守了」——守没守归 `工具/费审.py` 之「构思」「构思隔」两列（首落逾五分、诸写最长隔逾十分即⛔）。
@@ -24,7 +30,7 @@ try:
     import _账  # 跑账·自记（工具/跑账.py）
 except Exception:
     pass
-import os, sys, json, hashlib, subprocess, tempfile, shutil
+import os, sys, re, json, hashlib, subprocess, tempfile, shutil
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JS = os.path.join(ROOT, '工具', '席', '造章.js')
@@ -32,7 +38,7 @@ JS = os.path.join(ROOT, '工具', '席', '造章.js')
 # 假交：label 定其交；逻辑审·1 於「病」路交硬崩与读误，令回写、盲读·2、逻辑审·2 俱跑
 _器 = r"""
 const fs = require('fs')
-const [, , 档, n, 重, 病, 厚] = process.argv
+const [, , 档, n, 重, 病, 厚, 空 = ''] = process.argv
 const src = fs.readFileSync(档, 'utf8').replace(/^export const meta/m, 'const meta')
 const N = Number(n)
 const 收 = []
@@ -40,13 +46,26 @@ const 交 = (label) => {
   if (label.startsWith('执笔')) return { file: '版本/第' + N + '章/起草_稿一.md', beats: 5, words: 2800, soul: '魂', best: '最好', weak: '最弱', plan: '写法' }
   if (label.startsWith('选')) return { ranking: ['稿一', '稿二'], why: '由', fatal: [{ id: '致命1', draft: '稿一', quote: '句', against: '1:1', fix: '治' }], leap: [{ id: '大进1', win_quote: '甲', better_quote: '乙', gain: '得' }], common_fatal: '', beat_scores: '拍分', peaks: '叫绝' }
   if (label.startsWith('合稿')) return { file: '正文/x.md', beats: 5, words: 2800, base: '稿一', fatal_done: '治毕', leap_done: '嫁', peaks: '叫绝', gates: '器', gates_green: true, reds: '', ledger: '账', recap: '前情' }
+  if (label === '逻辑审·1' && 病 === '串') return { hard: [], soft: '软', gate: '闸', misread: '否' }   // 布尔严判之验（旧以真值判）
   if (label.startsWith('盲读')) return { understood: false, confused: '卡' + label, misread: '错', want_next: true, why_next: '想', happened: '事', remember: '记', prior: '前情之指' }
   if (label === '逻辑审·1') return 病 === '病' ? { hard: [{ kind: '因果断', where: '1:1', what: '断', proof: '据' }], soft: '软', gate: '闸', misread: true, misread_where: '处', misread_fix: '治' } : { hard: [], soft: '软', gate: '闸', misread: false }
   if (label.startsWith('逻辑审')) return { hard: [], soft: '软2', gate: '闸2', misread: false }
   if (label.startsWith('记席')) return { receipt: '回执', lock_row: '行', memory: '忆', next_card: '卡', open_brief: '推' }
   return '办毕'
 }
-const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); return 交(o.label) }
+// ★1024 通式（N≥411）：交包於其键；空＝逗号相隔之 label（末 * 为前缀）交 {flaws} 之空对象；「查收」令查席交盘稿
+const 空们 = 空 ? 空.split(',') : []
+const 通键 = l => l.startsWith('执笔') ? 'draft' : l.startsWith('选') ? 'pick' : l.startsWith('合稿') ? 'merge' : l.startsWith('盲读') ? 'blind'
+  : l.startsWith('逻辑审') ? 'audit' : l.startsWith('记席') ? 'record' : 'rewrite'
+const 交通 = (label, prompt) => {
+  if (label.endsWith('·查')) { const m = /--查 \S+ (\S+)/.exec(prompt); return 空们.includes('查收') && m ? { draft: { file: m[1], beats: 3, words: 2600, soul: '魂' }, flaws: '无' } : { flaws: '无稿' } }
+  if (空们.some(x => label === x || (x.endsWith('*') && label.startsWith(x.slice(0, -1))))) return { flaws: '无' }
+  if (label.startsWith('记席')) return { record: { done: true, left: '无' }, flaws: '无' }
+  if (label === '回写') return { rewrite: { done: true, note: '治' } }
+  if (label === '逻辑审·1' && 病 === '误') return { audit: { hard: [], soft: '软1', gate: '闸', misread: true, misread_where: '处', misread_fix: '治' }, flaws: '无' }
+  return { [通键(label)]: 交(label), flaws: '无' }
+}
+const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); return N >= 411 ? 交通(o.label, prompt) : 交(o.label) }
 const parallel = async (fs_) => Promise.all(fs_.map(f => f()))
 const AF = Object.getPrototypeOf(async function () {}).constructor
 new AF('args', 'agent', 'parallel', 'phase', 'log', src)(厚 === '厚' ? { 章: N, 重, 须厚: true } : { 章: N, 重 }, agent, parallel, () => {}, () => {})
@@ -69,12 +88,30 @@ _基 = {"390轻净": "446235d2ae12bfba", "390轻病": "c3b7b946890cc774", "390�
       "397中净": "c582cc7d1b2eb860", "397中病": "2fe8c3db8e3f2603", "397轻净": "d2f7c5b79f2e31e4", "397轻病": "1ca55a9cd69543c6",
       "397重净": "51e00fda90975036", "397重病": "2ee9fe5da8bd43e0"}
 
+# ①之二（1024 立）：398—410 之基——改前之造章.js（git c2659cdc 之版）所渲、原序 JSON；N≤410 之令⛔动、⛔换序（通式等新行只走 N≥411）
+62
+_基二 = {"398轻病": "b043bdd206d3a656", "398中净": "73bdff10966a522d", "398中病": "21a09b28c87b3264", "398重净": "a9f3ff5d7c1f8de3", "399轻病":
+      "be3913b136a3eaab", "399中净": "3d9d4176cffcb8ba", "399中病": "550206833592cc37", "399重净": "57259bae95edf249", "400轻病": "cc2722f80b290c66",
+      "400中净": "cd63e765854c9528", "400中病": "2f0f9f8a927a7d5a", "400重净": "f8af0f233433f30c", "401轻病": "a099e494702cae64", "401中净":
+      "ebe0464da8d040f3", "401中病": "03365259c1a77674", "401中病厚": "fcb4d740715963fe", "401重净": "81cb569f4a2e5401", "402轻病": "a5439713032de288",
+      "402中净": "ecab5acee1802de6", "402中病": "ab83ef2897f2a7ad", "402中病厚": "c3271da46a52f90b", "402重净": "895993fb1618ce0c", "403轻病":
+      "2fec25541a0392ab", "403中净": "f2b8f2380c4ae413", "403中病": "a888dbbd70378c4a", "403中病厚": "cd5d6088a65cae37", "403重净": "a7201e19aa55903f",
+      "404轻病": "84237899e0cdf045", "404中净": "ada8eec59ede6911", "404中病": "44814d2d01a7d195", "404中病厚": "5e42ebb8141dc218", "404重净":
+      "1ce08bd9bc4ae209", "405轻病": "b926801932fc47dc", "405中净": "17ef5a438de2c04d", "405中病": "76e0f82f67f0dd76", "405中病厚": "24aae86ef238650d",
+      "405重净": "42874012d888b405", "406轻病": "78d18d4668fd5ce4", "406中净": "4b3d76af3158dcdc", "406中病": "081f07a566c62ed8", "406中病厚":
+      "2250d46d70347dd7", "406重净": "580eb02f50afc9d5", "407轻病": "3f3630644bad9f77", "407中净": "2a7ba5f66021ff64", "407中病": "939f8277a547eed3",
+      "407中病厚": "6d5367ca74b32680", "407重净": "2a7ba5f66021ff64", "408轻病": "7ee6af815adeffa6", "408中净": "5473d397060c645e", "408中病":
+      "985c42cb3e4d5370", "408中病厚": "22babd03cb8c00b7", "408重净": "5473d397060c645e", "409轻病": "b24109ae94d2f39e", "409中净": "a8af6bef9a125627",
+      "409中病": "6f0bfcaa993725ce", "409中病厚": "55528e6aed0df661", "409重净": "a8af6bef9a125627", "410轻病": "f8db9ae1b43a3f23", "410中净":
+      "b3c8a8460bd40311", "410中病": "0053d64e255a2ba5", "410中病厚": "9d9437e0ddeb2db4", "410重净": "b3c8a8460bd40311"}
 
-def 渲(器, n, 重='中', 病='病', js=JS, 厚='否'):
-    o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚], capture_output=True, text=True, cwd=ROOT, timeout=60)
+
+def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False):
+    o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚, 空], capture_output=True, text=True, cwd=ROOT, timeout=60)
     if o.returncode:
         raise RuntimeError('造章.js 渲染不起（%d %s %s）：%s' % (n, 重, 病, o.stderr.strip()[:300]))
-    return json.loads(o.stdout)['收']
+    d = json.loads(o.stdout)
+    return (d['收'], d['果']) if 果 else d['收']
 
 
 def 指(收):
@@ -147,6 +184,85 @@ def 须厚之条(器):
     return 出
 
 
+def _键之句(k):
+    return '【交之键】诸席共一交卷之式：StructuredOutput 只填「%s」一键' % k
+
+
+通之键 = [('执笔', 'draft'), ('选', 'pick'), ('合稿', 'merge'), ('盲读', 'blind'), ('逻辑审', 'audit'), ('回写', 'rewrite'), ('记席', 'record')]
+
+
+def 通之条(器):
+    """★1024 省 token 之审：→ [(条, 合否)]。N≥411 之通式、补派、严判、记令四刀、窄审；拿 410 之令回灌须红。"""
+    出 = []
+    收, 果 = 渲(器, 411, 果=True)
+    收410 = 渲(器, 410)
+    式们 = [c['schema'] for c in 收]
+    ASCII = lambda o: all(re.fullmatch(r'[A-Za-z0-9_.-]{1,64}', k) for k in (o.get('properties') or {}))
+    通 = 式们[0] or {}
+    旧式 = {k: next((c['schema'] for c in 收410 if c['label'].startswith(首) and c['schema']), None) for 首, k in 通之键 if k != 'rewrite'}
+    出.append(('通式：411 诸席（%d·连回写）传同一 schema（原序之指同）、键俱 ASCII（坑⑩）、顶层 minProperties:1、带 flaws' % len(收),
+              all(式们) and len({指(x) for x in 式们}) == 1 and ASCII(通) and all(ASCII(v) for v in 通.get('properties', {}).values() if isinstance(v, dict))
+              and 通.get('minProperties') == 1 and list(通.get('properties', {})) == ['draft', 'pick', 'merge', 'blind', 'audit', 'rewrite', 'record', 'flaws']))
+    出.append(('通式：各子式之 required 与 properties 同 410 之旧式（记式另验）；回写之子式 required done',
+              all(通['properties'][k].get('required') == (旧式[k] or {}).get('required') and 通['properties'][k].get('properties') == {
+                  kk: vv for kk, vv in (旧式[k] or {}).get('properties', {}).items() if kk != 'flaws'} for k in ('draft', 'pick', 'merge', 'blind', 'audit'))
+              and 通['properties']['rewrite'].get('required') == ['done']))
+    出.append(('令末一句「只填『X』一键」，X 与席相应（%d 席）' % len(收),
+              all(_键之句(next(k for 首, k in 通之键 if c['label'].startswith(首))) in c['prompt'].rsplit('\n\n', 1)[-1] for c in 收)))
+    出.append(('回灌·410 之令⛔带交之键、诸席之 schema 各异（旧式·N≤410 ⛔动）',
+              not any('【交之键】' in c['prompt'] for c in 收410) and len({指(c['schema']) for c in 收410 if c['schema']}) > 1))
+    写411 = next(c['prompt'] for c in 收 if c['label'] == '回写')
+    写410 = next(c['prompt'] for c in 收410 if c['label'] == '回写')
+    出.append(('回写之令实一字不动：411 去交之一句＝410 之令换号', 写411.rsplit('\n\n【交之键】', 1)[0] == 写410.replace('410', '411')))
+    # 交空对象即补派
+    def 标(空, 病='病'):
+        c, r = 渲(器, 411, '中', 病, 空=空, 果=True)
+        return [x['label'] for x in c], r
+    for 空, 补 in (('选·行家兼两眼', '选·补'), ('合稿', '合稿·补'), ('盲读', '盲读·补'), ('逻辑审·1', '逻辑审·1·补'), ('记席', '记席·补')):
+        L, _ = 标(空)
+        出.append(('交空对象即补派：%s 交 {flaws} → 派 %s' % (空, 补), 补 in L))
+    L, _ = 标('执笔·甲*')
+    出.append(('交空对象即补派：执笔·甲交空 → 先派「执笔·甲·查」、查无稿再「执笔·甲·补」（⛔径派整席）', '执笔·甲·查' in L and '执笔·甲·补' in L and L.index('执笔·甲·查') < L.index('执笔·甲·补')))
+    L, _ = 标('执笔·甲*,查收')
+    查令 = next((c for c in 渲(器, 411, 空='执笔·甲*,查收') if c['label'] == '执笔·甲·查'), {'prompt': '', 'effort': None})
+    出.append(('查席收盘稿 → ⛔补；查令只跑 承.py 411 --查 甲 <蒙档>、effort low、首句认章', '执笔·甲·查' in L and '执笔·甲·补' not in L
+              and bool(re.search(r'python3 工具/承\.py 411 --查 甲 \S+/第411章/起草_稿[一二三四五]\.md', 查令['prompt'])) and 查令['effort'] == 'low'
+              and 查令['prompt'].startswith('你是第 411 章的**')))
+    L, r = 标('逻辑审·1,逻辑审·1·补')
+    出.append(('逻辑审·1 二回交空 → 停「逻辑审未交」（旧以 null 作无病照放）', r.get('停') == '逻辑审未交' and '记席' not in L))
+    L, r = 标('逻辑审·2,逻辑审·2·补')
+    出.append(('逻辑审·2 二回交空 → 停（⛔无复审而记）', r.get('停') == '致命未净' and '逻辑审·2·补' in L and '记席' not in L))
+    L, _ = 标('', '串')
+    L410 = [c['label'] for c in 渲(器, 410, '中', '串')]
+    出.append(('布尔严判：misread 交「否」→ 411 ⛔作读误（无回写）；410 照旧真值判（有回写·旧行⛔动）', '回写' not in L and '回写' in L410))
+    # 记令四刀
+    记 = next(c for c in 收 if c['label'] == '记席')
+    记410 = next(c['prompt'] for c in 收410 if c['label'] == '记席')
+    出.append(('记令四刀：式 {done,left}、式取记料【一】⛔另读前章回执、治毕复跑 --前 --红、交 left 含 §十四',
+              通['properties']['record'] == {'type': 'object', 'properties': {'done': {'type': 'boolean'}, 'left': {'type': 'string'}}, 'required': ['done', 'left']}
+              and '式取记料【一】，⛔另读前章回执' in 记['prompt'] and '式照前章回执（封版.py --前 印其路，读之）' not in 记['prompt']
+              and 'python3 工具/封版.py 411 --前 --红' in 记['prompt'] and 'left（未了之事＋回执 §十四 交总编辑诸条' in 记['prompt'] and '交：receipt' not in 记['prompt']))
+    出.append(('回灌·410 记令照旧（读前章回执、交 receipt）', '式照前章回执（封版.py --前 印其路，读之）' in 记410 and '交：receipt' in 记410 and '--前 --红' not in 记410))
+    # 窄审
+    c误, r误 = 渲(器, 411, '中', '误', 果=True)
+    审1 = next(c['prompt'] for c in 收 if c['label'] == '逻辑审·1')
+    审2误 = next(c['prompt'] for c in c误 if c['label'] == '逻辑审·2')
+    审2病 = next(c['prompt'] for c in 收 if c['label'] == '逻辑审·2')
+    出.append(('窄审：第1回只读误 → 逻辑审·2 带窄审之门（首跑 稿差.py 411、判全照全审、名词 grep 401—410、节名不变）；第1回之令记「据 正文＝vNN」',
+              '【窄审之门' in 审2误 and '首条命令「python3 工具/稿差.py 411」' in 审2误 and '至少第 401 至 410 章' in 审2误 and '盲读·2 未复读' in 审2误
+              and '「## 造式·逻辑审·合後·第2回」' in 审2误 and 'python3 工具/稿差.py 411 --据' in 审1 and '稿差' not in 审2误.split('【窄审之门')[0]))
+    出.append(('窄审：第1回有硬崩 → 逻辑审·2 照旧全审（⛔窄门）；soft 并入第1回（窄者）', '窄审之门' not in 审2病
+              and '〔第1回〕软1' in (r误.get('逻辑审') or {}).get('soft', '') and '〔第1回〕' not in (果.get('逻辑审') or {}).get('soft', '')))
+    出.append(('回灌·410 之逻辑审令⛔带窄门、⛔带据句', not any('窄审之门' in c['prompt'] or '稿差' in c['prompt'] for c in 收410)))
+    # 承能拆键：承.py 之必填表＝通式之 required；拆之得子
+    import 承 as _承
+    出.append(('承能拆键：承.通之必＝通式诸子式之 required；{键: 子, flaws} → 子、缺必填 → 未交',
+              all(_承.通之必[k] == 通['properties'][k].get('required') for k in 通['properties'] if k != 'flaws')
+              and _承.拆({'pick': {k: 1 for k in _承.通之必['pick']}, 'flaws': '无'}, '选') == {k: 1 for k in _承.通之必['pick']}
+              and _承.拆({'pick': {'ranking': []}}, '选') is None and _承.拆({'flaws': '无'}, '草') is None))
+    return 出
+
+
 def _换笔(收, f):
     return [dict(c, prompt=f(c['prompt'])) if c['label'].startswith('执笔·甲') else c for c in 收]
 
@@ -196,6 +312,11 @@ def 跑():
         记398 = (_令(收, '记席') or [{'prompt': ''}])[0]['prompt']
         R.append(('399·X33 记令述记料十二节（【十二】canon 卡名在）；398 仍旧式（九件事）',
                   '十二节已汇' in 记399 and '【十二】canon' in 记399 and '九件事要翻' not in 记399 and '九件事要翻' in 记398 and '十二节已汇' not in 记398))
+        # ①之二·1024：398—410 逐字不变
+        坏2 = [k for k, v in sorted(_基二.items()) if 指(渲(器, int(k[:3]), k[3], k[4], 厚='厚' if k.endswith('厚') else '否')) != v]
+        R.append(('①之二 N≤410 之诸令逐字不变、键序不变（%d 局·原序 sha256 同 c2659cdc 之基）%s' % (len(_基二), ('｜⛔变：' + '、'.join(坏2[:8])) if 坏2 else ''), not 坏2))
+        for 名, ok in 通之条(器):
+            R.append(('1024·' + 名, ok))
         # ⑥★1020 X40：须厚入令——401（须厚:true）之执笔令带其硬项、选令带其底；400 传之亦⛔认；401 不传者⛔带
         for 名, ok in 须厚之条(器):
             R.append(('X40·' + 名, ok))

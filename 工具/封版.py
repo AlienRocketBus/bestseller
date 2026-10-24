@@ -8,6 +8,7 @@
 
 用法：
   python3 工具/封版.py N --前        # 记席先跑：对表（正文≠末版即存一版）、造式之实、锁定行之数、坑账之单、冷轮之担、前章回执与锁定行之样
+  python3 工具/封版.py N --前 --红   # 复跑只印红：⛔ 项（新红／变）、较上回之变、上回红今已绿，末行「✓ 余 N 项俱绿」（上回之印存 .cache/封版前/；首跑全印）
   python3 工具/封版.py N --後        # 记席毕、主环跑：验记席之档俱在 → 诸闸 → 第十一轮 → 全测 → 提交 → 存底与存底包 → 撤锁（红即停、⛔提交）
   python3 工具/封版.py N --後 --试   # 只跑诸闸与第十一轮之验，⛔写、⛔提交、⛔存底（演练用）
   python3 工具/封版.py --自测         # 以已封版之 380 之真料核诸数（与其锁定行亲核之数逐个同）
@@ -202,6 +203,11 @@ def 骨引之印(核):
     return s
 
 
+def 对白之行(L):
+    """白文之行们 → [(行号, 行)]：对白之行（坑⑩·机械之证③）；记落.py 之「‹器:对白›」同此一把尺。"""
+    return [(k + 1, l) for k, l in enumerate(L) if '“' in l or re.search(r'「[^」]{1,40}」[，。！？]?(?:他|她|我|钱满|刘二|东头|老头)?说', l)]
+
+
 def 机械之证(n, root=ROOT):
     """★1015 W33 之改（390 之试：记席 58 工具里翻查 32——坑账之答所须之据由模型逐条 grep）：
     据之可机算者器先算——①骨记引句逐条核於所引之章（坑㉕；★W60 X37：含区间、本章、远引——远引无原句者印所引之行）②卡之⛔字在白文之数（坑⑱）③对白之行（坑⑩）④日词（坑⑫）⑤数词之行（坑㉘）
@@ -223,7 +229,7 @@ def 机械之证(n, root=ROOT):
         禁 = sorted(set(re.findall(r'⛔\s*「([^」]{1,8})」', kt) + re.findall(r'「([^」]{1,8})」\s*⛔', kt)))
     出.append('②卡之⛔字在白文之数：' + ('｜'.join('「%s」%d' % (w, 白.count(w)) for w in 禁[:30]) or '（卡无⛔「字」之式）'))
     # ③对白之行
-    对 = [(k + 1, l) for k, l in enumerate(L) if '“' in l or re.search(r'「[^」]{1,40}」[，。！？]?(?:他|她|我|钱满|刘二|东头|老头)?说', l)]
+    对 = 对白之行(L)
     出.append('③对白之行 %d：%s' % (len(对), '、'.join(':%d' % k for k, _ in 对[:40])))
     # ④日词
     日 = [(k + 1, m) for k, l in enumerate(L) for m in re.findall(r'第[零〇一二三四五六七八九十百]+[天日]|昨天|前天|今天|明天|後半夜|天亮|天黑|晌午|後晌|日落', l)]
@@ -328,11 +334,16 @@ def 前(n, root=ROOT):
         r = subprocess.run([sys.executable, 器('器物点名.py'), str(n)], cwd=root, capture_output=True, text=True)
         _红 = [l.strip() for l in r.stdout.split('\n') if '⛔ ★' in l]
         print('· 器物册（器物点名 %d）：%s' % (n, ('⛔ ' + '｜'.join(_红[:3]) + '——改册之拍号照白文亲数') if (_红 or '⛔' in r.stdout) else '✓ 拍号俱对'))
+    主环 = []                                               # ★1024 省 token 之审 records 二·④：N≥411 越职三闸（囤灰闸、跑账、席令之禁）入「主环之职」一栏；质量三闸（含①之e 六问）留记席之栏
     for _名, _令 in (('囤灰闸', ['囤灰闸.py']), ('跑账', ['跑账.py']), ('圣经随裁', ['圣经随裁.py']),
                      ('质量三闸', ['质量三闸.py']), ('席令之禁', ['席令之禁.py'])):   # ★1023 坑㉟复踩：408 新立大审.js 缺律⑮⑳，至 --後 之全测·快（六分）方红——一秒之器左移於此   # ★1022 坑㊹：404 封毕而推闸之质量三闸①之c（一章一日）方红——与推闸同一器左移於 --前   # ★1020 坑㉟：400 封版三回——新器未接未跑、新裁未书圣经之随，至 --後 之全测·快（十分钟後）方红；此三闸各一秒，左移於此
         _r = subprocess.run([sys.executable, 器(_令[0])] + _令[1:], cwd=root, capture_output=True, text=True)
         _红 = [l.strip() for l in _r.stdout.split('\n') if l.strip().startswith('⛔')][:3]   # ⛔取行中之「⛔」：挂账之由文里亦有⛔字
-        print('· %s：%s' % (_名, '✓' if _r.returncode == 0 else '⛔ ' + ('；'.join(_红) or 'rc=%d' % _r.returncode)[:400] + '——治後再跑 --前'))
+        _行 = '· %s：%s' % (_名, '✓' if _r.returncode == 0 else '⛔ ' + ('；'.join(_红) or 'rc=%d' % _r.returncode)[:400] + '——治後再跑 --前')
+        if n >= 分栏之始 and _名 in 主环之闸:
+            主环.append('    ' + _行.replace('——治後再跑 --前', '——主环治'))
+        else:
+            print(_行)
     r = 慢['检察官'].result()   # ★1020：398 亮点 5+逗 至封版·後之全测·快（十一分钟後）方红——检察官之末章硬闸单跑左移於此（W60 X39：已於上并起）
     _病 = 末章之病(r.stdout) if r.returncode else []
     print('· 末章硬闸（检察官）：%s' % ('✓ 通过' + ('（第十一轮归 --後）' if r.returncode else '') if not _病 else '⛔ ' + '；'.join(_病)[:600] + '——治後再跑 --前'))
@@ -349,7 +360,103 @@ def 前(n, root=ROOT):
     t = open(os.path.join(root, 施工表), encoding='utf-8').read()
     样 = [l[:120] + '…' for l in t.split('\n') if l.startswith('| %d | 锁定 |' % (n - 1)) or l.startswith('| %d | 悬账 |' % (n - 1))]
     print('· 前章锁定行与悬账行之样（施工表）：\n' + '\n'.join('    ' + x for x in 样))
+    if 主环:
+        print('· 主环之职（记席⛔治；封版 --後 照拦）：\n' + '\n'.join(主环))
     return True
+
+
+分栏之始 = 411                                   # ★N≤410 之 --前 之印一字不变
+主环之闸 = ('囤灰闸', '跑账', '席令之禁')        # 越记席之职（409 回执 §十四·3 自注）；--後 之囤灰闸、全测·快照拦
+_项式 = re.compile(r'^(    )?· ([^：]+)：[ \t]*(✓|⛔)')
+
+
+def 前之项(印):
+    """--前 之印 → {名: [栏, 态, 文]}：栏 席／主环；态 ✓／⛔／·（无态之印，文＝其块之全文，供较上回之变）。"""
+    项, 块 = {}, None
+    for l in 印.split('\n'):
+        m = _项式.match(l)
+        if m:
+            项[m.group(2).strip()] = ['主环' if m.group(1) else '席', m.group(3), l.strip()]; 块 = None
+        elif l.startswith('· '):
+            块 = re.split('[：（]', l[2:], 1)[0].strip(); 项[块] = ['席', '·', l]
+        elif l.startswith('⛔ '):
+            项[l[:24]] = ['席', '⛔', l.strip()]; 块 = None
+        elif 块 and l.startswith(' '):
+            项[块][2] += '\n' + l
+    return 项
+
+
+def _锁之数(文):
+    return dict(re.findall(r'(?m)^    ([^：\n]+)：(.*)$', 文))
+
+
+def 红印(n, 今, 上, 时=''):
+    """--前 --红 之印：席栏之 ⛔（新红／变）、较上回之变、上回红今已绿、主环之职之红；末行「✓ 余 N 项俱绿」。"""
+    出, 绿 = ['════ 封版·前·红（第%d章；较上回 %s）════' % (n, 时 or '?')], 0
+    for 名, (栏, 态, 文) in 今.items():
+        旧 = 上.get(名)
+        if 态 == '✓':
+            绿 += 1
+        elif 态 == '⛔' and 栏 == '席':
+            出.append(文 + ('' if 旧 and 旧[1] == '⛔' and 旧[2] == 文 else '（变）' if 旧 and 旧[1] == '⛔' else '（新红）'))
+        elif 态 == '·' and 旧 and 旧[2] != 文:
+            if 名 == '锁定行之数':
+                a, b = _锁之数(旧[2]), _锁之数(文)
+                出.append('· 变·锁定行之数：' + '；'.join('%s %s→%s' % (k, a.get(k, '（无）'), b.get(k, '（无）')) for k in b if a.get(k) != b.get(k)))
+            else:
+                出.append('· 变·%s（其印已异於上回；全印：python3 工具/封版.py %d --前）' % (名, n))
+    已 = [名 for 名, x in 上.items() if x[1] == '⛔' and (今.get(名) or [0, '✓'])[1] != '⛔']
+    if 已:
+        出.append('· 上回红今已绿：' + '、'.join(已))
+    环 = [x[2] for x in 今.values() if x[0] == '主环' and x[1] == '⛔']
+    if 环:
+        出.append('· 主环之职（记席⛔治；封版 --後 照拦）：\n' + '\n'.join('    ' + x for x in 环))
+    出.append('✓ 余 %d 项俱绿' % 绿)
+    return '\n'.join(出)
+
+
+def 上回之档(n, root=ROOT):
+    return os.path.join(root, '.cache', '封版前', '第%d章.json' % n)     # ⛔存 版本/（免 --後 提交、惹囤灰闸、档肿哨）
+
+
+class _分流:
+    """印之二路：存其文、且（显）照印於终端——--前 跑约二分，⛔候毕方印。"""
+    def __init__(self, 显, 原):
+        self.显, self.原, self.文 = 显, 原, []
+
+    def write(self, x):
+        self.文.append(x)
+        if self.显:
+            self.原.write(x)
+        return len(x)
+
+    def flush(self):
+        self.原.flush()
+
+
+def 前印(n, 红=False, root=ROOT):
+    """--前（与 --前 --红）之跑口：印之同时存其项於 .cache；红且有上回者只印 红印()，无上回者全印（首跑）。"""
+    档 = 上回之档(n, root)
+    try:
+        上 = json.load(open(档, encoding='utf-8'))
+    except Exception:
+        上 = None
+    原 = sys.stdout
+    流 = _分流(not (红 and 上), 原)
+    sys.stdout = 流
+    try:
+        ok = 前(n, root)
+    finally:
+        sys.stdout = 原
+    今 = 前之项(''.join(流.文))
+    if 红 and 上:
+        print(红印(n, 今, 上.get('项', {}), 上.get('时', '')))
+    try:
+        os.makedirs(os.path.dirname(档), exist_ok=True)
+        json.dump({'时': time.strftime('%m-%d %H:%M:%S'), '项': 今}, open(档, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
+    except Exception as e:
+        print('· 上回之印存不得（%s）——下回 --红 照全印' % e)
+    return ok
 
 
 def 记之缺(n, root=ROOT):
@@ -607,6 +714,42 @@ def 自测():
     共 += 1; ok += ("('质量三闸', ['质量三闸.py'])" in _前)        # ★1022 坑㊹：--前 跑与推闸同一之质量三闸（一章一日等）
     共 += 1; ok += ("('席令之禁', ['席令之禁.py'])" in _前)        # ★1023 坑㉟复踩：--前 跑席令之禁（新席缺律⑮⑳）
     共 += 1; ok += ("('全书记忆随', [器('全书记忆.py'), '--随']" in _前 and _前.index('全书记忆随') < _前.index("('剧情链', [器('剧情链.py')]"))   # ★1024 坑㊾：--後 先随详记之 sha、後生剧情链
+    # ★1024 省 token 之审 records 二：--前 --红 与「主环之职」之栏
+    #   ①分栏只走 N≥411、只移三闸（质量三闸＝六问之所出，留记席栏）；N≤410 之印照旧（print(_行) 一路）；--後 之囤灰闸照拦
+    共 += 1; ok += (分栏之始 == 411 and 主环之闸 == ('囤灰闸', '跑账', '席令之禁') and 'if n >= 分栏之始 and _名 in 主环之闸' in _前体
+                   and "return [('囤灰闸', [器('囤灰闸.py')])" in _前)
+    _上 = ('· 造式之实：✓ 二代\n· 锁定行之数（取此，⛔凭空写）：\n    净重：3004\n    sha1：aaaaaaaaaaaa\n'
+          '· 坑账之机械之证（器先算·记席照此答、⛔再逐条 grep）：\n    ①甲\n· 开轮十六检（除⑭）：⛔ ⑮未答——记席须治\n'
+          '· 回执闸：⛔ 回执缺键：到期账——记席照式补\n· 六问：✓ 已答\n· 器物册（器物点名 411）：✓ 拍号俱对\n'
+          '· 主环之职（记席⛔治；封版 --後 照拦）：\n    · 囤灰闸：✓\n    · 跑账：⛔ 甲器从没跑过——主环治\n    · 席令之禁：✓\n')
+    _今 = (_上.replace('⛔ ⑮未答——记席须治', '✓ 俱过').replace('回执缺键：到期账', '回执缺键：病历').replace('aaaaaaaaaaaa', 'bbbbbbbbbbbb')
+           .replace('    ①甲\n', '    ①乙\n') + '· 末章硬闸（检察官）：⛔ 5+逗:甲——治後再跑 --前\n')
+    _项上, _项今 = 前之项(_上), 前之项(_今)
+    _印 = 红印(411, _项今, _项上, '10-24 00:00:00')
+    _L = _印.split('\n')
+    共 += 1; ok += (_项上['跑账'][:2] == ['主环', '⛔'] and _项上['开轮十六检（除⑭）'][:2] == ['席', '⛔'] and _项上['锁定行之数'][1] == '·'
+                   and '· 回执闸：⛔ 回执缺键：病历——记席照式补（变）' in _L and '· 末章硬闸（检察官）：⛔ 5+逗:甲——治後再跑 --前（新红）' in _L
+                   and '· 上回红今已绿：开轮十六检（除⑭）' in _L and '· 变·锁定行之数：sha1 aaaaaaaaaaaa→bbbbbbbbbbbb' in _L
+                   and any(l.startswith('· 变·坑账之机械之证') for l in _L) and '    · 跑账：⛔ 甲器从没跑过——主环治' in _L
+                   and _L[-1] == '✓ 余 6 项俱绿' and not any('造式之实' in l or '六问' in l or '器物册' in l for l in _L))
+    # ②前印：上回之印存 .cache（⛔版本/）；首跑全印、其後 --红 只印红；同印再跑 → 只余末行与题
+    import tempfile as _tf, io as _io
+    _目 = _tf.mkdtemp(prefix='封版红_')
+    _原前 = globals()['前']
+    try:
+        globals()['前'] = lambda n, root=ROOT: (print(_上, end=''), True)[1]
+        _o1 = _io.StringIO(); _s.stdout, _原 = _o1, _s.stdout
+        try:
+            _r1 = 前印(411, True, _目); _r2 = 前印(411, True, _目)
+        finally:
+            _s.stdout = _原
+        _存 = 上回之档(411, _目)
+        共 += 1; ok += (_r1 and _r2 and _o1.getvalue().startswith(_上) and _o1.getvalue().count('════ 封版·前·红') == 1
+                       and _o1.getvalue().rstrip().endswith('✓ 余 5 项俱绿') and os.path.exists(_存)
+                       and '/.cache/封版前/' in _存.replace(os.sep, '/') and '版本' not in os.path.relpath(_存, _目))
+    finally:
+        globals()['前'] = _原前
+        import shutil as _sh; _sh.rmtree(_目, ignore_errors=True)
     print('封版·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' 未过'))
     return ok == 共
 
@@ -617,5 +760,5 @@ if __name__ == '__main__':
         sys.exit(0 if 自测() else 1)
     if len(a) >= 2 and a[0].isdigit() and a[1] in ('--前', '--後'):
         n = int(a[0])
-        sys.exit(0 if (前(n) if a[1] == '--前' else 後(n, '--试' in a)) else 1)
+        sys.exit(0 if (前印(n, '--红' in a) if a[1] == '--前' else 後(n, '--试' in a)) else 1)
     print(__doc__); sys.exit(2)

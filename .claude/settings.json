@@ -131,7 +131,7 @@
     ]
   },
   "_说明_链": "1013 立（坑⑰复踩之守）：PreToolUse 钩，主环之 Bash 命令有「python3 工具/X.py … | … && 下一步」而无 pipefail 者拦——管道之後之 && 判的是 tail 之码，工具败了下一步照跑。见 工具/链之检.py 之头注。",
-  "env": {"ENABLE_PROMPT_CACHING_1H": "1"},
+  "subagentPromptCacheTtl": "1h",
   "_说明_缓存": "1014 立（作者令「省钱不许碰质量，省下的钱全扔回造」·坑㉘）：子席与工作流诸席之提示缓存改一时档（官方：code.claude.com/docs/en/prompt-caching「Choose the TTL yourself」、workflows「Prompt caching in a fan-out」；v2.1.242+）。其由：执笔 effort max 之长思一回逾五分钟即缓存过期、整份上下文重写；以 384、385 之真转录逐回推算，一时档（写价 2× 而免重写）省输入侧 20—29%（每章 $5.5—11）；⛔动 effort、⛔动料。",
   "_说明_预授": "1021 作者明令「我明确要求你在 .claude/settings.json 的 permissions.allow 里，加入写书流程常用命令的允许规则」：一章流程之常令（自走、心跳、封版、存底、推、复盘诸器与本枝之 git）逐条预授，会话照流程走⛔再候作者确认；流程之外之举仍由平台之检判，⛔绕。",
   "_说明_续":"1023 立（坑㊻：406 容器重启後以 resumeFromRunId 直续，失败之执笔其後已交之五席连选俱重跑，白耗约 $60）：PreToolUse 钩（工具/续跑之守.py）——造章之续若将重跑已成之席即拦，指 承.py → _承.js；本章已有已成之段而新派造章、或所带之承（含 _承.js 之包裹）未盖尽之亦拦；args.重造 放行并记其时（承.py 自此⛔收旧轮）。",

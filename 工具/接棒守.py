@@ -88,12 +88,31 @@ def 候(n, 限分=30, 隔=60, 读=None, 我=None, 今=time.time, 睡=time.sleep)
 源 = 'https://github.com/AlienRocketBus/the-novel'
 
 
-def 派之参(n, 重=False):
-    """开第 n 章写书会话之 create_session 参——唯此一形（会话之守逐键比之，⛔手拟）。"""
+def 务之名(n, 上审=None, 待至=None):
+    """第 n 章之会话开头实将做何——只为题名（零 token），令⛔随之变。1024 立：题恒为「第N章」，
+    而 411 之会话实做 408—410 之大审，作者见题即疑「怎么开始写 411 了」。"""
+    try:
+        import 大审
+        上 = 上审 if 上审 is not None else ((大审.诸册() or [[0]])[-1][0])
+        止 = 大审.到期(int(n) - 1, 上)
+    except Exception:
+        止 = None
+    if not 止:
+        return '第%d章' % int(n)
+    if 待至 is None:
+        try:
+            待至 = (json.load(open(os.path.join(ROOT, '设定', '暂停令.json'), encoding='utf-8')).get('待') or {}).get('大审至')
+        except Exception:
+            待至 = None
+    return '大审第%d—%d章（%s）' % (上 + 1, 止, '审毕暂停' if 待至 and int(待至) == 止 else '後接第%d章' % int(n))
+
+
+def 派之参(n, 重=False, 名=None):
+    """开第 n 章之会话之 create_session 参——唯此一形（会话之守逐键比之，⛔手拟）。"""
     n = int(n)
-    令 = ('写《镇冢秘术》第 %d 章：先 `python3 工具/心跳.py --跳 %d`（被拒即止——他坐已写）、再读总章、跑自走、照办；'
-          '末了照总章三之5 接棒；⛔候人' % (n, n))
-    return {'title': '镇冢秘术·第%d章' % n, 'model': 'claude-opus-5-5', 'source_url': 源,
+    令 = ('接《镇冢秘术》第 %d 章之棒：先 `python3 工具/心跳.py --跳 %d`（被拒即止——他坐已写）、再读总章、跑自走、'
+          '照其所判办（写此章、先大审、或照暂停令停）；末了照总章三之5 接棒；⛔候人' % (n, n))
+    return {'title': '镇冢秘术·' + (名 or 务之名(n)), 'model': 'claude-opus-5-5', 'source_url': 源,
             'source_revision': 主枝, 'outcome_branch': 主枝, 'prompt': ('【重派】' if 重 else '') + 令}
 
 
@@ -239,15 +258,19 @@ def 自测():
     段候主 = src.split('def 候主(')[1].split('\ndef ')[0]
     T('⑥候主之默认查係 主含（1022 复核：⛔以注入之假查充其验）', '查 = 查 or 主含' in 段候主)
     T('⑥之二 主含真查云端：章-N 之标为主枝之祖', all(k in 段主含 for k in ("'merge-base', '--is-ancestor'", "'refs/heads/章-%d'", 'ls-remote')))
-    参 = 派之参(411)
+    参 = 派之参(411, 名='第411章')
     T('⑦派之参：题、模、源、枝、令俱定形', 参['title'] == '镇冢秘术·第411章' and 参['model'] == 'claude-opus-5-5'
       and 参['source_revision'] == 参['outcome_branch'] == 主枝 and 'the-novel' in 参['source_url']
       and '第 411 章' in 参['prompt'] and '--跳 411' in 参['prompt'] and not 参['prompt'].startswith('【重派】'))
-    T('⑦之二 重派：令首带【重派】、余同', 派之参(411, True)['prompt'] == '【重派】' + 参['prompt'])
+    T('⑦之二 重派：令首带【重派】、余同', 派之参(411, True, '第411章')['prompt'] == '【重派】' + 参['prompt'])
+    T('⑦之五 题名实务：大审到期即名其段（1024 作者疑「怎么开始写 411」）',
+      务之名(411, 上审=407, 待至=410) == '大审第408—410章（审毕暂停）' and 务之名(421, 上审=410, 待至=410) == '大审第411—420章（後接第421章）'
+      and 务之名(412, 上审=410) == '第412章' and 务之名(411, 上审=410) == '第411章')
+    T('⑦之六 令⛔言「写」第 N 章（实务由自走判）', '照其所判办' in 参['prompt'] and not 参['prompt'].startswith('写'))
     令 = 派令(411, 今=lambda: 0)
     T('⑦之三 派令：入总编辑之会话、二分後、令中之参可原样解回', 令['persistent_session_id'] == 总编辑
       and 令['run_once_at'] == '1970-01-01T00:02:00Z' and 令['prompt'].startswith('【派】开第 411 章')
-      and json.loads(令['prompt'][令['prompt'].index('{'):]) == 参)
+      and json.loads(令['prompt'][令['prompt'].index('{'):]) == 派之参(411))
     T('⑦之四 诸印之令俱指 --派令（⛔手拟【派】）', src.count('--派令 %s') >= 2 and '令「【派】开第' not in src)
     ok = sum(r)
     print('── 负测·接棒守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))

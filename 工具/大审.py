@@ -415,6 +415,22 @@ def 连带(引):
     return out
 
 
+def 裁之文(x, b):
+    """裁席之一行 → 册三节「裁」格之文。★1024 实踩（408—410 册）：裁席把还账之限写成 408（包之首章），录成「已挂·限408」，
+    册一成即逾限、推闸全红——限⛔早於本册之下一章：≤b 者一律正为 b+1（还账本义即限下一章）。"""
+    裁 = str(x.get('ruling', ''))
+    限 = x.get('limit')
+    try:
+        限 = max(int(限), b + 1) if 限 not in (None, '') else None
+    except (TypeError, ValueError):
+        pass
+    if 裁 == '已挂' and 限:
+        裁 = '已挂·限%s' % 限
+    elif 裁 == '还账':   # 已写章之读者可见致命：一单器施（还账.py），限下一章
+        裁 = '已挂·限%s（还账·器施）' % (限 or b + 1)
+    return 裁
+
+
 def 录(run, a=None, b=None):
     """★1023 X27：自 workflow 之 journal 排册之一、二节（逐席之判）与三节（裁席之裁）——⛔一席抄档（W50 录册一席 $20.96）。"""
     import glob
@@ -473,11 +489,7 @@ def 录(run, a=None, b=None):
         L.append('')
     L += ['## 三·逐笔裁定（丙律·不许只挂）\n', '| # | 判（席·题） | 据（章·拍·原句） | 裁 | 其由 | 连带（器·X46） |', '|---|---|---|---|---|---|']
     for i, x in enumerate(裁果.get('rows') or [], 1):
-        裁 = str(x.get('ruling', ''))
-        if 裁 == '已挂' and x.get('limit'):
-            裁 = '已挂·限%s' % x['limit']
-        elif 裁 == '还账':   # 已写章之读者可见致命：一单器施（还账.py），限下一章
-            裁 = '已挂·限%s（还账·器施）' % (x.get('limit') or b + 1)
+        裁 = 裁之文(x, b)
         if x.get('to_segment'):
             裁 += '（入段案·%s）' % x['to_segment']
         带 = '；'.join(连带(x.get('evidence', ''))[:4]) if x.get('repay') else ''

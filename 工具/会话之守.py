@@ -239,6 +239,9 @@ def 自测():
 
     _判 = globals()['判']
     判 = lambda *a, **k: _判(*a, **dict({'查': lambda 章, 参: (False, '')}, **k))   # 旧格只验锁、重派、暂停；派查另验（⑧）
+    # 1024 实踩：盘上暂停令真在时，③诸格读真令而误拦、且真调了 心跳.立停——自测⛔读盘上之令、⛔动真锁（⑦另以桩验暂停）
+    _真停, _真立 = globals()['停读'], globals()['立停读']
+    globals()['停读'], globals()['立停读'] = (lambda: False), (lambda: None)
     无锁 = lambda: (False, '', None)
     他锁 = lambda: (True, '01OTHER', 402)
     我锁 = lambda: (True, '016MINE', 402)
@@ -351,6 +354,10 @@ def 自测():
         T('⑤之二 PreToolUse 钩挂本器、matcher 两写俱中', bool(钩))
     except Exception as e:
         T('⑤settings 读不出：%s' % e, False)
+    globals()['停读'], globals()['立停读'] = _真停, _真立
+    自 = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[1]
+    T('③之七 自测桩掉暂停之读与立停（盘上令在时③亦通、⛔动真锁）',
+      "globals()['停读'], globals()['立停读'] = (lambda: False), (lambda: None)" in 自 and 自.index('_真停') < 自.index("T('③新开"))
     ok = sum(r)
     print('── 负测·会话之守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)

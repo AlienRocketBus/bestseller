@@ -96,7 +96,7 @@ def 验(root=ROOT):
                 if not m or not m.group(1).strip() or m.group(1).strip().startswith('（填'):
                     坏.append('%s 之效缺「%s」' % (名, 项))
             for 项 in ('总费', '服务目标之费', '浪费', '机器能办而花token'):
-                if not re.search(r'^- %s：\$\d' % 项, 效.group(1), re.M):
+                if not re.search(r'^- %s：(?:约\s*)?\$\d' % 项, 效.group(1), re.M):   # 1024 实踩（410）：「约 $1」亦是 $ 之数（--效账 之读法同）
                     坏.append('%s 之效「%s」须是 $ 之数' % (名, 项))
         m日 = re.match(r'(\d{4})_', 名)
         if 简:
@@ -303,6 +303,10 @@ def 自测():
         s2 = re.sub(r'- 机器能办而花token：.*', '- 机器能办而花token：$0', s2)
         open(f, 'w', encoding='utf-8').write(s2 + '无新坑\n')
         ok = ok and 验(t)[0] is True
+        open(f, 'w', encoding='utf-8').write(re.sub(r'- 浪费：.*', '- 浪费：约 $1（估）', s2) + '无新坑\n')
+        ok = ok and 验(t)[0] is True                                    # 「约 $N」亦过
+        open(f, 'w', encoding='utf-8').write(re.sub(r'- 浪费：.*', '- 浪费：约一块', s2) + '无新坑\n')
+        ok = ok and 验(t)[0] is False                                   # 无 $ 之数仍红
     finally:
         shutil.rmtree(t)
     print('复盘·自测 %d/1' % int(ok))

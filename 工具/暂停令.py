@@ -138,8 +138,8 @@ def 记守书(停, root=ROOT):
     d = 读令(root)
     时 = time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())
     if 停:
-        if not d or d.get('解'):
-            print('⛔ 无未解之暂停令——⛔停守书之巡（书不停之第三锁）'); return False
+        if not d or d.get('解') or not 在(root)[0]:   # 待（大审未毕）亦⛔：令未生效而巡先停，书续而无人兜
+            print('⛔ 暂停令未在（无令、已解或未生效）——⛔停守书之巡（书不停之第三锁）'); return False
         import 席在跑吗
         d['守书已停'] = {'时': 时, 'trigger_id': 席在跑吗.守书之令}
     else:
@@ -157,7 +157,7 @@ def 守书之哨(root=ROOT):
     x = 守书停记(root)
     if not x or 在(root)[0]:
         return []
-    return ['⛔ 守书之巡仍停：暂停令已解而「守书已停」（%s）之记仍在——照此调一回：%s；调毕 python3 工具/暂停令.py --守书已开'
+    return ['⛔ 守书之巡仍停（令已解·停记 %s）——照调：%s；调毕 python3 工具/暂停令.py --守书已开'   # ★一行⛔逾 160 字（自走默印截於此）
             % (x.get('时', ''), 守书之参(True))]
 
 
@@ -227,6 +227,8 @@ def 自测():
         共 += 1; ok += (r待[0] is False and '待' in r待[1] and r空[0] is False and r成[0] is True)   # 待：407 册在、410 空模子⛔算、410 成即在
         w({'立': 'x', '令': '作者令：审完即停', '据': '设定/交.md:2', '解': None, '待': {'大审至': 'x'}})
         共 += 1; ok += 在(t)[0] is False                                   # 待之章号坏⛔认（⛔误停）
+        with contextlib.redirect_stdout(io.StringIO()):
+            共 += 1; ok += 记守书(True, t) is False and 守书停记(t) is None   # 1024 验：令未生效（待）⛔记守书已停（书续而巡先停）
         # 1024 守书之巡：参之号取一处之常量；令在而记停 → 哨⛔红；解後记仍在 → 红且带 enabled=true 之参；记开後 → 绿
         import 席在跑吗
         w({'立': 'x', '令': '作者令：暂停', '据': '设定/交.md:2', '解': None})
@@ -236,7 +238,8 @@ def 自测():
         参开 = 'update_trigger {"trigger_id": "%s", "enabled": true}' % 席在跑吗.守书之令
         共 += 1; ok += (s0 is False and s1 is True and 哨在 == [] and len(哨解) == 1 and 参开 in 哨解[0]
                         and 参开 in 印.getvalue() and s2 is False and s3 is True and 哨开 == []
-                        and 守书之参(False) == 参开.replace('true', 'false') and 席在跑吗.守书之令.startswith('trig_'))
+                        and 守书之参(False) == 参开.replace('true', 'false') and 席在跑吗.守书之令.startswith('trig_')
+                        and len(哨解[0]) <= 160 and 哨解[0].endswith('--守书已开'))   # 自走默印每行截於 160 字
         src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
         共 += 1; ok += ('trig_' not in src)                               # 号⛔硬写於本器（取 席在跑吗.守书之令）
     finally:

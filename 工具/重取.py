@@ -80,8 +80,8 @@ def 印(目=None):
     d = 读(目)
     if not d:
         return ''
-    return ('⛔ 盘坏：%s 首见於 %s（%s）——照 python3 工具/重取.py 之法重 clone 换目'
-            % (d.get('时', ''), d.get('档', ''), d.get('语', '')))
+    return ('⛔ 盘坏：%s 首见於 %s（%s）——照 python3 工具/重取.py 之法重 clone 换目'   # ★档、语截短：自走默印每行截於 160 字，⛔截掉其法
+            % (d.get('时', ''), str(d.get('档', ''))[:30], str(d.get('语', ''))[:50]))
 
 
 def _读(*a):
@@ -144,6 +144,10 @@ def 自测():
         T('③之二 旗已在 → ⛔覆（留首见者）', 读(d)['档'] == 'git add -A')
         l = 印(d)
         T('④印：⛔ 盘坏 一行，指 重取.py 之法', l.startswith('⛔ 盘坏：') and 'python3 工具/重取.py 之法重 clone 换目' in l)
+    with tempfile.TemporaryDirectory() as d:
+        立('git -C /home/user/the-novel add -A -- 版本 正文 设定', 'error: ' + '版本/第九章/很长之档名' * 20 + ': Input/output error', d)
+        l = 印(d)
+        T('④之二 档、语虽长，印⛔逾 160 字而其法在末（自走默印截於 160）', len(l) <= 160 and l.endswith('之法重 clone 换目'))
     s = 步('/home/u/仓', '枝甲', 'https://x/y.git', '名', 'a@b')
     i = lambda k: next((n for n, x in enumerate(s) if k in x and not x.startswith('#')), -1)
     序 = [i('git clone https://x/y.git /home/u/仓.new'), i('checkout 枝甲'), i('core.hooksPath 工具/githooks'),

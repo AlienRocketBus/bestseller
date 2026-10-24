@@ -155,6 +155,9 @@ def 收(n, 诸路, root=ROOT, 再=False, 界=None):
         果 = [(标.get(d.get('key'), ''), d.get('result')) for d in 行 if d.get('type') == 'result']
         # 通式（N≥411）拆键；回写之果⛔拆（造章.js 不取其果，交了即算办过——缺 rewrite 键而重跑回写即白耗一席）
         果 = [(l, r if 式之键(l, 键们) in ('回写', '') else 拆(r, 式之键(l, 键们), n >= 411)) for l, r in 果]
+        # 查席之稿 file 係相对之路（蒙档）——N≥411 依 root 补成绝对：否则其键与下盘稿之 glob 不同，一稿收两回、诸稿重名（怀疑者逮）
+        果 = [(l, dict(r, file=os.path.join(root, r['file'])) if n >= 411 and l.startswith('执笔·') and isinstance(r, dict)
+               and isinstance(r.get('file'), str) and r['file'] and not os.path.isabs(r['file']) else r) for l, r in 果]
         属 = any(isinstance(r, dict) and str(r.get('file', '')).startswith(章目) for l, r in 果 if l.startswith('执笔·')) \
             or 首令属(路, [d.get('agentId') for d in 行 if d.get('type') == 'started'], n)
         if not 属:
@@ -236,6 +239,8 @@ def 查(n, 名, 档, root=ROOT, 界=None, 时=None):
         由 = '稿档不在或不足 %d 字节' % 盘稿之下限
     elif os.path.getmtime(p) < 界:
         由 = '稿档在重造之界前（旧轮之稿）'
+    elif os.path.exists(os.path.join(章目, '_料.md')) and os.path.getmtime(p) < os.path.getmtime(os.path.join(章目, '_料.md')):
+        由 = '稿档早於 _料.md（前轮之稿·料已重出）'   # failures① safeguard①③：只收本轮料出之後之稿（怀疑者补）
     else:
         t = open(p, encoding='utf-8', errors='replace').read()
         if '【本章亮点】' not in t:
@@ -447,6 +452,27 @@ def 自测():
         R.append(('⑰之三 稿半（无亮点）、低於铁底 → 无稿；再查之前稿另名（_前2·⛔覆前账）', 稿10 is None and '稿半' in 由10 and 稿11 is None and '铁底' in 由11
                   and len(账10) == 3 and 账10[1]['构思_前'] == '起草_甲_构思_前2.md'))
         R.append(('⑰之四 无构思之席：前稿无、照验其稿', 查(9, '乙', 档相, root=t, 界=0)[2]['构思_前'] is None))
+        # ★1024 怀疑者补：查席之稿 file 相对 → 依 root 补绝对，⛔与盘稿之 glob 重收；料重出後之旧稿⛔收
+        f12 = os.path.join(t, '版本', '第411章', '起草_稿二.md')
+        open(f12, 'w', encoding='utf-8').write('第四一一章 试\n' + '她走过去。' * 100 + '\n【本章亮点】骨\n')
+        j7 = os.path.join(t, 'j7.jsonl')
+        写(j7, [{'type': 'started', 'key': 'a', 'label': '执笔·乙·查'},
+                {'type': 'result', 'key': 'a', 'result': {'draft': {'file': '版本/第411章/起草_稿二.md', 'beats': 2, 'words': 2200, 'soul': '魂'}, 'flaws': '无'}},
+                {'type': 'started', 'key': 'b', 'label': '执笔·甲·物证'}, {'type': 'result', 'key': 'b', 'result': {'draft': {'file': f11, 'beats': 5, 'words': 9, 'soul': '魂'}}}])
+        旧目 = os.getcwd()
+        os.chdir(t)                              # 真跑之 cwd 即仓根：相对之路 exists 为真，旧式即重收
+        try:
+            承9 = 收(411, [j7], root=t, 界=0)[0]
+        finally:
+            os.chdir(旧目)
+        R.append(('⑯之三 查席之稿（相对之路）补成绝对、一稿只收一回（⛔与盘稿重收）', sorted(x['file'] for x in 承9.get('诸稿', [])) == sorted([f11, f12])))
+        open(稿查, 'w', encoding='utf-8').write('第九章 试\n' + '她走过去，停了一下。' * 220 + '\n＊\n' + '他没说话。' * 10 + '\n【本章亮点】骨\n')
+        料9 = os.path.join(t, '版本', '第9章', '_料.md')
+        open(料9, 'w').write('料')
+        os.utime(稿查, (100, 100))
+        稿12, 由12, _ = 查(9, '甲', 档相, root=t, 界=0)
+        os.remove(料9)
+        R.append(('⑰之五 稿档早於 _料.md（料已重出·前轮之稿）→ 无稿', 稿12 is None and '早於' in 由12 and bool(查(9, '甲', 档相, root=t, 界=0)[0])))
         档 = os.path.join(t, '承_重造.json')
         记重造(9, 档=档, 时=123.0)
         R.append(('⑫记重造／重造之时 往返；他章 0', 重造之时(9, 档) == 123.0 and 重造之时(8, 档) == 0))

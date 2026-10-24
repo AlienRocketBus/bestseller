@@ -25,7 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 据之式 = re.compile(r'据\s*正文\s*[＝=]\s*(v\d+)')
 第一回之头 = '## 造式·逻辑审·合後·第1回'
 # 窄席所须之料（seats② safeguard 三）：_料.md 之节头含此诸字者全录；开镜卡之下只取问三、问八、问九（含之二）
-料之节 = ('〔段案·本章之行', '〔余章总案·下一章之行', '〔全员之账')
+料之节 = ('〔段案·本章之行', '〔余章总案·', '〔全员之账')   # 余章总案：有段案之章料印「下一章之行」、无则「本章前後之行」，俱收
 卡之问 = ('问三', '问八', '问九')
 
 
@@ -65,12 +65,15 @@ def 据(n, root=ROOT):
 
 
 def 第一回之据(轮记):
+    """第1回之节内之「据」；节有二（逻辑审·1 半途而死、·补 再立一节）者取末一个有据之节。"""
     if not 轮记 or 第一回之头 not in 轮记:
         return None
-    节 = 轮记.split(第一回之头, 1)[1]
-    节 = re.split(r'^## ', 节, maxsplit=1, flags=re.M)[0]
-    m = 据之式.search(节)
-    return m.group(1) if m else None
+    据们 = []
+    for 节 in 轮记.split(第一回之头)[1:]:
+        m = 据之式.search(re.split(r'^## ', 节, maxsplit=1, flags=re.M)[0])
+        if m:
+            据们.append(m.group(1))
+    return 据们[-1] if 据们 else None
 
 
 def 量(旧, 新):
@@ -87,6 +90,23 @@ def 量(旧, 新):
         字变 += sum((x2 - x1) + (y2 - y1) for o, x1, x2, y1, y2 in c.get_opcodes() if o != 'equal')
         块.append((i1, i2, j1, j2))
     return 行变, 字变, 块
+
+
+def 後章段案(n, root):
+    """seats② safeguard 三：下一二章之段案（料只有本章之行·章料.段案行 取之）。"""
+    try:
+        import 章料
+    except Exception:
+        return ''
+    出 = []
+    for k in (n + 1, n + 2):
+        try:
+            t = 章料.段案行(k, root=root)
+        except Exception:
+            t = ''
+        if t:
+            出.append('## 〔段案·第%d章之行（後章之计·改行⛔与之相撞）〕\n%s' % (k, t))
+    return '\n\n'.join(出)
 
 
 def 料摘(料):
@@ -137,7 +157,10 @@ def 判(n, root=ROOT, 写=True):
             L += ['+ %d: %s' % (j1 + 1 + k, x) for k, x in enumerate(新[j1:j2])]
             for k in range(j2, min(len(新), j2 + 2)):
                 L.append('  %d: %s' % (k + 1, 新[k]))
-        L += ['', '## 料之所须（_料.md 摘：开镜卡问三问八问九、段案本章之行、余章总案下一章之行、全员之账）', '', 料摘(读(os.path.join(目, '_料.md')))]
+        L += ['', '## 料之所须（_料.md 摘：开镜卡问三问八问九、段案本章之行、余章总案之行、全员之账；另附下一二章之段案）', '', 料摘(读(os.path.join(目, '_料.md')))]
+        後 = 後章段案(n, root)
+        if 後:
+            L += ['', 後]
         出 = os.path.join(root, '.cache', '稿差', '第%d章.md' % n)
         os.makedirs(os.path.dirname(出), exist_ok=True)
         open(出, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
@@ -187,6 +210,17 @@ def 自测():
         R.append(('⑩底版不在 → 全', not 判(9, t)[0] and '不在' in 判(9, t)[1]))
         写(os.path.join(目, '_轮记.md'), '# 轮记\n%s\n\n六类\n## 造式·逻辑审·合後·第2回\n据 正文＝v01\n' % 第一回之头)
         R.append(('⑪「据」须在第1回之节内（第2回之据⛔认）→ 全', not 判(9, t)[0] and '轮记无' in 判(9, t)[1]))
+        # ★1024 怀疑者补：第1回之节有二取末有据者；余章总案「本章前後之行」亦收；下一二章之段案附入差档
+        写(os.path.join(目, '_轮记.md'), '# 轮记\n%s\n\n六类（席半途而死）\n%s\n\n据 正文＝v01\n' % (第一回之头, 第一回之头))
+        写(os.path.join(目, '_料.md'), '# 料\n## ★★★问三·本章之一事\n一事\n## 〔余章总案·本章前後之行（9±1）〕\n总案九之行\n## 〔全员之账（生死）〕\n苏衍存\n')
+        os.makedirs(os.path.join(t, '设定', '段案'))
+        写(os.path.join(t, '设定', '段案', '9-12.md'), '# 段案\n## 9\n九之拍\n## 10\n十之拍\n## 11\n十一之拍\n## 12\n十二之拍\n')
+        写(os.path.join(目, 'v06.md'), 小); 写(正, 小)
+        ok12, _, 果12 = 判(9, t)
+        档 = 读(os.path.join(t, '.cache', '稿差', '第9章.md')) or ''
+        R.append(('⑫第1回之节有二（前席死、补席再立）→ 取有据之节 v01；窄', ok12 and 果12.get('底') == 'v01'))
+        R.append(('⑬差档收余章总案「本章前後之行」、附第 10、11 章之段案（⛔第 9、12 章）', '总案九之行' in 档 and '十之拍' in 档 and '十一之拍' in 档
+                  and '九之拍' not in 档 and '十二之拍' not in 档))
     for k, ok in R:
         print('  %s %s' % ('✓' if ok else '⛔', k))
     过 = sum(1 for _, o in R if o)

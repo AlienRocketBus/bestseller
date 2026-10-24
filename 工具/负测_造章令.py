@@ -226,7 +226,7 @@ def 通之条(器):
     L, _ = 标('执笔·甲*,查收')
     查令 = next((c for c in 渲(器, 411, 空='执笔·甲*,查收') if c['label'] == '执笔·甲·查'), {'prompt': '', 'effort': None})
     出.append(('查席收盘稿 → ⛔补；查令只跑 承.py 411 --查 甲 <蒙档>、effort low、首句认章', '执笔·甲·查' in L and '执笔·甲·补' not in L
-              and bool(re.search(r'python3 工具/承\.py 411 --查 甲 \S+/第411章/起草_稿[一二三四五]\.md', 查令['prompt'])) and 查令['effort'] == 'low'
+              and bool(re.search(re.escape('python3 工具/承.py 411 --查 甲 ') + r'\S+/第411章/起草_稿[一二三四五]\.md', 查令['prompt'])) and 查令['effort'] == 'low'   # re.escape：死处方哨认「承\.py」为器名而红
               and 查令['prompt'].startswith('你是第 411 章的**')))
     L, r = 标('逻辑审·1,逻辑审·1·补')
     出.append(('逻辑审·1 二回交空 → 停「逻辑审未交」（旧以 null 作无病照放）', r.get('停') == '逻辑审未交' and '记席' not in L))

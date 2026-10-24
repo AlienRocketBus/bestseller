@@ -467,6 +467,10 @@ def 记之缺(n, root=ROOT):
          ('全书记忆·章详记', os.path.exists(os.path.join(root, '设定', '全书记忆', '第%d章.md' % n))),
          ('下一章开镜卡', os.path.exists(os.path.join(root, '版本', '第%d章' % (n + 1), '_开镜卡.md'))),
          ('席记', os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_席记.json')))]
+    if n >= 分栏之始:          # ★1024 验席：记席留「‹器:键›」而未跑 记落.py 即交，器格成空壳入封——--後 拦之（N≤410 无此项）
+        import 记落
+        项 += [('占位未填·%s（跑 python3 工具/记落.py %d）' % (名, n), False) for 名, p in 记落.档们(n, root) + [('检察官', 记落.检察官)]
+               if '‹器:' in (记落.读(p, root) or '')]
     return [k for k, ok in 项 if not ok]
 
 
@@ -651,6 +655,15 @@ def 自测():
     收, 弃 = 可提交(381, ['正文/a.md', '版本/第381章/x', '版本/第382章/_开镜卡.md', '设定/y.json', 'README.md', '工具/z.py', '版本/第379章/v.md'])
     共 += 1; ok += (弃 == ['工具/z.py', '版本/第379章/v.md'] and len(收) == 5)
     共 += 1; ok += (记之缺(380) == [] and '下一章开镜卡' not in 记之缺(380))
+    # ★1024 验席：N≥411 之占位未填 --後 拦（施工表留 ‹器:sha1›）；N≤410 照旧不认
+    import tempfile as _tf0, shutil as _sh0
+    _目0 = _tf0.mkdtemp(prefix='封版占_')
+    try:
+        os.makedirs(os.path.join(_目0, os.path.dirname(施工表)))
+        open(os.path.join(_目0, 施工表), 'w', encoding='utf-8').write('| 410 | 锁定 | ‹器:sha1› |\n| 411 | 锁定 | ‹器:sha1› |\n')
+        共 += 1; ok += (any(x.startswith('占位未填·施工表') for x in 记之缺(411, _目0)) and not any(x.startswith('占位未填') for x in 记之缺(410, _目0)))
+    finally:
+        _sh0.rmtree(_目0, ignore_errors=True)
     # ★1020 X21（W53 验席之治法 a）：①⛔跳 N+1（空锁）、撤锁为提交後之末步；後() 真走此两表（⛔内联另一份——验席之七）；
     #   ②封版之全测⛔撞断流：接力之静自交棒（_十一轮.json）起算；③撤 N 之锁⛔清 N+1 之心跳（取本地与远端之新者——验席之十）。
     #   回灌：旧表（心跳 N+1 於全测前、⛔撤锁）、後() 内联旧表、接力只看下一章之新动、可收不比新旧——各即红。

@@ -360,7 +360,7 @@ def 落(n, root=ROOT, 试=False, 印=print):
 
 # ── 回放（--自测）──
 def 封之提交(n, root=ROOT):
-    return subprocess.run(['git', 'log', '--all', '--format=%H', '-1', '--grep', '封版#%d）' % n], cwd=root,
+    return subprocess.run(['git', 'log', '--all', '--format=%H', '-1', '--grep', '^第%d章.*（造式二代·封版#%d）' % (n, n)], cwd=root,   # 锚题首：後之提交引其号⛔误取
                           capture_output=True, text=True).stdout.strip()
 
 

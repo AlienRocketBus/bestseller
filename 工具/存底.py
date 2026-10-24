@@ -60,7 +60,14 @@ def _跑(*a, env=None, cwd=None):
     e = dict(os.environ)
     if env:
         e.update(env)
-    return subprocess.run(a, cwd=cwd or ROOT, capture_output=True, text=True, env=e)
+    r = subprocess.run(a, cwd=cwd or ROOT, capture_output=True, text=True, env=e)
+    if r.returncode != 0:   # 1024 盘坏之哨：诸 git 之调俱经此——遇 Input/output error／signal 7 即立 <git 公目>/盘坏.flag（零 token）
+        try:
+            import 重取
+            重取.查迹(r.returncode, r.stderr or '', ' '.join(str(x) for x in a[:3]))
+        except Exception:
+            pass
+    return r
 
 
 def _档肿哨():
@@ -488,6 +495,8 @@ def 自测():
       "续心跳=True" in s and "ZM_存底不续心跳" in s)
     T('⑧两本账虽在 .gitignore，存底仍强塞进临时索引（少了它们续跑之账就断）',
       "'add', '-f'" in s and '_跑账.json' in s and '_任务流.json' in s)
+    段跑 = s.split('def _跑(')[1].split('\ndef ')[0]
+    T('⑰诸 git 之调（_跑）败即问盘坏之迹（1024：add 每回败而只入日志，无人见）', '重取.查迹(r.returncode, r.stderr' in 段跑)
     T('⑦每存一回，顺手记一步续跑（东西保住而进度丢了仍是断）',
       'import 续跑' in s and '续跑.记(' in s)
     # ⑩—⑯·1021 防覆（402 之失）：真起一个临时之远端与工作仓，两机一锁，逐形跑一遍（⛔只看字样）

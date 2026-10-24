@@ -16,6 +16,7 @@
   python3 工具/接棒守.py --立守书          # 守书之会话首回立之（⛔写书之坐立之）
   python3 工具/接棒守.py --哨              # 定时之保用：有人在写或交棒中 rc=0；停写 rc=2 并印开写书会话之令
   python3 工具/接棒守.py --派令 404 [--重]  # 交棒：印 create_trigger 之参（run_once_at 已算）；总编辑醒即以其中之参原样 create_session 一回
+  python3 工具/接棒守.py --守书之令        # 印守书定时之令所嵌之判令（一行·机器出判「止」／「派 N」；1024）
   python3 工具/接棒守.py --自测
 """
 import os as _o, sys as _s
@@ -176,6 +177,16 @@ def 哨判(d, 今, 限):
     return 2, '⛔停写：交第%s章之棒、撤锁已 %d 分无人接' % (d.get('毕'), 分)
 
 
+# 1024·省审 sessions 二：守书（Haiku）旧自读 JSON、自算 T−J.时、自比 2700／1800——每唤约五调；今由机器一令出判，每唤二调。
+#   守书⛔跑仓中脚本（只读之巡），故判式嵌於定时之令之文；其真本在此一处，自测拿 哨判 逐形对之（阈同一把尺：心跳.限、交棒之宽分）。
+#   ⛔try（单引号里之 \n 係字面之反斜杠——1024 审实测 SyntaxError、rc=1，二字俱不印）；读坏即 || echo '派 ?'。
+#   令文须写明：印出之字不是「止」即作停写（与 哨判 之 fail→2 同）。
+守书之判式 = ('''python3 -c "import sys,json,time;j=json.load(sys.stdin);c=j.get('章');d=time.time()-int(j.get('时') or 0);'''
+            '''print('止' if (d<=2700 if c is not None else d<1800) else '派 %s'%(c if c is not None else j.get('毕')))"'''
+            " || echo '派 ?'")
+守书之判令 = 'cd /home/user/the-novel && git fetch -q origin 备份/心跳 && git show origin/备份/心跳:_心跳.json | ' + 守书之判式
+
+
 def 哨():
     import 心跳
     在, d = 心跳._远()
@@ -272,6 +283,21 @@ def 自测():
       and 令['run_once_at'] == '1970-01-01T00:02:00Z' and 令['prompt'].startswith('【派】开第 411 章')
       and json.loads(令['prompt'][令['prompt'].index('{'):]) == 派之参(411))
     T('⑦之四 诸印之令俱指 --派令（⛔手拟【派】）', src.count('--派令 %s') >= 2 and '令「【派】开第' not in src)
+    # ⑧1024 守书之判式：真跑於 bash，逐形与 哨判 同判（止＝rc0；派 N＝rc2）；读坏、空入俱「派 ?」；阈与 心跳.限、交棒之宽分 同
+    import 心跳
+    现 = int(time.time())
+    形 = [({'章': '暂停', '时': 4102444800, '坐': '暂停令'}, '止'),
+         ({'章': 411, '时': 现 - 600, '坐': 'B'}, '止'), ({'章': 411, '时': 现 - 2800, '坐': 'B'}, '派 411'),
+         ({'章': None, '毕': 412, '时': 现 - 600}, '止'), ({'章': None, '毕': 412, '时': 现 - 1900}, '派 412')]
+    跑式 = lambda 入: subprocess.run(['bash', '-c', 守书之判式], input=入, capture_output=True, text=True, timeout=30)
+    出 = [(跑式(json.dumps(d, ensure_ascii=False)).stdout.strip(), 期, 哨判(d, 现, 心跳.限)[0]) for d, 期 in 形]
+    坏 = [跑式(x) for x in ('', '不是 JSON', '{"章": 411, "时": "x"}')]
+    T('⑧守书之判式：五形之印与 哨判 同判（止↔rc0、派 N↔rc2；停锁判止）', all(o == 期 and (rc == 0) == (o == '止') for o, 期, rc in 出))
+    T('⑧之二 读坏、空入、时坏 → 印「派 ?」且 rc=0（⛔报错无字）', all(p.stdout.strip() == '派 ?' and p.returncode == 0 for p in 坏))
+    T('⑧之三 阈同一把尺（2700＝心跳.限、1800＝交棒之宽分）、⛔try、令自云端心跳枝取',
+      'd<=2700' in 守书之判式 and 心跳.限 == 2700 and 'd<1800' in 守书之判式 and 交棒之宽分 * 60 == 1800
+      and 'try' not in 守书之判式 and '\\n' not in 守书之判式 and 守书之判令.endswith('| ' + 守书之判式)
+      and 'git show origin/%s:_心跳.json' % 心跳.枝 in 守书之判令)
     ok = sum(r)
     print('── 负测·接棒守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)
@@ -285,6 +311,9 @@ if __name__ == '__main__':
         # 守书之会话立之（只查、⛔写书）：Stop 钩见之⛔令此坐写书。⛔写书之坐立之——其 Stop 钩之守即失。
         open(os.path.join(_仓目(), '守书.flag'), 'w').write('守书之会话（定时之保）\n')
         print('✓本机立为守书之坐（%s）' % os.path.join(_仓目(), '守书.flag'))
+        sys.exit(0)
+    if '--守书之令' in a:
+        print(守书之判令)
         sys.exit(0)
     if '--派令' in a:
         i = a.index('--派令')

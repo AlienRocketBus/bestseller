@@ -13,6 +13,7 @@
   ③ create_session：云端心跳之锁（`工具/心跳.py`·四十五分）为他坐所持即拦——⛔同时两坐写同一章。
      1024 起交棒⛔经总编辑另查——令含「第N章」之写书会话，本钩一并验：参须与 `接棒守.派之参` 逐键同（⛔手拟）、
      第N章云端已封即拦、第N-1章未入主枝即拦（新会话自主枝起，见不到前章）；总编辑醒来只照【派】所带之参调一回。
+  ③之守书（1024）：暂停令已解而「守书已停」之记仍在 → 拦开写书之会话，印复开守书之巡之原样参（⛔守书停而书续，断流无人兜）。
   其余（unarchive、get_session、list 诸器）放。钩自身出错：①照拦（fail closed）；②③亦拦并印由。
 用法：钩自 stdin 取 JSON；`python3 工具/会话之守.py --自测`
 """
@@ -144,6 +145,26 @@ def 停读():
         return False
 
 
+def 守书停读():
+    """→ 红由（''＝无事）：令已解而「守书已停」之记仍在（暂停令.守书之哨）。读不出⛔拦（此守係兜底，非主闸）。"""
+    try:
+        sys.path.insert(0, os.path.join(ROOT, '工具'))
+        import 暂停令
+        return '；'.join(暂停令.守书之哨(ROOT))
+    except Exception:
+        return ''
+
+
+def 守书停参():
+    try:
+        import 暂停令
+        if 暂停令.守书停记():
+            return ''
+        return '；守书之巡未记停者照此调：%s，调毕 `暂停令.py --守书已停`' % 暂停令.守书之参(False)
+    except Exception:
+        return ''
+
+
 def 立停读():
     try:
         sys.path.insert(0, os.path.join(ROOT, '工具'))
@@ -194,7 +215,10 @@ def 判(入, 转录读=新查, 锁读=锁之主, 我=None, 查=None):
         # 1022 复核：①作者暂停令在 → ⛔开写书之会话，并立停锁令守书⛔每时空派；②一时内已派同章之会话 → ⛔再派（一派数令之重）
         if 停读():
             立停读()
-            return True, '⛔会话之守：作者暂停令在——⛔开写书之会话（已立停锁，守书⛔再派；解令 `暂停令.py --解` 即续）'
+            return True, '⛔会话之守：作者暂停令在——⛔开写书之会话（已立停锁，守书⛔再派；解令 `暂停令.py --解` 即续）' + 守书停参()
+        守 = 守书停读()
+        if 守:
+            return True, '⛔会话之守：先复开守书之巡再开写书之会话——' + 守.lstrip('⛔ ')
         章 = 章号(令)
         if 章 is not None:
             try:
@@ -242,6 +266,7 @@ def 自测():
     # 1024 实踩：盘上暂停令真在时，③诸格读真令而误拦、且真调了 心跳.立停——自测⛔读盘上之令、⛔动真锁（⑦另以桩验暂停）
     _真停, _真立 = globals()['停读'], globals()['立停读']
     globals()['停读'], globals()['立停读'] = (lambda: False), (lambda: None)
+    _真守 = globals()['守书停读']; globals()['守书停读'] = lambda: ''   # 1024：⛔读盘上「守书已停」之记
     无锁 = lambda: (False, '', None)
     他锁 = lambda: (True, '01OTHER', 402)
     我锁 = lambda: (True, '016MINE', 402)
@@ -299,6 +324,12 @@ def 自测():
             旧立 = g['立停读']; g['立停读'] = lambda: 立了.append(1)
             T('⑦作者暂停令在 → 拦写书之会话，并立停锁', 判(建2('写第406章'), 锁读=无锁, 我='M')[0] and 立了)
             T('⑦之二 暂停中守书之会话照开', not 判(建2(守书之记 + '巡'), 锁读=无锁, 我='M')[0])
+            g['停读'] = lambda: False
+            g['守书停读'] = lambda: '⛔ 守书之巡仍停：…照此调一回：update_trigger {"trigger_id": "trig_x", "enabled": true}'
+            拦守 = 判(建2('写第406章'), 锁读=无锁, 我='M')
+            T('⑦之三 令已解而守书已停之记仍在 → 拦写书之会话、由带 enabled=true 之参；守书之会话照开（1024）',
+              拦守[0] and '"enabled": true' in 拦守[1] and not 判(建2(守书之记 + '巡'), 锁读=无锁, 我='M')[0])
+            g['守书停读'] = lambda: ''
             g['立停读'] = 旧立
         finally:
             g['停读'] = 旧停
@@ -355,6 +386,7 @@ def 自测():
     except Exception as e:
         T('⑤settings 读不出：%s' % e, False)
     globals()['停读'], globals()['立停读'] = _真停, _真立
+    globals()['守书停读'] = _真守
     自 = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[1]
     T('③之七 自测桩掉暂停之读与立停（盘上令在时③亦通、⛔动真锁）',
       "globals()['停读'], globals()['立停读'] = (lambda: False), (lambda: None)" in 自 and 自.index('_真停') < 自.index("T('③新开"))

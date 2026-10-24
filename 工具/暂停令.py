@@ -17,7 +17,13 @@
   python3 工具/暂停令.py --查                  # 在不在、立於何时、令之原文、其据
   python3 工具/暂停令.py --解 "作者令：……"      # 作者令下方解；记时与言
   python3 工具/暂停令.py --例外 W18 "作者令：……"  # 暂停之中作者亲令一件：只许此一件开一回（记时与言；用即销），其余照停
+  python3 工具/暂停令.py --守书已停            # 主环照所印之参 update_trigger(enabled=false) 调毕记之（1024）
+  python3 工具/暂停令.py --守书已开            # 解令後照所印之参 update_trigger(enabled=true) 调毕记之（1024）
   python3 工具/暂停令.py --自测
+
+守书之巡（1024·省审 sessions 四）：停锁之下守书每时一唤只判「止」，纯是白耗——令在即关其定时之令，解即复开。
+  其号取 `席在跑吗.守书之令`（与 守书之号 同处·⛔另硬写）；令已解而「守书已停」之记仍在：自走红、会话之守拦开写书会话
+  （书不停之第三锁⛔失守·作者 1022 严令防断流）。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -115,6 +121,46 @@ def 销(件, root=ROOT):
     return False
 
 
+def 守书之参(开):
+    """update_trigger 之原样参（开＝True 复开守书之巡）。号取 席在跑吗.守书之令——⛔另硬写。"""
+    import 席在跑吗
+    return 'update_trigger ' + json.dumps({'trigger_id': 席在跑吗.守书之令, 'enabled': bool(开)})
+
+
+def 守书停记(root=ROOT):
+    """→ 「守书已停」之记（dict）或 None。"""
+    x = (读令(root) or {}).get('守书已停')
+    return x if isinstance(x, dict) else None
+
+
+def 记守书(停, root=ROOT):
+    """--守书已停／--守书已开：调 update_trigger 毕记之。停须令未解；开须有停记。"""
+    d = 读令(root)
+    时 = time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())
+    if 停:
+        if not d or d.get('解') or not 在(root)[0]:   # 待（大审未毕）亦⛔：令未生效而巡先停，书续而无人兜
+            print('⛔ 暂停令未在（无令、已解或未生效）——⛔停守书之巡（书不停之第三锁）'); return False
+        import 席在跑吗
+        d['守书已停'] = {'时': 时, 'trigger_id': 席在跑吗.守书之令}
+    else:
+        if not 守书停记(root):
+            print('⛔ 无「守书已停」之记，无须记开'); return False
+        d['守书复开'] = dict(d['守书已停'], 开=时)
+        d['守书已停'] = None
+    json.dump(d, open(os.path.join(root, 档), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    print('✓ 守书之巡已记%s（%s）' % ('停' if 停 else '开', 时))
+    return True
+
+
+def 守书之哨(root=ROOT):
+    """→ 红行之列：令已解（或无令）而「守书已停」之记仍在——书断流之险，印复开之原样参。"""
+    x = 守书停记(root)
+    if not x or 在(root)[0]:
+        return []
+    return ['⛔ 守书之巡仍停（令已解·停记 %s）——照调：%s；调毕 python3 工具/暂停令.py --守书已开'   # ★一行⛔逾 160 字（自走默印截於此）
+            % (x.get('时', ''), 守书之参(True))]
+
+
 def 解(言, root=ROOT):
     d = 读令(root)
     if not d or d.get('解'):
@@ -124,13 +170,17 @@ def 解(言, root=ROOT):
     d['解'] = {'时': time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime()), '言': 言}
     json.dump(d, open(os.path.join(root, 档), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print('✓ 暂停令已解（%s）：%s' % (d['解']['时'], 言))
+    已印 = False
     if root == ROOT:                    # 1022：停锁换空锁——守书三十分後见停写即派，书自续（自测之临时仓⛔动云端）
         try:
             import 心跳, 自走
-            rc, m = 心跳.解停(自走.末章() + 1)
+            rc, m = 心跳.解停(自走.末章() + 1)   # 解停自印复开之参
+            已印 = True
             print('  心跳：%s' % ('停锁已解，交第%d章之棒' % (自走.末章() + 1) if rc == 0 and not m else (m or '解停未推')))
         except Exception as e:
             print('  ⚠ 解停锁未成（%s）——跑 `python3 工具/心跳.py --收`' % e)
+    if not 已印:
+        print('  守书之巡复开：%s；调毕 python3 工具/暂停令.py --守书已开' % 守书之参(True))
     return True
 
 
@@ -177,6 +227,21 @@ def 自测():
         共 += 1; ok += (r待[0] is False and '待' in r待[1] and r空[0] is False and r成[0] is True)   # 待：407 册在、410 空模子⛔算、410 成即在
         w({'立': 'x', '令': '作者令：审完即停', '据': '设定/交.md:2', '解': None, '待': {'大审至': 'x'}})
         共 += 1; ok += 在(t)[0] is False                                   # 待之章号坏⛔认（⛔误停）
+        with contextlib.redirect_stdout(io.StringIO()):
+            共 += 1; ok += 记守书(True, t) is False and 守书停记(t) is None   # 1024 验：令未生效（待）⛔记守书已停（书续而巡先停）
+        # 1024 守书之巡：参之号取一处之常量；令在而记停 → 哨⛔红；解後记仍在 → 红且带 enabled=true 之参；记开後 → 绿
+        import 席在跑吗
+        w({'立': 'x', '令': '作者令：暂停', '据': '设定/交.md:2', '解': None})
+        with contextlib.redirect_stdout(io.StringIO()) as 印:
+            s0 = 记守书(False, t); s1 = 记守书(True, t); 哨在 = 守书之哨(t); 解('作者令：开', t); 哨解 = 守书之哨(t)
+            s2 = 记守书(True, t); s3 = 记守书(False, t); 哨开 = 守书之哨(t)
+        参开 = 'update_trigger {"trigger_id": "%s", "enabled": true}' % 席在跑吗.守书之令
+        共 += 1; ok += (s0 is False and s1 is True and 哨在 == [] and len(哨解) == 1 and 参开 in 哨解[0]
+                        and 参开 in 印.getvalue() and s2 is False and s3 is True and 哨开 == []
+                        and 守书之参(False) == 参开.replace('true', 'false') and 席在跑吗.守书之令.startswith('trig_')
+                        and len(哨解[0]) <= 160 and 哨解[0].endswith('--守书已开'))   # 自走默印每行截於 160 字
+        src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
+        共 += 1; ok += ('trig_' not in src)                               # 号⛔硬写於本器（取 席在跑吗.守书之令）
     finally:
         shutil.rmtree(t)
     print('暂停令·自测 %d/%d' % (ok, 共))
@@ -191,6 +256,8 @@ if __name__ == '__main__':
         print(在()[1]); sys.exit(0)
     if a[:1] == ['--例外'] and len(a) == 3:
         sys.exit(0 if 例外(a[1], a[2]) else 1)
+    if a in (['--守书已停'], ['--守书已开']):
+        sys.exit(0 if 记守书(a[0] == '--守书已停') else 1)
     if a[:1] == ['--解'] and len(a) == 2:
         sys.exit(0 if 解(a[1]) else 1)
     print(__doc__); sys.exit(2)

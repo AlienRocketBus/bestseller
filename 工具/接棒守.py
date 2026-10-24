@@ -15,6 +15,7 @@
   python3 工具/接棒守.py --在候            # rc=0 在候
   python3 工具/接棒守.py --立守书          # 守书之会话首回立之（⛔写书之坐立之）
   python3 工具/接棒守.py --哨              # 定时之保用：有人在写或交棒中 rc=0；停写 rc=2 并印开写书会话之令
+  python3 工具/接棒守.py --派令 404 [--重]  # 交棒：印 create_trigger 之参（run_once_at 已算）；总编辑醒即以其中之参原样 create_session 一回
   python3 工具/接棒守.py --自测
 """
 import os as _o, sys as _s
@@ -23,7 +24,7 @@ try:
     import _账  # 跑账·自记（工具/跑账.py）
 except Exception:
     pass
-import os, sys, time, fcntl, subprocess
+import os, sys, time, json, fcntl, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, '工具'))
@@ -76,13 +77,34 @@ def 候(n, 限分=30, 隔=60, 读=None, 我=None, 今=time.time, 睡=time.sleep)
             print('✓接棒成：第%s章之锁已为坐 %s 所持——交棒者可收工' % (n, 坐))
             return 0
         if 今() - 始 >= 限分 * 60:
-            print('⛔接棒未成：第%s章 %d 分无人接锁——再发「【派】开第 %s 章之写书会话」入总编辑会话（create_trigger，'
-                  'persistent_session_id session_016Hgfc2SSNvGktFmk2LX825，run_once_at 一分後），再 `接棒守.py --候 %s`；⛔本坐自写、⛔候人' % (n, 限分, n, n))
+            print('⛔接棒未成：第%s章 %d 分无人接锁——再跑 `python3 工具/接棒守.py --派令 %s`、照其所印 create_trigger 一回，'
+                  '再 `接棒守.py --候 %s`；⛔本坐自写、⛔候人' % (n, 限分, n, n))
             return 2
         睡(隔)
 
 
 主枝 = 'claude/the-novel-review-4dtuit'
+总编辑 = 'session_016Hgfc2SSNvGktFmk2LX825'   # 唯其有 create_session 之器（子会话、定时之令所开之会话俱无——1024 实验）
+源 = 'https://github.com/AlienRocketBus/the-novel'
+
+
+def 派之参(n, 重=False):
+    """开第 n 章写书会话之 create_session 参——唯此一形（会话之守逐键比之，⛔手拟）。"""
+    n = int(n)
+    令 = ('写《镇冢秘术》第 %d 章：先 `python3 工具/心跳.py --跳 %d`（被拒即止——他坐已写）、再读总章、跑自走、照办；'
+          '末了照总章三之5 接棒；⛔候人' % (n, n))
+    return {'title': '镇冢秘术·第%d章' % n, 'model': 'claude-opus-5-5', 'source_url': 源,
+            'source_revision': 主枝, 'outcome_branch': 主枝, 'prompt': ('【重派】' if 重 else '') + 令}
+
+
+def 派令(n, 重=False, 今=time.time):
+    """交棒之 create_trigger 参（零 token 算好 run_once_at）——总编辑醒来只以其中之参原样 create_session 一回（1024：
+    交棒⛔经总编辑另查——锁、暂停、已封、前章入主、重派、参之形俱由会话之守钩验；醒一回由约 $4 降至一呼）。"""
+    参 = json.dumps(派之参(n, 重), ensure_ascii=False)
+    return {'persistent_session_id': 总编辑, 'name': '【派】第%d章' % int(n), 'initiation': 'own_followup',
+            'run_once_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(今()) + 120)),
+            'prompt': ('【派】开第 %d 章之写书会话：以下参原样调 create_session 一回即毕（会话之守钩自验锁、暂停、已封、前章入主、'
+                       '重派与参之形；拦即照其由办），⛔另查、⛔改参：%s' % (int(n), 参))}
 
 
 def 主含(n):
@@ -149,8 +171,8 @@ def 哨():
             except Exception:
                 N = '?'
         print('  下一章 N=%s' % N)
-        print('  → 子会话无开会话之器：create_trigger（persistent_session_id session_016Hgfc2SSNvGktFmk2LX825，总编辑之会话；'
-              'run_once_at 一分後；令「【派】开第 %s 章之写书会话」）→ `python3 工具/接棒守.py --候 %s`（run_in_background）' % (N, N))
+        print('  → 子会话无开会话之器：`python3 工具/接棒守.py --派令 %s`、照其所印 create_trigger 一回（入总编辑之会话）'
+              '→ `python3 工具/接棒守.py --候 %s`（run_in_background）' % (N, N))
     return rc
 
 
@@ -217,6 +239,16 @@ def 自测():
     段候主 = src.split('def 候主(')[1].split('\ndef ')[0]
     T('⑥候主之默认查係 主含（1022 复核：⛔以注入之假查充其验）', '查 = 查 or 主含' in 段候主)
     T('⑥之二 主含真查云端：章-N 之标为主枝之祖', all(k in 段主含 for k in ("'merge-base', '--is-ancestor'", "'refs/heads/章-%d'", 'ls-remote')))
+    参 = 派之参(411)
+    T('⑦派之参：题、模、源、枝、令俱定形', 参['title'] == '镇冢秘术·第411章' and 参['model'] == 'claude-opus-5-5'
+      and 参['source_revision'] == 参['outcome_branch'] == 主枝 and 'the-novel' in 参['source_url']
+      and '第 411 章' in 参['prompt'] and '--跳 411' in 参['prompt'] and not 参['prompt'].startswith('【重派】'))
+    T('⑦之二 重派：令首带【重派】、余同', 派之参(411, True)['prompt'] == '【重派】' + 参['prompt'])
+    令 = 派令(411, 今=lambda: 0)
+    T('⑦之三 派令：入总编辑之会话、二分後、令中之参可原样解回', 令['persistent_session_id'] == 总编辑
+      and 令['run_once_at'] == '1970-01-01T00:02:00Z' and 令['prompt'].startswith('【派】开第 411 章')
+      and json.loads(令['prompt'][令['prompt'].index('{'):]) == 参)
+    T('⑦之四 诸印之令俱指 --派令（⛔手拟【派】）', src.count('--派令 %s') >= 2 and '令「【派】开第' not in src)
     ok = sum(r)
     print('── 负测·接棒守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)
@@ -230,6 +262,12 @@ if __name__ == '__main__':
         # 守书之会话立之（只查、⛔写书）：Stop 钩见之⛔令此坐写书。⛔写书之坐立之——其 Stop 钩之守即失。
         open(os.path.join(_仓目(), '守书.flag'), 'w').write('守书之会话（定时之保）\n')
         print('✓本机立为守书之坐（%s）' % os.path.join(_仓目(), '守书.flag'))
+        sys.exit(0)
+    if '--派令' in a:
+        i = a.index('--派令')
+        令 = 派令(int(a[i + 1]), '--重' in a)
+        print('照下参调 create_trigger 一回（⛔改）：')
+        print(json.dumps(令, ensure_ascii=False, indent=1))
         sys.exit(0)
     if '--候主' in a:
         i = a.index('--候主')

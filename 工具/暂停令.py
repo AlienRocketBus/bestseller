@@ -6,6 +6,10 @@
 它不知有暂停，会印「派下一席」——**正好违令**（D6 之教训：一週之资源一事无成）。
 本器把暂停令放到盘上（`设定/暂停令.json`），接力与自走只问它一句：暂停令在不在。
 
+待（1023 立·作者令「写完第410章，然后大审完之後，先暂停」）：令可带 `"待": {"大审至": N}`——大审之册至第 N 章
+（非空模子）成之前令「待」而不在（诸器照常走到那一步），成即自在（自走印【判】停、会话之守拦开会话、段序之守拦开庭开写）；
+⛔凭某坐记得到点去立令（409、410 与大审俱由接力之会话自跑，无人盯）。
+
 防滥（⛔拿一个旗把闸关掉）：令须引作者原话（「令」含「作者令」），其「据」须指到入口档里真有「暂停令」三字之那一行；
 二者缺一即不认，诸闸照旧。解令只一条路：`--解 "<作者之言>"`，记其时与其言，⛔删档。
 
@@ -57,7 +61,30 @@ def 在(root=ROOT):
         return False, '⛔令不引作者原话——不认'
     if '暂停令' not in 据之行(d.get('据', ''), root):
         return False, '⛔其据（%s）之行无「暂停令」——不认' % d.get('据', '')
+    待 = d.get('待')
+    if isinstance(待, dict) and 待.get('大审至') is not None:
+        try:
+            至 = int(待['大审至'])
+        except (TypeError, ValueError):
+            return False, '⛔待之「大审至」非章号——不认'
+        if not 审至(至, root):
+            return False, '待：大审之册至第%d章成即停（未到·诸器照常）——%s' % (至, str(d.get('令', ''))[:100])
     return True, '暂停令在（立 %s·据 %s）：%s' % (d.get('立', ''), d.get('据', ''), str(d.get('令', ''))[:160])
+
+
+def 审至(至, root=ROOT):
+    """大审之册至第「至」章（或其後）已成否（空模子⛔算）。"""
+    import glob
+    try:
+        import 大审
+        空 = 大审.空模子
+    except Exception:
+        空 = lambda p: False
+    for p in glob.glob(os.path.join(root, '设定', '大审_至第*章.md')):
+        m = re.search(r'大审_至第(\d+)章\.md$', p)
+        if m and int(m.group(1)) >= 至 and not 空(p):
+            return True
+    return False
 
 
 def 许(件, root=ROOT):
@@ -131,6 +158,25 @@ def 自测():
             e1 = 例外('W9', '随便', t); e2 = 例外('W9', '作者令：此件可开', t)
         a1 = 许('W9', t); a2 = 许('W8', t); 销('W9', t); a3 = 许('W9', t)
         共 += 1; ok += (e1 is False and e2 is True and a1 and not a2 and not a3 and 在(t)[0] is True)   # 例外只许其件、用即销、令仍在
+        # 1023 待：大审之册至第 N 章成之前不在（诸器照常），成即在；解之即不在
+        w({'立': 'x', '令': '作者令：审完即停', '据': '设定/交.md:2', '解': None, '待': {'大审至': 410}})
+        p7 = os.path.join(t, '设定', '大审_至第407章.md')
+        open(p7, 'w', encoding='utf-8').write('册')
+        r待 = 在(t)
+        p10 = os.path.join(t, '设定', '大审_至第410章.md')
+        import 大审 as _大
+        原空 = _大.空模子
+        _大.空模子 = lambda p: '空' in open(p, encoding='utf-8').read()
+        try:
+            open(p10, 'w', encoding='utf-8').write('空')
+            r空 = 在(t)
+            open(p10, 'w', encoding='utf-8').write('满')
+            r成 = 在(t)
+        finally:
+            _大.空模子 = 原空
+        共 += 1; ok += (r待[0] is False and '待' in r待[1] and r空[0] is False and r成[0] is True)   # 待：407 册在、410 空模子⛔算、410 成即在
+        w({'立': 'x', '令': '作者令：审完即停', '据': '设定/交.md:2', '解': None, '待': {'大审至': 'x'}})
+        共 += 1; ok += 在(t)[0] is False                                   # 待之章号坏⛔认（⛔误停）
     finally:
         shutil.rmtree(t)
     print('暂停令·自测 %d/%d' % (ok, 共))

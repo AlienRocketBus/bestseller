@@ -492,7 +492,7 @@ def 自测():
       bool(段) and len(段) > len(旧八), '今 %s' % (len(段) if 段 else '?'))
 
     # ⑦席之全集非空（防 glob 写错路而一律绿）
-    T('⑦席读得着', len(glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))) >= 4)
+    T('⑦席读得着', os.path.join(ROOT, '工具', '席', '造章.js') in glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))   # ★409 囤灰四席彻删：⛔以份数为底
 
     # ⑧旧式回灌·席：拿一个派令之文与 用法.md 俱无之席名，须判红（1020 X29：真调 席之判，⛔只验「字不在档里」）
     _派 = _读('工具/席/造章.js') + _读('工具/自走.py')
@@ -518,7 +518,7 @@ def 自测():
     _无路 = [s for s in sorted(os.path.basename(f) for f in glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))
             if s not in _今派]
     T('⑧之七 今仓无派令之路之席（%d 张）逐张在表、各带限；造章／大审／剧情庭 认作派令' % len(_无路),
-      bool(_无路) and all(s in _实 and _实[s][2] for s in _无路)
+      all(s in _实 and _实[s][2] for s in _无路)   # ★409 囤灰四席彻删後无路之席可为零（其判由 ⑧之五、⑧之十 之样本守）
       and {'造章.js', '大审.js', '剧情庭.js'} <= _今派, str(_无路) + '｜派 ' + str(sorted(_今派)))
     # ⑧之九【X29 再治·回灌旧病】旧式「名在派令之文即有路」（子串之判）：已彻删之 救章.js（自走 ⑬之八 自测之串）、
     #   一章.js（造章.js 之注、自走之说明）复立於盘，旧判绿；今须红。另以注、串、注行之 scriptPath 各灌一回。

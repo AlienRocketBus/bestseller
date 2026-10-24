@@ -36,6 +36,9 @@
       "Bash(python3 工具/接棒守.py:*)",
       "Bash(python3 工具/承.py:*)",
       "Bash(python3 工具/续跑之守.py:*)",
+      "Bash(python3 工具/段序之守.py:*)",
+      "Bash(python3 工具/暂停令.py:*)",
+      "Bash(python3 工具/大审.py:*)",
       "Bash(git fetch:*)",
       "Bash(git status:*)",
       "Bash(git log:*)",
@@ -98,6 +101,10 @@
           {
             "type": "command",
             "command": "cd /home/user/the-novel && python3 工具/续跑之守.py"
+          },
+          {
+            "type": "command",
+            "command": "cd /home/user/the-novel && python3 工具/段序之守.py"
           }
         ]
       }

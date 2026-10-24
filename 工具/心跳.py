@@ -321,6 +321,10 @@ if __name__ == '__main__':
         sys.exit(0 if 自测() else 1)
     if '--跳' in a:
         sys.exit(跳(a[a.index('--跳') + 1]))
+    if '--立停' in a:                     # 1023：作者暂停令生效即立（自走印之）；解令时 暂停令.解 自换空锁
+        rc, m = 立停()
+        print('✓停锁已立' if rc == 0 and not m else (m or '⛔停锁未推'))
+        sys.exit(rc)
     if '--收' in a:
         i = a.index('--收')
         sys.exit(收(a[i + 1] if len(a) > i + 1 and a[i + 1].isdigit() else None))

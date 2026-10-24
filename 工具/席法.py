@@ -254,7 +254,7 @@ def 自测():
       any('双转义' in x for x in 查一("const p = `读 \\\\`档名\\\\` 一遍`")[1]))
     # ④席之全集当场 glob（判据之源律）
     T('④席之全集当场读出（今 %d 份）' % len(glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))),
-      len(glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))) >= 4)
+      os.path.join(ROOT, '工具', '席', '造章.js') in glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))   # ★409 囤灰四席彻删後只余三：⛔以份数为底，认派令之席在集中
     # ⑤本闸逮得出 node --check 逮不出的那一样（其立之由）
     T('⑤本闸之乙路非空判据（认命令词 7 样）', len(re.findall(r'python3\|grep', _读(os.path.join(ROOT, '工具', '席法.py')))) >= 1)
     # ⑨1013·二代之检：缺限、缺料律即红；全带者不红；非二代之席不查

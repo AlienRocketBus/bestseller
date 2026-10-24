@@ -2127,7 +2127,7 @@
    "有效之据": "读者可见：本章正文；零token之检：章料、造式验 --料、起草庭、封版 --前／--後 俱脚本；非模型不可者——执笔、选与合、盲读与逻辑之眼、记席；费之据 W65—W70；坑之检同 W70：③ 料限 120KB（410 之料 119KB）、⑤ ⛔pgrep、⑰ pipefail、㉛ schema 键 ASCII（席法.py 绿）、㉞ 主环改正文必再跑 --前、㊻ 续走承.py",
    "预估": "约 4 时、$30（中章五执笔）",
    "裁": [],
-   "续之令": "Run wf_708e3103-b38（1024 派）；断则 python3 工具/承.py 410 → Workflow({scriptPath:'/home/user/the-novel/版本/第410章/_承.js'})"
+   "续之令": "Run wf_89f1da89-c1f（1024 承·容器重启後重派；前 wf_708e3103-b38 未交一稿）；断则 python3 工具/承.py 410 → Workflow({scriptPath:'/home/user/the-novel/版本/第410章/_承.js'})"
   }
  ]
 }

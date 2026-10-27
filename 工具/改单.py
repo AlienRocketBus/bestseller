@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""改单——**一切皆可改；改的前提只一条：让这本书更好。每一改必立单、必备份、可追溯。**
+"""改单——**一切皆可改；改的前提只一条：让这本书更好。每一改必立单、必记改前之笔、可追溯。**
 
 【其立之由（2026-09-25·作者令，逐字之意）】
   「规矩是死的，人是活的。圣经的设定、小说中的剧情，一切皆可改——但改的前提只有一个：让小说质量更高。
@@ -10,19 +10,22 @@
   消了哪一处崩／哪一拍更狠／哪条线更连／读者哪里更放不下。**答不出「更好在哪」者，不改。**
 【三步】
   ①立单：`python3 工具/改单.py --立 "改什么" "改了更好在哪" <档1> <档2> …`
-     → 发单号（如 G0925-01），**先把诸档之改前原文整份备份**到 `设定/改单备份/<单号>/`，并记入 `设定/修改清单.md`。
+     → 发单号（如 G0925-01），**记改前之提交 sha**（单之「改前」；取回走 `git show <sha>:<档>`，⛔再拷整档——1027·执行之审 #112：
+       git 即逐字之全记，旧之 `设定/改单备份/` 319 档 1.8 亿字节係同功两处之劣者，已删；1027 前之单其备份在 db52f247 之树），并记入 `设定/修改清单.md`。
+       档有未提交之改者照立而印 ⚠（改前之凭只到该提交；⛔误拦）。
   ②改：照常改；提交说明里写「改单#<单号>」。
   ③结单：`python3 工具/改单.py --毕 <单号> "改完一句（改了几处·验过哪几道闸）"`
 【其牙（全测·改单）】
   甲·自本器立日起，凡提交**改动已有之正文章**（非新添）或圣经／canon／人物状态册，而提交说明无「改单#」者 → **红**。
+  丙·改前之凭（1027·#112）：新单之「改前」须为 git 所有之提交；1027 前之单（无「改前」）其 `设定/改单备份/<号>/` 须在 db52f247 之树——缺即**红**（浅克隆寻不着者 ⚠）。
      ★例外唯一：新章封版之追记（圣经入册、状态册同步、施工表锁定行），提交说明标「封版#N」——那是添，不是改。
   乙·单立而七日未结 → 黄。
 【施单（W60·X11 立）】席⛔亲改诸档，只交一份「改之单」（JSON 之列 [{档, 原, 新, 由}]），主环以本器施之：
   `python3 工具/改单.py --施单 <单.json> [--落] [--号 <单号>] [--根 <仓根>]`
   默认只验并印每条之 diff，⛔写；--落 方写。每条：原须在档中恰一见（重叠之见亦计；0 或 ≥2 即⛔并指出其行）、⛔跨行；
   新⛔含换行（⛔改行数——要添者以行内接写）、⛔同原、施後须恰一见。一条不过，全单⛔写。
-  档⛔：出仓、.git、改单备份、正文/（列二稿账）、剧情庭之裁档 设定/剧情庭_*.md、改单账、修改清单、单档本身、未在之档。
-  --落：写前照 --立 之法备份所动之档於 `设定/改单备份/<单号>/`（无 --号 则 `施单_<时>/`；已有之备份⛔覆），
+  档⛔：出仓、.git、正文/（列二稿账）、剧情庭之裁档 设定/剧情庭_*.md、改单账、修改清单、单档本身、未在之档。
+  --落：照 --立 之法以改前之提交为凭（带 --号 者即其单之「改前」，所动之档补登入单；无 --号 则印 HEAD 之 sha），⛔拷整档；
         验後写前再核盘上未变（他席并写即⛔）；写後再读盘逐条验新恰一见、行数未变。--根：以他目录为仓根（试於副本）。
   --自测 另渲染 工具/席/剧情庭.js 式段之令（node·假交）验其与本器之约：题档首行之认、单之四键、自验 --施单、守原写空单。
 用法：--立 ｜ --毕 ｜ --查 ｜ --单（列清单）｜ --施单 ｜ --自测
@@ -38,9 +41,62 @@ import os, re, sys, json, time, shutil, subprocess
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 账档 = os.path.join(ROOT, '设定', '改单账.json')
 清单 = os.path.join(ROOT, '设定', '修改清单.md')
-备份 = os.path.join(ROOT, '设定', '改单备份')
 立日 = '2026-09-25 12:00'
-管 = re.compile(r'^(正文/|设定/00_镇冢秘术_唯一总圣经\.md|设定/canon事实库\.json|设定/人物状态册\.json|设定/镇冢秘术_作者版设定圣经\.md|设定/人物百科卡)')
+# ★1027·执行之审 #111：人物百科卡汰（章号止於 341，诸器无一读之；人物之态归 人物状态册.json 与 人物链）——出管档之式
+管 = re.compile(r'^(正文/|设定/00_镇冢秘术_唯一总圣经\.md|设定/canon事实库\.json|设定/人物状态册\.json|设定/镇冢秘术_作者版设定圣经\.md)')
+# ★1027·执行之审 #112：改前之凭＝提交之 sha（⛔拷整档）。1027 前之单之整份备份已随其目删，取回：git show db52f247:设定/改单备份/<号>/<档>
+旧备之笔 = 'db52f247'
+旧备之目 = '设定/改单备份'
+
+
+def _git(*a, 根=None):
+    try:
+        r = subprocess.run(['git', '-c', 'core.quotepath=off'] + list(a), cwd=根 or ROOT, capture_output=True, text=True)
+        return r.returncode, r.stdout
+    except Exception as e:
+        return 1, str(e)
+
+
+def 改前之笔(档们):
+    """→ (sha12 或 None, 脏们)：HEAD 之提交即改前之凭；档们中未踪或有未提交之改者列入「脏」（照立、印 ⚠）。"""
+    rc, out = _git('rev-parse', 'HEAD')
+    if rc != 0:
+        return None, []
+    脏 = []
+    for p in 档们:
+        rel = os.path.relpath(os.path.join(ROOT, p) if not os.path.isabs(p) else p, ROOT).replace(os.sep, '/')
+        if not os.path.exists(os.path.join(ROOT, rel)):
+            continue
+        rc1, _ = _git('ls-files', '--error-unmatch', '--', rel)
+        _, st = _git('status', '--porcelain', '--', rel)
+        if rc1 != 0 or st.strip():
+            脏.append(rel)
+    return out.strip()[:12], 脏
+
+
+def 改前之凭(单们=None, 旧笔=None):
+    """→ (坏, 黄)：每单之改前须可取回——新单「改前」之 sha 须为提交；旧单（无「改前」）其备份目须在 旧笔（默 db52f247）之树。"""
+    单们 = 读()['单'] if 单们 is None else 单们
+    旧笔 = 旧笔 or 旧备之笔
+    坏, 黄 = [], []
+    浅 = _git('rev-parse', '--is-shallow-repository')[1].strip() == 'true'
+    旧在 = None
+    for x in 单们:
+        if x.get('改前'):
+            if _git('cat-file', '-e', '%s^{commit}' % x['改前'])[0] != 0:
+                (黄 if 浅 else 坏).append('%s 之改前 %s 非 git 所有之提交%s' % (x['号'], x['改前'], '（浅克隆·未验）' if 浅 else ''))
+            continue
+        if not x.get('档'):
+            continue
+        if 旧在 is None:
+            rc, out = _git('ls-tree', '--name-only', '%s:%s' % (旧笔, 旧备之目))
+            旧在 = set(out.split()) if rc == 0 else False
+        if 旧在 is False:
+            (黄 if 浅 else 坏).append('旧单之备份之笔 %s 寻不着（%s）' % (旧笔, '浅克隆·未验' if 浅 else '其树无 %s' % 旧备之目))
+            break
+        if x['号'] not in 旧在:
+            坏.append('%s 无改前之凭：无「改前」之 sha，%s:%s/%s 亦不在' % (x['号'], 旧笔, 旧备之目, x['号']))
+    return 坏, 黄
 
 
 def 读():
@@ -63,28 +119,24 @@ def 立(何, 由, 档们):
     日 = time.strftime('%m%d')
     n = 1 + sum(1 for x in d['单'] if x['号'].startswith('G' + 日))
     号 = 'G%s-%02d' % (日, n)
-    目 = os.path.join(备份, 号)
-    os.makedirs(目, exist_ok=True)
-    存 = []
-    for p in 档们:
-        a = os.path.join(ROOT, p) if not os.path.isabs(p) else p
-        if os.path.exists(a):
-            dst = os.path.join(目, os.path.relpath(a, ROOT).replace('/', '__'))
-            shutil.copy2(a, dst)
-            存.append(os.path.relpath(a, ROOT))
-    d['单'].append({'号': 号, '立': time.strftime('%Y-%m-%d %H:%M'), '何': 何, '更好在哪': 由, '档': 存, '状': '开'})
+    笔, 脏 = 改前之笔(档们)
+    if not 笔:
+        print('⛔ 取不得改前之提交（非 git 之仓？）——改单以其 sha 为凭，⛔立'); return None
+    存 = [os.path.relpath(os.path.join(ROOT, p) if not os.path.isabs(p) else p, ROOT).replace(os.sep, '/')
+         for p in 档们 if os.path.exists(os.path.join(ROOT, p) if not os.path.isabs(p) else p)]
+    d['单'].append({'号': 号, '立': time.strftime('%Y-%m-%d %H:%M'), '何': 何, '更好在哪': 由, '档': 存, '改前': 笔, '状': '开'})
     写(d)
     with open(清单, 'a', encoding='utf-8') as f:
-        if os.path.getsize(清单) == 0 if os.path.exists(清单) else True:
-            pass
-        f.write('\n## %s ｜ %s\n- **改什么**：%s\n- **改了更好在哪**：%s\n- **改前备份**：`设定/改单备份/%s/`（%s）\n- **状**：开\n'
-                % (号, time.strftime('%Y-%m-%d %H:%M'), 何, 由, 号, '、'.join(存) or '无档'))
-    print('✓改单已立：%s｜备份 %d 档於 设定/改单备份/%s/｜提交说明须写「改单#%s」' % (号, len(存), 号, 号))
+        f.write('\n## %s ｜ %s\n- **改什么**：%s\n- **改了更好在哪**：%s\n- **改前之笔**：`%s`（取回 `git show %s:<档>`；%s）\n- **状**：开\n'
+                % (号, time.strftime('%Y-%m-%d %H:%M'), 何, 由, 笔, 笔, '、'.join(存) or '无档'))
+    if 脏:
+        print('⚠ %s 有未提交之改（或未踪）——改前之凭只到 %s，其後未提交之改亦算入本单之差' % ('、'.join(脏), 笔))
+    print('✓改单已立：%s｜改前之笔 %s（%d 档；取回 git show %s:<档>）｜提交说明须写「改单#%s」' % (号, 笔, len(存), 笔, 号))
     return 号
 
 
 def 补登(号, 提交们):
-    """事後补登：已立之单点名其所覆之提交（该提交当时未写单号）。⛔补登也须先 --立（有其由、有备份）。"""
+    """事後补登：已立之单点名其所覆之提交（该提交当时未写单号）。⛔补登也须先 --立（有其由、有改前之笔）。"""
     d = 读()
     for x in d['单']:
         if x['号'] == 号:
@@ -131,6 +183,9 @@ def 查(印=True):
             continue
         if 档 and '改单#' not in 文 and '封版#' not in 文:   # 新章封版之追记（圣经入册、状态册同步、锁定行）係添不係改，标「封版#N」
             坏.append('%s 改了 %s 而无改单' % (头[:40], '、'.join(档[:3])))
+    凭坏, 凭黄 = 改前之凭()
+    坏 += 凭坏
+    黄 += 凭黄
     for x in 读()['单']:
         if x['状'] == '开':
             t = time.mktime(time.strptime(x['立'], '%Y-%m-%d %H:%M'))
@@ -142,7 +197,7 @@ def 查(印=True):
         for x in 黄:
             print('  ⚠ ' + x)
         if not 坏:
-            print('  ✓ 改单：凡改必有单。')
+            print('  ✓ 改单：凡改必有单、单单有改前之凭。')
     return not 坏, 坏
 
 
@@ -175,13 +230,13 @@ def _行号们(t, s):
     return 出 + (['…'] if len(数) > 8 else [])
 
 
-_禁施 = re.compile(r'^(\.git(/|$)|设定/改单备份/)')
+_禁施 = re.compile(r'^\.git(/|$)')
 _禁施_正文 = re.compile(r'^正文/')
 _禁施_裁档 = re.compile(r'^设定/剧情庭_[^/]*\.md$')
 
 
 def _档路(p, 禁=()):
-    """单之「档」→ (仓根相对路径, 绝对路径, 错)。⛔出仓、⛔.git、⛔改单备份、档须已在（⛔新立档）；
+    """单之「档」→ (仓根相对路径, 绝对路径, 错)。⛔出仓、⛔.git、档须已在（⛔新立档）；
     ⛔正文/（正文之改列入二稿账）、⛔剧情庭之裁档（设定/剧情庭_*.md：裁席自写，⛔以单改）、
     ⛔改单账／修改清单（--号 之补登写之，单再写即覆其登）、⛔单档本身（禁：诸绝对路）。"""
     根 = os.path.realpath(ROOT)
@@ -302,21 +357,21 @@ def 施单(单档, 落=False, 号=None, _写後=None, _验後=None):
     for rel in 诸档:   # 验後盘上又变者⛔（并跑之席正写）
         if _读文(os.path.join(ROOT, rel)) != 原文[rel]:
             print('⛔ %s 验後盘上已变——⛔写，重跑验' % rel); return False
-    目 = os.path.join(备份, 号 or ('施单_' + time.strftime('%m%d-%H%M%S')))
-    os.makedirs(目, exist_ok=True)
-    新备 = []
-    for rel in 诸档:
-        dst = os.path.join(目, rel.replace('/', '__'))
-        if not os.path.exists(dst):   # 已有者（--立 时所存）係真改前之原，⛔覆
-            shutil.copy2(os.path.join(ROOT, rel), dst); 新备.append(rel)
-        if not os.path.isfile(dst):
-            print('⛔ 备份未成：%s——⛔写' % dst); return False
+    # ★1027·#112：改前之凭＝提交之 sha（⛔拷整档）——带 --号 者用其单之「改前」（无则补记 HEAD），无 --号 者印 HEAD
+    笔, 脏 = 改前之笔(诸档)
     if 单记 is not None:
+        if not 单记.get('改前') and 笔:
+            单记['改前'] = 笔
+        笔 = 单记.get('改前') or 笔
         添 = [rel for rel in 诸档 if rel not in 单记.setdefault('档', [])]
+        单记['档'].extend(添)
+        写(d)
         if 添:
-            单记['档'].extend(添); 写(d)
             with open(清单, 'a', encoding='utf-8') as f:
-                f.write('- **%s 施单补备**：%s（改前原文存 `设定/改单备份/%s/`；单 `%s`）\n' % (号, '、'.join(添), 号, os.path.relpath(os.path.abspath(单档), ROOT)))
+                f.write('- **%s 施单补登**：%s（改前之笔 `%s`；单 `%s`）\n' % (号, '、'.join(添), 笔, os.path.relpath(os.path.abspath(单档), ROOT)))
+        脏 = [rel for rel in 脏 if rel in 添]   # 已在单者之未提交之改係本单前回之施，⛔报
+    if 脏:
+        print('⚠ %s 有未提交之改（或未踪）——改前之凭只到 %s，其後未提交之改亦算入本单之差' % ('、'.join(脏), 笔 or '（无 HEAD）'))
     for rel in 诸档:
         _写文(os.path.join(ROOT, rel), 内[rel])
     if _写後:
@@ -331,11 +386,16 @@ def 施单(单档, 落=False, 号=None, _写後=None, _验後=None):
         if n != 1:
             坏.append('第%d条 %s 新於盘上 %d 见' % (r['i'], r['rel'], n))
     if 坏:
+        import tempfile
+        存 = tempfile.mkdtemp(prefix='施单之原_')   # 改前原文存仓外（⛔入仓），供逐档核之
+        for rel in 诸档:
+            with open(os.path.join(存, rel.replace('/', '__')), 'w', encoding='utf-8', newline='') as f:
+                f.write(原文[rel])
         for e in 坏:
             print('⛔ 再验：' + e)
-        print('⛔ 施单已写而再验不过——改前原文在 %s，逐档核之' % os.path.relpath(目, ROOT)); return False
-    print('✓ 施单已落：%d 条於 %d 档；备份 %s（新存 %d 档）；再验 %d/%d%s' % (
-        len(单), len(诸档), os.path.relpath(目, ROOT), len(新备), len(记), len(记),
+        print('⛔ 施单已写而再验不过——改前原文存於 %s（仓外）；或 git show %s:<档>，逐档核之' % (存, 笔 or 'HEAD')); return False
+    print('✓ 施单已落：%d 条於 %d 档；改前之笔 %s（取回 git show %s:<档>）；再验 %d/%d%s' % (
+        len(单), len(诸档), 笔 or '（无）', 笔 or 'HEAD', len(记), len(记),
         '' if 号 else '｜⚠未带 --号：提交说明仍须写「改单#」（先 --立）'))
     return True
 
@@ -441,21 +501,63 @@ def _庭单之约():
     ]
 
 
+def _凭之回灌():
+    """→ [(名, 合否)]：丙·改前之凭於真仓回灌——1027 前诸单於 db52f247 俱有其备份目（✓）；以无其目之树（根之笔）作旧备之笔即俱红。"""
+    if _git('cat-file', '-e', '%s^{commit}' % 旧备之笔)[0] != 0:
+        浅 = _git('rev-parse', '--is-shallow-repository')[1].strip() == 'true'
+        return [('㉙凭·回灌真仓：%s 寻不着%s' % (旧备之笔, '（浅克隆·略）' if 浅 else ''), 浅)]
+    旧单 = [x for x in 读()['单'] if not x.get('改前') and x.get('档')]
+    坏, 黄 = 改前之凭(旧单)
+    根 = _git('rev-list', '--max-parents=0', 'HEAD')[1].split()
+    坏2, _ = 改前之凭(旧单, 旧笔=根[0] if 根 else 'HEAD')
+    return [('㉙凭·回灌真仓：1027 前之单 %d 份於 %s 俱有改前之备（✓）' % (len(旧单), 旧备之笔), bool(旧单) and not 坏 and not 黄),
+            ('㉚凭·回灌真仓：以无其目之树（根之笔）作旧备之笔即红（⛔空验）', bool(坏2))]
+
+
 def 自测():
     import tempfile
-    global 账档, 清单, 备份, ROOT
-    旧 = (账档, 清单, 备份, ROOT)
+    global 账档, 清单, ROOT
+    r = _凭之回灌()                 # 真仓（ROOT 未换）
+    旧 = (账档, 清单, ROOT)
     t = tempfile.mkdtemp(); ROOT = t
     os.makedirs(os.path.join(t, '设定')); os.makedirs(os.path.join(t, '正文'))
-    账档 = os.path.join(t, '设定', 'z.json'); 清单 = os.path.join(t, '设定', 'q.md'); 备份 = os.path.join(t, '设定', 'b')
+    账档 = os.path.join(t, '设定', 'z.json'); 清单 = os.path.join(t, '设定', 'q.md')
     open(os.path.join(t, '正文', 'a.md'), 'w', encoding='utf-8').write('改前原文')
-    r = []
+    _git('init', '-q')
+    for k, v in (('user.name', 't'), ('user.email', 't@t'), ('commit.gpgsign', 'false')):
+        _git('config', k, v)
+
+    def 提(msg):
+        _git('add', '--', '正文', '设定')
+        return _git('commit', '-q', '-m', msg)[0] == 0
+    提('始')
+    头 = _git('rev-parse', 'HEAD')[1].strip()[:12]
     r.append(('①说不出更好在哪不立', 立('x', '更好', ['正文/a.md']) is None))
     号 = 立('改一句', '消了第一章与九十三章之抵，读者不再疑', ['正文/a.md'])
+    单0 = [x for x in 读()['单'] if x['号'] == 号]
     r.append(('②立单发号', bool(号)))
-    r.append(('③改前原文整份备份', open(os.path.join(备份, 号, '正文__a.md'), encoding='utf-8').read() == '改前原文'))
-    r.append(('④入修改清单', 号 in open(清单, encoding='utf-8').read()))
+    r.append(('③改前之笔＝立时之 HEAD（⛔拷整档：改单备份之目不立）', bool(单0) and 单0[0].get('改前') == 头
+              and not os.path.exists(os.path.join(t, '设定', '改单备份'))))
+    open(os.path.join(t, '正文', 'a.md'), 'w', encoding='utf-8').write('改後之文')
+    r.append(('③之二 改前原文以 git show <改前>:<档> 取回', _git('show', '%s:正文/a.md' % 头)[1] == '改前原文'))
+    import io, contextlib
+    o = io.StringIO()
+    with contextlib.redirect_stdout(o):
+        号脏 = 立('改脏档', '档已改而未提交，照立而印警，⛔误拦', ['正文/a.md'])
+    r.append(('③之三 档有未提交之改：照立（⛔误拦）而印 ⚠', bool(号脏) and '⚠ 正文/a.md 有未提交之改' in o.getvalue()))
+    r.append(('④入修改清单（带改前之笔）', 号 in open(清单, encoding='utf-8').read() and ('改前之笔**：`%s`' % 头) in open(清单, encoding='utf-8').read()))
     r.append(('⑤结单', 毕(号, '改一处·过硬闸')))
+    坏, _ = 改前之凭([{'号': 'G0000-01', '档': ['正文/a.md'], '改前': 头}])
+    坏2, _ = 改前之凭([{'号': 'G0000-02', '档': ['正文/a.md'], '改前': 'deadbeef0000'}])
+    r.append(('㉛凭·新单之改前係提交即过；伪 sha 即红', not 坏 and bool(坏2) and 'G0000-02' in 坏2[0]))
+    os.makedirs(os.path.join(t, '设定', '改单备份', 'G0000-03'))
+    open(os.path.join(t, '设定', '改单备份', 'G0000-03', '正文__a.md'), 'w', encoding='utf-8').write('旧备')
+    提('旧备')
+    旧笔 = _git('rev-parse', 'HEAD')[1].strip()
+    坏3, _ = 改前之凭([{'号': 'G0000-03', '档': ['正文/a.md']}], 旧笔=旧笔)
+    坏4, _ = 改前之凭([{'号': 'G0000-04', '档': ['正文/a.md']}], 旧笔=旧笔)
+    坏5, _ = 改前之凭([{'号': 'G0000-05', '档': []}], 旧笔=旧笔)
+    r.append(('㉜凭·旧单（无改前）其目在旧备之笔即过、不在即红；无档之单免', not 坏3 and bool(坏4) and 'G0000-04' in 坏4[0] and not 坏5))
     # —— 施单（W60·X11）——
     import io, contextlib
     def 写档(rel, s):
@@ -492,7 +594,7 @@ def 自测():
     r.append(('⑫施单·坏 JSON／非列／缺键⛔、不写', not v and '非合法 JSON' in o and not v2 and '须是 JSON 之列' in o2
               and not v3 and '缺或空：由' in o3 and 读档(甲) == 甲文))
     v, o = 跑(单([条, dict(条, 原='梁下', 新='梁下\n')]), 落=True)
-    r.append(('⑬施单·一条不过全单⛔写（亦⛔备份）', not v and 读档(甲) == 甲文 and not any(d.startswith('施单_') for d in os.listdir(备份))))
+    r.append(('⑬施单·一条不过全单⛔写', not v and 读档(甲) == 甲文))
     v, o = 跑(单([dict(条, 新='老头在梁')]))
     r.append(('⑭施单·新於施後不恰一见⛔', not v and '新於施後 3 见' in o))
     v, o = 跑(单([dict(条, 档='../外.md')]))
@@ -502,12 +604,12 @@ def 自测():
     v, o = 跑(单([条, {'档': 甲, '原': '梁下', '新': '梁下（据 剧情庭_试·二）', '由': '二'}]), 落=True, 号=号2)
     后 = '第一行：老头在梁上。\n第二行：钱满当面成交。\n第三行：老头在梁下（据 剧情庭_试·二）。\n'
     r.append(('⑯施单·--落 依序施两条、行数守、再验过', v and 读档(甲) == 后 and '再验 2/2' in o))
-    备 = os.path.join(备份, 号2, '设定__甲.md')
-    r.append(('⑰施单·写前备份在（照 --立 之法）且係改前原文、补登入其单', os.path.isfile(备) and open(备, encoding='utf-8').read() == 甲文
-              and 甲 in [x for x in 读()['单'] if x['号'] == 号2][0]['档']))
-    写档(甲, 后)   # 已有之备份⛔覆：再施一回（改他处），备份仍係最初之原
+    单2 = [x for x in 读()['单'] if x['号'] == 号2][0]
+    r.append(('⑰施单·所动之档补登入其单、改前之凭仍係其单之 sha（⛔拷整档）', 甲 in 单2['档'] and bool(单2.get('改前'))
+              and '施单补登' in open(清单, encoding='utf-8').read() and not os.path.exists(os.path.join(t, '设定', '改单备份', 号2))))
+    写档(甲, 后)   # 再施一回（改他处）：单之改前⛔变
     v, o = 跑(单([{'档': 甲, '原': '第一行', '新': '首行', '由': '三'}]), 落=True, 号=号2)
-    r.append(('⑱施单·已有之备份⛔覆', v and open(备, encoding='utf-8').read() == 甲文))
+    r.append(('⑱施单·再施同单，改前之笔⛔变', v and [x for x in 读()['单'] if x['号'] == 号2][0].get('改前') == 单2.get('改前')))
     def 撞():
         with open(os.path.join(t, 甲), 'a', encoding='utf-8') as f:
             f.write('又：老头在梁下（据 剧情庭_试·四）')
@@ -515,8 +617,9 @@ def 自测():
     r.append(('⑲施单·写後再验（盘上新不恰一见）⛔', not v and '再验' in o and '新於盘上 2 见' in o))
     乙 = '设定/乙.md'; 写档(乙, 'a甲\r\nb乙\r\n')
     v, o = 跑(单([{'档': 乙, '原': 'b乙', '新': 'b乙丙', '由': '五'}]), 落=True)
-    r.append(('⑳施单·无 --号 亦备份（施单_<时>）、守 CRLF', v and 读档(乙) == 'a甲\r\nb乙丙\r\n'
-              and any(os.path.isfile(os.path.join(备份, d, '设定__乙.md')) for d in os.listdir(备份) if d.startswith('施单_'))))
+    r.append(('⑳施单·无 --号 印改前之笔（HEAD）、守 CRLF、⛔立备份之目', v and 读档(乙) == 'a甲\r\nb乙丙\r\n'
+              and '改前之笔 ' + _git('rev-parse', 'HEAD')[1].strip()[:12] in o and not os.path.exists(os.path.join(t, '设定', '改单备份', '施单_'))
+              and not any(d.startswith('施单_') for d in os.listdir(os.path.join(t, '设定')))))
     v, o = 跑(单([]))
     v2, o2 = 跑(单([{'档': 乙, '原': 'a甲', '新': 'a甲丁', '由': '六'}]), 落=True, 号='G0000-99')
     r.append(('㉑施单·单空即过；--号 不在⛔、不写', v and not v2 and '无此改单' in o2 and 读档(乙) == 'a甲\r\nb乙丙\r\n'))
@@ -528,13 +631,12 @@ def 自测():
     r.append(('㉒施单·重叠之见亦计：原「哈哈」於「哈哈哈」⛔（2 见）、新施後重叠两见⛔，俱不写',
               not v and '原 2 见' in o and '於行 1×2' in o and not v2 and '新於施後 2 见' in o2 and 读档(丙) == 丙文 and 读档(戊) == 戊文))
     丁 = '设定/丁.md'; 丁文 = '一：老井。\n二：新坟。\n'; 写档(丁, 丁文)
-    备前 = sorted(os.listdir(备份))
     def 并写():
         with open(os.path.join(t, 丁), 'a', encoding='utf-8') as f:
             f.write('三：他席并写之行。\n')
     v, o = 跑(单([{'档': 丁, '原': '老井', '新': '老井（据 剧情庭_试·九）', '由': '九'}]), 落=True, _验後=并写)
-    r.append(('㉓施单·验後盘上已变（他席并写）⛔写、⛔备份，盘上留他席之文', not v and '验後盘上已变' in o
-              and 读档(丁) == 丁文 + '三：他席并写之行。\n' and sorted(os.listdir(备份)) == 备前))
+    r.append(('㉓施单·验後盘上已变（他席并写）⛔写，盘上留他席之文', not v and '验後盘上已变' in o
+              and 读档(丁) == 丁文 + '三：他席并写之行。\n'))
     写档('正文/第1章.md', '老井在村东。\n'); 写档('设定/剧情庭_势_第1段.md', '裁：守原。\n'); 写档('设定/修改清单.md', '清单\n')
     open(账档, 'a', encoding='utf-8').close()
     自单 = os.path.join(t, '设定', '自指单.json')
@@ -549,7 +651,7 @@ def 自测():
     v, o = 跑(自单, 落=True)
     禁果['单档本身'] = not v and '单档本身' in o
     r.append(('㉔施单·正文／剧情庭裁档／改单账／修改清单／单档本身俱⛔、不写', all(禁果.values()) and len(禁果) == 5))
-    账档, 清单, 备份, ROOT = 旧
+    账档, 清单, ROOT = 旧
     shutil.rmtree(t, ignore_errors=True)
     r += _庭单之约()
     for n, v in r:
@@ -574,7 +676,7 @@ if __name__ == '__main__':
         根 = _参('--根')
         if 根:
             ROOT = os.path.realpath(根)
-            账档 = os.path.join(ROOT, '设定', '改单账.json'); 清单 = os.path.join(ROOT, '设定', '修改清单.md'); 备份 = os.path.join(ROOT, '设定', '改单备份')
+            账档 = os.path.join(ROOT, '设定', '改单账.json'); 清单 = os.path.join(ROOT, '设定', '修改清单.md')
         sys.exit(0 if 施单(单档, 落='--落' in a, 号=_参('--号')) else 1)
     if '--查' in a:
         sys.exit(0 if 查()[0] else 1)

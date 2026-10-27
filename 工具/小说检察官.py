@@ -5579,6 +5579,13 @@ def selftest(files,lib):
       ('D1守·放行「四十八年前」（新岁）', not re.search(_式,'四十八年前他来过。')),
       ('D1守·入 lib（全书检、--末章 之 priority_one 读之）', any(f.get('id')=='D1守_老头之年' for f in lib['facts'])),
     ]
+    # ★线 D 复核：端到端——已落（ERROR）则 priority_one 计白文一处；亮点层、「一百二十七年」⛔计；未落（FYI）⛔计
+    import io as _io, contextlib as _cl
+    _d1文 = {103: ('p', 'x', '他说，二十七年前他十四。\n\n【本章亮点】\n亮：二十七年前。\n'), 104: ('p', 'x', '那口井一百二十七年了。\n')}
+    with _cl.redirect_stdout(_io.StringIO()):
+        _d1落 = priority_one(_d1文, None, {'facts': [_D1守(True)], 'musts': []})
+        _d1未 = priority_one(_d1文, None, {'facts': [_D1守(False)], 'musts': []})
+    d1_checks.append(('D1守·端到端：已落则白文一处计 ERROR 1（亮点层、一百二十七年⛔计）；未落 0', _d1落 == 1 and _d1未 == 0))
     for name,good in d1_checks:
         passed+=good
         print(('  ✓' if good else '  ✗D1守错'),f'[{name}]')
@@ -5787,6 +5794,9 @@ def _round11_main(n):
     return 0
 
 
+_一代已汰之令 = ('--开拍', '--验收', '--五钩', '--伏笔', '--军师', '--心电图', '--改检')
+
+
 def super_main():
     # ★1027·执行之审 #54：一代诸令（--开拍、--验收、--五钩、--伏笔、--军师、--心电图、--改检）与每跑必印之「在役机制」（print_console）俱汰——
     #   二代（造章.js·章料）取代之；今只留 --末章／--doctor／--selftest／--十一轮／封版门（N、*.md）与全书体检。法用册「废」检察官一代诸令。
@@ -5795,6 +5805,10 @@ def super_main():
         _usage(); return 0
     if args and args[0] in ('--十一轮','--总核'):
         return _round11_main(int(args[1]))
+    if args and args[0] in _一代已汰之令:   # ★线 D 复核：旧令⛔静默落成「封版门 N」（`--开拍 410` 旧作跑 410 之封版门而不出一声）
+        print(f'  ⛔ {args[0]} 係检察官一代之令，1027 已汰（执行之审 #54·法用册「废」检察官一代诸令）。')
+        print('     代之者：造式二代（工具/席/造章.js·章料）；本器只留 --末章 N｜--十一轮 N｜--doctor｜--selftest｜N（封版门）｜无参（全书检）。')
+        return 2
     lib=_load_lib()
     files=_chapters()
     if args and args[0] in ('框架','--framework'):

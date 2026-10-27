@@ -56,12 +56,22 @@ def 守器(裁文):
 
 def 随汰(裁文):
     """★1027：裁之退役——文中「〔随汰·<日>：所守之法 `工具/<器>` 已彻删……〕」而其器真已不在盘上 → 其器名；否则 ''。
-    ⛔借 进化链.随汰（一处判，⛔两份码）；其器仍在即⛔认（防借标关闸）。"""
-    import importlib.util as _u
-    _sp = _u.spec_from_file_location('_jhl', os.path.join(ROOT, '工具', '进化链.py'))
-    _m = _u.module_from_spec(_sp)
-    _sp.loader.exec_module(_m)
-    return _m.随汰(裁文, ROOT)
+    ⛔借 进化链.随汰（一处判，⛔两份码）；其器仍在、或从未有过（git 史中无其删），俱⛔认（防借标关闸）。"""
+    return _链().随汰(裁文, ROOT)
+
+
+_链模 = []
+
+
+def _链():
+    """进化链之模（一回载入、缓存：随汰之判与 git 史之删器集俱借之）。"""
+    if not _链模:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_jhl', os.path.join(ROOT, '工具', '进化链.py'))
+        _m = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_m)
+        _链模.append(_m)
+    return _链模[0]
 
 
 def _读json(rel):
@@ -222,10 +232,14 @@ def 自测():
         e = os.path.join(d, '裁_0999_假名.md'); io.open(e, 'w', encoding='utf-8').write('由 `工具/并不存在之器.py` 守。')
         R.append(('④点名不存在之器不算（⛔不许写个假名混过）',
                   查([e], 在役='并不存在之器.py', **K) == [('裁_0999_假名.md', '无一样器守它')]))
-        g = os.path.join(d, '裁_0999_随汰.md'); io.open(g, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/并不存在之器.py` 已彻删〕')
+        g = os.path.join(d, '裁_0999_随汰.md'); io.open(g, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/接坐记.py` 已彻删〕')
         h = os.path.join(d, '裁_0999_借标.md'); io.open(h, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/分量闸.py` 已彻删〕')
-        R.append(('⑤随汰（所守之器真已彻删）之裁退役、⛔计未生效', 查([g], 在役='', **K) == []))
+        h2 = os.path.join(d, '裁_0999_借名.md'); io.open(h2, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/并不存在之器.py` 已彻删〕')
+        R.append(('⑤随汰（所守之器 git 史中真已彻删·接坐记）之裁退役、⛔计未生效', 查([g], 在役='', **K) == []))
         R.append(('⑥⛔借标：随汰所点之器仍在者照旧判', 查([h], 在役='', **K) != []))
+        _删 = _链().删过之器(ROOT)
+        R.append(('⑥之二⛔借名：随汰所点之名从未有过（不在盘上≠已删）者照旧判（git 史验不得时略）',
+                  _删 is None or 查([h2], 在役='', **K) != []))
         # ⑦ 1027·#75 行之证：1027 起之裁只点器（在役）即判未生效；书真行之证即过；伪证俱⛔
         def 新(名, 文):
             p = os.path.join(d, '裁_1028_%s.md' % 名); io.open(p, 'w', encoding='utf-8').write(文); return p

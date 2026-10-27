@@ -2647,6 +2647,13 @@ def 自测_核(T, 全):
     T('⑳之四 封版之尾：回灌 %s 之 封版.py（写死一坐）→ 换会话之「无」中（红）；今之尾取本会话（cse_→session_）、无号即⛔书 Claude-Session（坐异作 ？）' % 旧笔,
       bool(尾证) and bool(旧封) and re.search(尾证['无'], 旧封) is not None and re.search(尾证['无'], 今封) is None
       and 甲尾.endswith('Claude-Session: https://claude.ai/code/session_EEEEEEEE5555') and 'Co-Authored-By' in 乙尾 and 'Claude-Session' not in 乙尾)
+    # ⑳之六（复核补）自走所印段之势之令⛔式新（§八.3 剧情庭式段：裁席出单、主环 --施单）：回灌 db52f247 之 自走.py → 剧情庭式段之「无」中（红）；今 → ⛔中
+    段证 = next((c for x in 读册(ROOT).get('法') or [] if x.get('id') == '剧情庭式段' for c in x.get('证') or [] if c.get('档') == '工具/自走.py'), None)
+    旧走 = subprocess.run(['git', 'show', '%s:工具/自走.py' % 旧笔], cwd=ROOT, capture_output=True, text=True).stdout
+    今走 = _读(ROOT, os.path.join('工具', '自走.py')) or ''
+    T('⑳之六 自走所印段之势之令：回灌 %s（式新·裁席亲改）→ 剧情庭式段之「无」中（红）；今（式段·W·段料）→ ⛔中' % 旧笔,
+      bool(段证) and bool(旧走) and re.search(段证['无'], 旧走) is not None and re.search(段证['无'], 今走) is None
+      and "式:\\'段\\'" in 今走)
     # ㉒暂停令之据（改常令移行号即令在而不认）
     t = tempfile.mkdtemp(prefix='法用停_')
     try:

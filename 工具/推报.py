@@ -125,7 +125,15 @@ def 报之语(d):
 
 
 def 快进(root=ROOT):
-    """成而後：本地主枝快进到 origin 主枝（能则进；不在主枝、本地有未入主之提交即⛔动）。→ (进否, 语)"""
+    """成而後：本地主枝快进到 origin 主枝（能则进；不在主枝、本地有未入主之提交即⛔动）。→ (进否, 语)
+    ⛔抛：主枝已含而取卡（逾时）即崩，候者印「✓已含」而返非零——调者（推.py --候、接棒守 --候主）之 rc 遂误。"""
+    try:
+        return _快进(root)
+    except Exception as e:
+        return False, '⛔ 快进不成：%s' % str(e)[:200]
+
+
+def _快进(root=ROOT):
     远 = 'refs/remotes/origin/' + 主枝
     _git(['fetch', '-q', 'origin', '+refs/heads/%s:%s' % (主枝, 远)], root)
     当 = _git(['symbolic-ref', '-q', '--short', 'HEAD'], root).stdout.strip()
@@ -217,7 +225,9 @@ def _环(文):
 
 
 _主推式 = re.compile(r'git\s+(?:-c\s+\S+\s+)*push\b[^\n]*refs/heads/(?:\$MAIN|\$\{MAIN\}|' + re.escape(主枝) + r')\b')
-_直闸式 = re.compile(r'(?m)^\s*(?:bash\s+|sh\s+|\./)?工具/githooks/pre-push\b|python3?\s+[^\n]*工具/全测并?\.py')
+# 直跑钩之形：行首、;&|!( 之後、then／do／else、bash／sh／source／exec 之後（⛔只认行首——`if ! bash 工具/githooks/pre-push` 亦一树二跑）
+_直闸式 = re.compile(r'(?m)(?:^|[;&|!(]|\b(?:then|do|else|bash|sh|source|exec)\b)\s*(?:\./)?["\']?[^\s"\';|&]*(?:工具/githooks|钩)/pre-push\b'
+                   r'|python3?\s+[^\n]*工具/全测并?\.py')
 _绕式 = ('--no-verify', 'ZM_SKIP_HOOK')
 
 
@@ -281,6 +291,8 @@ def 验(yml, 钩):
     删 = [s for s in 步 if re.search(r'--delete|":\$N"|:refs/heads/治-', s.get('run', ''))]
     if not 删 or not any('refs/heads/治-*' in s.get('run', '') and '成' in str(s.get('if', '')) for s in 删):
         缺.append('⑧删：治枝成（成／已在）即删')
+    elif not all(re.search(r'merge-base --is-ancestor "?\$\w+"? "?origin/\$MAIN"?[^\n]*&& D\+=', s.get('run', '')) for s in 删):
+        缺.append('⑧删：只删已为主枝之祖之治枝（⛔连在飞未并之治枝一并删）')
     if re.search(r'(--delete|:refs/heads/)[^\n]*章-', yml) or any('章-' in s.get('run', '') for s in 删):
         缺.append('⑧删：⛔删 章-*（章标恒留）')
     绕 = [w for w in _绕式 if w in yml]
@@ -355,7 +367,7 @@ def _式值(式, env, 前成):
 
 def 演yml(yml, 钩, 推报文, 景, 目):
     """以桩闸真跑 yml 诸步之 bash（一如 GitHub：bash --noprofile --norc -eo pipefail）於 目 下之裸库。
-    景：成｜主动（闸中主枝被推进一笔）｜已在（沙盒已直推主枝）｜红｜拒（改 workflows）｜章（以 章-N 触、成）。
+    景：成｜主动（闸中主枝被推进一笔）｜主拒（云端推进主枝而以不可预知之语拒）｜已在（沙盒已直推主枝）｜红｜拒（改 workflows）｜章（以 章-N 触、成）。
     → {果, 闸次, 主, T在主, 他在主, 枝们, 报, 印}"""
     env0 = _净env()
     裸, 种, 沙, 机, 他, rt = (os.path.join(目, x) for x in ('o.git', '种', '沙', '机', '他', 'rt'))
@@ -387,6 +399,15 @@ def 演yml(yml, 钩, 推报文, 景, 目):
     open(os.path.join(他, 'b.txt'), 'a', encoding='utf-8').write('乙之进\n')
     _g(['commit', '-qam', '他坐直推'], 他)
     他sha = _g(['rev-parse', 'HEAD'], 他)
+    if 景 == '主拒':
+        # 云端之拒语⛔可预知（GitHub 非 git 原生之 receive-pack；新 git 之语亦改「incorrect old value provided」）：
+        #   裸库之 update 钩於首推主枝时把主枝推进一笔、以不含诸旧键之语拒之——主进而被拒，须照样取、并、再试
+        _g(['push', '-q', 裸, 'HEAD:refs/heads/备份/他'], 他)
+        f = os.path.join(裸, 'hooks', 'update')
+        open(f, 'w', encoding='utf-8').write(
+            '#!/bin/sh\nif [ "$1" = "refs/heads/%s" ] && [ ! -e 已拒 ]; then\n  : > 已拒\n  git update-ref "$1" %s\n'
+            '  echo "桩：主枝方为他坐所进，此推作废" >&2\n  exit 1\nfi\nexit 0\n' % (主枝, 他sha))
+        os.chmod(f, 0o755)
     _g(['clone', '-q', '-b', 主枝, 裸, 机], 目)          # actions/checkout（ref 主枝、fetch-depth 0）
     计 = os.path.join(目, '闸计')
     genv = os.path.join(rt, 'GITHUB_ENV')
@@ -511,6 +532,10 @@ def 自测():
             "'refs/heads/治-*')", "'refs/heads/治-*' 'refs/heads/章-*')"),
         '⛔先判拒': yml.replace('.github/workflows)" ]', '.github/xx)" ]'),
         '五试': yml.replace('for i in 1 2 3; do', 'for i in 1 2 3 4 5; do'),
+        '另步 if ! bash 钩（一树二跑）': yml.replace('      - name: 删已并之治枝', '      - name: 推闸\n        run: if ! bash 工具/githooks/pre-push; then exit 1; fi\n      - name: 删已并之治枝'),
+        '环内 sh "$PWD/…" 钩（一树二跑）': yml.replace('            G="$(git rev-parse --git-common-dir)/推闸之果"; rm -f "$G"\n',
+                                             '            G="$(git rev-parse --git-common-dir)/推闸之果"; rm -f "$G"\n            if ! sh "$PWD/工具/githooks/pre-push"; then GUO=红; break; fi\n'),
+        '删治不问已并': yml.replace('refs/heads/治-*) git merge-base --is-ancestor "$S" "origin/$MAIN" && D+=(":$N") ;;', 'refs/heads/治-*) D+=(":$N") ;;'),
     }
     T('②之四 诸改坏（%d 形）各红' % len(坏), all(验(v, 钩) and v != yml for v in 坏.values()))
     坏钩 = {'免及主枝': 钩.replace('refs/heads/章-*|refs/heads/治-*|refs/heads/备份/*)', 'refs/heads/*)'),
@@ -533,7 +558,7 @@ def 自测():
     # ④yml 之 bash 真跑（桩闸·临时之裸库）
     推报文 = open(os.path.abspath(__file__), encoding='utf-8').read()
     演 = {}
-    for 景 in ('成', '主动', '已在', '红', '拒', '章'):
+    for 景 in ('成', '主动', '主拒', '已在', '红', '拒', '章'):
         with tempfile.TemporaryDirectory() as t:
             try:
                 演[景] = 演yml(yml, 钩, 推报文, 景, t)
@@ -566,6 +591,17 @@ def 自测():
       and 报合(e, '拒') and e['报'].get('因') == 'workflow')
     e = 演['章']
     T('④之七 以 章-N 触：成而章标恒留', e.get('果') == '成' and e.get('闸次') == 1 and '章-9' in e.get('枝们', []) and 报合(e, '成'))
+    e = 演['主拒']
+    T('④之八 云端推进主枝而以不可预知之语拒（⛔认死 non-fast-forward 诸键；新 git 作 incorrect old value）：照样取、并、再试——二闸、报「成」试 2%s'
+      % ('' if e.get('果') == '成' else '：' + str(e.get('果')) + e.get('印', '')[-600:]),
+      e.get('果') == '成' and e.get('闸次') == 2 and e.get('T在主') and e.get('他在主') and 报合(e, '成') and e['报'].get('试') == 2)
+    _认死 = yml.replace("'rejected|non-fast-forward|", "'non-fast-forward|").replace('|incorrect old value|', '|')
+    with tempfile.TemporaryDirectory() as t:
+        try:
+            _e = 演yml(_认死, 钩, 推报文, '主拒', t)
+        except Exception as _x:
+            _e = {'果': '⛔演崩：%s' % _x}
+    T('④之九 回灌：再试认死旧诸键之 yml（6e41fe4b 之形）→ 主拒之景竟作「败」（此即其病）', _认死 != yml and _e.get('果') == '败')
     ok = sum(R)
     print('── 负测·autopush %d/%d %s ──' % (ok, len(R), '全通' if ok == len(R) else '未过'))
     return ok == len(R)

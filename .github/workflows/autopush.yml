@@ -74,7 +74,8 @@ jobs:
             if grep -q '^红' "$G" 2>/dev/null || grep -q '⛔ 全测未过' "$RUNNER_TEMP/此试"; then GUO=红; break; fi
             if grep -q 'refusing to allow .*workflow' "$RUNNER_TEMP/此试"; then GUO=拒; YIN=workflow; break; fi
             git fetch -q origin "+refs/heads/$MAIN:refs/remotes/origin/$MAIN" >> "$O" 2>&1
-            if grep -qE 'non-fast-forward|fetch first|cannot lock ref|failed to update ref|stale info' "$RUNNER_TEMP/此试" \
+            # 被拒之语⛔可预知（GitHub 非 git 原生之 receive-pack；新 git 作「incorrect old value provided」）——凡 rejected 而主枝真进即再试
+            if grep -qE 'rejected|non-fast-forward|fetch first|cannot lock ref|failed to update ref|incorrect old value|stale info' "$RUNNER_TEMP/此试" \
                && [ "$(git rev-parse "origin/$MAIN")" != "$B0" ]; then
               GUO=败; YIN=non-ff; echo "· 闸中主枝已进（${B0:0:12}→$(git rev-parse --short=12 "origin/$MAIN")）——取而再试" >> "$O"; continue
             fi

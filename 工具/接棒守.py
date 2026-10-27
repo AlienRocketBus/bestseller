@@ -167,11 +167,11 @@ def 章之坏报(n, 读=None, 标=None, 飞=None):
         return []                      # 旧标之报（⛔认他笔之果）
     在飞 = (飞 or 治之在飞)(标 or d.get('sha', ''))
     if 在飞:
-        坏 = [x for x in (读(枝) for 枝, _ in 在飞) if x and x.get('果') in 推报.坏果
-             and any(x.get('sha') == s for _, s in 在飞)]
-        if not 坏:
-            return []                  # 治在飞而未毕（或已成待并）——候
-        d = 坏[-1]
+        # 治枝红者不删（autopush 只删已并者）：旧治红而新治已交未毕，⛔以旧治之红早返——诸治俱有坏报方返，取其最晚者
+        配 = [x for x, (_, s) in zip([读(枝) for 枝, _ in 在飞], 在飞) if x and x.get('sha') == s]
+        if len(配) < len(在飞) or any(x.get('果') not in 推报.坏果 for x in 配):
+            return []                  # 治在飞而有未毕者（或已成待并）——候
+        d = max(配, key=lambda x: str(x.get('时') or ''))
     L = 推报.报之语(d)
     if d.get('果') == '拒':
         L.append('  → 兜底：python3 工具/推.py --直（GITHUB_TOKEN 推不得改 .github/workflows 之提交；本地全闸直推主枝）')
@@ -346,6 +346,15 @@ def 自测():
     治红 = 章之坏报(404, 读=lambda 枝: 诸报.get(枝), 标='a' * 40, 飞=飞)
     T('⑤之七 章红而含此章之治枝在飞：未毕 → 候（⛔以章之旧红早返）；治报红 → 返治之红', 候中 == [] and any('治推又红' in x for x in 治红)
       and not any('一章一日' in x for x in 治红))
+    # ⑤之八 旧治红（其枝不删）而新治已交未毕 → 候（⛔以旧治之红早返）；二治俱红 → 返最晚者之红
+    诸报['治-cccccccccccc'] = None
+    飞2 = lambda 标: [('治-bbbbbbbbbbbb', 'b' * 40), ('治-cccccccccccc', 'c' * 40)]
+    旧红新候 = 章之坏报(404, 读=lambda 枝: 诸报.get(枝), 标='a' * 40, 飞=飞2)
+    诸报['治-bbbbbbbbbbbb']['时'] = '2026-10-27T01:00:00Z'
+    诸报['治-cccccccccccc'] = dict(红报, ref='治-cccccccccccc', sha='c' * 40, 红=['✗ 新治之红'], 时='2026-10-27T02:00:00Z')
+    俱红 = 章之坏报(404, 读=lambda 枝: 诸报.get(枝), 标='a' * 40, 飞=飞2)
+    T('⑤之八 旧治红而新治未毕 → 候（⛔以旧治之红早返）；二治俱红 → 返最晚者之红', 旧红新候 == []
+      and any('新治之红' in x for x in 俱红) and not any('治推又红' in x for x in 俱红))
     src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     段主含 = src.split('def 主含(')[1].split('\ndef ')[0]
     段候主 = src.split('def 候主(')[1].split('\ndef ')[0]

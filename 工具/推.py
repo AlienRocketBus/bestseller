@@ -201,10 +201,17 @@ def 治名(sha):
 
 
 def _取(root=ROOT):
-    """一取：主枝与 备份/报 同取（候中每回只此一调）。"""
+    """一取：主枝与 备份/报 同取（候中每回只此一调）。
+    云端尚无 备份/报（首报未推、或报推不上）则同取全败、主枝亦不进——⛔候满九十分：败即单取主枝。网络卡（逾时）⛔崩候。"""
     import 推报
-    _跑(['git', 'fetch', '-q', 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (枝, 枝),
-         '+refs/heads/%s:refs/remotes/origin/%s' % (推报.报枝, 推报.报枝)], root, timeout=120)
+    主 = '+refs/heads/%s:refs/remotes/origin/%s' % (枝, 枝)
+    for 参 in ([主, '+refs/heads/%s:refs/remotes/origin/%s' % (推报.报枝, 推报.报枝)], [主]):
+        try:
+            if _跑(['git', 'fetch', '-q', 'origin'] + 参, root, timeout=120).returncode == 0:
+                return True
+        except subprocess.TimeoutExpired:
+            pass
+    return False
 
 
 def 在主(sha, root=ROOT, 取=True):
@@ -457,6 +464,22 @@ def 自测():
     _主 = open(os.path.abspath(__file__), encoding='utf-8').read().rsplit("if __name__ == '__main__':", 1)[1]
     共 += 1; ok += (_主.rstrip().endswith('rc = 交()\n    sys.exit(0 if rc in (0, 2) else 1)')
                     and "if a == ['--直']:\n        rc = 直推()" in _主 and "if a[:1] == ['--候']" in _主)
+    # ⑱候之真取（临时裸库）：云端无 备份/报（首报未推）而主枝已含 → 默之 取／查 照见主枝、返 0（⛔同取全败而候满九十分）
+    _r, _c = tempfile.mkdtemp(), tempfile.mkdtemp()
+    _e = dict({k: v for k, v in os.environ.items() if not k.startswith('GIT_')}, GIT_CONFIG_GLOBAL=os.devnull,
+              GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+    for _a, _d in ((['git', 'init', '-q', '--bare', _r], _r), (['git', 'init', '-q', '-b', 枝, _c], _c),
+                   (['git', 'commit', '-q', '--allow-empty', '-m', 'a'], _c), (['git', 'remote', 'add', 'origin', _r], _c),
+                   (['git', 'push', '-q', 'origin', 'HEAD:refs/heads/' + 枝], _c)):
+        subprocess.run(_a, cwd=_d, capture_output=True, env=_e)
+    _t = _跑(['git', 'rev-parse', 'HEAD'], _c).stdout.strip()
+    _钟[0] = 0.0
+    with _cl.redirect_stdout(_io.StringIO()):
+        _rc = 候(_t, 限分=3, 读=lambda: None, 进=lambda: (True, ''), 今=lambda: _钟[0],
+                睡=lambda x: _钟.__setitem__(0, _钟[0] + x), root=_c)
+    共 += 1; ok += (bool(_t) and _rc == 0 and _钟[0] == 0 and _取(_c) is True)
+    import shutil as _sh
+    _sh.rmtree(_r, ignore_errors=True); _sh.rmtree(_c, ignore_errors=True)
     print('推·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' ⛔未过'))
     return ok == 共
 

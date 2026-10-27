@@ -10,7 +10,7 @@
      旧时诸席禁 git 写、⛔报心跳，写书之中锁逾四十五分即「死」，别坐看来无人在跑。
   最坏只失五分之工。进程随机生灭：机在则守在，机收则同收。日志 `.git/存底守.log`。
 用法：
-  python3 工具/存底守.py --起     # 钩用：未起则起（已起即免），即返
+  python3 工具/存底守.py --起     # 钩用：未起则起（已起即免），即返；守书之坐（只读之巡）只印盘坏之哨、⛔承账⛔起守（1027 A2）
   python3 工具/存底守.py --一回   # 跑一回（人手或验用）
   python3 工具/存底守.py --状     # 在跑否、末回何时
   python3 工具/存底守.py --自测
@@ -142,7 +142,7 @@ def 跑():
             _记('⛔一回崩：%s' % e)
 
 
-def 起(开=subprocess.Popen, 盘=None):
+def 起(开=subprocess.Popen, 盘=None, 守书=None):
     # 1024 盘坏之哨：SessionStart 之钩跑本器——旗在即首印（零 token；守书之坐亦见）
     try:
         import 重取
@@ -151,6 +151,16 @@ def 起(开=subprocess.Popen, 盘=None):
             print(l)
     except Exception:
         pass
+    # 1027 A2：守书之坐（只读之巡、⛔写书）⛔承账、⛔起守——旧其钩照起，跑账 --承 写 _跑账.json、五分一存推「备份/存底-<守书之坐>」
+    try:
+        if 守书 is None:
+            import 席在跑吗
+            守书 = 席在跑吗.守书之坐()
+    except Exception:
+        守书 = False
+    if 守书:
+        print('· 守书之坐（只读之巡）：⛔承账、⛔起存底守')
+        return 0
     # 1022：会话开头先承云端诸存底之跑账（新机之账空，封版之跑账闸判「从没跑过」而停——404 实踩）；後台、⛔候
     try:
         with open(日志, 'a') as lf:
@@ -209,21 +219,26 @@ def 自测():
         起们 = []
         f = open(锁档, 'a+')
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        起(开=lambda *a, **k: 起们.append(a))
+        起(开=lambda *a, **k: 起们.append(a), 守书=False)
         T('③已有一守在跑 → ⛔再起守（唯承账一回）', len(起们) == 1 and '--承' in 起们[0][0] and 在跑())
         起们.clear()
         fcntl.flock(f, fcntl.LOCK_UN)
         f.close()
-        起(开=lambda *a, **k: 起们.append(k))
+        起(开=lambda *a, **k: 起们.append(k), 守书=False)
         T('③之二 无守 → 承账一回＋起一守，俱脱离（新 session）、⛔占钩之管', len(起们) == 2 and 起们[-1].get('start_new_session')
           and 起们[-1].get('stdin') == subprocess.DEVNULL and 起们[-1].get('stdout') not in (None, subprocess.PIPE))
         import io, contextlib
         with contextlib.redirect_stdout(io.StringIO()) as 印:
-            起(开=lambda *a, **k: None, 盘=lambda: '⛔ 盘坏：试')
+            起(开=lambda *a, **k: None, 盘=lambda: '⛔ 盘坏：试', 守书=False)
         T('⑦盘坏之旗在 → 会话开头之钩首印其 ⛔ 行（1024）', 印.getvalue().startswith('⛔ 盘坏：试'))
         with contextlib.redirect_stdout(io.StringIO()) as 印:
-            起(开=lambda *a, **k: None, 盘=lambda: '')
+            起(开=lambda *a, **k: None, 盘=lambda: '', 守书=False)
         T('⑦之二 无旗 ⛔印', '盘坏' not in 印.getvalue())
+        起们.clear()
+        with contextlib.redirect_stdout(io.StringIO()) as 印:
+            _rc = 起(开=lambda *a, **k: 起们.append(a), 盘=lambda: '⛔ 盘坏：试', 守书=True)
+        T('⑧守书之坐（只读之巡）→ 盘坏之哨照印，而⛔承账、⛔起守（1027 A2）', _rc == 0 and not 起们
+          and 印.getvalue().startswith('⛔ 盘坏：试') and '守书之坐' in 印.getvalue())
     锁档, 日志 = 旧锁, 旧志
     T('⑥锁与日志落 git 之公目（全测之工作副本里 .git 係一档亦通）', 锁档.startswith(_仓目()) and os.path.isdir(_仓目()))
     s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]

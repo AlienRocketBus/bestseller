@@ -7,7 +7,7 @@
 
 1027 之改（坑51·404—410 一章之树三跑闸、autopush 恒输於 non-fast-forward）：旧默直推主枝，本地 pre-push 跑全测并（四百至一千二百秒），
   GitHub autopush 於同一树又跑二回——沙盒先推进主枝，GitHub 之推遂被拒。今**默交 GitHub**：推 HEAD 於 `治-<sha12>`（暂存之枝，pre-push 免闸），
-  GitHub 之机推时即闸、绿即并入主枝、果入 `备份/报`（工具/推报.py）；会话 `--候 <sha>` 零 token 候（每分至多一取、限九十分；
+  GitHub 之机分片而闸（gate.yml·一候之树一闸，1027 坑54）、过即并入主枝、果入 `备份/报`（工具/推报.py）；会话 `--候 <sha>` 零 token 候（每分至多一取、限九十分；
   红／拒／败即早返其红）；成即本地快进。`--直` 係旧法（直推主枝、本地全闸），只作兜底：报「拒」（改 .github/workflows，
   GITHUB_TOKEN 推不得）或 GitHub 停摆。
 
@@ -235,7 +235,7 @@ def 候之令(sha, 枝们=()):
 
 
 def 交(root=ROOT, 交法=None, 最多=5):
-    """默（1027 坑51）：推 HEAD 於 治-<sha12>（暂存之枝：pre-push 免闸），GitHub autopush 推时即闸、绿即并入主枝。
+    """默（1027 坑51）：推 HEAD 於 治-<sha12>（暂存之枝：pre-push 免闸），GitHub autopush 分片而闸、过即并入主枝（1027 坑54）。
     → 0 已交（或 HEAD 已在主枝）｜1 被拦（枝歪、速检红、推不上）｜2 已有人在推（已登记待推）。⛔本地全测。"""
     待 = os.path.join(_git目录(root), '推.待')
     锁 = 取锁(root)
@@ -281,7 +281,7 @@ def 交(root=ROOT, 交法=None, 最多=5):
                 _记(root, '交不成：' + '｜'.join(x.strip() for x in 红)[:500])
                 return 1
             _记(root, '交 %s（第 %d 回）' % (名, 回))
-            print('✓ 已交 GitHub：%s（autopush 推时即闸、绿即并入主枝；果入 备份/报 之 报/推/%s.json）' % (名, 名))
+            print('✓ 已交 GitHub：%s（autopush 分片而闸、过即并入主枝；果入 备份/报 之 报/推/%s.json）' % (名, 名))
             print('  → 零 token 候：python3 工具/推.py --候 %s（run_in_background；红／拒／败即早返）' % sha[:12])
             if not os.path.exists(待):
                 return 0
@@ -313,7 +313,7 @@ def 候(sha, 限分=90, 隔=60, 查=None, 读=None, 进=None, 取=None, 今=time
             print(语)
             return 0
         d = 读()
-        if d and str(d.get('sha') or '').startswith(全[:12]) and d.get('果') in 推报.坏果:
+        if d and str(d.get('sha') or '').startswith(全[:12]) and 推报.坏(d):        # 1027 坑54：败·重派係在飞——候
             print('\n'.join(推报.报之语(d)))
             if d.get('果') == '拒':
                 print('  → 兜底：python3 工具/推.py --直（GITHUB_TOKEN 推不得改 .github/workflows 之提交；本地全闸）')
@@ -328,11 +328,20 @@ def 候(sha, 限分=90, 隔=60, 查=None, 读=None, 进=None, 取=None, 今=time
         睡(隔)
 
 
+def 在推(root=ROOT):
+    """有无推送在跑——即本器之锁被占否（⛔pgrep 猜进程名·1027 A2：自进化环 L1 之守取此，旧 pgrep 'git push -u origin' 已认不着本器所起之推）。"""
+    try:
+        锁 = 取锁(root)
+    except OSError:
+        return False                               # 锁档开不得（.git 非目录之副本）：本器亦推不得，⛔作在推
+    if 锁 is None:
+        return True
+    锁.close()
+    return False
+
+
 def 状(root=ROOT):
-    锁 = 取锁(root)
-    在跑 = 锁 is None
-    if 锁:
-        锁.close()
+    在跑 = 在推(root)
     print('推送在跑：%s｜本地超前 %d 笔｜待推之记：%s' % (
         '是' if 在跑 else '否', 超前(root), '有' if os.path.exists(os.path.join(_git目录(root), '推.待')) else '无'))
 
@@ -345,13 +354,13 @@ def 自测():
         def __init__(s, c, o=''): s.returncode, s.stdout, s.stderr = c, o, ''
     # ① 持锁时，第二个取锁者拿不到（⛔靠进程名猜）
     a = 取锁(t); b = 取锁(t)
-    共 += 1; ok += (a is not None and b is None)
+    共 += 1; ok += (a is not None and b is None and 在推(t) is True)       # ★1027 A2：在推 即锁之态（自进化环 L1 取之）
     # ② 锁被占 → 直推() 立即返回 2 并登记待推，⛔等待
     t0 = time.time(); rc = 直推(t, 推法=lambda: R(0))
     共 += 1; ok += (rc == 2 and os.path.exists(os.path.join(t, '.git', '推.待')) and time.time() - t0 < 2)
     a.close()
     # ③ 锁一放即可取（进程死、锁即放）
-    c = 取锁(t); 共 += 1; ok += (c is not None); c.close()
+    c = 取锁(t); _c在 = c is not None; c.close(); 共 += 1; ok += (_c在 and 在推(t) is False)
     # ④ 被拦不重试：推法只被调一次
     次 = []
     rc = 直推(t, 推法=lambda: (次.append(1), R(1, '  ✗ 某闸\nerror: failed'))[1])

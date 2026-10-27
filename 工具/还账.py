@@ -27,7 +27,6 @@
   python3 工具/还账.py --窗 单1.json [单2…]    # 验之上，印每处改前改後之窗 → 设定/_草/W26/窗_<首单名>.md
   python3 工具/还账.py --施 单1.json [单2…]    # 无红方写盘；印每章几处；行数不变
   python3 工具/还账.py --随 单1.json [单2…] [--旧 HEAD]   # ★1020 W52 之 B＋C：随改之扫——单所删换之旧片於在役诸档（设定/ 除史档、正文亮点）grep 之，列每一处仍引旧文者；施後用 --旧 HEAD 取改前之文
-  python3 工具/还账.py --补接坐 章…            # ★1020：施改已封之章致版隙逾 12 时者补「接坐之记」（--施 已自动随跑；此为手补）
   python3 工具/还账.py --自测
 """
 import os as _o, sys as _s
@@ -610,34 +609,6 @@ def 施後同步(章们, root=ROOT, 单名=''):
         print('  施後·%s：%s' % (os.path.basename(令[0]), (r.stdout.strip().split('\n') or [''])[-1][:80]))
 
 
-def 补接坐(章们, 单名='', root=ROOT, 今日=None):
-    """★1020 W52 所逮：施改已封之 390、396 而存版，版隙逾 12 小时，接坐记判「换坐而未声明」、推被拦。
-    器照接坐记之算取「前一坐之日」（⛔不猜），於轮记末写一行器自记——注明封版後之还账、非续轮之坐。回所补之章。"""
-    import json, time
-    sys.path.insert(0, os.path.join(root, '工具'))
-    import 接坐记
-    今日 = 今日 or time.strftime('%m-%d')
-    补 = []
-    for 章 in sorted(章们):
-        d = os.path.join(root, '版本', '第%d章' % 章)
-        须, _, 声 = 接坐记.查一章(d)
-        if not 须 or 声:
-            continue
-        台 = json.load(open(os.path.join(d, '_台账.json'), encoding='utf-8'))
-        隙, 前日 = 接坐记.最长之隙(台)
-        ts = 接坐记.诸时(台)
-        i = max(range(len(ts) - 1), key=lambda k: ts[k + 1] - ts[k])
-        版 = [v.get('版', '?') for v in 台['版本']]
-        前 = 版[0] if i == 0 else '%s—%s' % (版[0], 版[i])
-        後 = 版[i + 1] if i + 1 == len(版) - 1 else '%s—%s' % (版[i + 1], 版[-1])
-        行 = '\n接坐之记（还账·器自记）：%s 係 %s 之席所落；%s 係 %s 之还账（工具/还账.py --施%s）所落——封版後之还账，非续轮之坐（隙 %.1f 小时）。\n' % (
-            前, 前日, 後, 今日, ('·' + 单名) if 单名 else '', 隙)
-        open(os.path.join(d, '_轮记.md'), 'a', encoding='utf-8').write(行)
-        补.append(章)
-        print('  施後·接坐之记 第%d章：%s 係 %s 之席' % (章, 前, 前日))
-    return 补
-
-
 # ───────── 料 ─────────
 def 料(组, root=ROOT, 规=None):
     规 = 规 or 读规(root)
@@ -775,14 +746,6 @@ def 自测():
     sys.path.insert(0, os.path.join(ROOT, '工具')); import 跑轮 as _跑      # ★1020 X31：施後存版之记因须过漂移哨之判（≥8 字）且带单名
     _因 = 存版之境('G1020-01.json')['ZM_DRIFT_WHY']
     共 += 1; ok += _跑.漂移记因之判(_因)[0] and 'G1020-01.json' in _因 and 'ZM_FORCE' not in 存版之境()
-    with tempfile.TemporaryDirectory() as _t:      # ★1020 补接坐：隙逾界而无记者补一行、接坐记随即认；再补不重写
-        _d = os.path.join(_t, '版本', '第999章'); os.makedirs(_d)
-        json.dump({'版本': [{'版': 'v01', '时': '10-15 10:13'}, {'版': 'v02', '时': '10-15 11:00'}, {'版': 'v03', '时': '10-20 06:36'}]}, open(os.path.join(_d, '_台账.json'), 'w', encoding='utf-8'))
-        open(os.path.join(_d, '_轮记.md'), 'w', encoding='utf-8').write('本轮六数……\n')
-        _r1 = 补接坐([999], '单x', _t, '10-20'); _r2 = 补接坐([999], '单x', _t, '10-20')
-        sys.path.insert(0, os.path.join(ROOT, '工具')); import 接坐记 as _接
-        _l = open(os.path.join(_d, '_轮记.md'), encoding='utf-8').read()
-        共 += 1; ok += _r1 == [999] and _r2 == [] and _接.查一章(_d)[2] and 'v01—v02 係 10-15' in _l and 'v03 係 10-20' in _l
     共 += 1; ok += 护[201] == {17, 155} and 140 in 护[263] and 460 in 护[263] and 272 not in 全 and {101, 293, 301} <= 护[272] and 1509 not in 护[272] and 许[283] == {13, 33} and 13 in 许[201]   # ★1020：272 照十·一裁收窄
     print('还账·自测 %d/%d' % (ok, 共))
     return ok == 共
@@ -792,8 +755,6 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a == ['--自测']:
         sys.exit(0 if 自测() else 1)
-    if a[:1] == ['--补接坐'] and len(a) > 1:      # 手补（施於器有此法之前者）
-        补接坐([int(x) for x in a[1:]]); sys.exit(0)
     if a[:1] == ['--料'] and len(a) == 2:
         os.makedirs(os.path.join(ROOT, 草), exist_ok=True)
         p = os.path.join(ROOT, 草, '料_%s.md' % a[1])
@@ -880,7 +841,6 @@ if __name__ == '__main__':
             记账([o for _, o in 读单们([x for x in a[1:] if x != '--全'])], [os.path.basename(x) for x in a[1:] if x != '--全'])
             _单名 = '、'.join(os.path.basename(x) for x in a[1:] if x != '--全')
             施後同步([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今], 单名=_单名)
-            补接坐([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今], _单名)
         sys.exit(1 if 红 else 0)
     print(__doc__)
     sys.exit(2)

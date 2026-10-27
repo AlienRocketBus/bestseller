@@ -16,6 +16,8 @@
     确要毁稿重造者，args 加 重造:true（总编辑之裁）：放行，并记重造之时（承.py 自此⛔收旧轮）。
   ①之 journal 不见、非造章、或属他章者，落到②再判（续错 run 号即全重跑）。
   造章之认（1023 审逮）：席名合 造章 之席（执笔·、选·、合稿、盲读、逻辑审·、回写、记席）——承之 run 无执笔之席亦认。
+  ③（1027·开轮六检⑭ 移此）新派造章而其 N 已封——版本/第N章/_十一轮.json 在，或本库有「章-N」之标（本地枝或 origin 之踪）
+    → 拦（重跑已封之章即覆其稿、回执与轮记；改旧章走 改单 --施单／还账）。重造:true 亦拦（重造只为未封之章）。
   非造章之 workflow、他器一概放（其无承之路，拦之即停书）。入坏、出错 → 放（本钩只防白耗，⛔挡书）。
 用法：钩自 stdin 取 JSON；`python3 工具/续跑之守.py --自测`
 """
@@ -161,6 +163,23 @@ def _令(n, a, 末=''):
     return '`%s`%s' % (c, 末)
 
 
+def 已封之凭(n, root=None):
+    """③·⑭之移（1027）：第 n 章已封之凭——版本/第n章/_十一轮.json 在，或本库有「章-n」之标。→ 凭之语，未封 ''。
+    只读本地（档与 refs，⛔连网）：钩每派一调，零 token、毫秒之费。"""
+    r = root or ROOT
+    if os.path.exists(os.path.join(r, '版本', '第%d章' % n, '_十一轮.json')):
+        return '版本/第%d章/_十一轮.json 在' % n
+    import subprocess
+    for ref in ('refs/heads/章-%d' % n, 'refs/remotes/origin/章-%d' % n):
+        try:
+            if subprocess.run(['git', 'rev-parse', '--verify', '--quiet', ref], cwd=r,
+                              capture_output=True, timeout=10).returncode == 0:
+                return '有「章-%d」之标（%s）' % (n, ref)
+        except Exception:
+            pass
+    return ''
+
+
 def 判(入, 根=None, root=None, 收=None, 记=None):
     """→ (拦否, 由)。收(n) → 承.收 之果；记(n) → 记重造（自测注之）。"""
     if (入.get('tool_name') or '') != 'Workflow':
@@ -196,6 +215,10 @@ def 判(入, 根=None, root=None, 收=None, 记=None):
         n = int(x.get('章'))
     except (TypeError, ValueError):
         return False, ''
+    凭 = 已封之凭(n, root)
+    if 凭:
+        return True, ('⛔续跑之守（⑭之移·1027）：第%d章已封（%s）——⛔重派造章（覆其稿、回执与轮记）。'
+                      '改旧章走 `python3 工具/改单.py --立`／`--施单` 或大审之还账；该写之章见 `python3 工具/自走.py`。' % (n, 凭))
     if x.get('重造') is True:
         try:
             (记 or (lambda n: __import__('承').记重造(n)))(n)
@@ -363,6 +386,22 @@ def 自测():
         病 = lambda n: {'诸稿': [{'file': '/x/版本/第9章/起草_稿甲.md'}], '选': {'common_fatal': '料之病'}}
         拦, 由 = 判(F(), 收=病, 记=记)
         T('⑯所成之选有共病 → 拦而只指 重造（承之即复停於共病）', 拦 and '重造:true' in 由 and 'python3 工具/承.py' not in 由)
+        # ⑰（1027·开轮六检⑭ 移此）已封之章新派造章 → 拦，重造:true 亦拦；凭二：_十一轮.json、「章-N」之标（真建一库验之）
+        封根 = os.path.join(d, 'sealed')
+        os.makedirs(os.path.join(封根, '版本', '第9章'))
+        open(os.path.join(封根, '版本', '第9章', '_十一轮.json'), 'w').write('{}')
+        拦, 由 = 判(F(), root=封根, 收=lambda n: {}, 记=记)
+        拦2, _ = 判(F(重造=True), root=封根, 收=lambda n: {}, 记=记)
+        T('⑰已封之章（_十一轮.json 在）新派造章 → 拦、指改单／还账；重造:true 亦拦', 拦 and '已封' in 由 and '改单' in 由 and 拦2 and 记们 == [9])
+        标根 = os.path.join(d, 'tagged')
+        os.makedirs(标根)
+        g = lambda *a: subprocess.run(['git'] + list(a), cwd=标根, capture_output=True, text=True)
+        g('init', '-q')
+        g('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'x')
+        未标 = 判(F(), root=标根, 收=lambda n: {}, 记=记)[0]
+        g('branch', '章-9')
+        拦, 由 = 判(F(), root=标根, 收=lambda n: {}, 记=记)
+        T('⑰之二 本库有「章-9」之标 → 拦；未立标之前 → 放（旧式⑭只在开轮六检、造章前⛔跑，回灌即放）', 拦 and '章-9' in 由 and not 未标)
         env = dict(os.environ, ZM_STREAM='自测', ZM_JOURNAL_ROOT=d)
         p = subprocess.run([sys.executable, os.path.abspath(__file__)], input='{坏', capture_output=True, text=True, env=env)
         T('⑩入坏 → rc=0（⛔挡书）', p.returncode == 0)

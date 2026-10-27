@@ -862,6 +862,9 @@ def chk_fs_silence():
     import re as _r
     改 = _r.search(r'改过期者 (\d+) 根', out or '')
     尾 = ('｜改过期者 %s 根' % 改.group(1)) if 改 else ''
+    if '⛔ 改期逾二回而无裁' in out:      # ★1027 执行之审 #16：改期≥3 而无裁档、无改单点名其根与今限 → 红（⛔无声顺延）
+        m3 = _r.search(r'改期逾二回而无裁 (\d+) 根[^：]*：(\S+)', out)
+        return False, ('改期逾二回而无裁 %s 根：%s——总编辑当场裁、落裁档或改单' % (m3.group(1), m3.group(2)) if m3 else '改期逾二回而无裁')
     if '逐根俱已回话' in out:
         if '改期逾二回者' in out:
             m2 = _r.search(r'改期逾二回者 (\d+) 根', out)
@@ -948,7 +951,7 @@ def chk_day_gap():
     """日差哨（2026-09-05·机制总审·八路之跨章连贯审第1条·本坐上磁盘坐实後立·见 工具/日差哨.py）——**二线之历对不对得上。**
     ★其红在哪一行：201章「他记的是第四十四天」与她第四十四页同一日（差0）；272主93天／273暗89日之照面係她三天前（86）——**差7**；
       而其间无一器量它：日差自232之0漂至286之6，九处之变无一处出过声。
-    ★★哨只判「差有没有变」（自306起），差本身归 canon（她漏记了几日，还是二线两本历），须作者点头·回修令§五3；旧章之漂只报。
+    ★★哨只判「差有没有变」（自306起），差本身归 canon（她漏记了几日，还是二线两本历），总编辑自裁、记由入裁档（1027 第一律·自决）；旧章之漂只报。
     ★★★其限（§一⑤）：只认章首四百字内之「第N天／第N日」；无标者印?不判。"""
     out = run('日差哨', ['工具/日差哨.py', '--静'])
     if out is None:
@@ -2900,7 +2903,9 @@ def chk_zanting():
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/暂停令.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     b = _sp.run([sys.executable, '工具/暂停令.py', '--查'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0, (a.stdout.strip() + '｜' + b.stdout.strip())[:120]
+    # ★1027 执行之审 #30 #31：--查 之红（交接现状过期、入口档之旧暂停令块）入格之红；其红行先印
+    _红 = [l for l in b.stdout.split('\n') if l.startswith('⛔')]
+    return a.returncode == 0 and b.returncode == 0, ('｜'.join(_红) if _红 else (a.stdout.strip() + '｜' + b.stdout.strip()))[:240]
 
 
 def chk_erdai():
@@ -3020,10 +3025,13 @@ def chk_chaoxi():
 
 def chk_zongbian():
     """总编辑复核（2026-09-25 立·作者令「你是总话事人；规矩是死的人是活的；此机制一定要行使起来」）：
-    甲·48 小时内须有一裁（权须行使）；乙·裁「废」之规不许仍挂全测（裁须生效）。"""
+    甲·前章封版以来须有一裁（1027 执行之审 #92：按章计，⛔48 时之钟；法用册「废」之「废于」亦算）；
+    乙路（裁废而仍挂全测）1027 并入 法用之守 之所废除尽。自测须满格（1027：其自测旧未入全测）。"""
     import subprocess as _sp
+    z = _sp.run([sys.executable, '工具/总编辑复核.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/总编辑复核.py', '--查'], cwd=ROOT, capture_output=True, text=True)
-    return r.returncode == 0, ' ｜'.join(l.strip() for l in r.stdout.splitlines() if l.strip())[:300]
+    _z = (z.stdout.strip().split('\n') or [''])[-1]
+    return z.returncode == 0 and r.returncode == 0, (_z + ' ｜' + ' ｜'.join(l.strip() for l in r.stdout.splitlines() if l.strip()))[:300]
 
 
 def chk_gaidan():
@@ -3113,7 +3121,11 @@ def chk_zijinhua():
     ★头一格係旧式回灌：0924 之未上库哨旧式只量主枝，真盘报「未上库 205 笔」；
       新式先量存底枝，判「书在云端，安全」——二判确实不同。
     ★其余：挂账连两回即卡死／修好即销｜L3 器之族例2无器即红、书之族例3方红｜L1 走闸不绕。
+    ★1027（执行之审 #98 #117）：并跑 `自进化环.py --自测`（层全好即销陈账、首见逾七日而回=1 自销、卡死之印⛔「报作者」）——旧未入全测。
     """
+    _zi = run('自进化环·自测', ['工具/自进化环.py', '--自测'])
+    if _zi is None or '全通' not in _zi:
+        return False, '自进化环 --自测 未全通：%s' % ((_zi or '').strip().split('\n') or [''])[-1][:120]
     out = run('负测·自进化环', ['工具/负测_自进化环.py'])
     if out is None:
         return False, '运行失败'

@@ -110,6 +110,9 @@ jobs:
     if: needs.prepare.outputs.go == '1'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # 片红（器红亦然）即此 job 败；⛔令其败及全 workflow_call——被调之流一败，调者之 needs.gate.outputs 或空（actions/runner#2495），
+    #   advance 即见 go 空而误报「备候不成」、主枝永不进（1027 丝滑·B 验所指）。诸片之果恒落 shard-<k>，判归 advance 之 --并果（片缺、未毕即败）。
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:

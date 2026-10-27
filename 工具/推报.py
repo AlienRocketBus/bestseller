@@ -616,6 +616,8 @@ def 验乙(诸文, 钩):
             缺.append('⑫片：矩阵须 k: fromJSON(needs.prepare.outputs.ks)、fail-fast false（一片红⛔消他片）')
         if _式本(j片.get('if')) != "needs.prepare.outputs.go == '1'":
             缺.append("⑫片：片之 job 须 if: needs.prepare.outputs.go == '1'（已在／拒⛔白跑闸）")
+        if str(j片.get('continue-on-error')).lower() != 'true':
+            缺.append('⑫片：片之 job 须 continue-on-error: true（片红即 workflow_call 败而调者之 outputs 或空·actions/runner#2495——判归 --并果）')
         if not (re.search(r'git checkout[^\n]*"\$CAND"', 片跑) and re.search(r'rev-parse HEAD\)"? != "\$CAND"', 片跑)):
             缺.append('⑫片：片须检出候（"$CAND"）并验 HEAD 即候（⛔验他树）')
         if not re.search(r'工具/全测\.py --片 "\$K/\$N"[^\n]*--出 ', 片跑):
@@ -1331,6 +1333,7 @@ def 自测():
         '⛔先判拒': ('gate.yml', g.replace('HEAD -- .github/workflows)" ]', 'HEAD -- .github/xx)" ]')),
         '⛔先判已在': ('gate.yml', g.replace('[ "$MODE" = 推 ] && git merge-base --is-ancestor "$T" "origin/$MAIN"', 'false')),
         '片一红消他片': ('gate.yml', g.replace('fail-fast: false', 'fail-fast: true')),
+        '片红败及闸': ('gate.yml', g.replace('    continue-on-error: true\n', '')),
         '片⛔验其树即候': ('gate.yml', g.replace('if [ "$(git rev-parse HEAD)" != "$CAND" ]', 'if false')),
         '片果⛔always 上件': ('gate.yml', g.replace("      - uses: actions/upload-artifact@v4\n        if: always()\n        with:\n          name: shard-",
                                                    "      - uses: actions/upload-artifact@v4\n        with:\n          name: shard-")),

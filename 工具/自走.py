@@ -510,7 +510,7 @@ def 断(印=True):
 
     if 跑:
         L.append('  【判】候。第%s章之席在跑（%s 分钟前报到）。' % (ch, 分))
-        L.append('  ⛔不许抢锁、不许动盘。★候不是停：手上若有真活（作者所派、到期之欠），办之；')
+        L.append('  ⛔不许抢锁、不许动盘。★候即止：手上若已有真活（作者所派、到期之欠），办之；')
         L.append('     ⛔无则不为候而找活、⛔看进度（续跑、翻转录、ps）——结束本回合，等通知（效之律·坑㉔）。')
         L.append('  ⛔⛔而席在跑之时，一切动整个工作区的命令一律不许（律⑮）：')
         L.append('     git stash／git checkout .／git reset --hard／git clean／git add -A')

@@ -214,7 +214,9 @@ def 通之条(器):
               not any('【交之键】' in c['prompt'] for c in 收410) and len({指(c['schema']) for c in 收410 if c['schema']}) > 1))
     写411 = next(c['prompt'] for c in 收 if c['label'] == '回写')
     写410 = next(c['prompt'] for c in 收410 if c['label'] == '回写')
-    出.append(('回写之令实一字不动：411 去交之一句＝410 之令换号', 写411.rsplit('\n\n【交之键】', 1)[0] == 写410.replace('410', '411')))
+    五大 = re.match(r'【五大主义[^\n]*\n(?:\d\.[^\n]*\n){5}', 写411)      # 1027 #33：N≥411 之共令首段（五大主义五行）；410 ⛔带
+    出.append(('回写之令实一字不动：411 去首段之五大主义、去交之一句＝410 之令换号（410 ⛔带五大主义）', bool(五大)
+              and 写411[五大.end():].rsplit('\n\n【交之键】', 1)[0] == 写410.replace('410', '411') and '【五大主义' not in 写410))
     # 交空对象即补派
     def 标(空, 病='病'):
         c, r = 渲(器, 411, '中', 病, 空=空, 果=True)

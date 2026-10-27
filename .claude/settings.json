@@ -46,9 +46,7 @@
       "Bash(git show:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git merge:*)",
-      "Bash(git push -u origin claude/the-novel-review-4dtuit:*)",
-      "Bash(git push origin claude/the-novel-review-4dtuit:*)"
+      "Bash(git merge:*)"
     ],
     "deny": [
       "mcp__Claude_Code_Remote__archive_session",

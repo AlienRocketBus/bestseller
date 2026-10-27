@@ -31,7 +31,8 @@ import os, sys, re, json, glob, time, shutil, hashlib, tempfile, subprocess
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 施工表 = os.path.join('设定', '01_镇冢秘术_逐章施工与伏笔回收表.md')
 总纲 = os.path.join('设定', '02_余章之势_总纲.md')
-尾 = 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825'
+_坐 = re.sub(r'^(session_|cse_)', '', os.environ.get('CLAUDE_CODE_REMOTE_SESSION_ID', '').strip())   # 1027 执行之核：封版之提交之坐取本会话（旧写死总编辑之坐，法用#换会话 之坐异读之即空验）
+尾 = 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>' + ('\nClaude-Session: https://claude.ai/code/session_%s' % _坐 if _坐 else '')
 
 
 def 正文档(n, root=ROOT):

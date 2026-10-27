@@ -58,8 +58,8 @@ def _立沙():
     atexit.register(shutil.rmtree, _沙, True)   # ★1020 W53 验席逮：旧无 rmtree，每跑留一份约 11MB 之影盘（积 233 份、约 2.5GB）
     os.makedirs(os.path.join(_沙, '工具'), exist_ok=True)
     shutil.copytree(os.path.join(ROOT, '正文'), os.path.join(_沙, '正文'))
-    # 一坐.py：`器物点名::正文` 会去加载它
-    for _n in ('一坐.py', '器物点名.py'):
+    # ★1027：cn2i 已移入 器物点名（一坐.py 随十三轮汰），影盘只须此一器
+    for _n in ('器物点名.py',):
         _f = os.path.join(ROOT, '工具', _n)
         if os.path.exists(_f):
             shutil.copy2(_f, os.path.join(_沙, '工具', _n))

@@ -43,14 +43,27 @@ def 守器(裁文):
     return {n for n in names if os.path.exists(os.path.join(ROOT, '工具', n))}
 
 
+def 随汰(裁文):
+    """★1027：裁之退役——文中「〔随汰·<日>：所守之法 `工具/<器>` 已彻删……〕」而其器真已不在盘上 → 其器名；否则 ''。
+    ⛔借 进化链.随汰（一处判，⛔两份码）；其器仍在即⛔认（防借标关闸）。"""
+    import importlib.util as _u
+    _sp = _u.spec_from_file_location('_jhl', os.path.join(ROOT, '工具', '进化链.py'))
+    _m = _u.module_from_spec(_sp)
+    _sp.loader.exec_module(_m)
+    return _m.随汰(裁文, ROOT)
+
+
 def 查(档们=None, 在役=None):
-    """→ [(裁名, 由)]：未生效之裁。"""
+    """→ [(裁名, 由)]：未生效之裁（随汰而退役者不计）。"""
     档们 = 档们 if 档们 is not None else sorted(glob.glob(os.path.join(ROOT, '设定', '裁_*.md')))
     在役 = _在役() if 在役 is None else 在役
     坏 = []
     for f in 档们:
         名 = os.path.basename(f)
-        器 = 守器(io.open(f, encoding='utf-8', errors='replace').read())
+        _文 = io.open(f, encoding='utf-8', errors='replace').read()
+        if 随汰(_文):
+            continue                     # ★1027：所守之法已彻删、裁随之退役（⛔计未生效；其史在档）
+        器 = 守器(_文)
         if not 器:
             坏.append((名, '无一样器守它'))
             continue
@@ -112,6 +125,10 @@ def 自测():
         e = os.path.join(d, '裁_0999_假名.md'); io.open(e, 'w', encoding='utf-8').write('由 `工具/并不存在之器.py` 守。')
         R.append(('④点名不存在之器不算（⛔不许写个假名混过）',
                   查([e], 在役='并不存在之器.py') == [('裁_0999_假名.md', '无一样器守它')]))
+        g = os.path.join(d, '裁_0999_随汰.md'); io.open(g, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/并不存在之器.py` 已彻删〕')
+        h = os.path.join(d, '裁_0999_借标.md'); io.open(h, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/分量闸.py` 已彻删〕')
+        R.append(('⑤随汰（所守之器真已彻删）之裁退役、⛔计未生效', 查([g], 在役='') == []))
+        R.append(('⑥⛔借标：随汰所点之器仍在者照旧判', 查([h], 在役='') != []))
     finally:
         shutil.rmtree(d, ignore_errors=True)
     for n, o in R:

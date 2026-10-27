@@ -413,6 +413,45 @@ def 自测():
     return all(o for _, o in R)
 
 
+# ★★★★★DEBT-298A（298第12轮立·限307·於307封版之序结清；1027 自 十轮精进.py 移此——十轮精进汰）
+#   ★其伤：棘轮之「四字三现」认的是四字之窗，不是词——一句五个字的重出算两处，六个字的算三处。
+#   ★★旧式照旧管棘轮之判（一行不动）；此认词之变式只供 `--项 四字三现·认词` 另报一数，供人裁。
+#   ★★★其法：以最长可合并之串为身——凡四字之窗出现≥3次者，向左右各试长一字，长出之串仍≥3次即顶掉短的；
+#     末了去掉「已被别的串整个含住」者。**一句只算一处，不论它有几个字。**
+def rep3_by_word(body, 门=3):
+    """四字三现·认词：把重叠之窗合成最长之串，一句只算一处。返回 (处数, [串…])。"""
+    seen = {}
+    for i in range(len(body) - 3):
+        k = body[i:i + 4]
+        if re.match(r'^[\u4e00-\u9fa5]{4}$', k):
+            seen[k] = seen.get(k, 0) + 1
+    cand = {k for k, v in seen.items() if v >= 门}
+    grown = set()
+    for k in cand:
+        cur = k
+        while True:
+            better = None
+            for ch in {body[m.end():m.end() + 1] for m in re.finditer(re.escape(cur), body)}:      # 向右长一字
+                if ch and re.match(r'^[\u4e00-\u9fa5]$', ch) and body.count(cur + ch) >= 门:
+                    better = cur + ch
+                    break
+            if better is None:
+                for ch in {body[max(m.start() - 1, 0):m.start()] for m in re.finditer(re.escape(cur), body)}:   # 向左长一字
+                    if ch and re.match(r'^[\u4e00-\u9fa5]$', ch) and body.count(ch + cur) >= 门:
+                        better = ch + cur
+                        break
+            if better is None or better == cur:
+                break
+            cur = better
+        grown.add(cur)
+    最长 = sorted(grown, key=len, reverse=True)      # 去被别的串整个含住者
+    留 = []
+    for x in 最长:
+        if not any(x in y and x != y for y in 留):
+            留.append(x)
+    return len(留), sorted(留)
+
+
 if __name__ == '__main__':
     if '--自测' in sys.argv:
         sys.exit(0 if 自测() else 1)
@@ -422,7 +461,7 @@ if __name__ == '__main__':
     # ★★★★★DEBT-298A（298第12轮立·限307·於307封版之序结清）之口：
     #   `python3 工具/棘轮预检.py N --项 四字三现·认词`
     #   ★旧式（四字之窗）照旧管棘轮之判，一行不动；此口只另报一个认词之数，供人裁。
-    #   ★★其由见 `工具/十轮精进.py::rep3_by_word` 之注；其验在 `工具/负测_棘轮认词.py`。
+    #   ★★其由见本档 `rep3_by_word` 之注（1027 自 十轮精进.py 移此）。
     if '--项' in sys.argv:
         i = sys.argv.index('--项')
         项 = sys.argv[i + 1] if len(sys.argv) > i + 1 else ''
@@ -440,10 +479,7 @@ if __name__ == '__main__':
         txt = io.open(f, encoding='utf-8').read()
         body = body_of(txt)
         _h, sf = score(txt)
-        import importlib.util as _iu
-        _sp = _iu.spec_from_file_location('_tj', os.path.join(根, '工具', '十轮精进.py'))
-        _tj = _iu.module_from_spec(_sp); _sp.loader.exec_module(_tj)
-        cnt, strs = _tj.rep3_by_word(body)
+        cnt, strs = rep3_by_word(body)
         print('════ 四字三现·认词 · 第%d章 ════' % n)
         print('  其文：%s' % os.path.basename(f))
         print('  旧式（四字之窗·棘轮所judge者）：%d' % sf.get('四字串三现', -1))

@@ -158,7 +158,7 @@ def 章之坏报(n, 读=None, 标=None, 飞=None):
     import 推报
     读 = 读 or (lambda 枝: 推报.读(枝, ROOT))
     d = 读('章-%d' % int(n))
-    if not d or d.get('果') not in 推报.坏果:
+    if not 推报.坏(d):                  # 1027 坑54：败·重派係在飞（autopush 已自重派本枝）——候其新跑之报
         return []
     if 标 is None:
         r = subprocess.run(['git', 'ls-remote', 'origin', 'refs/heads/章-%d' % int(n)], cwd=ROOT, capture_output=True, text=True)
@@ -169,7 +169,7 @@ def 章之坏报(n, 读=None, 标=None, 飞=None):
     if 在飞:
         # 治枝红者不删（autopush 只删已并者）：旧治红而新治已交未毕，⛔以旧治之红早返——诸治俱有坏报方返，取其最晚者
         配 = [x for x, (_, s) in zip([读(枝) for 枝, _ in 在飞], 在飞) if x and x.get('sha') == s]
-        if len(配) < len(在飞) or any(x.get('果') not in 推报.坏果 for x in 配):
+        if len(配) < len(在飞) or any(not 推报.坏(x) for x in 配):
             return []                  # 治在飞而有未毕者（或已成待并）——候
         d = max(配, key=lambda x: str(x.get('时') or ''))
     L = 推报.报之语(d)
@@ -339,6 +339,9 @@ def 自测():
     无飞 = lambda 标: []
     拒 = 章之坏报(404, 读=lambda 枝: dict(红报, 果='拒', 因='workflow', 红=['⛔拒：改 .github/workflows']), 标='a' * 40, 飞=无飞)
     T('⑤之六 拒 → 印 --直 兜底与其由', any('推.py --直' in x for x in 拒) and any('workflow' in x for x in 拒))
+    T('⑤之六b 败·重派（1027 坑54：autopush 被拒而已自重派本枝）係在飞 → ⛔坏、照候；败·他因 → 坏',
+      章之坏报(404, 读=lambda 枝: dict(红报, 果='败', 因='重派', 红=[]), 标='a' * 40, 飞=无飞) == []
+      and bool(章之坏报(404, 读=lambda 枝: dict(红报, 果='败', 因='non-ff', 红=[]), 标='a' * 40, 飞=无飞)))
     诸报 = {'章-404': dict(红报), '治-bbbbbbbbbbbb': None}
     飞 = lambda 标: [('治-bbbbbbbbbbbb', 'b' * 40)] if 标 == 'a' * 40 else []
     候中 = 章之坏报(404, 读=lambda 枝: 诸报.get(枝), 标='a' * 40, 飞=飞)

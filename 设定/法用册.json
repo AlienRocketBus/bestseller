@@ -226,11 +226,25 @@
    "据": "00_总章.md §八.18；§二.7；设定/方法坑账.json 坑51；设定/方法账.md 1027·autopush",
    "立": 412, "起": 411, "时": "开",
    "证": [
-    {"档": ".github/workflows/autopush.yml", "含": ["'治-\\*'", "for i in 1 2 3", "推报\\.py\"? --写", "报/推/"], "示": "autopush 触 章-*／治-*、至多三试、推报.py --写 报/推/<枝>.json 与 .txt"},
+    {"档": ".github/workflows/autopush.yml", "含": ["'治-\\*'", "uses: \\./\\.github/workflows/gate\\.yml", "merge-base --is-ancestor \"\\$T\" \"origin/\\$MAIN\"", "推报\\.py --写", "报/推/"], "示": "autopush 触 章-*／治-*、分片之闸（gate.yml）、被拒而已在即止、推报.py --写 报/推/<枝>.json 与 .txt（1027 坑54：至多三试改为 API 重派）"},
     {"档": "工具/githooks/pre-push", "含": ["refs/heads/治-\\*", "推闸之果"], "示": "pre-push 所推俱暂存即免本地全测、闸之果落 推闸之果"},
     {"档": "工具/推.py", "含": "return '治-' \\+ sha\\[:12\\]", "示": "推.py 默交 治-<sha12>（--直 只兜底）"}
    ],
    "示": "autopush 一试一闸、报入 备份/报；沙盒只推暂存之枝"
+  },
+  {
+   "id": "分片之闸",
+   "名": "GitHub 分片之闸（坑54）：一候之树一闸、N 片并跑（LPT·三或四）、并判与沙盒同策；器红账落 备份/报、首见逾三章即拦；改流程先於 GitHub 演练",
+   "据": "00_总章.md §八.19；§二.7；设定/方法坑账.json 坑54",
+   "立": 412, "起": 412, "时": "开",
+   "证": [
+    {"档": ".github/workflows/gate.yml", "含": ["workflow_call", "工具/全测\\.py --片 ", "fromJSON\\(needs\\.prepare\\.outputs\\.ks\\)", "git bundle create"], "示": "备候、矩阵之片、候以 bundle 交诸片"},
+    {"档": ".github/workflows/autopush.yml", "含": ["工具/全测\\.py --并果 ", "报/器红账\\.json", "core\\.hooksPath=\"\\$RUNNER_TEMP/无钩\" push origin \"\\$CAND:refs/heads/\\$MAIN\"", "/actions/workflows/autopush\\.yml/dispatches", "存底\\.py --演章"], "示": "并判而推候、器红账落报、被拒即重派、章标真克隆"},
+    {"档": ".github/workflows/演练.yml", "含": ["uses: \\./\\.github/workflows/gate\\.yml", "--写演"], "示": "演练与 autopush 同一分片之闸、只写 报/演"},
+    {"档": "工具/全测.py", "含": ["def 推闸判\\(", "def 器红之判\\(", "def 片跑\\("], "示": "推闸同策（沙盒与 GitHub 同一 推闸判）、器红逾限即拦、片跑"},
+    {"报": "推/章-{N-1}", "果": ["成", "已在", "红"], "示": "前章之 autopush 真跑分片之闸（报带 片、候）"}
+   ],
+   "示": "分片之闸在 workflow、并判同策、器红账落报；前章之 autopush 真跑"
   },
   {
    "id": "每章一进",

@@ -11,6 +11,10 @@
   ④ 并果照原序印、留字（副本以 git status、主仓库以 _留字快照）、空跑闸、推闸——俱取 全测.py 之原函，⛔另写一份。
   验之所验係 HEAD（已提交者）；工作区若有未提交之改，印其警。
 
+  ⑤（1027 坑54）GitHub 分片之闸亦取本器：`分片`（LPT·定式）、`择片数`（三或四：多一片所省之关键路须过一片之开销）、
+     `并判`（诸片之果并而判：恰一之验、留字、空跑闸、推闸——与本机之并同一 `判果`，⛔另写）；秒表取 报/均秒.json（GitHub 实测、并判每跑更之），
+     缺即仓中之种 设定/全测均秒.json（⛔读 _器之账.json：各机不同，诸片之分即不一）。
+
 用法：
   python3 工具/全测并.py [--快] [--片 N]      # 默 N＝核数−1（至少 1）
   python3 工具/全测并.py --自测
@@ -172,43 +176,224 @@ def main():
     队 = 排([n for n in 名们 if n not in 活态], 均秒之表())
     主前 = 全测._留字快照()
     果 = 并跑(诸片, 队, 主队, quick)
-    fails = []
-    _器录 = []
-    for 名 in 名们:
-        r = 果.get(名) or [名, False, '⛔未跑（并行之驱漏之）', 0]
-        _器录.append((名, bool(r[1]), r[3], str(r[2])))
-        print('  %s %-14s %s' % ('✓' if r[1] else '✗', 名, r[2]))
-        if not r[1]:
-            fails.append(名)
-    全测._记器账(_器录, quick)
     变, 增, 失 = 全测._留字之差(主前)
     副留 = {os.path.basename(p): 副本之留字(p) for p in 诸片}
     副留 = {k: v for k, v in 副留.items() if v}
+    留 = None
     if 变 or 增 or 失 or 副留:
         if _席凭 and not 副留:
             print('  ⚠ %-14s **本次係带席而跑**：主仓库内容有变 %d｜新增 %d｜消失 %d（多半係席所写）' % ('负测留字', len(变), len(增), len(失)))
         else:
-            print('  ✗ %-14s 主仓库：变 %d｜增 %d｜失 %d %s｜副本：%s' % (
-                '负测留字', len(变), len(增), len(失), '、'.join((变 + 增 + 失)[:4]),
-                '；'.join('%s %s' % (k, '、'.join(v[:4])) for k, v in 副留.items()) or '无'))
-            fails.append('负测留字')
+            留 = '主仓库：变 %d｜增 %d｜失 %d %s｜副本：%s' % (
+                len(变), len(增), len(失), '、'.join((变 + 增 + 失)[:4]),
+                '；'.join('%s %s' % (k, '、'.join(v[:4])) for k, v in 副留.items()) or '无')
     else:
         print('  ✓ %-14s 主仓库 设定／版本／正文 跑前跑後 sha256 逐档同；%d 份副本 git status 俱净' % ('负测留字', len(诸片)))
+    rc, fails, 语, _ = 判果(名们, 果, 留, quick, 器账=True)
     墙 = time.time() - t0
-    print('  · 墙时 %.0f 秒｜诸项之秒合计 %.0f｜并之倍 %.1f' % (墙, sum(x[2] for x in _器录), sum(x[2] for x in _器录) / max(墙, 1)))
-    if len(果) < (全测.最少件数 if not quick else 8):
-        print('\n  ⛔空跑闸：本次只跑了 %d 件——并行之驱或项表有病。' % len(果))
-        return 1
-    if fails:
-        print('\n  ⛔全测未过：%s' % '、'.join(fails))
-        ok, 语 = 全测.推闸(fails)
-        print('  %s' % 语)
-        if not ok:
-            print('  【批115】不过不许推——pre-push 钩子据此拦停。')
-        return 1
-    print('\n  ✓全测通过%s（并）。' % ('（快测，未含全书检）' if quick else ''))
-    return 0
+    print('  · 墙时 %.0f 秒｜诸项之秒合计 %.0f｜并之倍 %.1f' % (墙, sum(r[3] for r in 果.values()), sum(r[3] for r in 果.values()) / max(墙, 1)))
+    return rc
 
+
+def 判果(名们, 果, 留字红, quick, 账=None, 章=None, 器账=False, 印=print):
+    """并果之判——本机之并（main）与 GitHub 之并判（并判）同此一函：照原序印、留字、空跑闸、推闸。
+    账 None：沙盒之推闸（读写本地并云端之器红账）；给出：GitHub 之判（推闸判，新账交调者落 备份/报）。
+    → (rc, fails, 推闸之语, 新账)；rc 0 过｜1 红。"""
+    import 全测
+    fails, 录 = [], []
+    for 名 in 名们:
+        r = 果.get(名) or [名, False, '⛔未跑（并行之驱漏之）', 0]
+        录.append((名, bool(r[1]), r[3], str(r[2])))
+        印('  %s %-14s %s' % ('✓' if r[1] else '✗', 名, r[2]))
+        if not r[1]:
+            fails.append(名)
+    if 器账:
+        全测._记器账(录, quick)
+    if 留字红:
+        印('  ✗ %-14s %s' % ('负测留字', 留字红))
+        fails.append('负测留字')
+    if len(果) < (全测.最少件数 if not quick else 8):
+        印('\n  ⛔空跑闸：本次只跑了 %d 件——并行之驱或项表有病。' % len(果))
+        return 1, fails or ['空跑闸'], '', 账
+    if not fails:
+        印('\n  ✓全测通过%s（并）。' % ('（快测，未含全书检）' if quick else ''))
+        if 账 is None:
+            全测.推闸([], 名们)                  # 俱绿亦更器红账：所跑之格俱销（⛔留旧首见，复红时误判逾限）
+            return 0, [], '', None
+        _, 语, 新账 = 全测.推闸判([], 账, 章 if 章 is not None else (全测._末章() or 0), 名们 if quick else None)
+        return 0, [], 语, 新账
+    印('\n  ⛔全测未过：%s' % '、'.join(fails))
+    if 账 is None:
+        ok, 语 = 全测.推闸(fails, 名们)
+        新账 = None
+    else:
+        ok, 语, 新账 = 全测.推闸判(fails, 账, 章 if 章 is not None else (全测._末章() or 0), 名们 if quick else None)
+    印('  %s' % 语)
+    if not ok:
+        印('  【批115】不过不许推——pre-push 钩子据此拦停。')
+    return 1, fails, 语, 新账
+
+
+# ═══ 片（1027 坑54·GitHub 分片之闸：autopush、演练之 shard 之阵）═══
+种秒档 = os.path.join(ROOT, '设定', '全测均秒.json')
+片开销 = 75          # 一片之起（checkout 全史、装机、取候之包、上果）约秒——多开一片计分多此一份
+片数之候 = (3, 4)
+默秒 = 30.0
+
+
+def 秒表(档=None):
+    """分片之秒表 {名: 秒}：所给之档（GitHub 之 报/均秒.json，经候之包传诸片——诸片同一档）→ 缺或坏即仓中之种。
+    ⛔读 _器之账.json（各机不同，诸片各算之分即不一）。"""
+    for p in ([档] if 档 else []) + [种秒档]:
+        try:
+            d = json.load(open(p, encoding='utf-8'))
+            if isinstance(d, dict) and d:
+                return {str(k): float(v) for k, v in d.items() if isinstance(v, (int, float))}
+        except Exception:
+            continue
+    return {}
+
+
+def 分片(名们, 秒, n):
+    """LPT：长者先（同秒依原序），逐个入当前最轻之片（同轻取号小者）——定式：同表同秒，诸片各算皆同。→ n 列，每名恰在一列。"""
+    序 = sorted(range(len(名们)), key=lambda i: (-float(秒.get(名们[i], 默秒)), i))
+    片们, 重 = [[] for _ in range(n)], [0.0] * n
+    for i in 序:
+        j = min(range(n), key=lambda x: (重[x], x))
+        片们[j].append(名们[i])
+        重[j] += float(秒.get(名们[i], 默秒))
+    return 片们
+
+
+def 片之秒(片们, 秒):
+    return [round(sum(float(秒.get(x, 默秒)) for x in p), 1) for p in 片们]
+
+
+def 择片数(名们, 秒, 候=片数之候, 开销=片开销):
+    """→ (n, {n: 关键路之秒})。自少者起：多一片所省之关键路 ≥ 一片之开销方多开（省墙时而⛔白耗计分）。"""
+    诸 = {n: max(片之秒(分片(名们, 秒, n), 秒) or [0]) + 开销 for n in 候}
+    n = 候[0]
+    for m in 候[1:]:
+        if 诸[n] - 诸[m] >= 开销:
+            n = m
+    return n, 诸
+
+
+def 表纹(名们):
+    import hashlib
+    return hashlib.sha1('\n'.join(名们).encode('utf-8')).hexdigest()[:12]
+
+
+def 读片(目):
+    """目下（递归）之诸片档 → [dict]（坏者以 {'坏': 路}）。"""
+    出 = []
+    for dp, _, fs in os.walk(目):
+        for f in sorted(fs):
+            if not f.endswith('.json'):
+                continue
+            p = os.path.join(dp, f)
+            try:
+                d = json.load(open(p, encoding='utf-8'))
+            except Exception:
+                出.append({'坏': p})
+                continue
+            if isinstance(d, dict) and '片' in d and '果' in d:
+                出.append(d)
+    return 出
+
+
+def 并判(诸片, 候=None, 账=None, 章=None, quick=False, 印=print, 名们=None):
+    """GitHub 之并判：诸片之果 → (rc, 判)。rc 0 过｜1 红（推闸同策）｜2 败（片缺、片坏、sha 不一、恰一不成——⛔以残果判）。
+    判：{果, fails, 读红, 器红, 逾, 语, 新账, 片秒, 诸秒}"""
+    import 全测
+    名们 = 名们 or [x for x, _ in 全测.诸项(quick)]
+    章 = 章 if 章 is not None else (全测._末章() or 0)
+    判 = {'果': '败', 'fails': [], '读红': [], '器红': [], '逾': [], '语': '', '新账': None, '片秒': {}, '诸秒': {}}
+    败 = []
+    坏 = [d['坏'] for d in 诸片 if '坏' in d]
+    诸片 = [d for d in 诸片 if '坏' not in d]
+    if 坏:
+        败.append('片档坏：%s' % '、'.join(坏[:4]))
+    数们 = sorted({d.get('数') for d in 诸片}, key=str)
+    号们 = sorted(d.get('片') for d in 诸片 if isinstance(d.get('片'), int))
+    if len(数们) != 1 or not isinstance(数们[0], int) or 号们 != list(range(1, 数们[0] + 1)):
+        败.append('片缺或重：得 %s（片数 %s）' % (号们, 数们))
+    sha们 = {d.get('sha') for d in 诸片}
+    if len(sha们) != 1 or (候 and sha们 != {候}):
+        败.append('诸片所验之树非候（%s ≠ 候 %s）——⛔以他树之果放行' % ('、'.join(sorted(str(x)[:12] for x in sha们)), (候 or '')[:12]))
+    if any(d.get('表') != 表纹(名们) for d in 诸片):
+        败.append('片之项表与候之树不一（表纹）')
+    if any(bool(d.get('快')) != bool(quick) for d in 诸片):
+        败.append('片之快慢与并判不一')
+    计 = {}
+    for d in 诸片:
+        for x in d.get('名们') or []:
+            计[x] = 计.get(x, 0) + 1
+    重, 漏, 外 = sorted(x for x, c in 计.items() if c > 1), [x for x in 名们 if x not in 计], sorted(x for x in 计 if x not in 名们)
+    if 重 or 漏 or 外:
+        败.append('分片恰一不成：重 %s｜漏 %s｜外 %s' % (重[:4], 漏[:4], 外[:4]))
+    果 = {}
+    for d in sorted(诸片, key=lambda x: str(x.get('片'))):
+        for r in d.get('果') or []:
+            果[r[0]] = r
+        判['片秒'][str(d.get('片'))] = d.get('秒')
+        未 = [x for x in d.get('名们') or [] if x not in 果]
+        if 未 or not d.get('毕'):
+            败.append('片 %s 未毕（逾时或崩）：未跑 %d 项 %s' % (d.get('片'), len(未), '、'.join(未[:4])))
+    if 败:
+        for x in 败:
+            印('  ⛔片闸·败：' + x)
+        判['语'] = '；'.join(败)
+        return 2, 判
+    判['诸秒'] = {k: v[3] for k, v in 果.items()}
+    留 = []
+    for d in sorted(诸片, key=lambda x: x['片']):
+        if d.get('留字') and not d.get('席凭'):
+            留.append('片%s：%s' % (d['片'], '、'.join(d['留字'][:4])))
+        elif d.get('留字'):
+            印('  ⚠ %-14s 片%s 带席（%s）：%s' % ('负测留字', d['片'], '、'.join(d['席凭']), '、'.join(d['留字'][:4])))
+    印('\n████ 全测·并判 · %d 项 · %d 片 · 候 %s ████' % (len(名们), 数们[0], (候 or next(iter(sha们)) or '')[:12]))
+    rc, fails, 语, 新账 = 判果(名们, 果, '；'.join(留) or None, quick, 账=dict(账 or {}), 章=章, 印=印)
+    读红, 器红 = 全测.分等(fails)
+    if rc != 0 and 语.startswith('✓推闸'):
+        rc = 0                                  # 只器之红而未逾限：推闸放行（与 pre-push 认「✓推闸·分等：放行」同）
+    判.update(果='过' if rc == 0 else '红', fails=fails, 读红=读红, 器红=器红, 语=语, 新账=新账, 章=章,
+             逾=[k for k in 器红 if 新账 and k in 新账 and 章 > 新账[k]['限']])
+    印('  · 诸片之秒：%s' % '、'.join('%s→%s' % kv for kv in sorted(判['片秒'].items())))
+    return rc, 判
+
+
+def 新秒表(旧, 诸秒, 名们):
+    """GitHub 实测之秒入表（指数平滑 0.7 旧＋0.3 新；只留今表之格）。"""
+    出 = {}
+    for x in 名们:
+        if x in 诸秒:
+            出[x] = round(0.7 * float(旧[x]) + 0.3 * float(诸秒[x]), 2) if x in 旧 else round(float(诸秒[x]), 2)
+        elif x in 旧:
+            出[x] = 旧[x]
+    return 出
+
+
+def 并判口(a, quick):
+    """`全测.py --并果 目 --候 sha [--账 档 --账出 档 --判 档 --秒表 档 --秒出 档]` → rc 0 过｜1 红｜2 败。"""
+    import 全测
+    def 参(k):
+        return a[a.index(k) + 1] if k in a and a.index(k) + 1 < len(a) else None
+    账 = {}
+    if 参('--账'):
+        try:
+            账 = json.load(open(参('--账'), encoding='utf-8'))
+        except Exception:
+            账 = {}
+    rc, 判 = 并判(读片(参('--并果') or '.'), 参('--候'), 全测.并账(账 if isinstance(账, dict) else {}), quick=quick)
+    if 参('--账出') and 判.get('新账') is not None:
+        json.dump(判['新账'], open(参('--账出'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+    if 参('--秒出') and 判.get('诸秒') and rc in (0, 1):
+        名们 = [x for x, _ in 全测.诸项(quick)]
+        json.dump(新秒表(秒表(参('--秒表')), 判['诸秒'], 名们), open(参('--秒出'), 'w', encoding='utf-8'), ensure_ascii=False, indent=0, sort_keys=True)
+    if 参('--判'):
+        json.dump({k: v for k, v in 判.items() if k != '新账'}, open(参('--判'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    return rc
 
 def 自测():
     R = []
@@ -240,10 +425,102 @@ def 自测():
     R.append(('⑤动态之队：诸项各跑一回（⛔漏⛔重）、主队在主仓库', sorted(次) == ['a', 'b', 'c', 'd', 'e', '主1'] and set(果) == {'a', 'b', 'c', 'd', 'e', '主1'}))
     src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     R.append(('⑥推闸、空跑闸、留字、器账俱取 全测 之原函（⛔另写）', all(x in src for x in ('全测.推闸(', '全测.最少件数', '全测._留字之差(', '全测._记器账('))))
+    R += 片之自测(名们)
     for k, ok in R:
         print('  %s %s' % ('✓' if ok else '✗', k))
-    print('  全测并·自测 %d/%d' % (sum(1 for _, o in R if o), len(R)))
-    return 0 if all(o for _, o in R) else 1
+    ok = sum(1 for _, o in R if o)
+    print('  全测并·自测 %d/%d %s' % (ok, len(R), '全通' if ok == len(R) else '未过'))
+    return 0 if ok == len(R) else 1
+
+
+def 片之自测(名们):
+    """1027 坑54：GitHub 分片之闸——分片恰一（N＝1..4）、择片数、并判之四形（俱绿／只器红／读者红／器红逾限）与败形、器红账、片跑往返。"""
+    import 全测
+    R = []
+    秒 = 秒表()
+    恰 = True
+    for n in (1, 2, 3, 4):
+        p = 分片(名们, 秒, n)
+        恰 = 恰 and len(p) == n and sorted(sum(p, [])) == sorted(名们) and len(sum(p, [])) == len(名们) and p == 分片(list(名们), dict(秒), n)
+    R.append(('⑦分片恰一：N＝1..4 诸片之并恰为全表、各格恰一、定式（再算全同）', 恰))
+    重 = 片之秒(分片(名们, 秒, 4), 秒)
+    R.append(('⑦之二 LPT 之均：最重与最轻之差 ≤ 最长一格（今 %s）' % 重, max(重) - min(重) <= max(float(秒.get(x, 默秒)) for x in 名们)))
+    R.append(('⑦之三 种表（设定/全测均秒.json）可读、所给之档坏即退种', bool(秒) and 秒表('/无此档.json') == 秒))
+    n, 诸 = 择片数(名们, 秒)
+    小 = {'甲': 100.0, '乙': 10.0, '丙': 10.0, '丁': 10.0, '戊': 10.0}
+    R.append(('⑧择片数：三或四；多一片所省 ≥ 一片之开销方取四（大格独占即取三）',
+              n in 片数之候 and (n == 4) == (诸[3] - 诸[4] >= 片开销) and 择片数(list(小), 小)[0] == 3))
+    # ⑨并判：以真表造片之果（俱绿而改其一二）
+    sha = 'c' * 40
+
+    def 造(n=3, 红=(), 留=None, 改=None):
+        诸 = []
+        for k, 我 in enumerate(分片(名们, 秒, n), 1):
+            诸.append({'片': k, '数': n, 'sha': sha, '表': 表纹(名们), '快': False, '名们': list(我),
+                       '果': [[x, x not in 红, 'ok' if x not in 红 else '坏', 1.0] for x in 我],
+                       '留字': (留 if k == 1 and 留 else []), '席凭': [], '秒': len(我), '毕': True})
+        if 改:
+            改(诸)
+        return 诸
+    读 = sorted(全测.读者可见之闸 & set(名们))[0]
+    器 = next(x for x in 名们 if x not in 全测.读者可见之闸)
+    静 = lambda *a, **k: None
+
+    def 判(诸, 账=None, 章=420):
+        return 并判(诸, sha, 账 if 账 is not None else {}, 章, 印=静, 名们=名们)
+    rc, d = 判(造())
+    R.append(('⑨并判·俱绿 → 过（rc 0）、新账空', rc == 0 and d['果'] == '过' and d['新账'] == {}))
+    rc, d = 判(造(红=(器,)), {'旧已绿之格': {'首见': 400, '末见': 401, '限': 403}})
+    R.append(('⑨之二 只器之红 → 过、入账（首见 末见 420、限 423）、已绿者销',
+              rc == 0 and d['果'] == '过' and d['器红'] == [器] and d['新账'] == {器: {'首见': 420, '末见': 420, '限': 423}}))
+    rc, d = 判(造(红=(读, 器)))
+    R.append(('⑨之三 读者可见之红 → 红（rc 1）', rc == 1 and d['果'] == '红' and d['读红'] == [读]))
+    rc, d = 判(造(红=(器,)), {器: {'首见': 416, '末见': 419, '限': 419}})
+    R.append(('⑨之四 器红逾限（首见 416、今 420）→ 红、逾、语「⛔推闸·器红逾限」、首见留旧',
+              rc == 1 and d['果'] == '红' and d['逾'] == [器] and d['语'].startswith('⛔推闸·器红逾限') and d['新账'][器]['首见'] == 416))
+    rc, d = 判(造(红=(器,)), {器: {'首见': 417}})
+    R.append(('⑨之五 器红恰在限之章（首见 417、今 420）→ 过而预警', rc == 0 and '本章即限' in d['语']))
+    rc, d = 判(造(留=['设定/x.md']))
+    R.append(('⑨之六 片之留字（无席）→ 负测留字红（读者可见）', rc == 1 and '负测留字' in d['读红']))
+    败形 = {
+        '片缺': 造(改=lambda 诸: 诸.pop()),
+        '片之树非候': 造(改=lambda 诸: 诸[1].update(sha='d' * 40)),
+        '一格二片': 造(改=lambda 诸: 诸[0]['名们'].append(诸[1]['名们'][0])),
+        '片未毕（逾时）': 造(改=lambda 诸: (诸[2].update(毕=False), 诸[2]['果'].pop())),
+        '表纹不一': 造(改=lambda 诸: 诸[0].update(表='x')),
+        '片档坏': 造(改=lambda 诸: 诸.append({'坏': '/x.json'})),
+    }
+    R.append(('⑩并判之败（%s）→ rc 2、⛔以残果判' % '、'.join(败形), all(判(v)[0] == 2 for v in 败形.values())))
+    # ⑪器红账：并账首见取早、纯判⛔写盘、快测⛔销未跑之格
+    合 = 全测.并账({'a': {'首见': 412, '限': 415}}, {'a': {'首见': 410, '末见': 411, '限': 413}, 'b': {'首见': 'x'}})
+    新, 逾 = 全测.器红之判(['a'], 414, 合, 跑过=['a', 'c'])
+    R.append(('⑪器红账：本地并云端首见取早（410）、坏笔弃；只跑数格⛔销未跑之格', 合 == {'a': {'首见': 410, '末见': 412, '限': 413}}
+              and 逾 == ['a'] and 全测.器红之判([], 414, {'b': {'首见': 1}}, 跑过=['a'])[0] == {'b': {'首见': 1}}))
+    R.append(('⑪之二 新秒表：平滑、只留今表之格', 新秒表({'a': 10, 'z': 5}, {'a': 20, 'b': 3}, ['a', 'b']) == {'a': 13.0, 'b': 3.0}))
+    # ⑫片跑往返：真 全测.片跑 跑假格三片，--并果 之口并之（账出、判、秒出）
+    原诸项, 原照 = 全测.诸项, 全测._留字快照
+    假 = [('假%d' % i, (lambda i=i: (i != 5, '第%d' % i))) for i in range(45)]
+    try:
+        全测.诸项 = lambda quick: list(假)
+        全测._留字快照 = lambda: {}
+        with tempfile.TemporaryDirectory() as t:
+            import contextlib
+            import io
+            片目_ = os.path.join(t, '片')
+            with contextlib.redirect_stdout(io.StringIO()):
+                rcs = [全测.片跑(k, 3, os.path.join(片目_, '%d.json' % k), False, '/无此档.json') for k in (1, 2, 3)]
+                json.dump({'假5': {'首见': 1}}, open(os.path.join(t, '账.json'), 'w'))
+                候 = json.load(open(os.path.join(片目_, '1.json'), encoding='utf-8'))['sha']
+                rc = 并判口(['--并果', 片目_, '--候', 候, '--账', os.path.join(t, '账.json'), '--账出', os.path.join(t, '新账.json'),
+                           '--判', os.path.join(t, '判.json'), '--秒出', os.path.join(t, '秒.json'), '--秒表', '/无此档.json'], False)
+            j = json.load(open(os.path.join(t, '判.json'), encoding='utf-8'))
+            新 = json.load(open(os.path.join(t, '新账.json'), encoding='utf-8'))
+            R.append(('⑫片跑往返：三片各落其档、并判恰一而判（假5 器红首见 1 → 逾限 → 红）、账出与秒出俱落',
+                      sorted(rcs) == [0, 0, 1] and rc == 1 and j['果'] == '红' and j['逾'] == ['假5'] and 新['假5']['首见'] == 1
+                      and sorted(json.load(open(os.path.join(t, '秒.json'), encoding='utf-8'))) == sorted(n for n, _ in 假)))
+    finally:
+        全测.诸项, 全测._留字快照 = 原诸项, 原照
+    return R
 
 
 if __name__ == '__main__':

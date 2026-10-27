@@ -11,6 +11,10 @@
 用法：
     python3 工具/全测.py            # 全跑
     python3 工具/全测.py --快        # 略过全书检（仅自检层，供频繁调用）
+    python3 工具/全测.py --只 名,名 [--出 档]                 # 只跑所列之格
+    python3 工具/全测.py --片数 [--秒表 档]                   # 1027 坑54：GitHub 分片之闸择片数（三或四）
+    python3 工具/全测.py --片 k/N --出 档 [--秒表 档]          # 其一片（LPT·诸片之并恰为全表）
+    python3 工具/全测.py --并果 目 --候 sha [--账 档 --账出 档 --判 档 --秒表 档 --秒出 档]   # 诸片之果并判（推闸同策）
 """
 import time
 import os as _o, sys as _s
@@ -4300,6 +4304,7 @@ def _冷轮逾期俱有否决记(raw):
     '负测·大审挂限',   # 1024 坑㊽：大审之限定读者可见之致命几时治——录成早於下一章之限，册一成即逾、限误则治静静拖——红即拦
     '负测·autopush',   # 1027 坑51：主枝之进係读者读得到与否；GitHub 之闸二跑而恒败、主枝只由沙盒直推——守闸之闸，红即拦
     '负测·法用之守',   # 1027 坑52：法立而囤灰——守已取之法之守被悄悄改坏，则诸法复归闲置——红即拦
+    '负测·全测并',   # 1027 坑54：GitHub 分片之闸（分片恰一、并判同策、器红账逾限即拦）——守闸之闸，红即拦
 }
 
 
@@ -4308,32 +4313,91 @@ def 分等(fails):
     return [f for f in fails if f in 读者可见之闸], [f for f in fails if f not in 读者可见之闸]
 
 
-def _器红入账(器红, 章):
+# 【1027 坑54】器红账之限方真行：旧账在 设定/器红账.json（.gitignore）——GitHub 之机每跑皆新、首见恒为本章、⛔逾限，X55「限三章治」空转。
+#   今账落 备份/报 之 报/器红账.json（GitHub 之并判读之、判毕写回）；沙盒之判（--直 之钩）读本地并云端之账（首见取早）。
+#   一格首见之後逾三章仍红（章 > 首见＋三）即拦——X55 之本意；末章（限之章）仍红即预警。
+器红之限 = 3
+器红账档 = os.path.join(ROOT, '设定', '器红账.json')
+报之器红账 = '报/器红账.json'
+
+
+def 器红之判(器红, 章, 账, 跑过=None):
+    """纯判（⛔读写盘）→ (新账, 逾限之名们)。器红者入账：首见留旧、末见＝章、限＝首见＋三；
+    已绿者销——⛔未跑之格不动其笔（跑过给出者只销其中已绿者；快测、只跑数格⛔误销他格之账）。"""
+    新 = {}
+    for k, v in (账 or {}).items():
+        if k in 器红 or (跑过 is not None and k not in 跑过):
+            新[k] = dict(v) if isinstance(v, dict) else {}
+    for k in 器红:
+        v = 新.setdefault(k, {})
+        try:
+            首 = int(v.get('首见', 章))
+        except (TypeError, ValueError):
+            首 = 章
+        v.update({'首见': min(首, 章), '末见': 章, '限': min(首, 章) + 器红之限})
+    return 新, sorted(k for k in 器红 if 章 > 新[k]['限'])
+
+
+def 并账(*诸账):
+    """诸账（本地、云端）合一：同格首见取早、末见取晚。"""
+    合 = {}
+    for 账 in 诸账:
+        for k, v in (账 or {}).items():
+            if not isinstance(v, dict):
+                continue
+            try:
+                首, 末 = int(v.get('首见')), int(v.get('末见') or v.get('首见'))
+            except (TypeError, ValueError):
+                continue
+            旧 = 合.get(k)
+            合[k] = {'首见': min(首, 旧['首见']) if 旧 else 首, '末见': max(末, 旧['末见']) if 旧 else 末}
+            合[k]['限'] = 合[k]['首见'] + 器红之限
+    return 合
+
+
+def 读器红账():
+    """沙盒之账：本地 设定/器红账.json 并云端 origin/备份/报 之 报/器红账.json（取至末一回 fetch 者；⛔此处另取——候主、推.py 之取已带之）。"""
     import json as _j
-    fp = os.path.join(ROOT, '设定', '器红账.json')
+    本 = 云 = {}
     try:
-        账 = _j.load(open(fp, encoding='utf-8'))
+        本 = _j.load(open(器红账档, encoding='utf-8'))
     except (OSError, ValueError):
-        账 = {}
-    for k in list(账):
-        if k not in 器红:
-            del 账[k]  # 绿了即销
-    for f in 器红:
-        账.setdefault(f, {'首见': 章, '限': 章 + 3})
-    try:
-        _j.dump(账, open(fp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
-    except OSError:
         pass
-    return [k for k, v in 账.items() if 章 > v['限']]
+    try:
+        r = subprocess.run(['git', 'show', 'refs/remotes/origin/备份/报:' + 报之器红账], cwd=ROOT,
+                           capture_output=True, text=True, timeout=30)
+        云 = _j.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else {}
+    except Exception:
+        pass
+    return 并账(本 if isinstance(本, dict) else {}, 云 if isinstance(云, dict) else {})
 
 
-def 推闸(fails):
+def 推闸判(fails, 账, 章, 跑过=None):
+    """★推闸之策（纯判，⛔读写盘）→ (放行否, 语, 新账)。沙盒之 推闸() 与 GitHub 之并判（全测并.并判）同此一函。
+    读者可见之红恒拦；只器之红放行而入账；器红逾限（首见之後三章仍红）即拦。"""
     读红, 器红 = 分等(fails)
+    新账, 逾 = 器红之判(器红, 章, 账, 跑过)
+    if 逾:
+        return False, ('⛔推闸·器红逾限：%s——X55「器之红限三章治」到期：逐条治（⛔删一检、⛔弱化）'
+                       % '、'.join('%s（首见第%s章、限第%s章）' % (k, 新账[k]['首见'], 新账[k]['限']) for k in 逾)), 新账
     if not 读红:
-        逾 = _器红入账(器红, _末章() or 0)
-        return True, ('✓推闸·分等：放行——只器之红 %d（%s），只报不拦，已入 设定/器红账.json 限三章治%s'
-                      % (len(器红), '、'.join(器红), ('；⚠逾限：' + '、'.join(逾)) if 逾 else ''))
-    return _推闸旧(fails)
+        将 = [k for k in 器红 if 新账[k]['限'] == 章]
+        return True, ('✓推闸·分等：放行——只器之红 %d（%s），只报不拦，已入器红账限三章治%s'
+                      % (len(器红), '、'.join(器红), ('；⚠本章即限、下章仍红即拦：' + '、'.join(将)) if 将 else '')), 新账
+    ok, 语 = _推闸旧(fails)
+    return ok, 语, 新账
+
+
+def 推闸(fails, 跑过=None):
+    """沙盒之推闸（全测、全测并之末；--直 之 pre-push 据其语）：读本地并云端之器红账、判；无读者之红方写回本地（同旧：有之即拦，账⛔动）。"""
+    import json as _j
+    ok, 语, 新账 = 推闸判(fails, 读器红账(), _末章() or 0, 跑过)
+    if not 分等(fails)[0]:
+        try:
+            _j.dump(新账, open(器红账档, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+        except OSError:
+            pass
+    return ok, 语
 
 
 def _推闸旧(fails):
@@ -4691,6 +4755,13 @@ def chk_autopush_neg():
     return _自测之项('负测·autopush', '工具/推报.py')
 
 
+def chk_quance_bing_neg():
+    """负测·全测并（1027 坑54：GitHub 分片之闸）：`工具/全测并.py --自测`——分片恰一（N＝1..4，定式）、择片数（三或四）、
+    并判之四形（俱绿过｜只器红过而入账｜读者红拦｜器红逾三章拦）与败形（片缺、树非候、一格二片、片未毕、表纹不一）、
+    器红账（本地并云端首见取早、快测⛔销未跑之格）、片跑往返（真 片跑 三片 → --并果 之口）。守闸之闸——红即拦。"""
+    return _自测之项('负测·全测并', '工具/全测并.py')
+
+
 def chk_paozhang_neg():
     """负测·跑账（1022·新机之账空、封版被拦）：`工具/跑账.py --自测`——合账（头回取早、末跑取晚、次取大）、承自云端诸存底、判红先承再判；暨旧之诸格。"""
     return _自测之项('负测·跑账', '工具/跑账.py')
@@ -5019,6 +5090,7 @@ def 诸项(quick):
         items.append(('负测·跑账', chk_paozhang_neg))       # ★1022·新机承账
         items.append(('负测·推', chk_tui_neg))              # ★1022·坑㊺ 枝正
         items.append(('负测·autopush', chk_autopush_neg))   # ★1027·坑51 GitHub 推闸真并、备份/报
+        items.append(('负测·全测并', chk_quance_bing_neg))  # ★1027·坑54 GitHub 分片之闸、器红账逾限即拦
         items.append(('负测·封版', chk_fengban_neg))        # ★1022·--前 跑质量三闸
         items.append(('负测·接棒守', chk_jiebang_neg))       # ★1022·书停：交棒後候接
         items.append(('负测·改单', chk_gaidan_neg))         # ★W60·X11：施单之守与式段之约
@@ -5064,6 +5136,46 @@ def 只跑(名们, 出, quick):
     return 0 if (not 未认 and all(x[1] for x in 果)) else 1
 
 
+def 片跑(k, n, 出, quick, 秒档=None):
+    """★1027 坑54：`--片 k/N --出 档 [--秒表 档]`——GitHub 分片之闸之一片（autopush、演练之 shard 之阵）。
+    诸项照 全测并.分片（LPT·定式：同一秒表，诸片各算皆同、每格恰在一片）取第 k 片，於候之树上串跑（同 main：留字以快照、带席之判同）；
+    每跑一格即落 出（逾时被杀亦存已跑者，并判见其缺）。⛔推闸、⛔记器账——判在并判（全测并.并判）。→ 0 俱绿｜1 有红"""
+    import json as _j
+    import 全测并 as _并
+    项 = 诸项(quick)
+    表, 名们 = dict(项), [x for x, _ in 项]
+    我 = _并.分片(名们, _并.秒表(秒档), n)[k - 1]
+    sha = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    d = {'片': k, '数': n, 'sha': sha, '表': _并.表纹(名们), '快': bool(quick), '名们': 我, '果': [], '留字': [], '席凭': [], '秒': 0, '毕': False}
+
+    def 落():
+        if 出:
+            os.makedirs(os.path.dirname(os.path.abspath(出)), exist_ok=True)
+            _j.dump(d, open(出, 'w', encoding='utf-8'), ensure_ascii=False)
+    print('\n████ 全测·片 %d/%d · %d 项（共 %d）· %s ████' % (k, n, len(我), len(名们), sha[:12]))
+    落()
+    t0, 快照 = time.time(), _留字快照()
+    for 名 in 我:
+        _t = time.time()
+        try:
+            ok, detail = 表[名]()
+        except Exception as _e:
+            ok, detail = False, '⛔器崩：%r' % (_e,)
+        d['果'].append([名, bool(ok), str(detail), round(time.time() - _t, 2)])
+        print('  %s %-14s %s' % ('✓' if ok else '✗', 名, detail))
+        落()
+    变, 增, 失 = _留字之差(快照)
+    d.update(留字=变 + 增 + 失, 席凭=_有席在跑() if (变 or 增 or 失) else [], 秒=round(time.time() - t0, 2), 毕=True)
+    落()
+    红 = [x[0] for x in d['果'] if not x[1]]
+    print('  · 片 %d/%d：%d 项、红 %d、留字 %d、%.0f 秒' % (k, n, len(我), len(红), len(d['留字']), d['秒']))
+    return 0 if not 红 and not d['留字'] else 1
+
+
+def _参(a, k, 缺=None):
+    return a[a.index(k) + 1] if k in a and a.index(k) + 1 < len(a) else 缺
+
+
 def 补浅克隆():
     """★1022 W64（403 推闸逮）：云端会话係浅克隆，负测之钉於旧笔者（负测·全测崩绿之 a73c8836、负测·含拍）git show 得空而诬红——先补全史一回（零 token；已全者不动）。"""
     try:
@@ -5074,8 +5186,26 @@ def 补浅克隆():
 
 
 def main():
-    补浅克隆()
     quick = '--快' in sys.argv
+    _a = sys.argv
+    # ★1027 坑54：GitHub 分片之闸三口——--片数（备候者择 N）、--片 k/N（一片）、--并果（诸片之果并判·推闸同策）
+    if '--片数' in _a:
+        import 全测并 as _并
+        n, 诸 = _并.择片数([x for x, _ in 诸项(quick)], _并.秒表(_参(_a, '--秒表')))
+        print(n)
+        print('  · 诸片数之关键路（秒）：%s' % '、'.join('%d→%.0f' % kv for kv in sorted(诸.items())), file=sys.stderr)
+        return 0
+    if '--并果' in _a:
+        import 全测并 as _并
+        return _并.并判口(_a, quick)
+    if '--片' in _a:
+        补浅克隆()
+        k, n = (int(x) for x in _参(_a, '--片', '').split('/'))
+        if not 1 <= k <= n:
+            print('⛔ --片 k/N：须 1≤k≤N（今 %d/%d）' % (k, n))
+            return 2
+        return 片跑(k, n, _参(_a, '--出'), quick, _参(_a, '--秒表'))
+    补浅克隆()
     if '--只' in sys.argv:
         _a = sys.argv
         _名 = [x for x in _a[_a.index('--只') + 1].split(',') if x] if _a.index('--只') + 1 < len(_a) else []
@@ -5129,11 +5259,12 @@ def main():
         return 1
     if fails:
         print('\n  ⛔全测未过：%s' % '、'.join(fails))
-        ok, 语 = 推闸(fails)
+        ok, 语 = 推闸(fails, [n for n, _ in items])
         print('  %s' % 语)
         if not ok:
             print('  【批115】不过不许推——pre-push 钩子据此拦停。')
         return 1
+    推闸([], [n for n, _ in items])          # 1027 坑54：俱绿亦更器红账——所跑之格俱销（⛔留旧首见，复红时误判逾限）
     print('\n  ✓全测通过%s。' % ('（快测，未含全书检）' if quick else ''))
     return 0
 

@@ -9,8 +9,8 @@
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 # 【1027·坑51】暂存之推⛔本地全测：git 所喂之行（<本地ref> <本地sha> <远端ref> <远端sha>；删者本地作 (delete)、sha 全 0）
-#   所推之远端 ref 俱係 refs/heads/章-*（封版之标）、治-*（治推）、备份/*（存底、心跳、报）者——章-*、治-* 一推即触 GitHub autopush，
-#   推时 pre-push 即闸、一试一回，果入 备份/报（工具/推报.py）；本地⛔再跑十余分之全测（旧：一章之树三跑闸·GitHub 之路恒输）。
+#   所推之远端 ref 俱係 refs/heads/章-*（封版之标）、治-*（治推）、备份/*（存底、心跳、报、演）者——章-*、治-* 一推即触 GitHub autopush，
+#   其分片之闸（gate.yml·一候之树一闸，1027 坑54；GitHub 之推指空钩、⛔经此钩）过即并入主枝，果入 备份/报（工具/推报.py）；本地⛔再跑十余分之全测（旧：一章之树三跑闸·GitHub 之路恒输）。
 #   ★余者（主枝，或混主枝）照旧全闸；git 所喂无一行（俱已同或已被拒，⛔一 ref 将动）亦免；手跑（无参、⛔读 stdin）照旧全闸。
 if [ $# -ge 1 ]; then
   N_ALL=0; N_STAGE=0

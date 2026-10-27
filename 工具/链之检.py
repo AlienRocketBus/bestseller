@@ -49,15 +49,38 @@ def _剔体(c):
 pgrep式 = re.compile(令首 + r'pgrep\b')
 ps管式 = re.compile(令首 + r'ps\b[^|;&\n]*\|\s*(?:grep|egrep|awk)\b([^;&\n|]*)')
 推之字 = re.compile(r'git\s+push|推\.py|全测|push|pre-push')
+# 设 ZM_SKIP_HOOK 之形：唯在令首（或 export／env 之後、他变量之设之後）方算设——`grep ZM_SKIP_HOOK= 档` 之参⛔算（复核逮·丝滑）
+设绕式 = re.compile(r'(?:^|[;&|(\n`]|\$\()\s*(?:(?:export|env|sudo|nohup|command|exec)\s+)?(?:[A-Za-z_]\w*=\S*\s+)*ZM_SKIP_HOOK=')
+
+
+def _引中去分(c):
+    """引号中之 ; & | 换行 ( ) ` 换作空格（引号之字留）——以分简单命令而⛔被引号里之分隔误切
+    （`git commit -m "治 (git push --no-verify 之禁)"` 之说明⛔切出一个 git push）。"""
+    f = lambda m: re.sub(r'[;&|\n()`]', ' ', m.group(0))
+    return re.sub(r"'[^']*'", f, re.sub(r'"(?:[^"\\]|\\.)*"', f, c))
 
 
 def _段(c):
-    """剔後之命令 → 诸简单命令之词（以 ; && || | 换行 ( ) 分）。引号之字已作 ''。"""
+    """原命令 → 诸简单命令之词（以 ; && || | & 换行 ( ) ` 分；heredoc 之体剔；引号依 shlex 解——
+    复核逮：旧以剔引之词，引号所括之靶（`git push origin "HEAD:<主枝>"`、`-c "core.hooksPath=…"`）作 '' 而漏；
+    引号中之分隔⛔切（_引中去分）；解不得者退作剔引之词；转向（2>/dev/null、> 档）⛔认作 refspec）。"""
+    import shlex
     出 = []
-    for 段 in re.split(r'&&|\|\||[;|\n()&]', c):
-        w = 段.split()
-        if w:
-            出.append(w)
+    t = re.sub(r'\d*>&\d*|&>', ' ', _引中去分(_剔体(c or '')))
+    for 段 in re.split(r'&&|\|\||[;|\n()&`]', t):
+        try:
+            w = shlex.split(段)
+        except ValueError:
+            w = _剔(段).split()
+        w2, i = [], 0
+        while i < len(w):
+            if re.fullmatch(r'\d*(?:>>?|<)', w[i]):
+                i += 2; continue
+            if re.match(r'\d*(?:>>?|<)\S', w[i]):
+                i += 1; continue
+            w2.append(w[i]); i += 1
+        if w2:
+            出.append(w2)
     return 出
 
 
@@ -104,6 +127,8 @@ def _推之靶(参):
             i += 1; continue
         位.append(v); i += 1
     if len(位) <= 1:
+        if '--tags' in 参 and not 全:
+            return [], False                 # `git push --tags`（无 refspec）只推标、⛔推当前枝（复核逮·丝滑）
         return [None], 全
     靶 = []
     for r in 位[1:]:
@@ -126,20 +151,81 @@ def _俱备份(靶):
     return bool(靶) and all(t and t.startswith('备份/') for t in 靶)
 
 
+_提交值旗 = ('-m', '-F', '-C', '-c', '-t', '--author', '--date', '--message', '--file', '--reuse-message', '--reedit-message',
+          '--fixup', '--squash', '--cleanup', '--trailer', '--template')
+
+
+def _提交无验(参):
+    """git commit 之参有 -n（--no-verify 之短式；含 -nm 之簇）否——须值之旗（-m -F -C -c -t）之值⛔认（`-m "-final"`、`-mn`＝说明「n」）。"""
+    i = 0
+    while i < len(参):
+        x = 参[i]
+        if x == '--':
+            break
+        if x in _提交值旗:
+            i += 2; continue
+        if re.fullmatch(r'-[A-Za-z]+', x):
+            跳 = False
+            for k, ch in enumerate(x[1:], 1):
+                if ch == 'n':
+                    return True
+                if ch in 'mFCct':
+                    跳 = k == len(x) - 1          # 须值之旗在簇末：其值係下一词
+                    break
+            i += 2 if 跳 else 1
+            continue
+        i += 1
+    return False
+
+
+def _解目(p, 前, 变):
+    """cd／-C 之参 → 实目（$X 以本命令前段之设代之；解不得 → None，作「在仓」判）。"""
+    p = re.sub(r'\$\{?([A-Za-z_]\w*)\}?', lambda m: 变.get(m.group(1), m.group(0)), p or '')
+    if not p or '$' in p or '`' in p:
+        return None
+    p = os.path.expanduser(p)
+    if not os.path.isabs(p):
+        if not 前:
+            return None
+        p = os.path.join(前, p)
+    return os.path.realpath(p)
+
+
+def _在仓(d):
+    根 = os.path.realpath(ROOT)
+    return d is None or d == 根 or d.startswith(根 + os.sep)
+
+
 def 绕之判(c, 当前=None, 目=ROOT):
-    """→ 拦之由或 None：①绕钩（--no-verify、ZM_SKIP_HOOK=、-c core.hooksPath=）②git push 之靶及主枝。"""
+    """→ 拦之由或 None：①绕钩（--no-verify、ZM_SKIP_HOOK=、-c core.hooksPath=）②git push 之靶及主枝。
+    只判本仓（含 .claude/worktrees 之席）之 git：命令先 cd 入他目（临时之库、副本）或 -C 他目者⛔判（复核逮：试钩之临时库、
+    E副本 之暂提交被误拦·丝滑）；目解不得者照判。"""
     剔 = _剔(c or '')
-    if re.search(r'(?:^|[\s;&|(])(?:export\s+)?ZM_SKIP_HOOK=', 剔):
+    if 设绕式.search(剔):
         return ('⛔链之检（总章§五·⛔ZM_SKIP_HOOK）：设 ZM_SKIP_HOOK 即绕 pre-push 之闸——闸红即照其红治（`python3 工具/推.py` 交 GitHub 之闸），⛔绕。')
-    for w in _段(剔):
+    变 = {}
+    目前 = os.path.realpath(目) if 目 else None
+    for w in _段(c):
+        if all(re.match(r'^[A-Za-z_]\w*=', x) for x in w):
+            变.update(x.split('=', 1) for x in w)
+            continue
+        if w[0] == 'cd':
+            目前 = _解目(w[1], 目前, 变) if len(w) > 1 and w[1] != '-' else (None if len(w) > 1 else os.path.realpath(os.path.expanduser('~')))
+            continue
         g = _git之令(w)
         if not g:
             continue
         设, 全, 子, 参 = g
+        git目 = 目前
+        for k in range(len(全) - 1):
+            if 全[k] == '-C':
+                git目 = _解目(全[k + 1], git目, 变)
+        if not _在仓(git目):
+            continue
         if any(x.startswith('ZM_SKIP_HOOK=') for x in 设):
             return '⛔链之检（总章§五·⛔ZM_SKIP_HOOK）：设 ZM_SKIP_HOOK 即绕 pre-push 之闸——⛔绕。'
         绕旗 = [全[k + 1] for k in range(len(全) - 1) if 全[k] == '-c' and re.match(r'(?i)core\.hookspath=', 全[k + 1])]
-        无验 = '--no-verify' in 参 or (子 == 'commit' and any(re.fullmatch(r'-[A-Za-z]*n[A-Za-z]*', x) and not x.startswith('--') for x in 参))
+        无验 = '--no-verify' in 参 or (子 == 'commit' and _提交无验(参))
         if 子 == 'push':
             靶, 全推 = _推之靶(参)
             if (绕旗 or 无验) and not (_俱备份(靶) and not 全推):
@@ -147,7 +233,7 @@ def 绕之判(c, 当前=None, 目=ROOT):
                         '照闸之红治，再 `python3 工具/推.py`（交 GitHub）。' % ' '.join(w)[:120])
             当 = None
             if None in 靶 or 'HEAD' in 靶:
-                当 = 当前 if 当前 is not None else _当前枝(目)
+                当 = 当前 if 当前 is not None else _当前枝(git目 or 目)      # 先 cd／-C 入某席之 worktree 者取其枝
             及主 = 全推 or any(t == 主枝 or (t in (None, 'HEAD') and 当 == 主枝) for t in 靶)
             if 及主:
                 return ('⛔链之检（写者唯一·坑51／53）：「%s」——Bash 之 git push 其靶及主枝 %s。主枝唯 GitHub autopush 一写者：'
@@ -167,8 +253,9 @@ def 等推之判(c):
     if pgrep式.search(剔):
         return ('⛔链之检（坑⑤·三踩：pgrep 认不着汉字名之进程、又认中本命令自身）：等推一律 `python3 工具/推.py --等`（flock，推者一放即返）'
                 '或 `python3 工具/推.py --候 <sha>`（候 GitHub 并入主枝）；⛔pgrep、⛔sleep 环轮询（坑⑮）。')
-    for 行 in _剔体(c or '').split('\n'):
-        # 剔後之行有 ps|grep 之形（⛔认话里之字）；其所 grep 之字或在引号中——取原行验之
+    for 行 in re.split(r'&&|\|\||(?<![>&])&(?![&>])|[;\n]', _引中去分(_剔体(c or ''))):
+        # 剔後之简单管道有 ps|grep 之形（⛔认话里之字）；其所 grep 之字或在引号中——取本管道之原文验之
+        #   （复核逮：旧以整行验，`ps aux | grep node && python3 工具/推.py --等` 之後令亦被认作所 grep 之字而误拦）
         if ps管式.search(_剔(行)) and 推之字.search(行):
             return ('⛔链之检（坑⑤）：以 `ps … | grep` 猜推送／全测之进程——等推一律 `python3 工具/推.py --等｜--候 <sha>`（flock）；⛔猜进程。')
     return None
@@ -245,7 +332,8 @@ def 自测():
     T('git push origin HEAD:claude/the-novel-review-4dtuit', True)
     T('git push -u origin claude/the-novel-review-4dtuit', True)
     T('git push origin +HEAD:refs/heads/claude/the-novel-review-4dtuit', True)
-    T('cd /x && git push --all origin', True)
+    T('cd %s && git push --all origin' % ROOT, True)                                 # （复核：旧以 /x 为占位；他仓之推今⛔判，改指本仓）
+    T('git push --all origin', True)
     T('git push', True, 当前=主枝)
     T('git push origin', True, 当前=主枝)
     T('git push', False, 当前='zh/B')
@@ -257,6 +345,39 @@ def 自测():
     T('git push -u origin zh/B', False, 当前='zh/B')
     T("git commit -m 'git push origin claude/the-novel-review-4dtuit 之禁'", False)
     T('python3 工具/推.py --直', False)                                                 # 审计之例外在 python 内（⛔经此钩）
+    # ★1027 复核所逮之误拦（丝滑）：ps|grep 之後令含「推」字、grep 之参含「ZM_SKIP_HOOK=」、只推标 → 放；真形照拦
+    T('ps aux | grep node && python3 工具/推.py --等', False)
+    T('ps -ef | grep python; echo push', False)
+    T('ps aux | grep "a;b" | grep -v x; python3 工具/推.py --等', False)
+    T('ps aux | grep "git push" && echo x', True)
+    T('grep -n ZM_SKIP_HOOK= 工具/githooks/pre-push', False)
+    T('A=1 ZM_SKIP_HOOK=1 python3 工具/推.py', True)
+    T('env ZM_SKIP_HOOK=1 git push origin HEAD:refs/heads/治-x', True)
+    T('git push --tags', False, 当前=主枝)
+    T('git push origin --tags', False, 当前=主枝)
+    T('git push --follow-tags', True, 当前=主枝)
+    # 复核逮：引号所括之靶与旗（旧剔作 '' 而漏）→ 拦；引号里之说明、须值之旗之值、转向 ⛔认作旗或 refspec
+    T('git push origin "HEAD:%s"' % 主枝, True)
+    T('git -c "core.hooksPath=/dev/null" commit -m x', True)
+    T('git push origin "HEAD:refs/heads/治-x"', False, 当前=主枝)
+    T('git commit -m "-final 之改"', False)
+    T('git commit -am "修 -n 之误"', False)
+    T('git commit -mn', False)
+    T('git commit -nam x', True)
+    T('git push origin 2>/dev/null', True, 当前=主枝)
+    T('git push origin HEAD:refs/heads/治-x 2>&1 | tail -3', False, 当前=主枝)
+    T("git commit -m \"$(cat <<'EOF'\n说明：git push origin %s --no-verify\nEOF\n)\"" % 主枝, False)
+    # 复核逮（回放诸转录）：他仓（临时之库、副本）之 git ⛔判；本仓、worktree 之席、解不得之目照判
+    T('D=/tmp/x/envt; rm -rf "$D"; mkdir -p "$D"; cd "$D"; git init -q c; cd c; git -c core.hooksPath=h push -q ../o.git HEAD:refs/heads/x', False)
+    T('S=/tmp/x/E副本; cd $S && git add -A; git -c user.name=t commit -qm "副本" --no-verify', False)
+    T('git -C /tmp/x commit --no-verify -m x', False)
+    T('cd %s && git commit --no-verify -m x' % ROOT, True)
+    T('cd %s/.claude/worktrees/wf_x && git push --no-verify origin HEAD:refs/heads/治-x' % ROOT, True)
+    T('cd $UNSET && git commit --no-verify -m x', True)
+    T('cd /tmp/x && cd %s && git push origin HEAD:%s' % (ROOT, 主枝), True)
+    T('git commit -m "治 (git push --no-verify 之禁)"', False)
+    T('echo "例 (git push origin %s)"; git commit -m \'说明 (git commit -n)\'' % 主枝, False)
+    T('x=$(git push origin HEAD:%s)' % 主枝, True)
     print('链之检·自测 %d/%d' % (ok, 共))
     # 主枝之名与 推.py、推报 同（⛔另起尺）
     try:

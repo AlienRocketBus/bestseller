@@ -198,12 +198,45 @@ def _文(参, root=None):
         return ''
 
 
-_引键式 = re.compile(r'''(?:^|[{,\s])(['"])([^'"\n]{1,80})\1\s*:\s*\{\s*type\s*:''')
+_引键式 = re.compile(r'''(?:^|[{,\s])(['"])([^'"\n]{1,80})\1\s*:\s*\{\s*['"]?type['"]?\s*:''')
 _合键 = re.compile(r'[A-Za-z0-9_.\-]{1,64}')
+_属性起 = re.compile(r'''(?:^|[^\w$])(['"]?)properties\1\s*:\s*\{''')
+
+
+def _属性之键(文):
+    """诸 `properties: {…}`（或 JSON 之 "properties": {…}）一层之键（复核逮：旧只认「键: {type:」之紧接形——
+    JSON 之式 `"席法": {"type": "string"}`、description 在 type 之前者俱漏）。串里之 ; , : { } ⛔认作结构。"""
+    出 = []
+    for m in _属性起.finditer(文):
+        i, 深, 期 = m.end(), 1, True
+        while i < len(文) and 深 > 0:
+            ch = 文[i]
+            if ch in '\'"`':
+                j = i + 1
+                while j < len(文) and 文[j] != ch:
+                    j += 2 if 文[j] == '\\' else 1
+                if 深 == 1 and 期 and re.match(r'\s*:', 文[j + 1:j + 40]):
+                    出.append(文[i + 1:j]); 期 = False
+                i = j + 1
+                continue
+            if ch in '{[(':
+                深 += 1
+            elif ch in '}])':
+                深 -= 1
+            elif ch == ',' and 深 == 1:
+                期 = True
+            elif 深 == 1 and 期 and not ch.isspace():
+                mm = re.match(r'''([^\s:,{}\[\]()'"`]+)\s*:''', 文[i:i + 120])
+                期 = False
+                if mm:
+                    出.append(mm.group(1)); i += mm.end()
+                    continue
+            i += 1
+    return 出
 
 
 def schema之坏(文):
-    """④坑⑩㉛：schema 键非 ASCII 者（复用 席法.查一 之甲路，并认引号之键）→ [键]。"""
+    """④坑⑩㉛：schema 键非 ASCII 者（复用 席法.查一 之甲路，并认引号之键、JSON 之式、properties 一层诸键）→ [键]。"""
     if not 文 or 'type' not in 文:
         return []
     try:
@@ -212,6 +245,7 @@ def schema之坏(文):
     except Exception:
         坏 = [k for k in re.findall(r'([^\s:,{}\'"`]+)\s*:\s*\{\s*type:', 文) if not _合键.fullmatch(k)]
     坏 += [m.group(2) for m in _引键式.finditer(文) if not _合键.fullmatch(m.group(2))]
+    坏 += [k for k in _属性之键(文) if not _合键.fullmatch(k)]
     return sorted(set(坏))
 
 
@@ -494,6 +528,13 @@ def 自测():
         T('⑱之二 引号之键（"席 法"）→ 拦；ASCII 之键、值与令之汉字 → 放',
           判(内W("const s = {schema: {type: 'object', properties: {\"判\": {type: 'string', description: '汉字'}}}}", {'W': 'W99'}), root=账根)[0]
           and not 判(内W(好sc + "\n// 令：你是审席，判其「席法」", {'W': 'W99'}), root=账根)[0])
+        # 复核逮：JSON 之式（"type" 带引号）、description 在 type 之前、嵌套之 properties → 俱拦；ASCII 之键而值与 description 含汉字冒号 → 放
+        T('⑱之四 JSON 之式与 description 在前、嵌套之 properties 之汉字键 → 拦；ASCII 之键 → 放',
+          判(内W('const s = {"schema": {"type": "object", "properties": {"席法": {"type": "string"}}}}', {'W': 'W99'}), root=账根)[0]
+          and 判(内W("const s = {schema: {type: 'object', properties: {判: {description: '甲: 乙', type: 'string'}}}}", {'W': 'W99'}), root=账根)[0]
+          and 判(内W("const s = {schema: {type: 'object', properties: {items: {type: 'array', items: {type: 'object', properties: {说明: {type: 'string'}}}}}}}", {'W': 'W99'}), root=账根)[0]
+          and not 判(内W("const s = {schema: {type: 'object', properties: {verdict: {description: '判: 甲, 乙', type: 'string', enum: ['甲', '乙']}, "
+                        "items: {type: 'array', items: {type: 'object', properties: {desc: {type: 'string'}}}}}}}", {'W': 'W99'}), root=账根)[0])
         坏档 = os.path.join(d, '坏.js')
         open(坏档, 'w', encoding='utf-8').write(坏sc)
         T('⑱之三 scriptPath 之档有非 ASCII 之键 → 拦；今仓 工具/席/*.js 俱放（⛔误拦）',

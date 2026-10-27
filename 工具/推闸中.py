@@ -71,12 +71,14 @@ def 触管(入):
     return ''
 
 
+# 参之词⛔越 ; & | 等分隔（复核逮：旧以 \S+ 越 && 而认後令之「.」「-f」「--hard」——`git add 档 && ls .`、`git clean -n && rm -f x` 误中）
+_词 = r'(?:[^\s;&|]+\s+)*'
 整区之令 = re.compile(r'\bgit\s+(?:-C\s+\S+\s+)?(?:'
                      r'stash(?!\s+(?:list|show)\b)|'
                      r'checkout\s+(?:--\s+)?\.(?=\s|$|;|&|\|)|'
-                     r'reset\s+(?:\S+\s+)*--hard\b|'
-                     r'clean\s+(?:\S+\s+)*-[a-zA-Z]*f|'
-                     r'add\s+(?:\S+\s+)*(?:-A|--all|\.)(?=\s|$|;|&|\|))')
+                     r'reset\s+' + _词 + r'--hard\b|'
+                     r'clean\s+' + _词 + r'-[a-zA-Z]*f|'
+                     r'add\s+' + _词 + r'(?:-A|--all|\.)(?=\s|$|;|&|\|))')
 
 
 def _剔引(c):
@@ -166,7 +168,10 @@ def 自测():
     T('⑦之三 席在跑而只动明路径、只读 → 放：git add 档、checkout -- 档、stash list、clean -n、status',
       not any(判(Bc(c), lambda: None, 跑)[0] for c in ('git add 工具/甲.py 设定/乙.json', 'git checkout -- 工具/甲.py', 'git stash list',
                                                      'git stash show -p', 'git clean -n', 'git status', 'git checkout -B zh/B abc',
-                                                     'git commit -m "git add -A 之禁"', "echo 'git reset --hard'")))
+                                                     'git commit -m "git add -A 之禁"', "echo 'git reset --hard'",
+                                                     # 复核逮：参越 && 而认後令之字 → 放
+                                                     'git add 设定/x.md && git commit -m "a" && ls .', 'git add 工具/a.py; ls -la .',
+                                                     'git clean -n && rm -f /tmp/x', 'git reset HEAD 工具/a.py && echo --hard')))
     T('⑦之四 席在跑而令先 cd 入 worktree、或钩之 cwd 在 worktree → 放',
       not 判(Bc('cd %s/.claude/worktrees/wf_x && git add -A' % ROOT), lambda: None, 跑)[0]
       and not 判(Bc('git add -A', cwd=os.path.join(ROOT, '.claude', 'worktrees', 'wf_x')), lambda: None, 跑)[0]

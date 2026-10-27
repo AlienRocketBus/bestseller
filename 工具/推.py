@@ -613,6 +613,18 @@ def 自测():
     共 += 1; ok += (len(_费) == 1 and 'wf_bbbbbbbb-002' in _费[0] and 'wf_cccccccc-003' not in _费[0] and 'wf_aaaaaaaa-001' not in _费[0]
                     and 'python3 工具/费审.py --记 wf_bbbbbbbb-002' in _费[0] and 费账之检(_f, 流目='') == [] and 费账之检(_u) == [])
     _sh.rmtree(_f, ignore_errors=True)
+    # ㉑（1027 复核·坑⑤ #4「其格入读者可见之闸」）推之诸守·链之检（等推⛔pgrep／ps|grep、⛔绕 pre-push、写者唯一之 Bash 直推主枝）：
+    #   其自测旧只在「费审」之格（器红级·红不拦推）——⑤之守（推.py、链之检.py）之格係 负测·推，故於此并验之
+    try:
+        import io as _io, contextlib as _cl, 链之检 as _链
+        with _cl.redirect_stdout(_io.StringIO()):
+            _链好 = _链.自测()
+        _链拦 = bool(_链.判('while pgrep -f "git push" >/dev/null; do sleep 30; done', '某枝')) and bool(_链.判('git push origin HEAD:' + 枝, '某枝'))
+        _链放 = not _链.判('python3 工具/推.py --等', '某枝') and not _链.判('git push origin HEAD:refs/heads/治-abc', 枝)
+    except Exception as e:
+        print('  ✗ 链之检 读不出：%s' % e)
+        _链好 = _链拦 = _链放 = False
+    共 += 1; ok += (_链好 and _链拦 and _链放)
     print('推·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' ⛔未过'))
     return ok == 共
 

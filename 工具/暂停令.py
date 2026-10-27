@@ -167,6 +167,21 @@ def 许(件, root=ROOT):
     return any(x.get('件') == 件 and not x.get('用') for x in d.get('例外', []))
 
 
+def 许跑(件, root=ROOT):
+    """★1027 W75 实踩（丝滑）：`工作流账.py --开` 开件即销其例外，段序之守随後判「已用」而拦其 Workflow——一个例外两处消费、
+    开得了件而派不出庭。今：例外未用 → 许；已用（开件所销）而工作流账其件「进行」→ 许（本件之 Workflow 与其补派）；件已成或不在 → ⛔。"""
+    if 许(件, root):
+        return True
+    d = 读令(root) or {}
+    if not any(x.get('件') == 件 and x.get('用') for x in d.get('例外', [])):
+        return False
+    try:
+        账 = json.load(open(os.path.join(root, '设定', '工作流账.json'), encoding='utf-8'))
+        return any(x.get('id') == 件 and x.get('状态') == '进行' for x in 账.get('件', []))
+    except Exception:
+        return False
+
+
 def 例外(件, 言, root=ROOT):
     d = 读令(root)
     if not d or d.get('解'):
@@ -276,6 +291,11 @@ def 自测():
             e1 = 例外('W9', '随便', t); e2 = 例外('W9', '作者令：此件可开', t)
         a1 = 许('W9', t); a2 = 许('W8', t); 销('W9', t); a3 = 许('W9', t)
         共 += 1; ok += (e1 is False and e2 is True and a1 and not a2 and not a3 and 在(t)[0] is True)   # 例外只许其件、用即销、令仍在
+        # 1027 W75 实踩：--开 销例外後，其件「进行」之 Workflow 仍许（许跑）；件已成、或无例外之件 → ⛔
+        _账 = lambda 状: json.dump({'件': [{'id': 'W9', '状态': 状}, {'id': 'W8', '状态': '进行'}]}, open(os.path.join(t, '设定', '工作流账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        _账('进行'); b1 = 许跑('W9', t); b2 = 许跑('W8', t)
+        _账('已成'); b3 = 许跑('W9', t)
+        共 += 1; ok += (b1 is True and b2 is False and b3 is False)
         # 1023 待：大审之册至第 N 章成之前不在（诸器照常），成即在；解之即不在
         w({'立': 'x', '令': '作者令：审完即停', '据': '设定/交.md:2', '解': None, '待': {'大审至': 410}})
         p7 = os.path.join(t, '设定', '大审_至第407章.md')

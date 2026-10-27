@@ -37,10 +37,11 @@ try:
     import _账
 except Exception:
     pass
-import os, sys, fcntl, subprocess, time, tempfile
+import os, sys, fcntl, subprocess, time, tempfile, glob, json, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 枝 = 'claude/the-novel-review-4dtuit'
+re_号 = re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
 
 
 def _git目录(root):
@@ -109,8 +110,86 @@ def _记(root, s):
           ('方法坑账', ['方法坑账.py', '--验']), ('剧情庭之关', ['剧情庭之关.py'])]
 
 
+覆写之界 = 0.8          # 坑⑱：已入 git 之档一推删其八成以上之行而换新者
+覆写之小 = 30           # 原档不足三十行者⛔判（小档之整改常事·⛔误拦）
+覆写之域 = ('工具/', '设定/', '.claude/', '.github/')
+覆写之免 = ('设定/全书记忆/', '设定/进化链.md', '阅读器/')     # 器生之档（同步、重生）⛔判
+
+
+def 覆写之检(root=ROOT, 基=None):
+    """★1027 坑⑱（#41·旧计「pre-commit 添整份覆写之检」——今 pre-push 免暂存之推，并入速检）：
+    自 origin/<主枝> 与 HEAD 之分叉点以来，已入 git 之档（工具、设定、.claude、.github、仓根之 .md）删行 ≥ 八成、增行 ≥ 删行之半，
+    而其间诸提交之说明无「覆写：」→ 红（立新器不先查同名、整份覆了旧器）。取不到基（新机未取）⛔判。→ [红之行]"""
+    基 = 基 or 'refs/remotes/origin/' + 枝
+    mb = _跑(['git', 'merge-base', 基, 'HEAD'], root).stdout.strip()
+    if not mb:
+        return []
+    说 = _跑(['git', 'log', '--format=%B', mb + '..HEAD'], root).stdout
+    if '覆写：' in 说 or '覆写:' in 说:
+        return []
+    出 = []
+    for l in _跑(['git', '-c', 'core.quotepath=off', 'diff', '--numstat', mb, 'HEAD'], root).stdout.split('\n'):
+        p = l.split('\t')
+        if len(p) != 3 or not p[0].isdigit() or not p[1].isdigit():
+            continue
+        增, 删, 路 = int(p[0]), int(p[1]), p[2]
+        if not (路.startswith(覆写之域) or ('/' not in 路 and 路.endswith('.md'))) or 路.startswith(覆写之免):
+            continue
+        r = _跑(['git', 'cat-file', '-p', '%s:%s' % (mb, 路)], root)
+        if r.returncode != 0:
+            continue                                   # 新档（基无之）⛔判
+        原 = r.stdout.count('\n')
+        if 原 >= 覆写之小 and 删 >= 覆写之界 * 原 and 增 >= 删 / 2:
+            出.append('%s（原 %d 行，删 %d、增 %d）' % (路, 原, 删, 增))
+    if 出:
+        return ['  ✗ 覆写之检（坑⑱）：%s——整份覆了旧档？先 git ls-files 查同名、复原後改名；确要覆写者，提交说明写「覆写：<由>」' % '；'.join(出)[:300]]
+    return []
+
+
+def _会话之流目():
+    sid = os.environ.get('CLAUDE_CODE_SESSION_ID') or ''
+    if not re_号.fullmatch(sid):
+        return None
+    for d in glob.glob(os.path.join(os.path.expanduser('~/.claude/projects'), '*', sid, 'subagents', 'workflows')):
+        return d
+    return None
+
+
+def 费账之检(root=ROOT, 流目=None, 今=None):
+    """★1027（#40② #47·坑⑮复踩）：本会话已毕之 Run（journal 有 result；诸席俱收而其目二分无写，或三十分无写）不在 设定/费账.json → 红，
+    印 `费审.py --记 <Run>`（容器一换，journal 即没，费账永缺）。无费账（非本仓）、无本会话之流目（GitHub 之机）⛔判。→ [红之行]"""
+    p = os.path.join(root, '设定', '费账.json')
+    流目 = 流目 if 流目 is not None else _会话之流目()
+    if not 流目 or not os.path.exists(p):
+        return []
+    try:
+        键们 = {x.get('键') for x in json.load(open(p, encoding='utf-8')).get('行') or []}
+    except Exception:
+        return ['  ✗ 费账之检：设定/费账.json 读不出']
+    今 = 今 or time.time()
+    缺 = []
+    for jf in sorted(glob.glob(os.path.join(流目, 'wf_*', 'journal.jsonl'))):
+        rid = os.path.basename(os.path.dirname(jf))
+        起 = 果 = 败 = 0
+        try:
+            for l in open(jf, encoding='utf-8', errors='replace'):
+                t = (json.loads(l) or {}).get('type') if l.strip().startswith('{') else None
+                起 += t == 'started'; 果 += t == 'result'; 败 += t == 'failed'
+            新 = max(os.path.getmtime(os.path.join(os.path.dirname(jf), x)) for x in os.listdir(os.path.dirname(jf)))
+        except (OSError, ValueError):
+            continue
+        已毕 = 果 > 0 and ((起 <= 果 + 败 and 今 - 新 >= 120) or 今 - 新 > 1800)
+        if 已毕 and rid not in 键们:
+            缺.append(rid)
+    if 缺:
+        return ['  ✗ 费账之检（坑⑮）：本会话已毕之 Run 未入费账 %d：%s——逐个跑 %s' % (
+            len(缺), '、'.join(缺), '；'.join('python3 工具/费审.py --记 %s' % r for r in 缺[:4]))]
+    return []
+
+
 def 速检(root=ROOT):
-    """→ [红之行]。全测之中最常拦推而只须数秒者——先跑；全测仍是终审（⛔以此代之）。"""
+    """→ [红之行]。全测之中最常拦推而只须数秒者——先跑；全测仍是终审（⛔以此代之）。
+    ★1027：并验 覆写之检（坑⑱）、费账之检（坑⑮：本会话已毕之 Run 俱入费账）。"""
     红 = []
     for 名, a in 速检之器:
         f = os.path.join(root, '工具', a[0])
@@ -123,6 +202,11 @@ def 速检(root=ROOT):
         if r.returncode != 0:
             末 = [l for l in ((r.stdout or '') + (r.stderr or '')).split('\n') if l.strip()][-1:] or ['']
             红.append('  ✗ %s：%s' % (名, 末[0].strip()[:200]))
+    for 检 in (覆写之检, 费账之检):
+        try:
+            红 += 检(root)
+        except Exception as e:
+            红.append('  ✗ %s 判不出：%s' % (检.__name__, str(e)[:120]))
     return 红
 
 
@@ -489,6 +573,58 @@ def 自测():
     共 += 1; ok += (bool(_t) and _rc == 0 and _钟[0] == 0 and _取(_c) is True)
     import shutil as _sh
     _sh.rmtree(_r, ignore_errors=True); _sh.rmtree(_c, ignore_errors=True)
+    # ⑲（1027 坑⑱·#41）覆写之检：已入 git 之档一推删八成而换新、说明无「覆写：」→ 红；小改、新档、说明带「覆写：」、器生之档 → 放
+    _w = tempfile.mkdtemp()
+    _g2 = lambda *a: subprocess.run(['git'] + list(a), cwd=_w, capture_output=True, text=True, env=_e)
+    os.makedirs(os.path.join(_w, '工具')); os.makedirs(os.path.join(_w, '设定', '全书记忆'))
+    _旧 = ''.join('旧行 %d\n' % i for i in range(60))
+    open(os.path.join(_w, '工具', '坑账.py'), 'w', encoding='utf-8').write(_旧)
+    open(os.path.join(_w, '工具', '乙.py'), 'w', encoding='utf-8').write(_旧)
+    open(os.path.join(_w, '设定', '全书记忆', '剧情链.md'), 'w', encoding='utf-8').write(_旧)
+    _g2('init', '-q', '-b', 枝); _g2('add', '-A'); _g2('commit', '-q', '-m', '基')
+    _g2('update-ref', 'refs/remotes/origin/' + 枝, 'HEAD')
+    open(os.path.join(_w, '工具', '乙.py'), 'w', encoding='utf-8').write(_旧.replace('旧行 3\n', '改行\n'))
+    open(os.path.join(_w, '工具', '丙.py'), 'w', encoding='utf-8').write(''.join('新 %d\n' % i for i in range(80)))
+    open(os.path.join(_w, '设定', '全书记忆', '剧情链.md'), 'w', encoding='utf-8').write(''.join('重生 %d\n' % i for i in range(60)))
+    _g2('add', '-A'); _g2('commit', '-q', '-m', '小改、新档、器生之档')
+    _放 = 覆写之检(_w)
+    open(os.path.join(_w, '工具', '坑账.py'), 'w', encoding='utf-8').write(''.join('方法坑账 %d\n' % i for i in range(70)))
+    _g2('add', '-A'); _g2('commit', '-q', '-m', '立方法坑账')
+    _红 = 覆写之检(_w)
+    _g2('commit', '-q', '--allow-empty', '-m', '覆写：坑账.py 旧器已改名 写作坑账.py，此处係有意重立')
+    _有由 = 覆写之检(_w)
+    _sh.rmtree(_w, ignore_errors=True)
+    共 += 1; ok += (_放 == [] and len(_红) == 1 and '工具/坑账.py' in _红[0] and '覆写：' in _红[0] and _有由 == [] and 覆写之检(_u) == [])
+    # ⑳（1027 #40② #47·坑⑮）费账之检：本会话已毕之 Run 未入费账 → 红、印 费审 --记；在跑之 Run、已记者、无流目 → 放
+    _f = tempfile.mkdtemp()
+    os.makedirs(os.path.join(_f, '设定'))
+    json.dump({'行': [{'键': 'wf_aaaaaaaa-001'}]}, open(os.path.join(_f, '设定', '费账.json'), 'w', encoding='utf-8'))
+    _流 = os.path.join(_f, 'wf')
+    def _j(rid, 行, 旧=True):
+        d = os.path.join(_流, rid); os.makedirs(d)
+        open(os.path.join(d, 'journal.jsonl'), 'w').write(''.join(json.dumps({'type': t}) + '\n' for t in 行))
+        if 旧:
+            os.utime(os.path.join(d, 'journal.jsonl'), (time.time() - 600, time.time() - 600))
+    _j('wf_aaaaaaaa-001', ['launched', 'started', 'result'])                 # 已记
+    _j('wf_bbbbbbbb-002', ['launched', 'started', 'started', 'result', 'failed'])   # 已毕而未记 → 红
+    _j('wf_cccccccc-003', ['launched', 'started', 'started', 'result'], 旧=False)    # 在跑 → 放
+    _j('wf_dddddddd-004', ['launched', 'started'])                           # 无果 → 放
+    _费 = 费账之检(_f, 流目=_流)
+    共 += 1; ok += (len(_费) == 1 and 'wf_bbbbbbbb-002' in _费[0] and 'wf_cccccccc-003' not in _费[0] and 'wf_aaaaaaaa-001' not in _费[0]
+                    and 'python3 工具/费审.py --记 wf_bbbbbbbb-002' in _费[0] and 费账之检(_f, 流目='') == [] and 费账之检(_u) == [])
+    _sh.rmtree(_f, ignore_errors=True)
+    # ㉑（1027 复核·坑⑤ #4「其格入读者可见之闸」）推之诸守·链之检（等推⛔pgrep／ps|grep、⛔绕 pre-push、写者唯一之 Bash 直推主枝）：
+    #   其自测旧只在「费审」之格（器红级·红不拦推）——⑤之守（推.py、链之检.py）之格係 负测·推，故於此并验之
+    try:
+        import io as _io, contextlib as _cl, 链之检 as _链
+        with _cl.redirect_stdout(_io.StringIO()):
+            _链好 = _链.自测()
+        _链拦 = bool(_链.判('while pgrep -f "git push" >/dev/null; do sleep 30; done', '某枝')) and bool(_链.判('git push origin HEAD:' + 枝, '某枝'))
+        _链放 = not _链.判('python3 工具/推.py --等', '某枝') and not _链.判('git push origin HEAD:refs/heads/治-abc', 枝)
+    except Exception as e:
+        print('  ✗ 链之检 读不出：%s' % e)
+        _链好 = _链拦 = _链放 = False
+    共 += 1; ok += (_链好 and _链拦 and _链放)
     print('推·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' ⛔未过'))
     return ok == 共
 

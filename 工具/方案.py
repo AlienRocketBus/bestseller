@@ -17,6 +17,9 @@
   - 无      （或：- <何事未确证>；试：<怎么小样实测>）
   ## 合计
   - 时：…；费：$…；据：…
+  ## 坑之检          （1027 起·W75 起之方案须有：逐坑写本法如何排除——坑㉛㊱）
+  - ⑤ 等推用 推.py --等；⑰ pipefail；㊱ 改尺：消费者：grep -rn '<函名>' 工具/ → 工具/甲.py、工具/乙.py
+    凡称改一把尺（取章、取镜、取线、计数之法……）者，须有「消费者：grep …」一行并列其档（坑㊱：一义跨器而漏其消费者）。
 
 用法：
   python3 工具/方案.py --模板 W19 题      # 写 设定/方案/W19.md 之模板（已在则⛔覆）
@@ -106,11 +109,41 @@ def 验文(文):
     return 坏
 
 
+坑之检之起 = 75          # 1027 立（坑㉛㊱·#42）：W75 起之方案须有「## 坑之检」；W74 以前之方案係史（⛔逼旧档补行）
+改尺式 = re.compile(r'(?<![不无⛔未])(?:改|换|动)[^\n，。；|]{0,16}?(?:之)?(?:尺|计数之法|计数|取章|取镜|取线|取拍|取号)')
+消费者式 = re.compile(r'消费者\s*[:：]\s*`?\s*grep\b[^\n]*')
+
+
+def 坑之检之坏(文):
+    """→ [坏]：须「## 坑之检」一节（非空）；逐环凡称改一把尺者，坑之检须有「消费者：grep …」一行且列其档（工具/…）。
+    只认逐环（本法所做之事）——坑之检里述坑㊱之文⛔认作改尺（⛔误拦）。"""
+    节文 = 节(文, '坑之检')
+    if 节文 is None or not 节文.strip():
+        return ['无「## 坑之检」一节（W%d 起·坑㉛㊱：逐坑写本法如何排除——踩过的坑⛔在新法里再现）' % 坑之检之起]
+    坏 = []
+    m = 改尺式.search(节(文, '逐环') or '')
+    if m:
+        行 = 消费者式.findall(节文)
+        if not 行:
+            坏.append('称改一把尺（「%s」）而坑之检无「消费者：grep -rn \'<函名>\' 工具/」一行（坑㊱）' % m.group(0)[:30])
+        elif not re.search(r'工具/\S+\.(?:py|js)', 节文):
+            坏.append('坑之检之「消费者」未列其档（grep 之果：工具/…）——坑㊱')
+    return 坏
+
+
+def _号(W):
+    m = re.fullmatch(r'W(\d+)', str(W))
+    return int(m.group(1)) if m else 0
+
+
 def 验(W, root=ROOT):
     p = os.path.join(root, 目录, '%s.md' % W)
     if not os.path.exists(p):
         return False, ['无方案：%s（先 `python3 工具/方案.py --模板 %s 题`，逐环确证了再开）' % (os.path.relpath(p, root), W)]
-    坏 = 验文(open(p, encoding='utf-8').read())
+    文 = open(p, encoding='utf-8').read()
+    坏 = 验文(文)
+    if _号(W) >= 坑之检之起:
+        坏 += 坑之检之坏(文)
     return not 坏, 坏
 
 
@@ -132,6 +165,10 @@ def 验(W, root=ROOT):
 ## 合计
 
 - 时：（数 分）；费：$（数）；据：（费账之键或试）
+
+## 坑之检
+
+- （逐坑写本法如何排除：`python3 工具/方法坑账.py --查`；凡改一把尺者，写「消费者：grep -rn '<函名>' 工具/ → 工具/…」）
 """
 
 
@@ -178,6 +215,27 @@ def 自测():
     共 += 1; ok += any('前定之验' in x for x in 验文(新))                       # 新法无前定之验即红
     新2 = 新 + '\n## 前定之验\n- 基线：W8 之实｜数：行家之分｜胜：≥+2｜不胜即退回旧法\n'
     共 += 1; ok += not any('前定之验' in x for x in 验文(新2))                  # 写足即过
+    # ★1027（坑㉛㊱·#42）：W75 起之方案须「## 坑之检」；称改一把尺者须「消费者：grep …」且列其档；W74 以前免（史）
+    t2 = tempfile.mkdtemp()
+    try:
+        os.makedirs(os.path.join(t2, 目录))
+        w = lambda W, s: open(os.path.join(t2, 目录, W + '.md'), 'w', encoding='utf-8').write(s)
+        w('W74', 好); w('W75', 好)
+        a74, a75 = 验('W74', t2), 验('W75', t2)
+        检 = '\n## 坑之检\n- ⑤ 等推用 推.py --等；⑰ pipefail\n'
+        w('W75', 好 + 检)
+        b75 = 验('W75', t2)[0]
+        尺 = 好.replace('| 1 | 对拍 |', '| 1 | 改取章之尺（章号之取） |')
+        w('W76', 尺 + 检)
+        c76 = 验('W76', t2)
+        w('W76', 尺 + 检 + "- ㊱ 改尺：消费者：grep -rn '取章' 工具/ → 工具/封版.py、工具/段料.py\n")
+        d76 = 验('W76', t2)[0]
+        w('W77', 好.replace('| 1 | 对拍 |', '| 1 | 不改尺，只加一格 |') + 检)
+        e77 = 验('W77', t2)[0]
+    finally:
+        shutil.rmtree(t2)
+    共 += 1; ok += (a74[0] is True and a75[0] is False and any('坑之检' in x for x in a75[1]) and b75 is True)   # 回灌：W75 无坑之检即红；旧案免
+    共 += 1; ok += (c76[0] is False and any('消费者' in x for x in c76[1]) and d76 is True and e77 is True)       # 改尺无消费者即红；「不改尺」⛔误拦
     print('方案·自测 %d/%d' % (ok, 共))
     return ok == 共
 

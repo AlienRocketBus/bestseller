@@ -1,5 +1,5 @@
 #!/bin/sh
-# 【批115】双绿方推之闸。【批122】绕行须留痕:ZM_SKIP_HOOK 不许无痕。
+# 【批115】双绿方推之闸。【1027】⛔绕行（旧之绕行之支已删，见下）。
 # 【X55·1021】推闸分等(见 工具/全测.py 之「推闸」):读者可见之闸红即拦;只器之红放行而入器红账(本地并 备份/报;1027 坑54:首见逾三章仍红即拦)。
 #   ⛔1027 汰旧之跑轮档(回执未交而放结构性之红)——随十三轮、冷眼轮去,其放行之支亦去。
 ROOT="$(git rev-parse --show-toplevel)"
@@ -26,16 +26,7 @@ if [ $# -ge 1 ]; then
     exit 0
   fi
 fi
-if [ "$ZM_SKIP_HOOK" = "1" ]; then
-  printf '%s | 绕行 | %s | %s\n' "$(date '+%Y-%m-%d %H:%M')" "${ZM_STREAM:-?}" "$(git log -1 --pretty=%s | cut -c1-90)" >> 设定/绕行审计.log
-  N=$(grep -c '绕行' 设定/绕行审计.log 2>/dev/null || echo 0)
-  echo "⚠ pre-push 已被 ZM_SKIP_HOOK 绕行(累计第 $N 次)——已写入 设定/绕行审计.log,须于回执记因。"
-  if [ "$N" -ge 40 ]; then
-    echo "⛔ 绕行已累计 $N 次(>=40)。绕行成了常态即闸已失效——须先把全测修绿,或由作者明令提高此限。"
-    exit 1
-  fi
-  exit 0
-fi
+# 【1027·线B·#77 #83】⛔绕闸：旧之绕行之支（设一环境变量即放行、记绕行审计）已删——总章§五⛔绕；Bash 之绕由 工具/链之检.py 拦（PreToolUse）。
 # 【1022·推闸中】全测之中写 设定／版本／正文 即令「负测留字」红而拦推（1022 实踩）：起时记 pid，PreToolUse 钩（工具/推闸中.py）见之即拦其写；毕即删
 GD="$(git rev-parse --git-common-dir)"; case "$GD" in /*) ;; *) GD="$ROOT/$GD" ;; esac
 echo $$ > "$GD/推闸中.pid"; trap 'rm -f "$GD/推闸中.pid"' EXIT
@@ -56,6 +47,6 @@ if echo "$OUT" | grep -q '✓推闸·分等：放行'; then
   echo 绿 > "$GUO_F"
   exit 0
 fi
-echo "⛔ 全测未过,推送已拦停。修好再推,或 ZM_SKIP_HOOK=1 绕行并记因(绕行会留痕计数)。"
+echo "⛔ 全测未过,推送已拦停。照其红治、提交,再 python3 工具/推.py(交 GitHub 之闸)——⛔绕闸。"
 echo 红 > "$GUO_F"
 exit 1

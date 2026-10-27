@@ -89,7 +89,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*(archive|interrupt|create)_session",
+        "matcher": "mcp__.*(archive|interrupt|create|get)_session|mcp__.*list_sessions",
         "hooks": [
           {
             "type": "command",
@@ -135,13 +135,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{ python3 /home/user/the-novel/工具/席在跑吗.py --守书之坐 2>/dev/null ; } || { cd /home/user/the-novel && cat 00_总章.md && python3 工具/费哨.py --章 2>/dev/null | head -8 && echo '── 升级链末五 ──' && grep '^|' 设定/方法账.md | tail -5 | cut -c1-160 ; }"
+            "command": "{ python3 /home/user/the-novel/工具/席在跑吗.py --守书之坐 2>/dev/null ; } || { cd /home/user/the-novel && cat 00_总章.md && { timeout 30 python3 工具/法用之守.py --报 --首 2>/dev/null | head -6 ; true ; } && python3 工具/费哨.py --章 2>/dev/null | head -8 && echo '── 升级链末五 ──' && grep '^|' 设定/方法账.md | tail -5 | cut -c1-160 ; }"
           }
         ]
       }
     ]
   },
-  "_说明_链": "1013 立（坑⑰复踩之守）：PreToolUse 钩，主环之 Bash 命令有「python3 工具/X.py … | … && 下一步」而无 pipefail 者拦——管道之後之 && 判的是 tail 之码，工具败了下一步照跑。见 工具/链之检.py 之头注。",
+  "_说明_链": "1013 立（坑⑰复踩之守）：PreToolUse 钩，主环之 Bash 命令有「python3 工具/X.py … | … && 下一步」而无 pipefail 者拦——管道之後之 && 判的是 tail 之码，工具败了下一步照跑。1027 扩（执行之核·线B）：等推以 pgrep／ps|grep 猜进程（坑⑤）、--no-verify／ZM_SKIP_HOOK=／-c core.hooksPath= 之绕钩（总章§五；refspec 俱 备份/* 者放）、Bash 之 git push 靶主枝（写者唯一；推.py --直 在 python 内，不经此钩）俱拦。见 工具/链之检.py 之头注。",
+  "_说明_写者": "1027 删预授直推主枝之二条（写者唯一：主枝唯 GitHub autopush 写；兜底唯 python3 工具/推.py --直）。会话开头之钩於印总章之後印 法用之守 --报 --首（一行之要；无其旗亦⛔崩）。会话之守之钩并挂 get_session、list_sessions：本回首真人之言以【派】起者只照参调一回 create_session。",
   "subagentPromptCacheTtl": "1h",
   "_说明_缓存": "1014 立（作者令「省钱不许碰质量，省下的钱全扔回造」·坑㉘）：子席与工作流诸席之提示缓存改一时档（官方：code.claude.com/docs/en/prompt-caching「Choose the TTL yourself」、workflows「Prompt caching in a fan-out」；v2.1.242+）。其由：执笔 effort max 之长思一回逾五分钟即缓存过期、整份上下文重写；以 384、385 之真转录逐回推算，一时档（写价 2× 而免重写）省输入侧 20—29%（每章 $5.5—11）；⛔动 effort、⛔动料。",
   "_说明_预授": "1021 作者明令「我明确要求你在 .claude/settings.json 的 permissions.allow 里，加入写书流程常用命令的允许规则」：一章流程之常令（自走、心跳、封版、存底、推、复盘诸器与本枝之 git）逐条预授，会话照流程走⛔再候作者确认；流程之外之举仍由平台之检判，⛔绕。",

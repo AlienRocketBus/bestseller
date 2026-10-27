@@ -204,10 +204,51 @@ def 派查(章, 参, 封=None, 主=None, 治=None):
     return False, ''
 
 
-def 判(入, 转录读=新查, 锁读=锁之主, 我=None, 查=None):
+派之记 = '【派】'
+查之器 = ('get_session', 'list_sessions')
+
+
+def 本回首言(转录):
+    """转录（jsonl）之末一真人之言（本回之首：非 tool_result、非 isMeta、非 <…> 之系统之注）→ 其文（无则 ''）。"""
+    言 = ''
+    try:
+        with open(转录, encoding='utf-8') as f:
+            for l in f:
+                if '"user"' not in l:
+                    continue
+                try:
+                    d = json.loads(l)
+                except Exception:
+                    continue
+                if d.get('type') != 'user' or d.get('isMeta'):
+                    continue
+                c = (d.get('message') or {}).get('content')
+                if isinstance(c, list):
+                    if any(isinstance(x, dict) and x.get('type') == 'tool_result' for x in c):
+                        continue
+                    c = '\n'.join(x.get('text', '') for x in c if isinstance(x, dict) and x.get('type') == 'text')
+                if isinstance(c, str) and c.strip() and not c.lstrip().startswith('<'):
+                    言 = c
+    except Exception:
+        return ''
+    return 言
+
+
+def 判(入, 转录读=新查, 锁读=锁之主, 我=None, 查=None, 首言=None):
     """纯判：回 (拦?, 由)。"""
     名 = 器名(入.get('tool_name'))
     参 = 入.get('tool_input') or {}
+    if 名 in 查之器:
+        # ★1027 #136（派之一呼）：总编辑被【派】唤醒，只照其参调一回 create_session——⛔list／get（每调重发整个上下文·虹吸）；
+        #   打断前五分内之 get_session（②）不在此等回里。读不出转录即放（⛔挡事）。
+        try:
+            言 = (首言 or 本回首言)(入.get('transcript_path') or '')
+        except Exception:
+            言 = ''
+        if 言.lstrip().startswith(派之记):
+            return True, ('⛔会话之守（派之一呼·1027）：本回係【派】所唤——只照【派】所带之参调一回 create_session（参⛔手拟），'
+                          '⛔%s（每调重发整个上下文）。其拦由会话之守自判（锁、已封、前章入主），⛔先查。' % 名)
+        return False, ''
     if 名 in 禁:
         return True, ('⛔会话之守：归档会话一律禁（1021·402 之失：凭旧状归档正在封版之会话，其机被收，五时半之稿全没）。'
                       '闲会话之机平台自收，归档零益；要它停，先 get_session 看实时之状，再 send 一令请其存底收尾。')
@@ -283,6 +324,24 @@ def 自测():
         T('①归档一律拦（%s）' % 前[:9], 判({'tool_name': 前 + 'archive_session', 'tool_input': {'session_id': 'session_x'}}, 锁读=无锁)[0])
     T('①之二 unarchive ⛔误拦', not 判({'tool_name': 'mcp__claude-code-remote__unarchive_session'}, 锁读=无锁)[0])
     T('①之三 get_session、list_sessions 放', not any(判({'tool_name': 'mcp__X__' + n}, 锁读=无锁)[0] for n in ('get_session', 'list_sessions', 'send_later')))
+    # ★1027 #136 派之一呼：本回首真人之言以【派】起 → list／get 拒；他回（作者之问、无转录）→ 放
+    with tempfile.TemporaryDirectory() as d0:
+        p0 = os.path.join(d0, 't.jsonl')
+        def 迹(*诸):
+            with open(p0, 'w', encoding='utf-8') as f:
+                for 类, c in 诸:
+                    f.write(json.dumps({'type': 类, 'message': {'role': 类, 'content': c}}, ensure_ascii=False) + '\n')
+        查 = lambda n: 判({'tool_name': 'mcp__Claude_Code_Remote__' + n, 'transcript_path': p0}, 锁读=无锁)
+        迹(('user', '看看 405 之会话怎么样了'), ('assistant', [{'type': 'text', 'text': 'x'}]), ('user', '【派】第411章：照此参调一回 create_session……'),
+           ('assistant', [{'type': 'tool_use', 'name': 'x'}]), ('user', [{'type': 'tool_result', 'content': 'ok'}]))
+        T('⑫【派】之回（首言以【派】起；其後之 tool_result ⛔算人言）→ get_session、list_sessions 拒', 查('get_session')[0] and 查('list_sessions')[0])
+        T('⑫之二 【派】之回：create_session 照判（⛔为此拒）', not 判({'tool_name': 'mcp__X__create_session', 'transcript_path': p0, 'tool_input': {}},
+                                                                锁读=无锁, 我='M')[0])
+        迹(('user', '【派】第410章……'), ('assistant', [{'type': 'text', 'text': 'x'}]), ('user', '411 那一坐怎么样了？'))
+        T('⑫之三 前回係【派】、本回係作者之问 → 放（反例·⛔误拦）', not 查('get_session')[0])
+        迹(('user', [{'type': 'text', 'text': '【派】第411章'}]), ('user', '<task-notification>x</task-notification>'))
+        T('⑫之四 系统之注（<…>）⛔算人言：首言仍【派】→ 拒；转录缺 → 放', 查('list_sessions')[0]
+          and not 判({'tool_name': 'mcp__X__get_session', 'transcript_path': '/无/此'}, 锁读=无锁)[0])
     with tempfile.TemporaryDirectory() as d:
         p = os.path.join(d, 't.jsonl')
         now = time.time()
@@ -411,6 +470,10 @@ def 自测():
              if '会话之守' in h.get('command', '') and re.search(e.get('matcher', '^$'), 'mcp__claude-code-remote__archive_session')
              and re.search(e.get('matcher', '^$'), 'mcp__Claude_Code_Remote__create_session')]
         T('⑤之二 PreToolUse 钩挂本器、matcher 两写俱中', bool(钩))
+        钩2 = [e for e in (s.get('hooks') or {}).get('PreToolUse', []) for h in e.get('hooks', []) if '会话之守' in h.get('command', '')]
+        T('⑤之三 matcher 并中 get_session、list_sessions（派之一呼·1027）；⛔中他器（send_message）',
+          bool(钩2) and all(re.fullmatch(钩2[0]['matcher'], 'mcp__Claude_Code_Remote__' + n) for n in ('get_session', 'list_sessions', 'create_session'))
+          and not re.fullmatch(钩2[0]['matcher'], 'mcp__Claude_Code_Remote__send_message'))
     except Exception as e:
         T('⑤settings 读不出：%s' % e, False)
     globals()['停读'], globals()['立停读'] = _真停, _真立
@@ -426,11 +489,14 @@ def 自测():
 if __name__ == '__main__':
     if '--自测' in sys.argv[1:]:
         sys.exit(0 if 自测() else 1)
+    入 = None
     try:
         入 = json.load(sys.stdin)
         拦, 由 = 判(入)
     except Exception as e:
         拦, 由 = True, '⛔会话之守：钩入读不出（%s）——fail closed' % e
+        if isinstance(入, dict) and 器名(入.get('tool_name')) in 查之器:
+            拦 = False                    # 查之器（get／list）出错⛔挡（只省 token 之守，非安全之闸）
     if 拦:
         print(由, file=sys.stderr)
         sys.exit(2)

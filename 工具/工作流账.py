@@ -42,6 +42,10 @@ def 核件(件, root=ROOT):
             n = len([x for x in glob.glob(os.path.join(d, '*')) if os.path.isfile(x)]) if os.path.isdir(d) else 0
             if n < p.get('至少', 1):
                 缺.append('%s 只 %d 档（须 ≥%d）' % (p['目录'], n, p.get('至少', 1)))
+        if '档' in p and (p.get('汰') or '').strip():      # ★1027：产出後经总编辑裁汰（法用册「废」带去证）——档须真不在，在即红（⛔借标免查）
+            if os.path.exists(os.path.join(root, p['档'])):
+                缺.append('%s 标汰而档仍在' % p['档'])
+            continue
         if '档' in p:
             f = os.path.join(root, p['档'])
             if not os.path.exists(f):
@@ -382,6 +386,13 @@ def 自测():
         共 += 1; ok += (len(查(t)) == 1 and '收束' in 查(t)[0])           # 截断 → 红
         open(os.path.join(t, '设定', '甲.md'), 'a').write('\n## 总判\n完')
         共 += 1; ok += (查(t) == [])
+        账['件'][0]['产出'].append({'档': '工具/丙.py', '说明': '已汰之器', '汰': '1027·法用册「废」'})
+        json.dump(账, open(os.path.join(t, 账档), 'w'), ensure_ascii=False)
+        共 += 1; ok += (查(t) == [])                                       # ★1027 标汰而档真不在 → 放
+        os.makedirs(os.path.join(t, '工具'), exist_ok=True); open(os.path.join(t, '工具', '丙.py'), 'w').write('x')
+        共 += 1; ok += (len(查(t)) == 1 and '标汰而档仍在' in 查(t)[0])      # 标汰而档仍在 → 红（⛔借标免查）
+        os.remove(os.path.join(t, '工具', '丙.py')); 账['件'][0]['产出'].pop()
+        json.dump(账, open(os.path.join(t, 账档), 'w'), ensure_ascii=False)
         账['件'][0]['状态'] = '进行'; 账['件'][0]['产出'] = [{'档': '设定/乙.md', '收束': '毕'}]
         json.dump(账, open(os.path.join(t, 账档), 'w'), ensure_ascii=False)
         共 += 1; ok += (标('A', '已成', t) is False)                         # 未成拒标

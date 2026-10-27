@@ -2952,11 +2952,9 @@ def chk_zhangliao():
     d = _sp.run([sys.executable, '工具/记料.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     e = _sp.run([sys.executable, '工具/剧情链.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     f = _sp.run([sys.executable, '工具/剧情链.py', '--验'], cwd=ROOT, capture_output=True, text=True)
-    # ★1015 并验 人物料（W34：一人之五处汇一档，人物之审之席一回读毕）——作者令「每个角色都要独特、⛔反智」
-    g = _sp.run([sys.executable, '工具/人物料.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     # ★1015 并验 人物链（每人之链、每两人之关系，自章记零 token 并；封版重并）
     h = _sp.run([sys.executable, '工具/人物链.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    return all(x.returncode == 0 for x in (a, b, c, d, e, f, g, h)), '｜'.join(x.stdout.strip().split('\n')[-1][:40] for x in (a, b, c, d, e, f, g, h))
+    return all(x.returncode == 0 for x in (a, b, c, d, e, f, h)), '｜'.join(x.stdout.strip().split('\n')[-1][:40] for x in (a, b, c, d, e, f, h))
 
 
 def chk_duizhang_yushai():
@@ -3640,16 +3638,6 @@ def chk_seat_lint_neg():
     return ('全通' in out), _测数(out, '7') + ' 全通（旧局回灌：中文 schema 键与未转义之 `python3 皆照旧判红）'
 
 
-def chk_health_neg():
-    """负测·机制体检（0909 立·作者令「时不时看一看老机制还有没有用」）。
-    ★本器只报不拦（「它还有没有用」判不死，令§十三②），故全测只验其负测——
-      **验的是它自己没瞎**：三路跑得动、名单当场自源头读、必读之册里的令不入乙路（立器当日之假红）。"""
-    out = run('负测·机制体检', ['工具/机制体检.py', '--自测'])
-    if out is None:
-        return False, '负测崩'
-    return ('全通' in out), _测数(out, '9') + ' 全通（含立器当日之假红：坑①—④住在必读之册，不许报成无人读）'
-
-
 def chk_real_round_neg():
     """负测·真轮凭轮记（2026-09-08·改 _rounds_full 之同日负测·令§六③）。
     ★所守者三样：①只跑三轮之旧局回灌须照旧判红；②有节无实文（一行「已完成」）须判红；
@@ -3941,7 +3929,6 @@ def 诸项(quick):
         items.append(('负测·爆窗', chk_burst_window_neg))
         items.append(('席法', chk_seat_lint))
         items.append(('负测·席法', chk_seat_lint_neg))
-        items.append(('负测·机制体检', chk_health_neg))
         items.append(('负测·真轮凭轮记', chk_real_round_neg))
         items.append(('囤灰闸', chk_dust))
         items.append(('负测·囤灰闸', chk_dust_neg))

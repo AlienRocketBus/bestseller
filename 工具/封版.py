@@ -16,7 +16,7 @@
   python3 工具/封版.py --自测         # 以已封版之 380 之真料核诸数（与其锁定行亲核之数逐个同）
 次序之据：开轮六检於第十一轮之前跑（旧⑭「封版之章不得再跑十轮」1027 汰——其防移 续跑之守：已封之 N ⛔再派造章）。
 一章之序（1027 A2·Variant S）：记席毕 → `--前 --红` 绿 → `复盘.py W … --简` 与交接现状（写而⛔另提交）→ `--後`——
-  封版#N 一提交载回执、记席诸档、复盘、交接；其末 `存底 --标` 推「章-N」即触 GitHub autopush（推时即闸、绿即并入主枝、果入 备份/报）；
+  封版#N 一提交载回执、记席诸档、复盘、交接；其末 `存底 --标` 推「章-N」即触 GitHub autopush（分片而闸、绿即并入主枝、果入 备份/报）；
   沙盒⛔跑全闸、⛔推主枝；跑毕主环 `python3 工具/接棒守.py --候主 N`（run_in_background、零 token：主枝含即快进返 0、坏报即返其红——
   红者照其行治、提交、`推.py`（交「治-<sha>」）；`推.py --直` 只作审计之兜底：报「拒」或 GitHub 停摆）。
 """
@@ -589,7 +589,7 @@ def 活态之报(n, root=ROOT):
 def 封毕之语(n):
     """封毕之下一步（1027 坑51·A2）：章-N 已触 GitHub autopush（一章唯此一推）——主环只候（零 token），⛔直推主枝、⛔沙盒再跑全闸。"""
     return ('✓ 封版毕（封版#%d 一提交、「章-%d」一推）。下一步（主环）：python3 工具/接棒守.py --候主 %d（run_in_background；零 token——'
-            '「章-%d」已触 GitHub autopush，推时即闸、绿即并入主枝；坏报即早返其红：红者照其行治、提交、推.py 交治枝；逾限印 workflow_dispatch 之兜底）'
+            '「章-%d」已触 GitHub autopush，分片而闸、绿即并入主枝；坏报即早返其红：红者照其行治、提交、推.py 交治枝；逾限印 workflow_dispatch 之兜底）'
             % (n, n, n, n))
 
 
@@ -1048,15 +1048,25 @@ def 自测():
             _r1 = 後(400, 演=True, root=_目1)
     finally:
         shutil.rmtree(_目1, ignore_errors=True)
-    _记1, _原跑1 = [], globals()['跑']
+    # 并否以栅（二者俱至方过；相继即首者候五秒而栅破）判、⛔以墙钟（GitHub 之机忙时秒数抖，读者可见之格⛔可抖·1027 丝滑）
+    import threading as _th1
+    _记1, _原跑1, _栅1 = [], globals()['跑'], _th1.Barrier(2, timeout=5)
+
+    def _假跑1(a, root=ROOT, 限=900):
+        _记1.append((time.time(), a[-1]))
+        try:
+            _栅1.wait()
+        except _th1.BrokenBarrierError:
+            return 1, '相继', 0
+        return 0, '', 0.3
     try:
-        globals()['跑'] = lambda a, root=ROOT, 限=900: (_记1.append((time.time(), a[-1])), time.sleep(0.3), (0, '', 0.3))[-1]
-        _t1 = time.time(); _f1 = 并起([('医生', ['x', '--doctor']), ('末章硬闸', ['x', '410'])], ROOT, 隔=0.05)
-        _rr1 = [_f1[k].result() for k in ('医生', '末章硬闸')]; _秒1 = time.time() - _t1
+        globals()['跑'] = _假跑1
+        _f1 = 并起([('医生', ['x', '--doctor']), ('末章硬闸', ['x', '410'])], ROOT, 隔=0.05)
+        _rr1 = [_f1[k].result() for k in ('医生', '末章硬闸')]
     finally:
         globals()['跑'] = _原跑1
     共 += 1; ok += (_r1 is False and '⛔ --演 只於 --试' in _o1.getvalue() and '阶段之数' not in _o1.getvalue()
-                   and _rr1 == [(0, '', 0.3)] * 2 and _秒1 < 0.55 and len(_记1) == 2
+                   and _rr1 == [(0, '', 0.3)] * 2 and len(_记1) == 2
                    and 诸闸之判('  ✓ 囤灰闸     rc=0     1s  ✓\n  ⛔ 医生       rc=1    37s  ERROR=1\n  ⚠ 活态之报   rc=1     4s  x\nx  ✓ 甲 rc=0\n  ✓ 净重对表 --补   rc=0     0s  共改 0 行。')
                    == {'囤灰闸': '✓', '医生': '⛔', '活态之报': '⚠', '净重对表 --补': '✓'}
                    and _封之笔之局())
@@ -1085,25 +1095,31 @@ def 自测():
     _印 = '  ✗第9章《甲》:\n      第十一轮未过:未见 x\n  末章硬闸·第9章：失败'
     共 += 1; ok += 末章之病(_印) == [] and 末章之病(_印.replace('      第十一轮', '      5+逗:甲\n      第十一轮')) == ['5+逗:甲']   # ★1020：--前 免第十一轮（其归 --後）、余病照报
     # ★W60 X39：--前 之二慢检并起——①二检之命令与旧一字不差（检察官 --末章 N 以 subprocess.run、开轮六检 N --静 以 跑）；
-    #   ②并起：二检各耗 0.4 秒，候齐二果之时 < 相继之时（0.9 秒）；③前() 只经 慢检并起 起此二检（⛔另跑一回、⛔删一检）
-    import subprocess as _sp
-    _记 = []
+    #   ②并起：二检俱至一栅方过（相继即首者候五秒而栅破、返非零）——⛔以墙钟判（GitHub 之机忙时抖·1027 丝滑）；③前() 只经 慢检并起 起此二检（⛔另跑一回、⛔删一检）
+    import subprocess as _sp, threading as _th
+    _记, _栅 = [], _th.Barrier(2, timeout=5)
     _原run, _原跑 = _sp.run, globals()['跑']
 
+    def _过栅():
+        try:
+            _栅.wait(); return 0
+        except _th.BrokenBarrierError:
+            return 1
+
     def _假run(a, **k):
-        _记.append(('run', a[1:], k.get('cwd'))); time.sleep(0.4); return _sp.CompletedProcess(a, 0, '', '')
+        _记.append(('run', a[1:], k.get('cwd'))); return _sp.CompletedProcess(a, _过栅(), '', '')
 
     def _假跑(a, root=ROOT, 限=900):
-        _记.append(('跑', a, root)); time.sleep(0.4); return 0, '', 0.4
+        _记.append(('跑', a, root)); return _过栅(), '', 0.4
     try:
         _sp.run = _假run; globals()['跑'] = _假跑
-        _t = time.time(); _慢 = 慢检并起(400, ROOT, 隔=0.05)
-        _r1, _r2 = _慢['检察官'].result(), _慢['开轮六检'].result(); _秒 = time.time() - _t
+        _慢 = 慢检并起(400, ROOT, 隔=0.05)
+        _r1, _r2 = _慢['检察官'].result(), _慢['开轮六检'].result()
     finally:
         _sp.run = _原run; globals()['跑'] = _原跑
     _前体 = open(__file__, encoding='utf-8').read().split('\ndef 前(')[1].split('\ndef ')[0]
     共 += 1; ok += (sorted(_记) == sorted([('run', [器('小说检察官.py'), '--末章', '400'], ROOT), ('跑', [器('开轮六检.py'), '400', '--静'], ROOT)])
-                   and _秒 < 0.75 and _r1.returncode == 0 and _r2[0] == 0
+                   and _r1.returncode == 0 and _r2[0] == 0
                    and "慢['开轮六检'].result()" in _前体 and "慢['检察官'].result()" in _前体 and _前体.count('慢检并起(') == 1
                    and '开轮六检.py' not in _前体 and '小说检察官.py' not in _前体)
     _前 = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]

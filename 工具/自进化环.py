@@ -244,7 +244,7 @@ def L1(自修=True):
     elif 上回分 < 推之间隔分:
         语.append('  ★上一回推发起於 %.0f 分钟前（限 %d）——⛔不再起' % (上回分, 推之间隔分))
     else:
-        # ★1027 坑51：自修之推交 GitHub——`推.py` 默推「治-<sha>」，GitHub 推时即闸、绿即并入主枝（果入 备份/报）；
+        # ★1027 坑51：自修之推交 GitHub——`推.py` 默推「治-<sha>」，GitHub 分片而闸（坑54）、绿即并入主枝（果入 备份/报）；
         #   ⛔沙盒直推主枝（本地再跑十余分之全测，且与 autopush 抢主枝、令其 non-fast-forward 而败）。
         try:
             subprocess.Popen('"%s" "%s" > "%s" 2>&1' % (sys.executable, os.path.join(ROOT, '工具', '推.py'), 记),

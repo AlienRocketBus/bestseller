@@ -6231,13 +6231,7 @@ def jj_hook(n, note=''):
         if len(_v) >= 10:
             print('\n  ✓已满十轮，自动横评：')
             _m.compare(n)
-        else:
-            _tab = ['封版轮', '冷轮补执', '四堂会审', '挑刺王终读', '升华庭',
-                    '十庭①(资源/感官)', '十庭②(在场/内面)', '十庭③(时序/节奏/留白)',
-                    '跨章复审', '减法轮']
-            _RT = _rounds_total()
-            _nx = _tab[len(_v)] if len(_v) < len(_tab) else ('横评' if len(_v) >= _RT else '第%d轮' % (len(_v)+1))
-            print('  ▶下一轮该开：**%s**（第%d轮／共%d轮）' % (_nx, len(_v) + 1))
+        # ★1027 汰：「下一轮该开」之提示（十三轮之序·冷轮补执）随十三轮之机与冷眼轮同废——其式三占二参，恒崩而被吞、从未印出
     except Exception:
         pass
 

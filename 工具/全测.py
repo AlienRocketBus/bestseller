@@ -4372,32 +4372,51 @@ def 读器红账():
     return 并账(本 if isinstance(本, dict) else {}, 云 if isinstance(云, dict) else {})
 
 
+def _读红之判(fails):
+    """读者可见之红之判（X55：恒拦）——沙盒之 推闸 与 GitHub 之 推闸判 同取此一处（旧之跑轮档／封版档之口汰时只改此处）。"""
+    return _推闸旧(fails)
+
+
+def _器红之语(器红, 逾, 账=None, 章=None):
+    """只器之红之判语：逾限即拦（⛔推闸·器红逾限），否则放行（✓推闸·分等：放行——pre-push、推报 俱认此首）。"""
+    if 逾:
+        return False, ('⛔推闸·器红逾限：%s——X55「器之红限三章治」到期：逐条治（⛔删一检、⛔弱化）'
+                       % '、'.join(('%s（首见第%s章、限第%s章）' % (k, 账[k]['首见'], 账[k]['限'])) if 账 and k in 账 else k for k in 逾))
+    将 = [k for k in 器红 if 账 and k in 账 and 账[k].get('限') == 章]
+    return True, ('✓推闸·分等：放行——只器之红 %d（%s），只报不拦，已入器红账限三章治%s'
+                  % (len(器红), '、'.join(器红), ('；⚠本章即限、下章仍红即拦：' + '、'.join(将)) if 将 else ''))
+
+
 def 推闸判(fails, 账, 章, 跑过=None):
-    """★推闸之策（纯判，⛔读写盘）→ (放行否, 语, 新账)。沙盒之 推闸() 与 GitHub 之并判（全测并.并判）同此一函。
+    """★推闸之策（纯判，⛔读写盘）→ (放行否, 语, 新账)。GitHub 之并判（全测并.并判）取之；沙盒之 推闸() 同其三支（读红、逾限、放行）。
     读者可见之红恒拦；只器之红放行而入账；器红逾限（首见之後三章仍红）即拦。"""
     读红, 器红 = 分等(fails)
     新账, 逾 = 器红之判(器红, 章, 账, 跑过)
-    if 逾:
-        return False, ('⛔推闸·器红逾限：%s——X55「器之红限三章治」到期：逐条治（⛔删一检、⛔弱化）'
-                       % '、'.join('%s（首见第%s章、限第%s章）' % (k, 新账[k]['首见'], 新账[k]['限']) for k in 逾)), 新账
-    if not 读红:
-        将 = [k for k in 器红 if 新账[k]['限'] == 章]
-        return True, ('✓推闸·分等：放行——只器之红 %d（%s），只报不拦，已入器红账限三章治%s'
-                      % (len(器红), '、'.join(器红), ('；⚠本章即限、下章仍红即拦：' + '、'.join(将)) if 将 else '')), 新账
-    ok, 语 = _推闸旧(fails)
+    if 读红:
+        ok, 语 = _读红之判(fails)
+        return ok, 语, 新账
+    ok, 语 = _器红之语(器红, 逾, 新账, 章)
     return ok, 语, 新账
 
 
-def 推闸(fails, 跑过=None):
-    """沙盒之推闸（全测、全测并之末；--直 之 pre-push 据其语）：读本地并云端之器红账、判；无读者之红方写回本地（同旧：有之即拦，账⛔动）。"""
+def _器红入账(器红, 章, 跑过=None):
+    """沙盒之账：读本地并云端之器红账、器红之判、写回本地 → 逾限之名们。"""
     import json as _j
-    ok, 语, 新账 = 推闸判(fails, 读器红账(), _末章() or 0, 跑过)
-    if not 分等(fails)[0]:
-        try:
-            _j.dump(新账, open(器红账档, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
-        except OSError:
-            pass
-    return ok, 语
+    新账, 逾 = 器红之判(器红, 章, 读器红账(), 跑过)
+    try:
+        _j.dump(新账, open(器红账档, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+    except OSError:
+        pass
+    return 逾
+
+
+def 推闸(fails, 跑过=None):
+    """沙盒之推闸（全测、全测并之末；--直 之 pre-push 据其语）：读红即拦（账⛔动）；只器之红入账（本地并云端），逾限即拦。"""
+    读红, 器红 = 分等(fails)
+    if 读红:
+        return _读红之判(fails)
+    逾 = _器红入账(器红, _末章() or 0) if 跑过 is None else _器红入账(器红, _末章() or 0, 跑过)
+    return _器红之语(器红, 逾)
 
 
 def _推闸旧(fails):

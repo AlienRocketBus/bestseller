@@ -1243,6 +1243,9 @@ def 自测():
           and _读演之印(os.path.join(t, '演')) == {'果': '红', '语': '⛔演不过：章标 章-9 里缺 工具'} and _读演之印(os.path.join(t, '无')) is None)
     T('①之六 坏：红／拒／败坏；败·重派係在飞⛔坏', 坏({'果': '红'}) and 坏({'果': '败', '因': 'non-ff'}) and not 坏({'果': '败', '因': '重派'})
       and not 坏({'果': '成'}) and not 坏(None))
+    源们 = {n: open(os.path.join(ROOT, '工具', n), encoding='utf-8').read() for n in ('接棒守.py', '推.py')}
+    T('①之七 候者（接棒守 --候主、推.py --候）以 推报.坏 判坏报（败·重派 係在飞、⛔早返）——⛔以 推报.坏果 直判',
+      all('推报.坏(' in s and '推报.坏果' not in s for s in 源们.values()))
     # ②验：今盘（乙）绿；PyYAML 与本器之析同；旧 yml 回灌红；甲形（97286329）照甲律为合而盘上须乙；诸改坏各红
     诸 = 读流(ROOT)
     钩 = open(os.path.join(ROOT, '工具', 'githooks', 'pre-push'), encoding='utf-8').read()

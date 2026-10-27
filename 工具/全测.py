@@ -2888,7 +2888,7 @@ def chk_fupan():
 
 
 def chk_kengzhang():
-    """坑账（1009 立·作者令「每一次都把坑修掉，让虫洞方法成为最好的方法」）：每坑有根有治；已守者守之档在；未守者有计；四入口档同步；法典不漏坑。见 工具/方法坑账.py。"""
+    """坑账（1009 立·作者令「每一次都把坑修掉，让虫洞方法成为最好的方法」）：每坑有根有治；已守者守之档与格在；未守者有计带限；三入口档同步；法典不漏坑。见 工具/方法坑账.py。"""
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/方法坑账.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     b = _sp.run([sys.executable, '工具/方法坑账.py', '--验'], cwd=ROOT, capture_output=True, text=True)
@@ -2956,7 +2956,7 @@ def chk_zhangliao():
     席只读此档、⛔自己搜料——其节之取、人物与 canon 之择须自测通过。见 工具/章料.py。"""
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/章料.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    # ★1014 并验 欠账闸（主案 G 号落没落正文；取白文用 章料.章档）——只验自测；全量之判待 W26 还清後再升为闸
+    # ★1014 并验 欠账闸（主案 G 号落没落正文；取白文用 章料.章档）——只验自测（1027：D6 之 G 号 70/70 已落，坑㉙ 汰）
     b = _sp.run([sys.executable, '工具/欠账闸.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     # ★1014 并验 还账（W26：G 号落正文之译单之验、施；行号不移）
     c = _sp.run([sys.executable, '工具/还账.py', '--自测'], cwd=ROOT, capture_output=True, text=True)

@@ -19,6 +19,10 @@
   ③（1027·开轮六检⑭ 移此）新派造章而其 N 已封——版本/第N章/_十一轮.json 在，或本库有「章-N」之标（本地枝或 origin 之踪）
     → 拦（重跑已封之章即覆其稿、回执与轮记；改旧章走 改单 --施单／还账）。重造:true 亦拦（重造只为未封之章）。
   非造章之 workflow、他器一概放（其无承之路，拦之即停书）。入坏、出错 → 放（本钩只防白耗，⛔挡书）。
+  ④（1027·坑⑩㉛·#38 #85）schema 键 ASCII：Workflow 之文（内联 script，或 scriptPath 之档）跑 席法 之 schema 键检（复用 席法.查一，
+    并认引号之键）——键不合 ^[A-Za-z0-9_.-]{1,64}$ 即拦（API 400 当场死；主环之内联脚本不经 席法.py·1017 实踩「席法」之键）。
+  ⑤（1027·#52 #82 #40①）开件之闸：非 造章／剧情庭／大审／承 之 Workflow（新派；resumeFromRunId 之续免）须 args.W 係
+    `设定/工作流账.json` 之件、状「进行」、有预估与停止线——否则拦，印 `工作流账.py --开` 之令（开法四问、方案、坑之检）。
 用法：钩自 stdin 取 JSON；`python3 工具/续跑之守.py --自测`
 """
 import os as _o, sys as _s
@@ -180,12 +184,84 @@ def 已封之凭(n, root=None):
     return ''
 
 
+def _文(参, root=None):
+    """Workflow 之文：内联 script，或 scriptPath 之档（逾 512KB 或读不得作 ''）。"""
+    sp = str(参.get('scriptPath') or '')
+    if not sp:
+        return str(参.get('script') or '')
+    try:
+        p = sp if os.path.isabs(sp) else os.path.join(root or ROOT, sp)
+        if os.path.getsize(p) > 512 * 1024:
+            return ''
+        return open(p, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return ''
+
+
+_引键式 = re.compile(r'''(?:^|[{,\s])(['"])([^'"\n]{1,80})\1\s*:\s*\{\s*type\s*:''')
+_合键 = re.compile(r'[A-Za-z0-9_.\-]{1,64}')
+
+
+def schema之坏(文):
+    """④坑⑩㉛：schema 键非 ASCII 者（复用 席法.查一 之甲路，并认引号之键）→ [键]。"""
+    if not 文 or 'type' not in 文:
+        return []
+    try:
+        import 席法
+        坏 = list(席法.查一(文)[0])
+    except Exception:
+        坏 = [k for k in re.findall(r'([^\s:,{}\'"`]+)\s*:\s*\{\s*type:', 文) if not _合键.fullmatch(k)]
+    坏 += [m.group(2) for m in _引键式.finditer(文) if not _合键.fullmatch(m.group(2))]
+    return sorted(set(坏))
+
+
+免W之器 = ('造章.js', '剧情庭.js', '大审.js')
+_包式 = re.compile(r'''scriptPath\s*:\s*['"][^'"]*(?:造章|剧情庭|大审)\.js['"]''')
+
+
+def 免W(参, 文):
+    """⑤：写书之流（造章、剧情庭、大审）与承之包裹（_承*.js、内联 workflow() 调其一）免开件之闸。"""
+    sp = os.path.basename(str(参.get('scriptPath') or ''))
+    return sp in 免W之器 or sp.startswith('_承') or bool(_包式.search(文 or ''))
+
+
+def 开件之判(a, root=None):
+    """⑤：args.W 须係 工作流账之件、状「进行」、有预估与停止线 → 拦之由（无事 ''）。"""
+    W = str(a.get('W') or a.get('w') or '').strip()
+    令 = ('python3 工具/工作流账.py --开 %s <时限·时> "<停止线>" "<换法>" "<有效之据·含坑之检>" "<预估·时与 $>"'
+         '（方案 设定/方案/%s.md 先过 `python3 工具/方案.py --验 %s`）' % (W or 'W<k>', W or 'W<k>', W or 'W<k>'))
+    if not W:
+        return ('⛔续跑之守（开件之闸·1027）：非写书之 Workflow 须带 args.W（工作流账之件）——先开件：%s；再以 args: {W: "W<k>", …} 派之。' % 令)
+    try:
+        账 = json.load(open(os.path.join(root or ROOT, '设定', '工作流账.json'), encoding='utf-8'))
+    except Exception as e:
+        return '⛔续跑之守（开件之闸）：工作流账读不出（%s）——先治账再派' % e
+    件 = next((x for x in 账.get('件') or [] if x.get('id') == W), None)
+    if not 件:
+        return '⛔续跑之守（开件之闸·1027）：%s 不在工作流账——先开件：%s' % (W, 令)
+    if 件.get('状态') != '进行':
+        return '⛔续跑之守（开件之闸·1027）：%s 之状「%s」非「进行」——先开件：%s' % (W, 件.get('状态'), 令)
+    缺 = [k for k in ('预估', '停止线') if not str(件.get(k) or '').strip()]
+    if 缺:
+        return '⛔续跑之守（开件之闸·1027）：%s 缺%s（开法四问：估、停止线）——重开：%s' % (W, '、'.join(缺), 令)
+    return ''
+
+
 def 判(入, 根=None, root=None, 收=None, 记=None):
     """→ (拦否, 由)。收(n) → 承.收 之果；记(n) → 记重造（自测注之）。"""
     if (入.get('tool_name') or '') != 'Workflow':
         return False, ''
     参, a = _参(入)
+    文 = _文(参, root)
+    坏键 = schema之坏(文)
+    if 坏键:
+        return True, ('⛔续跑之守（坑⑩㉛·schema 键 ASCII）：键「%s」非 ASCII——API 只收 ^[A-Za-z0-9_.-]{1,64}$，派即 400 而死。'
+                      '键改英文（值与令仍用汉字），再派。' % '」「'.join(坏键[:5]))
     run = 参.get('resumeFromRunId')
+    if not run and not 免W(参, 文):
+        由 = 开件之判(a, root)
+        if 由:
+            return True, 由
     if run:
         p = journal之路(run, 根)
         if p:
@@ -402,6 +478,37 @@ def 自测():
         g('branch', '章-9')
         拦, 由 = 判(F(), root=标根, 收=lambda n: {}, 记=记)
         T('⑰之二 本库有「章-9」之标 → 拦；未立标之前 → 放（旧式⑭只在开轮六检、造章前⛔跑，回灌即放）', 拦 and '章-9' in 由 and not 未标)
+        # ⑱（1027·坑⑩㉛）schema 键 ASCII：内联与 scriptPath 之文俱扫（1017 主环之原局：键「席法」）；ASCII 之键、值之汉字 → 放
+        账根 = os.path.join(d, 'ledger')
+        os.makedirs(os.path.join(账根, '设定'))
+        json.dump({'件': [{'id': 'W99', '状态': '进行', '预估': '约 1 时、$5', '停止线': '三席俱交'},
+                          {'id': 'W98', '状态': '已成', '预估': 'x', '停止线': 'y'},
+                          {'id': 'W97', '状态': '进行', '预估': '', '停止线': 'y'}]},
+                  open(os.path.join(账根, '设定', '工作流账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        内W = lambda sc, a=None: {'tool_name': 'Workflow', 'tool_input': dict({'script': sc}, **({'args': a} if a is not None else {}))}
+        坏sc = ("export const meta = {name: 'x'}\nconst r = await agent('审', {schema: {type: 'object', properties: "
+                "{席法: {type: 'string'}, ok: {type: 'boolean'}}}})\nreturn r")
+        好sc = 坏sc.replace('席法', 'seat_rule')
+        拦, 由 = 判(内W(坏sc, {'W': 'W99'}), root=账根)
+        T('⑱内联之 schema 键「席法」（1017 原局）→ 拦、点名其键', 拦 and '席法' in 由 and 'ASCII' in 由)
+        T('⑱之二 引号之键（"席 法"）→ 拦；ASCII 之键、值与令之汉字 → 放',
+          判(内W("const s = {schema: {type: 'object', properties: {\"判\": {type: 'string', description: '汉字'}}}}", {'W': 'W99'}), root=账根)[0]
+          and not 判(内W(好sc + "\n// 令：你是审席，判其「席法」", {'W': 'W99'}), root=账根)[0])
+        坏档 = os.path.join(d, '坏.js')
+        open(坏档, 'w', encoding='utf-8').write(坏sc)
+        T('⑱之三 scriptPath 之档有非 ASCII 之键 → 拦；今仓 工具/席/*.js 俱放（⛔误拦）',
+          判({'tool_name': 'Workflow', 'tool_input': {'scriptPath': 坏档, 'args': {'W': 'W99'}}}, root=账根)[0]
+          and not any(schema之坏(open(f, encoding='utf-8').read()) for f in glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))))
+        # ⑲（1027·#52 #82 #40①）开件之闸：非写书之 Workflow 须 args.W ∈ 工作流账、状「进行」、有预估与停止线
+        拦, 由 = 判(内W(好sc), root=账根)
+        T('⑲非写书之 Workflow 无 args.W → 拦、印 工作流账.py --开 之令', 拦 and '工作流账.py --开' in 由)
+        T('⑲之二 W 不在账／状非进行（已成）／缺预估 → 俱拦', all(判(内W(好sc, {'W': w}), root=账根)[0] for w in ('W01', 'W98', 'W97')))
+        T('⑲之三 W 进行而有预估与停止线 → 放', not 判(内W(好sc, {'W': 'W99'}), root=账根)[0])
+        T('⑲之四 写书之流（大审.js、剧情庭.js、造章之包裹）、resumeFromRunId 之续 → 免（⛔挡书）',
+          not 判({'tool_name': 'Workflow', 'tool_input': {'scriptPath': '工具/席/剧情庭.js', 'args': {'段': 411}}}, root=账根)[0]
+          and not 判({'tool_name': 'Workflow', 'tool_input': {'scriptPath': '工具/席/大审.js'}}, root=账根)[0]
+          and not 判({'tool_name': 'Workflow', 'tool_input': {'script': "return await workflow({scriptPath:'工具/席/大审.js'}, {起: 1})"}}, root=账根)[0]
+          and not 判({'tool_name': 'Workflow', 'tool_input': {'script': 好sc, 'resumeFromRunId': 'wf_other-01'}}, 根=d, root=账根)[0])
         env = dict(os.environ, ZM_STREAM='自测', ZM_JOURNAL_ROOT=d)
         p = subprocess.run([sys.executable, os.path.abspath(__file__)], input='{坏', capture_output=True, text=True, env=env)
         T('⑩入坏 → rc=0（⛔挡书）', p.returncode == 0)

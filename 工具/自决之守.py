@@ -9,6 +9,12 @@
     中「请作者择／请作者许／问作者可否」之式即拦（exit 2）——令其自决、自办，再答。stop_hook_active 即放（⛔环）。
   ②PreToolUse 钩（AskUserQuestion）：恒拒——总编辑⛔以问卷候作者。
   ③作者亲令之停（如「411 等我指示」）係作者之令、非问——「等你下令」之报⛔中此守。
+【1027 执行之核·线B】Stop 钩并办二事：
+  ④（#24 #128·作者 1024 令）上下文逾三十万：取末一回 assistant 之 usage（input＋cache_read＋cache_creation），>300000 即
+    stdout 印 {"systemMessage": "上下文约 N 万，逾三十万：请按 /compact"} 直示作者——⛔顶回（顶回即令模型在三十余万之上再付一整回缓存读·违虹吸）。
+  ⑤（#88）作者之令先落盘：本回首真人之言逾百字、含令词（以后｜一定要｜必须｜不要再｜要求），而其时以来
+    `设定/00_作者常令_不停之律.md` 未改（git log --since 其时、工作区与暂存之 diff 俱空）→ 拦「作者之令先落盘」。
+    放行之反例：短问、闲谈（无令词）、已落盘、系统之注（<…>）、【派】之唤。
 用法：钩自 stdin 取 JSON（`--停` Stop 之钩｜`--问` AskUserQuestion 之钩）；`python3 工具/自决之守.py --自测`
 """
 import os as _o, sys as _s
@@ -77,16 +83,107 @@ def 本回之文(路):
     return '\n'.join(诸)
 
 
+压之界 = 300000
+令词 = re.compile(r'以后|以後|一定要|必须|不要再|要求')
+常令档 = os.path.join('设定', '00_作者常令_不停之律.md')
+机之首 = ('<', '[', '【派】', '【重派】', '【守书', 'Caveat:')     # 系统之注、编排与定时之令（[…] 起）⛔作作者之言
+
+
+def _诸行(路):
+    try:
+        with open(路, encoding='utf-8') as f:
+            for 行 in f:
+                try:
+                    yield json.loads(行)
+                except Exception:
+                    continue
+    except Exception:
+        return
+
+
+def 末回之上下文(路):
+    """→ 末一回 assistant 之 usage 之 input＋cache_read＋cache_creation（无则 0）。"""
+    末 = 0
+    for d in _诸行(路):
+        if d.get('type') != 'assistant':
+            continue
+        u = (d.get('message') or {}).get('usage') or {}
+        n = sum(int(u.get(k) or 0) for k in ('input_tokens', 'cache_read_input_tokens', 'cache_creation_input_tokens'))
+        if n:
+            末 = n
+    return 末
+
+
+def 压之示(入):
+    """→ 印於 stdout 之 JSON 串（无事 ''）。"""
+    n = 末回之上下文(入.get('transcript_path') or '')
+    if n > 压之界:
+        return json.dumps({'systemMessage': '上下文约 %d 万，逾三十万：请按 /compact' % round(n / 10000)}, ensure_ascii=False)
+    return ''
+
+
+def 本回首言(路):
+    """→ (本回首真人之言之文, 其时 ISO)：末一真人之言（非 tool_result、非 isMeta）。"""
+    言, 时 = '', ''
+    for d in _诸行(路):
+        if d.get('type') != 'user' or d.get('isMeta'):
+            continue
+        c = (d.get('message') or {}).get('content')
+        if isinstance(c, list):
+            if any(isinstance(x, dict) and x.get('type') == 'tool_result' for x in c):
+                continue
+            c = '\n'.join(x.get('text', '') for x in c if isinstance(x, dict) and x.get('type') == 'text')
+        if isinstance(c, str) and c.strip():
+            言, 时 = c, str(d.get('timestamp') or '')
+    return 言, 时
+
+
+def 常令已改(时, root=ROOT):
+    """其时以来常令改过否：git log --since 其时 有其提交，或工作区／暂存有其 diff。读不出即作已改（⛔挡）。"""
+    import subprocess
+    from datetime import datetime, timezone
+    try:
+        t = datetime.fromisoformat(str(时).replace('Z', '+00:00')) if 时 else datetime(1970, 1, 2, tzinfo=timezone.utc)
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=timezone.utc)
+        自 = t.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S +0000')      # ⛔径传 ISO（毫秒与 Z 之式 git 或误析）
+        r = subprocess.run(['git', 'log', '--since=%s' % 自, '--format=%h', '--', 常令档], cwd=root,
+                           capture_output=True, text=True, timeout=10)
+        if r.returncode != 0 or r.stdout.strip():
+            return True
+        for a in (['git', 'diff', '--quiet', '--', 常令档], ['git', 'diff', '--cached', '--quiet', '--', 常令档]):
+            if subprocess.run(a, cwd=root, capture_output=True, timeout=10).returncode != 0:
+                return True
+        return False
+    except Exception:
+        return True
+
+
+def 令落之判(入, 改=None):
+    """→ 拦之由（无事 ''）。"""
+    言, 时 = 本回首言(入.get('transcript_path') or '')
+    s = 言.strip()
+    if len(s) <= 100 or s.startswith(机之首):
+        return ''
+    m = 令词.search(s)
+    if not m:
+        return ''
+    if (改 or 常令已改)(时):
+        return ''
+    return ('⛔自决之守（作者之令先落盘·1027）：本回作者之言含令（「%s」）而 %s 自其时以来未改——'
+            '先把此令落进常令（一行「- MMDD 作者令：「原话」——落：<器／档>」），再办再答。' % (s[max(0, m.start() - 12):m.end() + 12].replace('\n', ' '), 常令档))
+
+
 由停 = ('⛔自决之守（坑55·作者屡令「你是最高决策人……以后不要问我」）：本回之答请作者择、请作者许或问作者可否——「%s」。'
        '总编辑自决：照最好之法当场办（平台之检拒者⛔绕、另择合规之路自通），办毕再报所为；⛔列选项、⛔候作者之许。')
 由问 = '⛔自决之守（坑55）：总编辑⛔以 AskUserQuestion 问作者——照最好之法自决自办（总章一「遇事自决」·作者 1021、1027 屡令）。'
 
 
-def 判停(入):
+def 判停(入, 改=None):
     if 入.get('stop_hook_active'):
         return ''
     片 = 中问(本回之文(入.get('transcript_path') or ''))
-    return 由停 % 片 if 片 else ''
+    return 由停 % 片 if 片 else 令落之判(入, 改)
 
 
 def 判问(入):
@@ -131,6 +228,56 @@ def 自测():
     T('④stop_hook_active → 放（⛔环）', 判停({'transcript_path': 迹([人('x'), 答('需要你决定')]), 'stop_hook_active': True}) == '')
     T('⑤迹缺、坏 → 放（⛔挡书）', 判停({'transcript_path': '/nonexistent'}) == '' and 判停({}) == '')
     T('⑥AskUserQuestion → 拒；他器 → 放', 判问({'tool_name': 'AskUserQuestion'}) != '' and 判问({'tool_name': 'Bash'}) == '')
+    # ★1027（#24 #128）上下文逾三十万：stdout 之 systemMessage 直示作者、⛔顶回；未逾 → 无
+    def 用(n):
+        return ('assistant', [{'type': 'text', 'text': 'x'}]), n
+    def 迹u(诸):
+        f = tempfile.NamedTemporaryFile('w', suffix='.jsonl', delete=False, encoding='utf-8')
+        for 类, c, u in 诸:
+            d = {'type': 类, 'message': {'role': 类, 'content': c}}
+            if u:
+                d['message']['usage'] = {'input_tokens': 2, 'cache_read_input_tokens': u - 1002, 'cache_creation_input_tokens': 1000, 'output_tokens': 50}
+            f.write(json.dumps(d, ensure_ascii=False) + '\n')
+        f.close()
+        return f.name
+    大 = 迹u([('user', '甲', 0), ('assistant', [{'type': 'text', 'text': 'x'}], 120000), ('assistant', [{'type': 'text', 'text': 'y'}], 334567)])
+    小 = 迹u([('user', '甲', 0), ('assistant', [{'type': 'text', 'text': 'x'}], 450000), ('assistant', [{'type': 'text', 'text': 'y'}], 280000)])
+    T('⑧末回上下文 33 万（逾三十万）→ systemMessage「上下文约 33 万…/compact」；末回 28 万（前回虽逾）→ 无',
+      json.loads(压之示({'transcript_path': 大}) or '{}').get('systemMessage', '').startswith('上下文约 33 万') and 压之示({'transcript_path': 小}) == '')
+    import subprocess
+    p = subprocess.run([sys.executable, os.path.abspath(__file__), '--停'], input=json.dumps({'transcript_path': 大}), capture_output=True, text=True)
+    T('⑧之二 真跑：逾界 → rc=0（⛔顶回）、stdout 为 systemMessage 之 JSON', p.returncode == 0 and '/compact' in json.loads(p.stdout or '{}').get('systemMessage', ''))
+    # ★1027（#88）作者之令先落盘：逾百字、含令词、常令未改 → 拦；短问、闲谈、已落盘、系统之注、【派】→ 放
+    长令 = '以后每一章封版之前，你一定要先把开镜卡与章料对一遍，凡是开镜卡里点了名的旧章之句都要整段展开放进料里，' * 2
+    长谈 = '今天这一章读下来很顺，沈鸢那一段我很喜欢，钱满盯章的那个眼神写得好，街口空着那一句也好，' * 3
+    未改, 已改 = (lambda t: False), (lambda t: True)
+    T('⑨长令（含「以后」「一定要」）而常令未改 → 拦「作者之令先落盘」', '先落盘' in 判停({'transcript_path': 迹([人(长令), 答('已办。')])}, 改=未改))
+    T('⑨之二 已落盘（常令已改）→ 放', 判停({'transcript_path': 迹([人(长令), 答('已办。')])}, 改=已改) == '')
+    T('⑨之三 短问（含令词而不逾百字）、长之闲谈（无令词）→ 放',
+      判停({'transcript_path': 迹([人('以后还要等多久？'), 答('约一时。')])}, 改=未改) == ''
+      and 判停({'transcript_path': 迹([人(长谈), 答('多谢。')])}, 改=未改) == '')
+    T('⑨之四 系统之注（<task-notification>）、【派】之唤 → 放；本回之首以末一真人之言计（其後之 tool_result ⛔算）',
+      判停({'transcript_path': 迹([人('<task-notification>' + 长令 + '</task-notification>'), 答('x')])}, 改=未改) == ''
+      and 判停({'transcript_path': 迹([人('【派】' + 长令), 答('x')])}, 改=未改) == ''
+      and '先落盘' in 判停({'transcript_path': 迹([人(长令), 答('x'), 果, 答('y')])}, 改=未改))
+    import shutil as _sh
+    g = tempfile.mkdtemp(prefix='自决_')
+    try:
+        os.makedirs(os.path.join(g, '设定'))
+        e = dict({k: v for k, v in os.environ.items() if not k.startswith('GIT_')}, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t',
+                 GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t', GIT_CONFIG_GLOBAL=os.devnull)
+        跑 = lambda *a: subprocess.run(list(a), cwd=g, capture_output=True, env=e)
+        open(os.path.join(g, 常令档), 'w', encoding='utf-8').write('一\n')
+        跑('git', 'init', '-q'); 跑('git', 'add', '-A'); 跑('git', 'commit', '-q', '-m', 'a')
+        import time as _t
+        未来 = _t.strftime('%Y-%m-%dT%H:%M:%S.000Z', _t.gmtime(_t.time() + 3600))      # 转录之时之式（毫秒、Z）
+        前 = 常令已改('2000-01-01T00:00:00.000Z', g)
+        後 = 常令已改(未来, g)
+        open(os.path.join(g, 常令档), 'a', encoding='utf-8').write('- 1027 作者令：……\n')
+        改後 = 常令已改(未来, g)
+        T('⑨之五 真判（临时之库）：其时以来有提交 → 已改；无提交无 diff → 未改；工作区改之 → 已改', 前 and not 後 and 改後)
+    finally:
+        _sh.rmtree(g, ignore_errors=True)
     # 接线：settings 之 Stop 与 PreToolUse(AskUserQuestion) 俱挂本守
     try:
         h = json.load(open(os.path.join(ROOT, '.claude', 'settings.json'), encoding='utf-8')).get('hooks', {})
@@ -156,4 +303,11 @@ if __name__ == '__main__':
     if 由:
         print(由, file=sys.stderr)
         sys.exit(2)
+    if '--问' not in a:
+        try:
+            示 = 压之示(入)          # 上下文逾三十万：直示作者一行（⛔顶回）
+        except Exception:
+            示 = ''
+        if 示:
+            print(示)
     sys.exit(0)

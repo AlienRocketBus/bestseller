@@ -170,21 +170,23 @@ class 迹:
             return False
 
     def _判(self, 器, 自, 参, 近, 不, 今):
-        """迹有本器开後之行者以迹为准（有参即须其参）；迹无本器之行方退取跑账之末跑（参未核）。"""
-        诸 = [x for x in self._行 if x.get('器') == 器 and str(x.get('t', '')) >= _iso(自)]
+        """迹有本器开後之行者以迹为准（有参即须其参）；迹无本器之行方退取跑账之末跑（参未核）。
+        自测之跑（参首 --自测：全测诸格俱跑之）⛔算用法——迹唯其自测者亦以迹为准（⛔退跑账：其末跑即自测）。"""
+        全 = [x for x in self._行 if x.get('器') == 器 and str(x.get('t', '')) >= _iso(自)]
+        诸 = [x for x in 全 if str((x.get('参') or [''])[0]) != '--自测']
         中 = [x for x in 诸 if not 参 or ' '.join(str(y) for y in x.get('参') or []).startswith(参)]
         t, 凭 = max([_秒(x.get('t')) or 0 for x in 中] or [0]), '迹'
         末 = _秒((self._账.get(器) or {}).get('末跑'))
-        if not t and not 诸 and 末 and 末 >= 自:
+        if not t and not 全 and 末 and 末 >= 自 and not (不 and 参):     # 不而有参：账不辨参，⛔凭账诬其跑
             t, 凭 = 末, '账'
         名 = 器 + (' ' + 参 if 参 else '')
         if 不:
             return ('⛔', '%s 於本章之开後跑过（%s）' % (名, _iso(t)[5:16])) if t else ('✓', '%s 本章之开後未跑' % 名)
         if not t:
-            return '⛔', '%s 自本章之开（%s）未跑%s' % (名, _iso(自)[5:16], '（迹有其器而无此参）' if 诸 else '')
+            return '⛔', '%s 自本章之开（%s）未跑%s' % (名, _iso(自)[5:16], '（迹有其器而无此参）' if 诸 else '（迹唯其自测）' if 全 else '')
         if 近 and (今 or time.time()) - t > 近 * 60:
             return '⛔', '%s 末跑 %s，逾 %d 分' % (名, _iso(t)[5:16], 近)
-        return '✓', '%s 跑於 %s%s' % (名, _iso(t)[5:16], '（参未核：迹无其行）' if 参 and 凭 == '账' else '')
+        return '✓', '%s 跑於 %s%s' % (名, _iso(t)[5:16], ('（凭跑账·迹无其行%s）' % ('·参未核' if 参 else '')) if 凭 == '账' else '')
 
     def 查(self, 器, 自, 参=None, 近=None, 不=False, 今=None):
         """→ (态, 语)。态 ✓／⛔／？（史料不及）。本机不得即自云端承一回再判（⛔弱化判法）。"""
@@ -195,7 +197,8 @@ class 迹:
             return ('✓', '%s 见於本章之器之迹' % 器) if re.search(r'^\|\s*%s\s*\|' % re.escape(器), 文, re.M) else ('？', '%s 不在本章器之迹之窗（窗始於料成）' % 器)
         self._载()
         r = self._判(器, 自, 参, 近, 不, 今)
-        if r[0] == '⛔' and not 不 and self._云():
+        # 凭跑账（本机之迹无其器而账有末跑）亦先承云端之迹：⛔凭跑账一笔放过他参或自测之跑（新机之迹空、跑账已承——验参即成空跑）
+        if ((r[0] == '⛔' and not 不) or '凭跑账' in r[1]) and self._云():
             r = self._判(器, 自, 参, 近, 不, 今)
         return r
 
@@ -278,6 +281,9 @@ class 境:
             self.盘._迹档 = os.path.join('版本', '第%d章' % n, '_器之迹.md')
         self.史至 = 史至                     # 回放：报、枝取此时之前者
         self.开 = 封时(n - 1, root, 史版 or 'HEAD')
+        if self.开 is None and not 史版 and 取 and _git(root, 'rev-parse', '--is-shallow-repository')[1].strip() == 'true':
+            _git(root, 'fetch', '-q', '--unshallow', 'origin', 限=600)   # 云端会话係浅克隆（五十笔）：前章之封或在其外——补全史一回再寻（同 全测.补浅克隆）
+            self.开 = 封时(n - 1, root, 'HEAD')
         self.今 = 今
         self._取过 = set()
 
@@ -464,6 +470,8 @@ def 法账之新行(root=ROOT, 自=立日):
         if not 日:
             m = re.search(r'（(\d{4})|^\**(\d{4})·', 格[0])
             日 = (m.group(1) or m.group(2)) if m else None
+        if 日 and not re.fullmatch(r'(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])', 日):
+            日 = None                        # 「（2610字）」之类非日——⛔误作新行
         if 日 and _日序(日) >= _日序(自):
             键 = re.split(r'[（(]', 格[0].replace('*', ''), 1)[0].strip()
             出.append((键, l))
@@ -597,7 +605,7 @@ def 开(n, root=ROOT, 册=None):
         标 = '·'
         if e and x['时'] == '开' and not any(('报' in c or 'git' in c) for c in x.get('证') or []):
             标 = {'✓': '✓', '⛔': '⛔'}.get(验法(x, e)[0], '·')
-        项.append('%s %s → %s' % (标, x['id'], (x.get('示') or '；'.join(_示证(c) for c in x.get('证') or []))[:50]))
+        项.append('%s %s → %s' % (标, x['id'], 填(x.get('示') or '；'.join(_示证(c) for c in x.get('证') or []), n)[:50]))
     if len(项) > 9:
         项 = 项[:8] + ['……另 %d 法（--册）' % (len(项) - 8)]
     return 出 + ['  ' + x for x in 项]
@@ -704,19 +712,22 @@ def 自测():
       and any(x['限'] == 412 and '窄审' in x['名'] and '费审' in x['名'] for x in 册['待']))
     T('①之四 autopush 之证起 412（411 之封只验章-410 之主枝）、证取 报/推/章-{N-1}', any(
         x['id'] == '推闸交GitHub' and x['起'] == 412 and x['证'][0].get('报') == '推/章-{N-1}' for x in 册['法']))
+    T('①之五 兜底之推只认 推.py --直（G 後 推.py 默交治枝係常路⛔警）；待之证落方法账者其示带「法用#<id>」（照示记之即过完备）',
+      any(c.get('跑') == '推.py' and c.get('不') and c.get('参') == '--直' for x in 册['法'] for c in x.get('证') or [])
+      and all(('法用#' + x['id']) in x.get('示', '') for x in 册['待'] if '方法账' in json.dumps(x['证'], ensure_ascii=False)))
     # ②完备之律：造一假仓
     t = tempfile.mkdtemp(prefix='法用_')
     try:
         os.makedirs(os.path.join(t, '设定'))
         open(os.path.join(t, 总章名), 'w', encoding='utf-8').write('# 总章\n## 八、升级之例\n1. 甲法：x\n2. 乙法：y\n3. 丙法：z\n## 九\n')
         open(os.path.join(t, 法账名), 'w', encoding='utf-8').write(
-            '# 方法账\n| 件 | 法 |\n|---|---|\n| D6 收口（1008） | x |\n| 新法甲（1027） | y |\n\n'
+            '# 方法账\n| 件 | 法 |\n|---|---|\n| D6 收口（1008） | x |\n| 新法甲（1027） | y |\n| 净重对表（2610字） | 非日之四数⛔认作日 |\n\n'
             '## 升级链\n| 件 | 法 | 费 | 较旧 | 日 | 判 |\n|---|---|---|---|---|---|\n| W1·第9章 | 所废：a | $1 | — | 1024 | 取 |\n'
             '| W2·第10章 | 所废：b | $1 | — | 1028 | 取 |\n| W3·第11章 | 所废：c 法用#乙 | $1 | — | 0105 | 取 |\n')
         假 = {'法': [{'id': '甲', '名': '甲', '据': '总章 §八.1', '起': 9, '时': '开', '证': [{'档': 'a.md'}]},
                     {'id': '乙', '名': '乙', '据': '总章 §八.2；设定/方法账.md 新法甲', '起': 9, '时': '开', '证': [{'档': 'b.md'}]}], '待': []}
         红2, _ = 完备(假, t)
-        T('②完备：§八.3 无据 → 法立无证；方法账 1028 之行（W2）无据 → 红；1024 之行免；「法用#乙」与「方法账.md 新法甲」认', any('§八.3' in x for x in 红2)
+        T('②完备：§八.3 无据 → 法立无证；方法账 1028 之行（W2）无据 → 红；1024 之行免；「法用#乙」与「方法账.md 新法甲」认；「（2610字）」非日⛔红', any('§八.3' in x for x in 红2)
           and any('W2·第10章' in x for x in 红2) and not any('W1' in x for x in 红2) and not any('W3' in x for x in 红2)
           and not any('新法甲' in x for x in 红2) and len(红2) == 2)
         假['法'].append({'id': '丙', '名': '丙', '据': '§八.3；设定/方法账.md W2', '起': 9, '时': '开', '机证不能': True, '由': '短'})
@@ -777,11 +788,19 @@ def 自测():
         _git(工, 'rm', '-q', '-rf', '.')
         提({'报/推/章-8.json': json.dumps({'果': '成'}), '报/推/章-7.json': json.dumps({'果': '败'})}, '报', t0 + 1300)
         _git(工, 'push', '-q', 'origin', 'HEAD:refs/heads/备份/报')
+        _git(工, 'checkout', '-q', '--orphan', '存底枝')     # 前坐之存底：其迹（派器 --甲 9）只在云端
+        _git(工, 'rm', '-q', '-rf', '.')
+        提({'_器之迹.jsonl': json.dumps({'t': _iso(t0 + 700), '器': '派器.py', '参': ['--甲', '9']}) + '\n'}, '存底', t0 + 1310)
+        _git(工, 'push', '-q', 'origin', 'HEAD:refs/heads/备份/存底')
         _git(工, 'checkout', '-q', '报')
         _git(工, 'fetch', '-q', 'origin')
+        _git(工, 'push', '-q', 'origin', 'HEAD:refs/heads/主2')
         open(os.path.join(工, '_跑账.json'), 'w').write(json.dumps({'稿差.py': {'末跑': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(t0 + 1500))},
-                                                              '旧器.py': {'末跑': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(t0 - 60))}}))
-        open(os.path.join(工, '_器之迹.jsonl'), 'w').write(json.dumps({'t': _iso(t0 + 900), '器': '接棒守.py', '参': ['--候主', '8']}) + '\n')
+                                                              '旧器.py': {'末跑': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(t0 - 60))},
+                                                              '派器.py': {'末跑': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(t0 + 1400))},
+                                                              '测器.py': {'末跑': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(t0 + 800))}}))
+        open(os.path.join(工, '_器之迹.jsonl'), 'w').write(json.dumps({'t': _iso(t0 + 900), '器': '接棒守.py', '参': ['--候主', '8']}) + '\n'
+                                                       + json.dumps({'t': _iso(t0 + 800), '器': '测器.py', '参': ['--自测']}) + '\n')
         e = 境(9, 工, 承=lambda: None, 今=t0 + 1600)
         V = lambda c: 验证(c, e)[0]
         T('③开＝前章封版之提交之时（git log --grep 封版#N）', e.开 == t0)
@@ -790,6 +809,17 @@ def 自测():
           and V({'档': '版本/第{N}章/_轮记.md', '无': '窄审'}) == '⛔' and V({'档': '设定/*.md'}) == '✓' and V({'档': '版本/第{N}章/_无.md', '不': True}) == '✓')
         T('③跑：末跑 ≥ 开 → ✓；末跑早於开 → ⛔；从未 → ⛔；迹之参（--候主 {N-1}）', V({'跑': '稿差.py'}) == '✓' and V({'跑': '旧器.py'}) == '⛔'
           and V({'跑': '无器.py'}) == '⛔' and V({'跑': '接棒守.py', '参': '--候主 {N-1}'}) == '✓' and V({'跑': '接棒守.py', '参': '--派令 {N}'}) == '⛔')
+        e2, e3 = 境(9, 工, 承=lambda: None, 今=t0 + 1600), 境(9, 工, 承=False, 今=t0 + 1600)
+        T('③跑之参：本机迹无其器而跑账有末跑 → 先承云端之迹再判（云迹 --甲 9：参 --乙 ⛔、--甲 {N} ✓）；⛔网方退「参未核」',
+          验证({'跑': '派器.py', '参': '--乙'}, e2)[0] == '⛔' and 验证({'跑': '派器.py', '参': '--甲 {N}'}, e2)[0] == '✓'
+          and 验证({'跑': '派器.py', '参': '--乙'}, e3)[0] == '✓' and '参未核' in 验证({'跑': '派器.py', '参': '--乙'}, e3)[1])
+        T('③跑之自测：迹唯 --自测 之跑（全测诸格）⛔算用法、⛔退跑账；不而有参：账不辨参 ⛔诬其跑', V({'跑': '测器.py'}) == '⛔'
+          and '迹唯其自测' in 验证({'跑': '测器.py'}, e)[1] and 验证({'跑': '派器.py', '参': '--直', '不': True}, e3)[0] == '✓'
+          and 验证({'跑': '派器.py', '不': True}, e3)[0] == '⛔')
+        浅 = os.path.join(t, '浅')
+        subprocess.run(['git', 'clone', '-q', '--depth', '1', '--branch', '主2', 'file://' + 源, 浅], capture_output=True)
+        T('③浅克隆（云端会话五十笔）：前章之封在其外 → 补全史一回再寻得开；⛔网（--开）即无界',
+          境(9, 浅, 取=False, 承=False).开 is None and 境(9, 浅, 承=False).开 == t0)
         T('③跑之近与不：近 60 分（末跑距今 100 秒）✓、近 1 分 ⛔；不：未跑之器 ✓、已跑之器 ⛔', V({'跑': '稿差.py', '近': 60}) == '✓'
           and V({'跑': '稿差.py', '近': 1}) == '⛔' and V({'跑': '推.py', '不': True}) == '✓' and V({'跑': '稿差.py', '不': True}) == '⛔')
         T('③git：含（章-{N-1} 在 主）✓、改（交接於封後有提交）✓、枝（备份/报）✓；无之 ⛔', V({'git': '含', '甲': '章-{N-1}', '乙': '主'}) == '✓'

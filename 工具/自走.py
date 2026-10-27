@@ -645,6 +645,11 @@ def 前哨():
             出.insert(0, l)
     except Exception as e:
         出.append('⚠ 盘坏之哨跑不起来：%s' % e)
+    try:   # 1027 丝滑主义·问题早见：备份/报 之 报/推、报/演 未为後之成所消之 红／拒／败（一取·零 token·≤三行；经 推报.诸报）
+        import 法用之守
+        出 += 法用之守.报之读()
+    except Exception as e:
+        出.append('⚠ 报之读跑不起来：%s' % e)
     return 出
 
 
@@ -939,13 +944,18 @@ def 自测():
     import 暂停令 as _停t
     _旧哨, _旧在, _旧记 = _停t.守书之哨, _停t.在, _停t.守书停记
     import 重取 as _重t
-    _旧印 = _重t.印
+    import 法用之守 as _法t
+    _旧印, _旧报 = _重t.印, _法t.报之读
     _重t.印 = lambda 目=None: ''
+    _法t.报之读 = lambda *a, **k: []         # ⛔网：前哨之报之读另格验之（⑫）
     try:   # ⑩1024：令已解而守书已停之记仍在 → 前哨红（行首⛔）；令在而未记停 → 停之判印 enabled=false 之参与 --守书已停
         _停t.守书之哨 = lambda root=ROOT: ['⛔ 守书之巡仍停：x']
         _红 = 前哨()
         _重t.印 = lambda 目=None: '⛔ 盘坏：试——照 python3 工具/重取.py 之法重 clone 换目'
         _红盘 = 前哨()
+        _法t.报之读 = lambda *a, **k: ['⛔ 报·推 章-9 果「红」（试）未消']
+        _红报 = 前哨()
+        _法t.报之读 = lambda *a, **k: []
         _重t.印 = lambda 目=None: ''
         _停t.在, _停t.守书停记 = (lambda root=ROOT: (True, '暂停令在（试）')), (lambda root=ROOT: None)
         _判停, _L停 = 断(印=False)
@@ -953,8 +963,10 @@ def 自测():
         _判停2, _L停2 = 断(印=False)
     finally:
         _停t.守书之哨, _停t.在, _停t.守书停记 = _旧哨, _旧在, _旧记
-        _重t.印 = _旧印
+        _重t.印, _法t.报之读 = _旧印, _旧报
     R.append(('⑪盘坏之旗在 → 前哨首行⛔ 盘坏（1024）', _红盘[:1] == ['⛔ 盘坏：试——照 python3 工具/重取.py 之法重 clone 换目']))
+    R.append(('⑫报之读（1027 丝滑主义）：备份/报 未消之坏报 → 前哨⛔（盘坏之後；默印收入「前置诸哨之红」）',
+              _红报 == ['⛔ 盘坏：试——照 python3 工具/重取.py 之法重 clone 换目', '⛔ 守书之巡仍停：x', '⛔ 报·推 章-9 果「红」（试）未消']))
     R.append(('⑩守书之巡：令解而停记在 → 前哨⛔红且接於报之首；令在未记停 → 停判印 enabled=false 之参与 --守书已停；已记 ⛔复印',
               _红 == ['⛔ 守书之巡仍停：x'] and 'for _l in 前哨():' in 码.split('def 报():')[1][:80]
               and _判停 == '停' and any('"enabled": false' in x for x in _L停) and any('--守书已停' in x for x in _L停)

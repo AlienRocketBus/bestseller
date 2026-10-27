@@ -9,7 +9,8 @@
 【其法·零 token】
   ①写（GitHub 之机·autopush.yml 之报步，if: always()）：`--写` 自推之印析红行（✗ 之行与「⛔全测未过：」之行）与器红，
     出 json（ref、sha、果、红、main_after、时、run_url，并 因、试、器红）与末八十行之 txt；交於 备份/报 由 yml 之 bash 办（取、建、推，败即再取）。
-  ②读（沙盒）：`读(枝)` git fetch 备份/报 而 git show 其 json——推.py --候、接棒守 --候主 俱经此（⛔另造一把尺）；`快进()` 成即本地快进主枝。
+  ②读（沙盒）：`读(枝)` git fetch 备份/报 而 git show 其 json——推.py --候、接棒守 --候主 俱经此（⛔另造一把尺）；`快进()` 成即本地快进主枝；
+    `诸报()` 一取而读 报/推、报/演 之全（法用之守：自走之首之 报之读、流程之法之 演录）。
   ③验：`验(yml, 钩)` 静验——一试一闸、被拒即取而判已在或并而再试（至多三）、改 workflows 先判拒、报写 备份/报（always）、
     只删治枝、触发含 章-* 与 治-*、钩只免三暂存之前缀而主枝照闸。⛔依 PyYAML（GitHub 之机 setup-python 无之）。
     `--自测` 并以旧 yml（540c1c91）回灌须红；以桩闸真跑 yml 之 bash 於临时之裸库（成、闸中主进而再试、已在、红、拒、章标恒留）；钩之 stdin 诸形真跑。
@@ -110,6 +111,45 @@ def 读(枝, root=ROOT, 取=True):
         return d if isinstance(d, dict) else None
     except Exception:
         return None
+
+
+def 诸报(root=ROOT, 取=True, 类=('推', '演'), 并=()):
+    """→ 云端 备份/报 里 报/<类>/*.json 之诸 dict（各添「路」「类」）；一取（并之枝同一回 fetch）；无枝、读不出即 []（⛔作绿·⛔抛）。
+    法用之守之 报之读（自走之首）与 演录（GitHub 之演）俱经此——⛔另造一把尺。"""
+    远 = 'refs/remotes/origin/' + 报枝
+    try:
+        if 取:
+            参 = ['+refs/heads/%s:refs/remotes/origin/%s' % (b, b) for b in (报枝,) + tuple(并)]
+            if _git(['fetch', '-q', 'origin'] + 参, root).returncode != 0 and 并:
+                _git(['fetch', '-q', 'origin'] + 参[1:], root)      # 云端尚无 备份/报：同取全败——并者单取（同 推._取）
+        r = _git(['ls-tree', '-r', '--name-only', 远, '--'] + ['报/%s/' % k for k in 类], root)
+        路们 = [p for p in r.stdout.split('\n') if p.endswith('.json')] if r.returncode == 0 else []
+        if not 路们:
+            return []
+        e = {k: v for k, v in os.environ.items() if k not in _定库之变}
+        b = subprocess.run(['git', 'cat-file', '--batch'], input=''.join('%s:%s\n' % (远, p) for p in 路们).encode('utf-8'),
+                           cwd=root, capture_output=True, timeout=120, env=e).stdout
+    except Exception:
+        return []
+    出, i = [], 0
+    for p in 路们:
+        j = b.find(b'\n', i)
+        if j < 0:
+            break
+        头 = b[i:j].split()
+        if len(头) < 3 or 头[1] != b'blob':
+            i = j + 1
+            continue
+        n = int(头[2])
+        体, i = b[j + 1:j + 1 + n], j + 1 + n + 1
+        try:
+            d = json.loads(体.decode('utf-8'))
+        except Exception:
+            d = {'果': '坏'}
+        if isinstance(d, dict):
+            d['路'], d['类'] = p, p.split('/')[1]
+            出.append(d)
+    return 出
 
 
 def 报之语(d):
@@ -565,6 +605,8 @@ def 自测():
                 if 景 == '主动':
                     _r = 读(演[景]['R'], 演[景]['沙'])
                     演[景]['读'] = _r
+                    演[景]['诸'] = 诸报(演[景]['沙'], 取=False)
+                    演[景]['诸演'] = 诸报(演[景]['沙'], 取=False, 类=('演',))
                     演[景]['快进'] = 快进(演[景]['沙'])
                     演[景]['沙主'] = _git(['rev-parse', 'HEAD'], 演[景]['沙']).stdout.strip()
             except Exception as e:
@@ -581,6 +623,10 @@ def 自测():
       e.get('果') == '成' and e.get('闸次') == 2 and e.get('T在主') and e.get('他在主') and 报合(e, '成') and e['报'].get('试') == 2)
     T('④之三 沙盒 读(枝) 得其报、快进到并後之主枝', (e.get('读') or {}).get('果') == '成' and (e.get('快进') or (False,))[0]
       and e.get('沙主') == e.get('主') != e.get('T'))
+    _诸 = e.get('诸') or []
+    T('④之三b 诸报（一取·cat-file 一批）：得 报/推/<枝>.json 之全、带路与类；无 报/演 之目即只推', len(_诸) == 1
+      and _诸[0].get('路') == 报径(e.get('R', '')) and _诸[0].get('类') == '推' and _诸[0].get('果') == '成'
+      and e.get('诸演') == [])
     e = 演['已在']
     T('④之四 已在：⛔闸、报「已在」、治枝删', e.get('果') == '已在' and e.get('闸次') == 0 and 报合(e, '已在') and e.get('R') not in e.get('枝们', []))
     e = 演['红']

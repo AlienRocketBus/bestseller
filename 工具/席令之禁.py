@@ -60,6 +60,10 @@ def 查文(t):
         缺五 = [x for x in 五主 if x not in 段五]
         if 缺五 or len(re.findall(r'(?m)^[1-5]\.\s*\S', 段五)) < 5:
             坏.append('五大主义之段不全：' + ('缺' + '、'.join(缺五) if 缺五 else '不足五行'))
+    # ★1027 #84（复核补）：席令⛔令席提交——禁文写「⛔ git commit」而令文又令「git add 并 commit（末两行：Co-Authored-By…）」，
+    #   席照令文即 git 写（剧情庭.js 式新、式改、式验之裁旧如此）。提交之尾、「并 commit」在席令即红；「⛔不提交（主环提交）」放。
+    if re.search(r'Co-Authored-By|Claude-Session:|并\s*commit', t):
+        坏.append('令席提交（席令里有提交之尾或「并 commit」之令——席⛔ git 写：提交归主环）')
     return 坏
 
 
@@ -108,6 +112,13 @@ def 自测():
         io.open(四, 'w', encoding='utf-8').write(五大段.replace('丝滑', '某某') + '`%s：%s`\n%s\n' % (标, '／'.join('\\`%s\\`' % x for x in 五样), 标20))
         R.append(('⑤之二·无五大主义之段者红；段缺一名（丝滑）者红（1027 #33）',
                   any('无五大主义' in x[1] for x in 查([无五])) and any('缺丝滑' in x[1] for x in 查([四]))))
+        令提 = os.path.join(d, '令提.js')     # 1027 #84 复核补：禁文俱在而令文又令席提交
+        io.open(令提, 'w', encoding='utf-8').write(io.open(全, encoding='utf-8').read()
+                                                + '把该档 git add（明路径）并 commit（末两行：\nCo-Authored-By: x\nClaude-Session: y），⛔不推。\n')
+        主提 = os.path.join(d, '主提.js')     # 放行之反例：⛔不提交（主环提交）
+        io.open(主提, 'w', encoding='utf-8').write(io.open(全, encoding='utf-8').read() + '⛔不提交、⛔git add（主环提交）。\n')
+        R.append(('⑦令席提交者红（禁文俱在而令文令「git add 并 commit（末两行：Co-Authored-By…）」）；「⛔不提交（主环提交）」放',
+                  any('令席提交' in x[1] for x in 查([令提])) and 查([主提]) == []))
     finally:
         shutil.rmtree(d, ignore_errors=True)
     # ⑥回灌旧树（1027 #84 #33 之前·db52f247）：剧情庭.js、大审.js 缺 commit／push；三份俱无五大主义——须红（⛔空验）
@@ -121,6 +132,9 @@ def 自测():
                   all(any('git commit' in x for x in 旧红[k]) for k in ('剧情庭.js', '大审.js') if k in 旧红)
                   and all(any('无五大主义' in x for x in v) for v in 旧红.values())
                   and not any('git commit' in x for x in 旧红.get('造章.js', []))))
+        R.append(('⑥之二 回灌 %s：剧情庭.js 令裁席 git add 并 commit → 红；大审.js、造章.js 无此令 → ⛔红（放行）' % 旧笔,
+                  any('令席提交' in x for x in 旧红.get('剧情庭.js', []))
+                  and not any('令席提交' in x for k in ('大审.js', '造章.js') for x in 旧红.get(k, []))))
     else:
         print('  · ⑥ 改前之树 %s 不在（浅克隆）——回灌以 ⑤ 之坏例代' % 旧笔)
     R.append(('④真盘·诸份席令（当场 glob）逐份过', 查() == []))

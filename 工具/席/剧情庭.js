@@ -105,9 +105,8 @@ ${JSON.stringify(刺)}
 ⛔先跑 \`git status\` 与 \`git diff\`：若圣经／canon／改单诸档已有未提交之改（前一回裁席被中断而留下的半截），先逐处核其是否合本裁，合者续完、不合者照 \`git show HEAD:<档>\` 手工回正，⛔不许重复落改。
 你是剧情庭之裁席。式「验」，主案 \`${主案}\`，经 ${轮} 轮。末轮五席之评：${JSON.stringify(末)}
 机械之门：${过 ? '过' : '未过'}（立得住均 ${均('sound').toFixed(2)}，好看均 ${均('appeal').toFixed(2)}，现文 ${均('current_appeal').toFixed(2)}）。
-写 \`设定/剧情庭_${名}.md\`（覆写其首段为本次之裁，旧诸审之记保留於後）：过门则裁「改从主案」，并随裁改圣经（改单、写「据 剧情庭_${名}」，旧设定改掉或标作废），正文之改列入二稿账（⛔不动正文）；未过则裁守原，写明仍卡在哪几刺、诸席之见。git add 明路径并 commit（末两行：
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。返回一段摘要。`, { label: '裁·验', phase: '验案', effort: 'max' })
+写 \`设定/剧情庭_${名}.md\`（覆写其首段为本次之裁，旧诸审之记保留於後）：过门则裁「改从主案」，并随裁改圣经（改单、写「据 剧情庭_${名}」，旧设定改掉或标作废），正文之改列入二稿账（⛔不动正文）；未过则裁守原，写明仍卡在哪几刺、诸席之见。⛔提交、⛔git add（席⛔ git 写·主环提交）。返回一段摘要。`, { label: '裁·验', phase: '验案', effort: 'max' })
+  log(`主环提交：裁档 设定/剧情庭_${名}.md 与所立改单诸档（席⛔ git 写·1027 #84）`)
   return { 题, 式, 轮, 过, 裁 }
 }
 
@@ -116,7 +115,7 @@ Claude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔
 const 段 = 式 === '段'
 const 出席 = 段 ? 席.filter(s => s.k === '小说家' || s.k === '剧本师') : 席
 const 评席 = 段 ? 席.filter(s => s.k === '总编辑' || s.k === '顶尖读者') : [...席, { k: '挑刺王', 身: '挑刺王' }]
-const 交 = 段 ? '⛔不提交、⛔git add（主环提交）。' : '把该档 git add（明路径）并 commit（末两行：\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825），⛔不推。'
+const 交 = '⛔不提交、⛔git add（主环提交）。'   // 1027 #84：席⛔ git 写——式新、式改之裁亦由主环提交（旧令席 commit，与律⑮之禁文相抵）
 const W = args && args.W
 if (段 && !/^W\d+$/.test(W || '')) throw new Error('式段须传 args.W（如 "W61"）——裁席之单落 设定/_草/<W>/剧情庭单.json')
 if (段 && /['\n\\]/.test(题)) throw new Error('式段之题档路不许含单引号、反斜杠、换行：' + 题)
@@ -247,4 +246,5 @@ if (段) {
   log(`主环施单：python3 工具/改单.py --施单 ${单}（验·看 diff；印「单空」者无可施，只提交裁档，以下三步俱⛔）→ python3 工具/改单.py --立 "…" "…" <单中诸档> → python3 工具/改单.py --施单 ${单} --落 --号 <单号> → 圣经随裁、段案验、剧情庭之关 → 提交写「改单#<单号>」`)
   return { 题, 过门: 可, 现均, 裁, 单, 料 }
 }
+log(`主环提交：裁档 设定/剧情庭_${名}.md 与所立改单诸档（席⛔ git 写·1027 #84）`)
 return { 题, 过门: 可, 现均, 裁 }

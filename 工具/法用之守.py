@@ -636,7 +636,7 @@ def 总章之条(root=ROOT):
         题, _, 体 = 节.partition('\n')
         if 题.startswith('心诀'):
             for m in re.finditer(r'(?m)^(\d+)\.\s*(.*)$', 体):
-                if not re.match(r'\*\*[^*]+\*\*[：:]\s*见五大主义', m.group(2)):
+                if not re.match(r'\*\*[^*]+\*\*[：:]\s*见五大主义[^。；;\n]*。?\s*$', m.group(2)):   # 纯指（其後无他规）方⛔计——「见五大主义…。另：新规」照计
                     出.append(('心诀%s' % m.group(1), m.group(2)))
             continue
         k = 题[:1]
@@ -686,19 +686,33 @@ def 总章之盖(册, root=ROOT):
     for x in 机:
         if not isinstance(x, dict) or not x.get('据') or len(str(x.get('由') or '')) < 8:
             红.append('⛔ 册坏：机证不能之条须 据（所点之总章之条）、由（≥八字）：%s' % json.dumps(x, ensure_ascii=False)[:50])
-    据们 = [str(x.get('据', '')) for k in ('法', '待', '废') for x in 册.get(k) or []] + [str(x.get('据', '')) for x in 机 if isinstance(x, dict)]
-    键, 词 = set(), []
-    for s in 据们:
-        a, b = 据之引(s)
-        键 |= a
-        词 += b
+    def 引之(据们):
+        键, 词 = set(), []
+        for s in 据们:
+            a, b = 据之引(s)
+            键 |= a
+            词 += b
+        return 键, 词
+
+    def 中(k, 文, 键词):
+        return k in 键词[0] or (k.startswith('§五·') and any(w in _清(文) for w in 键词[1]))
+    # 真据：法（机证不能者除）、待、废、册之「机证不能」；机证不能之法之据只算「机证不能」（⛔以纯理之法冒充有证·复核补：其条入四之一之数）
+    真 = 引之([str(x.get('据', '')) for k in ('法', '待', '废') for x in 册.get(k) or [] if not (k == '法' and x.get('机证不能'))]
+             + [str(x.get('据', '')) for x in 机 if isinstance(x, dict)])
+    机法 = 引之([str(x.get('据', '')) for x in 册.get('法') or [] if x.get('机证不能')])
+    机外 = []
     for k, 文 in 条:
-        if k in 键 or (k.startswith('§五·') and any(w in _清(文) for w in 词)):
+        if 中(k, 文, 真):
+            continue
+        if 中(k, 文, 机法):
+            机外.append(k)
             continue
         红.append('⛔ 法立无证：总章 %s「%s」——册无一法／待／废之据点之（据写作 §二.3、心诀七、五大主义·执行、§五「<守之词>」；纯理入册「机证不能」带由）'
                  % (k, _清(文)[:24]))
-    if 条 and len(机) / len(条) > 机证之顶:
-        红.append('⛔ 机证不能 %d／%d（总章之条）逾四之一——纯理太多，即规多不可验' % (len(机), len(条)))
+    数 = len(机) + len(机外)
+    if 条 and 数 / len(条) > 机证之顶:
+        红.append('⛔ 机证不能 %d／%d（总章之条%s）逾四之一——纯理太多，即规多不可验' % (
+            数, len(条), '；只为机证不能之法所点者 %s' % '、'.join(机外[:4]) if 机外 else ''))
     return 红, len(条)
 
 
@@ -1016,9 +1030,19 @@ def 开(n, root=ROOT, 册=None, 执=True):
     序 = {t: i for i, t in enumerate(时们)}
     for x in sorted((x for x in 册.get('法') or [] if 当验(x, n)), key=lambda x: (-int(x.get('立', 0)), 序.get(x['时'], 9))):
         标 = '·'
-        if e and x['时'] == '开' and not any(('报' in c or 'git' in c) for c in x.get('证') or []):
+        # 开章零网先验：时 开 之证（⛔报、⛔git）；时 十（段首方验·上段之审与随段）之证亦先验（⛔报；git 只许 改＝本机之史）——
+        #   复核补·丝滑：拍库随段、诸册随段、大审瘦式於段首之开即见 ⛔，⛔候本章钱花完、封版 --後 方红
+        if e and x['时'] in ('开', '十') and not any(('报' in c or ('git' in c and not (x['时'] == '十' and c.get('git') == '改')))
+                                                   for c in x.get('证') or []):
             标 = {'✓': '✓', '⛔': '⛔'}.get(验法(x, e)[0], '·')
+        坐证 = [c for c in x.get('证') or [] if isinstance(c, dict) and c.get('git') == '坐异']
+        if e and 坐证:                   # 1027 复核补·丝滑（问题早见早治）：坐异只读本机，开章即判——同坐者封版 --後 必拦，开章即交新会话、⛔候钱花完方红
+            态, 语 = 验证(坐证[0], e)
+            if 态 == '⛔':
+                项.insert(0, '⛔ %s：%s——本章交新会话写（封版 --後 必拦）' % (x['id'], 语[:60]))
+                continue
         项.append('%s %s → %s' % (标, x['id'], 填(x.get('示') or '；'.join(_示证(c) for c in x.get('证') or []), n)[:50]))
+    项 = [x for x in 项 if x.startswith('⛔')] + [x for x in 项 if not x.startswith('⛔')]     # ⛔ 者先（截行⛔掩其红）
     if len(项) > 9:
         项 = 项[:8] + ['……另 %d 法（--册）' % (len(项) - 8)]
     return 出 + ['  ' + x for x in 项]
@@ -1080,7 +1104,7 @@ def 未行(root=ROOT, 册=None, 完红=None, 逾数=None, 废红数=None):
 
     def _链():
         import 进化链
-        return sum(1 for x in 进化链.诸环() if not x.get('守') and not x.get('汰'))
+        return sum(1 for x in 进化链.诸环() if not x.get('守') and not x.get('汰') and not x.get('史'))   # 史（线 D：史·无须守）⛔计——与 进化链 之「无守」同尺
 
     def _裁():
         import 裁之生效
@@ -2444,6 +2468,19 @@ def 自测_核(T, 全):
         T('⑭之四 机证不能（据、由≥八字）即盖；由短 → 册坏', not any('§二.2' in x for x in 红b) and any('机证不能之条须' in x for x in 红b))
         盖册['机证不能'] = [{'据': '§二.%d' % i, '由': '纯理：某某某某某某某'} for i in (1, 2, 3, 4)]
         T('⑭之五 机证不能 4／13 逾四之一 → 红', any('逾四之一' in x for x in 总章之盖(盖册, t)[0]))
+        # ⑭之六（复核补）机证不能之法之据⛔冒充有证：其所点之条入四之一之数
+        盖册['机证不能'] = [{'据': '§二.%d' % i, '由': '纯理：某某某某某某某'} for i in (2, 3, 4)]
+        机法 = 全({'id': 'M', '名': 'M', '据': '五大主义·执行；§五「席⛔ git 写」', '起': 9, '时': '开', '机证不能': True, '由': '纯理纯理纯理纯理'})
+        有证 = {k: v for k, v in 机法.items() if k not in ('机证不能', '由')}
+        有证['证'] = [{'跑': 'x.py'}]
+        红m = 总章之盖(dict(盖册, 法=盖册['法'] + [机法]), t)[0]
+        红y = 总章之盖(dict(盖册, 法=盖册['法'] + [有证]), t)[0]
+        T('⑭之六 只为机证不能之法所点之条（五大·执行、§五·3）计入机证不能：3＋2／13 逾四之一 → 红；其法有证 → 3／13 放、⛔法立无证',
+          any('逾四之一' in x and '五大·执行' in x for x in 红m) and not any('法立无证' in x for x in 红m) and 红y == [])
+        # ⑭之七（复核补）心诀之「见五大主义」只纯指⛔计：其後另书新规者照计（⛔借指逃据）
+        _写档(t, {总章名: '# 总章\n## 心诀\n1. **一**：见五大主义一（虫洞）。\n2. **二**：见五大主义一（虫洞）。另：每章必配插图。\n3. **三**：见五大主义五\n'})
+        T('⑭之七 心诀：「见五大主义一（虫洞）。」与「见五大主义五」⛔计；「见五大主义一。另：每章必配插图。」照计',
+          [k for k, _ in 总章之条(t)] == ['心诀2'])
         # ⑮行为之证
         行册 = {'法': [全({'id': 'p档', '名': 'x', '据': 'x', '起': 9, '时': '封後', '证': [{'档': '工具/a.py', '含': 'def a'}]}),
                       全({'id': 'p跑', '名': 'x', '据': 'x', '起': 9, '时': '开', '证': [{'档': 'a'}, {'跑': 'a.py'}]}),
@@ -2555,8 +2592,61 @@ def 自测_核(T, 全):
         e = 境(10, 工, 取=False, 承=False)
         T('⑳之二 git 改之「自」：总站於第7章封版以来有提交 ✓；自第8章 ⛔（窗跨一段·⛔只认前章封後）', 验证({'git': '改', '档': '总站.html', '自': '7'}, e)[0] == '✓'
           and 验证({'git': '改', '档': '总站.html', '自': '{N-2}'}, e)[0] == '⛔' and 填('{前段-1}{前段}{前段末}', 421) == '410411420')
+        # ⑳之三 开章即判坐异（复核补·丝滑：问题早见——同坐者封版 --後 必拦，⛔候钱花完方红）
+        坐册 = {'法': [{'id': '换会话', '名': '换会话', '据': 'x', '起': 1, '时': '封後', '证': [{'git': '坐异'}]}], '待': [], '废': []}
+        旧环 = os.environ.get('CLAUDE_CODE_REMOTE_SESSION_ID')
+        try:
+            os.environ['CLAUDE_CODE_REMOTE_SESSION_ID'] = 'cse_BBBBBBBB2222'
+            同 = 开(10, 工, 册=坐册, 执=False)
+            os.environ['CLAUDE_CODE_REMOTE_SESSION_ID'] = 'cse_DDDDDDDD4444'
+            异 = 开(10, 工, 册=坐册, 执=False)
+        finally:
+            if 旧环 is None:
+                os.environ.pop('CLAUDE_CODE_REMOTE_SESSION_ID', None)
+            else:
+                os.environ['CLAUDE_CODE_REMOTE_SESSION_ID'] = 旧环
+        T('⑳之三 开章即判坐异：本坐即前章（封版#9）之坐 → 开之印首项「⛔ 换会话」；新坐 → 无此⛔（放行）',
+          len(同) > 1 and 同[1].strip().startswith('⛔ 换会话') and not any('⛔ 换会话' in x for x in 异))
+        # ⑳之五（复核补·丝滑）时 十 之法於段首之开即先验（本机：档、git 改）——⛔候封版 --後 方红；⛔者列首、⛔为截行所掩
+        提({'a.md': '4'}, '第10章封版（造式二代·封版#10）\n\nClaude-Session: https://claude.ai/code/session_BBBBBBBB2222', t0 + 400)
+        十册 = {'法': [全({'id': '拍随', '名': 'x', '据': 'x', '起': 1, '时': '十', '证': [{'或': [{'档': '拍库.md', '含': '第{前段}段'},
+                                                                                          {'git': '改', '档': '总站.html', '自': '{前段-1}'}]}]})]
+                       + [全({'id': '杂%d' % i, '名': 'x', '据': 'x', '起': 1, '时': '封前', '证': [{'档': 'a.md'}]}) for i in range(12)], '待': []}
+        缺 = 开(11, 工, 册=十册, 执=False)
+        _写档(工, {'拍库.md': '## 第1段\n某拍\n'})
+        有 = 开(11, 工, 册=十册, 执=False)
+        T('⑳之五 时 十 之法段首（11）之开即先验：拍库无「第1段」、总站自第0章封版以来…（寻不着）→ 首项「⛔ 拍随」（法多亦⛔掩）；拍库有之 → 无⛔（放行）',
+          缺[1].strip().startswith('⛔ 拍随') and not any('⛔ 拍随' in x for x in 有)
+          and 验法(十册['法'][0], 境(11, 工, True, 取=False, 承=False))[0] == '✓')
     finally:
         shutil.rmtree(t, ignore_errors=True)
+    # ⑳之四 封版之尾⛔写死一坐（坐异之源·复核补）：旧尾写死 session_016Hgfc2…，坐异读之即恒同（总编辑之坐）或恒异（余坐）＝空验
+    尾证 = next((c for x in 读册(ROOT).get('法') or [] if x.get('id') == '换会话' for c in x.get('证') or [] if c.get('档') == '工具/封版.py'), None)
+    旧封 = subprocess.run(['git', 'show', '%s:工具/封版.py' % 旧笔], cwd=ROOT, capture_output=True, text=True).stdout
+    今封 = _读(ROOT, os.path.join('工具', '封版.py')) or ''
+    尾码 = '\n'.join(l for l in 今封.split('\n') if l.startswith(('_坐 = ', '尾 = ')))
+
+    def 尾之(号):
+        旧 = os.environ.get('CLAUDE_CODE_REMOTE_SESSION_ID')
+        try:
+            if 号:
+                os.environ['CLAUDE_CODE_REMOTE_SESSION_ID'] = 号
+            else:
+                os.environ.pop('CLAUDE_CODE_REMOTE_SESSION_ID', None)
+            ns = {'os': os, 're': re}
+            exec(尾码, ns)
+            return ns.get('尾', '')
+        except Exception:
+            return ''
+        finally:
+            if 旧 is None:
+                os.environ.pop('CLAUDE_CODE_REMOTE_SESSION_ID', None)
+            else:
+                os.environ['CLAUDE_CODE_REMOTE_SESSION_ID'] = 旧
+    甲尾, 乙尾 = 尾之('cse_EEEEEEEE5555'), 尾之('')
+    T('⑳之四 封版之尾：回灌 %s 之 封版.py（写死一坐）→ 换会话之「无」中（红）；今之尾取本会话（cse_→session_）、无号即⛔书 Claude-Session（坐异作 ？）' % 旧笔,
+      bool(尾证) and bool(旧封) and re.search(尾证['无'], 旧封) is not None and re.search(尾证['无'], 今封) is None
+      and 甲尾.endswith('Claude-Session: https://claude.ai/code/session_EEEEEEEE5555') and 'Co-Authored-By' in 乙尾 and 'Claude-Session' not in 乙尾)
     # ㉒暂停令之据（改常令移行号即令在而不认）
     t = tempfile.mkdtemp(prefix='法用停_')
     try:

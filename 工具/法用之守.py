@@ -16,7 +16,8 @@
   ①所废除尽：册之「废」一废一条——据、废于、在（废前之笔）、去证（无档｜无文｜无格｜推报验）；去证有一尚在即「废而未除」红
     （待合＝并行之轨合流方除：限前只报⚠）；每条去证於其「在」之树须红（--自测 验之：式写错即永绿）。
   ②写者唯一：`设定/写者册.json` 一族之枝一写者（推.py --直 係唯一之审计之例外）；静析 工具/*.py、githooks、workflows、席之 js 之
-    git push（随简变量、函之返、他模之常量解其靶），册外之写者即「二写者」红。回灌：540c1c91（推.py 默直推主枝、自进化环裸推）须红。
+    git push（随简变量、函之返、他模之常量、列之串接、git 之包〔以其体识〕解其靶；push 须係 git 之令；yml 自析、⛔依推报之私函），
+    册外之写者即「二写者」红；例外只许於其旗之正支（else、否之判⛔算）。回灌：540c1c91（推.py 默直推主枝、自进化环裸推）须红。
   ③同功之检：每法书 功、处（沙盒｜GitHub）；二活法同功异处即红——除非其一入废、或书互补带由。
   ④演练之证：流程之法（流程:true）须有真料之演（设定/演练账.json｜备份/报 之 报/演/*.json，果 同／过，早於其起章之封）；
     演练之律前已行者（立 ≤ 412）方许演免。
@@ -873,8 +874,10 @@ def 验去证(c, 盘_):
         yml, 钩 = 盘_.读(os.path.join('.github', 'workflows', 'autopush.yml')), 盘_.读(os.path.join('工具', 'githooks', 'pre-push'))
         if yml is None or 钩 is None:
             return '⛔', 'autopush.yml 或 pre-push 读不得'
-        import 推报
-        缺 = [x for x in 推报.验(yml, 钩) if re.match(c['推报验'], x)]
+        import 推报, inspect
+        他 = {os.path.basename(p): 盘_.读(p) or '' for p in 盘_.有('.github/workflows/*.yml')}   # 诸流俱交（闸分於 gate.yml 者⛔只验 autopush 而空绿）
+        缺 = [x for x in (推报.验(yml, 钩, 他) if len(inspect.signature(推报.验).parameters) > 2 else 推报.验(yml, 钩))
+             if re.match(c['推报验'], x)]
         return ('⛔', '推报.验：' + '；'.join(缺)[:120]) if 缺 else ('✓', '推报.验 无「%s」之缺' % c['推报验'])
     return '⛔', '去证之式不识：%s' % '、'.join(c)
 
@@ -926,6 +929,21 @@ _写之档 = ('工具/*.py', '工具/githooks/*', '.github/workflows/*.yml', '.g
 _壳调 = {'run', 'Popen', 'call', 'check_call', 'check_output', 'system', 'popen', 'getoutput', 'getstatusoutput'}
 _壳断 = {';', '&&', '||', '|', '&', '>', '>>', '<', '<<', '>&', '<&', '(', ')', ';;', '|&', '&>', 'then', 'do', 'else', 'fi', 'done'}
 _格式 = r'%[-#0 +]*\d*(?:\.\d+)?[sdirxXfgeEc%]'
+_全旗 = ('-C', '-c', '--git-dir', '--work-tree', '--namespace', '--exec-path', '--config-env')      # git 之全局之旗（带值）
+_推值旗 = ('-o', '--push-option', '--receive-pack', '--exec', '--repo')                         # push 之带值之旗
+
+
+def _令位(常, i):
+    """argv（常：其字，不定作 None）自 i 越 git 之全局之旗 → 其令之位（不定者作旗而越）。"""
+    while i < len(常):
+        v = 常[i]
+        if v in _全旗:
+            i += 2
+        elif v is None or v.startswith('-'):
+            i += 1
+        else:
+            return i
+    return i
 
 
 def _限(s, 顶=24):
@@ -976,6 +994,31 @@ class _py析:
             elif not isinstance(nd, ast.ClassDef):
                 for x in ast.walk(nd):
                     self._记赋(x, self.模)
+        self.包 = set()                       # git 之包：函（或 lambda 所赋之名）之体以 ['git', …] + 其参 调之——其调之首令即 git 之令（⛔只凭名）
+        名们 = {id(x.value): t.id for x in ast.walk(self.树) if isinstance(x, ast.Assign) and isinstance(x.value, ast.Lambda)
+              for t in x.targets if isinstance(t, ast.Name)}
+        for nd in ast.walk(self.树):
+            if isinstance(nd, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                a = nd.args
+                参 = {p.arg for p in a.posonlyargs + a.args + a.kwonlyargs + [x for x in (a.vararg, a.kwarg) if x]}
+                if any(isinstance(x, ast.BinOp) and isinstance(x.op, ast.Add) and self._常((self._平(x) or [None])[:1]) == ['git']
+                       and any(isinstance(n, ast.Name) and n.id in 参 for n in ast.walk(x.right)) for x in ast.walk(nd)):
+                    self.包.add(名们.get(id(nd)) if isinstance(nd, ast.Lambda) else nd.name)
+
+    def _平(self, e, 域=None, 深=0):
+        """列之串接（['git', …] + 某 + […]；变量之唯一赋係列者随之）→ 其诸元（不定之段作 Starred）；无列即 None。"""
+        if isinstance(e, (ast.List, ast.Tuple)):
+            return list(e.elts)
+        if isinstance(e, ast.Name) and 深:
+            vs = 域[e.id] if 域 is not None and e.id in 域 else self.模.get(e.id)
+            return list(vs[0].elts) if vs and len(vs) == 1 and isinstance(vs[0], (ast.List, ast.Tuple)) else None
+        if isinstance(e, ast.BinOp) and isinstance(e.op, ast.Add) and 深 < 6:
+            a, b = self._平(e.left, 域, 深 + 1), self._平(e.right, 域, 深 + 1)
+            if a is None and b is None:
+                return None
+            return (a if a is not None else [ast.Starred(value=e.left, ctx=ast.Load())]) + \
+                (b if b is not None else [ast.Starred(value=e.right, ctx=ast.Load())])
+        return None
 
     @staticmethod
     def _记赋(x, d):
@@ -1018,7 +1061,7 @@ class _py析:
             t = self.盘.读(p)
             try:
                 self.诸模[p] = _py析(t, p, self.盘, self.诸模) if t else None
-            except SyntaxError:
+            except (SyntaxError, ValueError):
                 self.诸模[p] = None
         return self.诸模[p]
 
@@ -1063,11 +1106,16 @@ class _py析:
         return {'*'}
 
     def _argv(self, 余, 域):
-        远, 删, 靶们 = False, False, []
+        远, 删, 靶们, 跳 = False, False, [], False
         for x in 余:
             vs = {'*'} if isinstance(x, ast.Starred) else self.值(x, 域)
+            if 跳:                                                      # 带值之旗（-o ci.skip）之值⛔作远端或靶
+                跳 = False
+                continue
             if vs and all(v.startswith('-') for v in vs):
                 删 = 删 or any(v in ('-d', '--delete') for v in vs)
+                远 = 远 or any(v.startswith('--repo') for v in vs)
+                跳 = any(v in _推值旗 for v in vs)
                 continue
             if not 远:
                 远 = True                                               # 首个非旗者係远端
@@ -1079,29 +1127,31 @@ class _py析:
     def _常(诸):
         return [x.value if isinstance(x, ast.Constant) and isinstance(x.value, str) else None for x in 诸]
 
-    def _列(self, nd, 域):
-        """argv 之列（何处皆算：调之参、或先存於数据而後以变量交 run 者）：'git' … 'push' … → 其靶。"""
-        常 = self._常(nd.elts)
-        if 'push' in 常 and 'git' in 常[:常.index('push')]:
-            return self._argv(nd.elts[常.index('push') + 1:], 域)
-        return []
+    def _列(self, 诸, 域, 起=None):
+        """argv 之列（何处皆算：调之参、或先存於数据而後以变量交 run 者）：'git' [全局之旗] push … → 其靶（push 须係其令·⛔认他令之参）。
+        起：git 之包之参（列不带 'git'·其首令即 git 之令）。"""
+        常 = self._常(诸)
+        if 起 is None:
+            if 'git' not in 常:
+                return []
+            起 = 常.index('git') + 1
+        j = _令位(常, 起)
+        return self._argv(诸[j + 1:], 域) if j < len(常) and 常[j] == 'push' else []
 
     def _调(self, nd, 域):
         f = nd.func
         名 = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else ''
-        壳名 = bool(re.search(r'git|^_?g$', 名))
-        for a in nd.args:                     # git 之包（_g(['push', …])）：列不带 'git'
-            诸 = a.elts if isinstance(a, (ast.List, ast.Tuple)) else a.left.elts if (
-                isinstance(a, ast.BinOp) and isinstance(a.op, ast.Add) and isinstance(a.left, (ast.List, ast.Tuple))) else None
-            if 诸 is not None and 壳名 and 'push' in self._常(诸) and 'git' not in self._常(诸):
-                余 = list(诸[self._常(诸).index('push') + 1:])
-                if 诸 is not getattr(a, 'elts', None):
-                    余 += list(a.right.elts) if isinstance(a.right, (ast.List, ast.Tuple)) else [ast.Starred(value=a.right, ctx=ast.Load())]
-                return self._argv(余, 域)
+        他 = self._他(f.value.id) if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else self
+        壳名 = bool(re.search(r'git|^_?g$', 名)) or 名 in (他.包 if 他 else ())
+        for a in nd.args if 壳名 else ():      # git 之包（_g(['push', …])、跑(['push', …] + x)）：列不带 'git'
+            诸 = self._平(a, 域)
+            r = self._列(诸, 域, 0) if 诸 is not None and 'git' not in self._常(诸) else []
+            if r:
+                return r
         平 = [a for a in nd.args if not isinstance(a, (ast.List, ast.Tuple))]   # 散参之式：_跑('git', 'push', …)、_git(工, 'push', …)
-        常 = self._常(平)
-        if 'push' in 常 and ('git' in 常[:常.index('push')] or 壳名):
-            return self._argv(平[常.index('push') + 1:], 域)
+        r = self._列(平, 域, None if 'git' in self._常(平) or not 壳名 else 0)
+        if r:
+            return r
         if 名 in _壳调 and nd.args:
             return [y for s in self.值(nd.args[0], 域) if re.search(r'\bgit\b[^;|&\n]*\bpush\b', s) for y in _sh之推(s, {}, '')]
         return []
@@ -1117,11 +1167,17 @@ class _py析:
             else:
                 单 = [('<模>', top, None)]
             for 者, nd0, 域 in 单:
+                内 = set()                   # 串接之内之列（已随其串接之全列而析）⛔复析
                 for nd in ast.walk(nd0):
                     if isinstance(nd, ast.Call):
                         出 += [(者, nd.lineno, 靶, 作) for 靶, 作 in self._调(nd, 域)]
+                    elif id(nd) in 内:
+                        continue
+                    elif isinstance(nd, ast.BinOp) and isinstance(nd.op, ast.Add) and self._平(nd, 域) is not None:
+                        内 |= {id(x) for x in ast.walk(nd) if x is not nd and isinstance(x, (ast.List, ast.Tuple, ast.BinOp))}
+                        出 += [(者, nd.lineno, 靶, 作) for 靶, 作 in self._列(self._平(nd, 域), 域)]
                     elif isinstance(nd, (ast.List, ast.Tuple)):
-                        出 += [(者, nd.lineno, 靶, 作) for 靶, 作 in self._列(nd, 域)]
+                        出 += [(者, nd.lineno, 靶, 作) for 靶, 作 in self._列(nd.elts, 域)]
         return 出
 
 
@@ -1196,11 +1252,16 @@ def _sh之推(文, env, 体):
             while k < len(toks) and toks[k] not in _壳断 and not (re.fullmatch(r'\d', toks[k]) and k + 1 < len(toks) and toks[k + 1][:1] in '<>'):
                 段.append(toks[k])
                 k += 1
-            远, 删, 靶们 = False, False, []
+            远, 删, 靶们, 跳 = False, False, [], False
             for t in 段:
                 vs = _sh值(t, env, 体)
+                if 跳:
+                    跳 = False
+                    continue
                 if all(v.startswith('-') for v in vs):
                     删 = 删 or any(v in ('-d', '--delete') for v in vs)
+                    远 = 远 or any(v.startswith('--repo') for v in vs)
+                    跳 = any(v in _推值旗 for v in vs)
                     continue
                 if not 远:
                     远 = True
@@ -1211,15 +1272,61 @@ def _sh之推(文, env, 体):
     return 出
 
 
+def _yml诸步(文):
+    """→ [{行, 键: 值}]：steps 下诸 `- ` 之步（行＝其首行）；run: | 之块去缩进。自析——⛔依 推报 之私函（推报改析而此⛔随崩）、⛔依 PyYAML。"""
+    L, 出, i = 文.split('\n'), [], 0
+    while i < len(L):
+        m = re.match(r'^(\s*)steps:\s*(#.*)?$', L[i])
+        i += 1
+        if not m:
+            continue
+        基, 当, 键缩 = None, None, None
+        while i < len(L):
+            l = L[i]
+            if not l.strip() or l.lstrip().startswith('#'):
+                i += 1
+                continue
+            缩, 项 = len(l) - len(l.lstrip()), re.match(r'^(\s*)-\s+(\S.*)$', l)
+            if 基 is None:
+                if not 项 or 缩 < len(m.group(1)):
+                    break
+                基 = 缩
+            if 缩 < 基 or (缩 == 基 and not 项):
+                break
+            if 缩 == 基:
+                当, 键缩, 体 = {'行': i + 1}, 项.start(2), 项.group(2)
+                出.append(当)
+            elif 缩 == 键缩:
+                体 = l.strip()
+            else:
+                i += 1
+                continue
+            i += 1
+            k = re.match(r'^([\w-]+):\s*(.*)$', 体)
+            if not k:
+                continue
+            v = k.group(2).strip()
+            if re.fullmatch(r'[|>][+-]?\d*', v):
+                块 = []
+                while i < len(L) and (not L[i].strip() or len(L[i]) - len(L[i].lstrip()) > 键缩):
+                    块.append(L[i])
+                    i += 1
+                c = min((len(x) - len(x.lstrip()) for x in 块 if x.strip()), default=0)
+                当[k.group(1)] = '\n'.join(x[c:] for x in 块)
+            else:
+                当[k.group(1)] = v[1:-1] if len(v) >= 2 and v[0] == v[-1] and v[0] in '\'"' else v
+    return 出
+
+
 def _yml之写(文):
-    import 推报
-    env = dict(re.findall(r'(?m)^  ([A-Z_]+):\s*(\S+)\s*$', 推报._顶块(文, 'env')))
+    m = re.search(r'(?ms)^env:[ \t]*\n(.*?)(?=^\S|\Z)', 文)
+    env = dict(re.findall(r'(?m)^  ([A-Z_][A-Z0-9_]*):\s*(\S+)\s*$', m.group(1))) if m else {}
     出 = []
-    for s in 推报._诸步(文):
-        if 'push' in (s.get('run') or ''):
-            名 = s.get('id') or s.get('name') or '?'
-            i = 文.find(名)
-            出 += [(名, 文.count('\n', 0, i) + 1 if i >= 0 else 0, 靶, 作) for 靶, 作 in _sh之推(s['run'], env, s['run'])]
+    for s in _yml诸步(文):
+        run = s.get('run') or ''
+        if 'push' in run:                                       # ${{ env.X }} 先填（GitHub 先於 shell 代之）；余之 ${{ … }} 不定作 *
+            run = re.sub(r'\$\{\{[^}]*\}\}', '*', re.sub(r'\$\{\{\s*env\.(\w+)\s*\}\}', lambda x: env.get(x.group(1), '*'), run))
+            出 += [(s.get('id') or s.get('name') or '?', s['行'], 靶, 作) for 靶, 作 in _sh之推(run, env, run)]
     return 出
 
 
@@ -1241,7 +1348,7 @@ def 诸写(盘_):
         if p.endswith('.py'):
             try:
                 诸 = _py析(t, p, 盘_, 诸模).诸推()
-            except SyntaxError as e:
+            except (SyntaxError, ValueError) as e:
                 诸 = [('<析不得>', getattr(e, 'lineno', 0) or 0, '*', '写')]
         elif p.endswith(('.yml', '.yaml')):
             诸 = _yml之写(t)
@@ -1280,9 +1387,18 @@ def _调名(nd):
 
 
 def _带祖(nd, 祖):
+    """→ (节, [(祖, 其所在之域)])：域即祖之 body／orelse 等（判其在 if 之正支抑 else 之支）。"""
     yield nd, 祖
-    for c in ast.iter_child_nodes(nd):
-        yield from _带祖(c, 祖 + [nd])
+    for 域, v in ast.iter_fields(nd):
+        for c in (v if isinstance(v, list) else [v]):
+            if isinstance(c, ast.AST):
+                yield from _带祖(c, 祖 + [(nd, 域)])
+
+
+def _旗之支(祖, 参):
+    """在某 if 之正支（body）、其判含 参 而⛔带否（not、!=、not in、is not）——else 之支、否之判俱⛔算（默路之掩）。"""
+    return any(isinstance(a, ast.If) and 域 == 'body' and 参 in ast.unparse(a.test)
+               and not any(isinstance(n, (ast.Not, ast.NotEq, ast.NotIn, ast.IsNot)) for n in ast.walk(a.test)) for a, 域 in 祖)
 
 
 def _例外之闸(盘_, x, 演):
@@ -1291,16 +1407,15 @@ def _例外之闸(盘_, x, 演):
     for p in 盘_.含(fn, ['工具/*.py']):
         try:
             树 = ast.parse(盘_.读(p) or '')
-        except SyntaxError:
+        except (SyntaxError, ValueError):
             continue
         p = p.replace(os.sep, '/')
         for top in 树.body:
             者 = top.name if isinstance(top, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) else '<模>'
-            if (p == x['档'] and 者 == fn) or any(y.get('档') == p and y.get('函') == 者 for y in 演):
+            if (p == x['档'] and 者 == fn) or any(_者合({'档': p, '者': 者}, y) for y in 演 if y.get('函')):
                 continue
             for nd, 祖 in _带祖(top, []):
-                if isinstance(nd, ast.Call) and _调名(nd) == fn and (
-                        p != x['档'] or not any(isinstance(a, ast.If) and x['参'] in ast.unparse(a.test) for a in 祖)):
+                if isinstance(nd, ast.Call) and _调名(nd) == fn and (p != x['档'] or not _旗之支(祖, x['参'])):
                     犯.append('%s:%d（%s）调 %s 而⛔在 %s 之「%s」支下' % (p, nd.lineno, 者, fn, x['档'], x['参']))
     return 犯
 
@@ -1446,7 +1561,8 @@ def 验演(x, 录, 界=None):
 
 # ───────── 五、报之读（自走之首·问题早见） ─────────
 def 未消之坏(诸, 在主=lambda s: False):
-    """报/推 之 红／拒／败：同枝後有成、或其 sha 已入主枝、或係治枝而其後有成 → 已消；报/演 之果非 同／过／成 → 坏。新者在前。"""
+    """报/推 之 红／拒／败：同枝後有成、或其 sha 已入主枝、或係治枝而其後有成 → 已消；报/演 之果非 同／过／成 → 坏，
+    同所演之枝（ref，无即名）其後有 同／过 之演 → 已消（治而再演，⛔永印旧坏）。新者在前。"""
     推 = [d for d in 诸 if d.get('类') == '推']
     出 = []
     for d in 推:
@@ -1458,7 +1574,10 @@ def 未消之坏(诸, 在主=lambda s: False):
                 or (str(d.get('ref', '')).startswith('治-') and 後成):
             continue
         出.append(d)
-    出 += [d for d in 诸 if d.get('类') == '演' and d.get('果') not in 演之好 + 果默]
+    演 = [d for d in 诸 if d.get('类') == '演']
+    键 = lambda d: d.get('ref') or d.get('名')
+    出 += [d for d in 演 if d.get('果') not in 演之好 + 果默 and not (键(d) and any(
+        y is not d and y.get('果') in 演之好 + 果默 and 键(y) == 键(d) and str(y.get('时') or '') > str(d.get('时') or '') for y in 演))]
     return sorted(出, key=lambda d: str(d.get('时') or ''), reverse=True)
 
 
@@ -1527,6 +1646,17 @@ def 自测_执(T, 全):
         旧态 = 验去证({'推报验': '^[③④]'}, 盘(t))[0]
         _写档(t, {'.github/workflows/autopush.yml': open(os.path.join(ROOT, '.github', 'workflows', 'autopush.yml'), encoding='utf-8').read()})
         T('⑧之五 推报验（复用 推报.验）：旧 yml（一树二跑闸）⛔、今 yml ✓', bool(旧yml) and 旧态 == '⛔' and 验去证({'推报验': '^[③④]'}, 盘(t))[0] == '✓')
+        import 推报 as _推
+        _旧验 = _推.验
+        try:   # 闸分於 gate.yml（推报.验 受 他＝诸流）：⛔只交 autopush 而空绿
+            _推.验 = lambda yml, 钩, 他=None: ['③一闸：gate 直跑 pre-push'] if 'githooks/pre-push' in (他 or {}).get('gate.yml', '') else []
+            _写档(t, {'.github/workflows/gate.yml': 'jobs:\n  g:\n    steps:\n      - run: bash 工具/githooks/pre-push\n'})
+            分红 = 验去证({'推报验': '^[③④]'}, 盘(t))[0]
+            _写档(t, {'.github/workflows/gate.yml': 'jobs:\n  g:\n    steps:\n      - run: python3 工具/全测.py --片 1/3\n'})
+            分绿 = 验去证({'推报验': '^[③④]'}, 盘(t))[0]
+        finally:
+            _推.验 = _旧验
+        T('⑧之八 推报验 诸流俱交（推报.验 受 他 者）：gate.yml 直跑 pre-push → ⛔、无 → ✓（⛔只验 autopush.yml 而空绿）', 分红 == '⛔' and 分绿 == '✓')
         假 = {'法': [全({'id': '甲', '名': '甲', '据': 'x', '起': 9, '时': '开', '证': [{'档': 'a'}]})], '待': [],
               '废': [{'id': '废甲', '名': 'x', '据': 'x', '废于': '1027', '在': '540c1c91', '法': '甲', '去证': [{'无档': '工具/新.py'}]},
                     {'id': '废乙', '名': 'x', '据': 'x', '废于': '1027', '在': '540c1c91', '待合': 'A1', '限': 11, '去证': [{'无档': '工具/旧.py'}]}]}
@@ -1596,6 +1726,39 @@ def 自测_执(T, 全):
         红2 = 验写者(盘(t), 册2)[0]
         T('⑨之六 册坏：一族二写者（无多由）、例外逾一；册之写者寻不着其推（步名已易）→ 空名', any('写者恰一' in x and '主枝' in x for x in 红2)
           and any('例外 2 处' in x for x in 红2) and any('空名' in x and '删已改名' in x for x in 红2))
+        甲治 = open(os.path.join(t, '工具', '甲.py'), encoding='utf-8').read()
+        _写档(t, {'工具/甲.py': 甲治.replace("        直推()\n", "        pass\n    else:\n        直推()\n    if '--直' not in sys.argv:\n        直推()\n")})
+        T('⑨之七 例外之函在旗之 else 之支、或否之判（not in）下调 → 例外越界（默路之掩⛔过）',
+          sum('例外越界' in x for x in 验写者(盘(t), 册w)[0]) == 2)
+        _写档(t, {'工具/甲.py': 甲治,
+                  '工具/乙.py': ("import subprocess\nB = ['git']\n\n\ndef 跑(a):\n    return subprocess.run(['git', '-c', 'x=y'] + a)\n\n\n"
+                                "def 串(n):\n    subprocess.run(['git'] + ['push', 'origin', 'HEAD:refs/heads/章-%d' % n])\n\n\n"
+                                "def 变(n):\n    a = ['push', '-o', 'ci.skip', 'origin', 'HEAD:refs/heads/章-%d' % n]\n    subprocess.run(B + a)\n\n\n"
+                                "def 包(n):\n    跑(['push', '--repo=origin', 'HEAD:refs/heads/章-%d' % n])\n\n\n"
+                                "def 非推():\n    subprocess.run(['git', 'log', '--grep', 'push'])\n    跑(['fetch', 'origin', 'push'])\n")})
+        乙 = sorted((w['者'], w['靶']) for w in 诸写(盘(t)) if w['档'] == '工具/乙.py')
+        T('⑨之八 argv 之串接（[\'git\'] + […]、变量之列）、名不带 git 之包（体以 [\'git\', …] + 参 调者）、带值之旗（-o、--repo=）→ 俱解其靶；'
+          'push 非其令（git log --grep push、fetch … push）⛔认', 乙 == sorted([('包', '章-*'), ('串', '章-*'), ('变', '章-*')]))
+    finally:
+        shutil.rmtree(t, ignore_errors=True)
+    t = tempfile.mkdtemp(prefix='法用流_')
+    try:   # yml 自析：⛔依 推报 之私函（推报改析即随崩）；步之行即其首行；${{ env.X }} 先填
+        import 推报 as _推
+        _私 = {k: getattr(_推, k) for k in ('_诸步', '_顶块') if hasattr(_推, k)}
+        _写档(t, {'.github/workflows/v.yml': ("name: v\nenv:\n  MAIN: %s\njobs:\n  advance:\n    steps:\n      - uses: actions/checkout@v4\n"
+                                              "        with:\n          fetch-depth: 0\n      - name: 并\n        id: adv\n        run: |\n"
+                                              "          git push origin \"HEAD:refs/heads/${{ env.MAIN }}\"\n      - name: 他\n"
+                                              "        run: git push origin \"HEAD:refs/heads/${{ inputs.ref }}\"\n") % 主枝})
+        try:
+            for k in _私:
+                setattr(_推, k, lambda *a, **kw: (_ for _ in ()).throw(AttributeError('推报之私函已改')))
+            流 = sorted((w['者'], w['行'], w['靶']) for w in 诸写(盘(t)))
+        except Exception as ex:
+            流 = [str(ex)]
+        finally:
+            for k, v in _私.items():
+                setattr(_推, k, v)
+        T('⑨之九 yml 自析（推报之私函改而⛔崩）：步之行＝其 `- ` 之行、${{ env.MAIN }} 填之、余之 ${{ … }} 不定作 *', 流 == [('adv', 10, 主枝), ('他', 14, '*')])
     finally:
         shutil.rmtree(t, ignore_errors=True)
     # ⑩同功之检
@@ -1663,6 +1826,10 @@ def 自测_执(T, 全):
         L多 = 报之读(工, 诸=多)
         T('⑫之三 坏报六（推五、演一）→ 恰三行：新者在前（演·异 首）、末行「另 4」；空诸 → 无行', len(L多) == 3 and L多[0].startswith('⛔ 报·演 封版')
           and '另 4 坏报' in L多[-1] and 报之读(工, 诸=[]) == [])
+        T('⑫之五 演之坏：同所演之枝其後 过 → 消；他枝之 过 ⛔消之；无枝之名者以名', [d.get('ref') or d.get('名') for d in 未消之坏([
+            {'类': '演', 'ref': '备份/演/甲', '果': '红', '时': 时(1)}, {'类': '演', 'ref': '备份/演/甲', '果': '过', '时': 时(2)},
+            {'类': '演', 'ref': '备份/演/乙', '果': '红', '时': 时(1)}, {'类': '演', '名': '丙', '果': '红', '时': 时(3)},
+            {'类': '演', '名': '丙', '果': '过', '时': 时(2)}])] == ['丙', '备份/演/乙'])
         T('⑫之四 未消之坏：同枝後成、治枝後有成即消；章标须其 sha 入主方消（⛔一成即消诸章）', [d['ref'] for d in 未消之坏([
             {'类': '推', 'ref': '章-8', 'sha': 'a', '果': '红', '时': 时(1)}, {'类': '推', 'ref': '治-y', 'sha': 'b', '果': '成', '时': 时(2)},
             {'类': '推', 'ref': '治-x', 'sha': 'c', '果': '拒', '时': 时(1)}])] == ['章-8'])

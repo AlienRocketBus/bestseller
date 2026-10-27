@@ -541,6 +541,12 @@ def 断(印=True):
         L.append('  → `git fetch origin claude/the-novel-review-4dtuit && git merge --ff-only FETCH_HEAD`，或候 `python3 工具/接棒守.py --候主 %d`，再跑本器' % 下)
         return '候', L
     L.append('  【判】起。第%d章已封版且十一轮过——当起第%d章。' % (末, 下))
+    if 下 >= 411:   # ★1027 法用之守：开章即印本章须用之法与其证（≤10 行·零网）；封版 --前 印其红、--後 拦
+        try:
+            import 法用之守
+            L.extend('  ' + x for x in 法用之守.开(下))
+        except Exception as _e:
+            L.append('  ⛔法用之守印不出（%s）——python3 工具/法用之守.py --开 %d' % (_e, 下))
     L.append('  ── 下一条命令（⛔逐条照抄，序不许换）──')
     L.append('  python3 工具/心跳.py --跳 %d' % 下)
     if not 卡在(下):
@@ -682,7 +688,9 @@ def 报():
         print('  ⛔工作流账印不出：%s' % _e9)
     # ★1021 X54：W11 之器（D1 换齐随 W11 逐节同改）——自走 --全 印其命令，W11 开时照办（对位闸之孤器二件由此有路）
     print('· W11 之器（D1 老头年岁换齐随 W11 同改）：`python3 工具/D1施.py --核` → `python3 工具/D1施.py --施 --根 副本 --批 全` → `python3 工具/行号随移.py --施 --根 副本`')
-    print('· 推送：一律 `python3 工具/推.py`（文件锁、不排队、被拦即停；⛔自写排队脚本、⛔pgrep 猜进程）')
+    print('· 推送：一律 `python3 工具/推.py`——交 GitHub（推「治-<sha>」、本地⛔全测；GitHub 推时即闸、绿即并入主枝），'
+          '其印之 `推.py --候 <sha>` 後台零 token 候；封版後只 `接棒守.py --候主 N`（章-N 已触 autopush）；'
+          '报「拒」或 GitHub 停摆方 `推.py --直`（坑51；文件锁、不排队、被拦即停；⛔自写排队脚本、⛔pgrep 猜进程）')
     print('════ 自走 · 此刻该干哪一件 ════')
     for x in L:
         print(x)
@@ -848,6 +856,14 @@ def 自测():
     R.append(('⑨起前问云端有无「章-下」（1022 复核：⛔重写已封之章）',
               'if 云端已封(下):' in 码 and 码.index('if 云端已封(下):') < 码.index("【判】起。第%d章已封版且十一轮过")))
     R.append(('⑨之二 云端已封之判真跑得动（章-401 在云端）', 云端已封(401) is True))
+    try:   # ★1027 法用之守：【判】起 与「下一条命令」之间印 --开（N≥411）；其印 ≤10 行
+        import 法用之守 as _法
+        _开 = _法.开(411)
+    except Exception:
+        _开 = None
+    R.append(('⑨之四 【判】起 之下印法用之守 --开（N≥411·≤10 行），在「下一条命令」之前',
+              '法用之守.开(下)' in 码 and 码.index("【判】起。第%d章已封版且十一轮过") < 码.index('法用之守.开(下)')
+              < 码.index("── 下一条命令（⛔逐条照抄，序不许换）──") and isinstance(_开, list) and 1 < len(_开) <= 10))
     import 暂停令 as _停t
     _旧哨, _旧在, _旧记 = _停t.守书之哨, _停t.在, _停t.守书停记
     import 重取 as _重t

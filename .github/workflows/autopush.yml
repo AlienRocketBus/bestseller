@@ -1,20 +1,29 @@
-# 主枝之自推（1021 作者令「GitHub 自己去推」；1022 改）：一章封版即推一枝「章-N」（不动之标），GitHub 之机把它并进主枝、照 pre-push 之闸全跑；绿即推主枝。零 token、沙盒⛔候。
-# 1022 之改（403 封後主枝未进、书停）：旧以「存底枝之正文一变」触发——存底守五分一推，每推即触一回而 cancel 前一回，
-#   推闸跑二十分，五回俱被消、末回又败，主枝终未进。今以「章-N」之推触发（一章一回、⛔互消），且由此机自并（主枝已前进亦可并）。
+# 主枝之自推（1021 作者令「GitHub 自己去推」；1022 改；1027 坑51 再改）：沙盒只推暂存之枝——「章-N」（封版之标，存底 --标 所推）、
+#   「治-<sha>」（治推，工具/推.py 默交）；GitHub 之机把它并进主枝，推时 pre-push 即闸；绿即主枝进，红即主枝不动。零 token、沙盒⛔候。
+# 1022 之改（403 封後主枝未进、书停）：旧以「存底枝之正文一变」触发，五回俱被消；今以「章-N」之推触发（一章一回、⛔互消）。
+# 1027 之改（坑51·404、406—410 六败一成，主枝只由沙盒直推而进）：
+#   ①旧「推闸」一步先跑 pre-push，其中全测之 chk_hookspath 把 core.hooksPath 自愈挂回，「推主枝」之 push 遂把十余分之闸再跑一回；
+#   ②其间沙盒照 封版.py 旧印之「下一步 推.py」直推主枝，push 遂 non-fast-forward 而败——无 fetch、无重试；一章之树三跑闸。
+#   今：一试一闸（推时之 pre-push 即闸，⛔另跑一步）；被拒即取——章已在主枝即「已在」而止，否则并主枝再试（树变方重闸），至多三试；
+#   改 .github/workflows 之树 GITHUB_TOKEN 推不得，先判「拒」（⛔白跑闸）；治枝成即删、章标恒留；
+#   诸果（成／已在／红／拒／败）俱写 备份/报 之 报/推/<枝>.json 与 .txt（always），会话 git fetch 读之（推.py --候、接棒守 --候主）。
 name: autopush
 on:
   push:
-    branches: ['章-*']
+    branches: ['章-*', '治-*']
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
   group: autopush
   cancel-in-progress: false
+env:
+  MAIN: claude/the-novel-review-4dtuit
+  REPORT: 备份/报
 jobs:
   advance:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,17 +35,92 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: 并入封版之章
+      - name: 闸而并（推时 pre-push 即闸·一试一闸·至多三试）
+        id: adv
+        timeout-minutes: 100
+        shell: bash
         run: |
+          set +e
           git config user.name autopush
           git config user.email autopush@users.noreply.github.com
-          T="${GITHUB_SHA}"
-          git fetch -q origin "$T" || true
-          if git merge-base --is-ancestor "$T" HEAD; then echo "SKIP=1" >> "$GITHUB_ENV"; echo "封版之章已在主枝，免跑"; exit 0; fi
-          git merge --no-edit "$T" -m "autopush：并入 ${GITHUB_REF_NAME}（封版之章）"
-      - name: 推闸（与 工具/githooks/pre-push 同）
-        if: env.SKIP != '1'
-        run: bash 工具/githooks/pre-push
-      - name: 推主枝
-        if: env.SKIP != '1'
-        run: git push origin HEAD:refs/heads/claude/the-novel-review-4dtuit
+          git config core.hooksPath 工具/githooks
+          T="$GITHUB_SHA"; R="$GITHUB_REF_NAME"
+          O="$RUNNER_TEMP/推之印"; : > "$O"
+          GUO=败; YIN=; SHI=0
+          { echo "GUO=败"; echo "YIN=逾时"; } >> "$GITHUB_ENV"     # 本步逾时被杀亦有果（报步读之）；毕时之值後写而覆之
+          git fetch -q origin "$T" 2>/dev/null
+          for i in 1 2 3; do
+            SHI=$i
+            echo "── 第 $i 试 ──" >> "$O"
+            if ! git fetch -q origin "+refs/heads/$MAIN:refs/remotes/origin/$MAIN" >> "$O" 2>&1; then GUO=败; YIN=fetch; break; fi
+            if git merge-base --is-ancestor "$T" "origin/$MAIN"; then
+              GUO=已在; echo "✓已在：$R（${T:0:12}）已为主枝之祖——免闸" >> "$O"; break
+            fi
+            B0="$(git rev-parse "origin/$MAIN")"
+            git reset -q --hard "$B0"; git clean -qfd
+            if ! git merge --no-edit -m "autopush：并入 $R" "$T" >> "$O" 2>&1; then
+              git merge --abort 2>/dev/null; GUO=败; YIN=merge; break
+            fi
+            if [ -n "$(git diff --name-only "$B0" HEAD -- .github/workflows)" ]; then
+              GUO=拒; YIN=workflow
+              echo "⛔拒：所并之树改 .github/workflows——GITHUB_TOKEN 无 workflows 之权、推必被拒（⛔白跑闸）；沙盒兜底 python3 工具/推.py --直" >> "$O"
+              break
+            fi
+            if [ ! -x 工具/githooks/pre-push ]; then GUO=败; YIN=nohook; echo "⛔所并之树无可执行之 工具/githooks/pre-push——⛔无闸之推" >> "$O"; break; fi
+            G="$(git rev-parse --git-common-dir)/推闸之果"; rm -f "$G"
+            git push origin "HEAD:refs/heads/$MAIN" > "$RUNNER_TEMP/此试" 2>&1; rc=$?
+            cat "$RUNNER_TEMP/此试" >> "$O"
+            if [ $rc -eq 0 ]; then GUO=成; YIN=; break; fi
+            if grep -q '^红' "$G" 2>/dev/null || grep -q '⛔ 全测未过' "$RUNNER_TEMP/此试"; then GUO=红; break; fi
+            if grep -q 'refusing to allow .*workflow' "$RUNNER_TEMP/此试"; then GUO=拒; YIN=workflow; break; fi
+            git fetch -q origin "+refs/heads/$MAIN:refs/remotes/origin/$MAIN" >> "$O" 2>&1
+            # 被拒之语⛔可预知（GitHub 非 git 原生之 receive-pack；新 git 作「incorrect old value provided」）——凡 rejected 而主枝真进即再试
+            if grep -qE 'rejected|non-fast-forward|fetch first|cannot lock ref|failed to update ref|incorrect old value|stale info' "$RUNNER_TEMP/此试" \
+               && [ "$(git rev-parse "origin/$MAIN")" != "$B0" ]; then
+              GUO=败; YIN=non-ff; echo "· 闸中主枝已进（${B0:0:12}→$(git rev-parse --short=12 "origin/$MAIN")）——取而再试" >> "$O"; continue
+            fi
+            GUO=败; YIN=push; break
+          done
+          { echo "GUO=$GUO"; echo "YIN=$YIN"; echo "SHI=$SHI"; } >> "$GITHUB_ENV"
+          tail -n 80 "$O"
+          [ "$GUO" = 成 ] || [ "$GUO" = 已在 ]
+      - name: 删已并之治枝（章标恒留）
+        if: always() && (env.GUO == '成' || env.GUO == '已在')
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/钩"; git show "$GITHUB_SHA:工具/githooks/pre-push" > "$RUNNER_TEMP/钩/pre-push"; chmod +x "$RUNNER_TEMP/钩/pre-push"
+          git fetch -q origin "+refs/heads/$MAIN:refs/remotes/origin/$MAIN"
+          D=()
+          while read -r S N; do
+            case "$N" in refs/heads/治-*) git merge-base --is-ancestor "$S" "origin/$MAIN" && D+=(":$N") ;; esac
+          done < <(git ls-remote origin 'refs/heads/治-*')
+          if [ ${#D[@]} -gt 0 ]; then git -c core.hooksPath="$RUNNER_TEMP/钩" push -q origin "${D[@]}" || echo "⚠ 删治枝不成：${D[*]}"; fi
+      - name: 报（备份/报·报/推/<枝>.json 与 .txt）
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          R="$GITHUB_REF_NAME"; T="$GITHUB_SHA"
+          git config user.name autopush; git config user.email autopush@users.noreply.github.com
+          mkdir -p "$RUNNER_TEMP/钩"; git show "$T:工具/githooks/pre-push" > "$RUNNER_TEMP/钩/pre-push"; chmod +x "$RUNNER_TEMP/钩/pre-push"
+          git show "$T:工具/推报.py" > "$RUNNER_TEMP/推报.py" 2>/dev/null || cp 工具/推报.py "$RUNNER_TEMP/推报.py"
+          [ -f "$RUNNER_TEMP/推之印" ] || echo "⛔闸而并一步未跑（取码或装机先败）" > "$RUNNER_TEMP/推之印"
+          MA="$(git ls-remote origin "refs/heads/$MAIN" | cut -f1)"
+          D="$RUNNER_TEMP/报"
+          python3 "$RUNNER_TEMP/推报.py" --写 --ref "$R" --sha "$T" --果 "${GUO:-败}" --因 "${YIN:-}" --试 "${SHI:-0}" \
+            --印 "$RUNNER_TEMP/推之印" --主 "$MA" --跑 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --出 "$D" || exit 1
+          for k in 1 2 3 4 5; do
+            P=()
+            if git fetch -q origin "+refs/heads/$REPORT:refs/remotes/origin/$REPORT" 2>/dev/null; then P=(-p "origin/$REPORT"); fi
+            export GIT_INDEX_FILE="$RUNNER_TEMP/报.idx"; rm -f "$GIT_INDEX_FILE"
+            if [ ${#P[@]} -gt 0 ]; then git read-tree "origin/$REPORT"; else git read-tree --empty; fi
+            for f in json txt; do
+              git update-index --add --cacheinfo "100644,$(git hash-object -w "$D/报/推/$R.$f"),报/推/$R.$f"
+            done
+            TR="$(git write-tree)"; unset GIT_INDEX_FILE
+            C="$(git commit-tree "$TR" "${P[@]}" -m "报：$R（${T:0:12}）→ ${GUO:-败}")"
+            if git -c core.hooksPath="$RUNNER_TEMP/钩" push -q origin "$C:refs/heads/$REPORT"; then echo "✓报 → $REPORT：报/推/$R.json（${GUO:-败}）"; exit 0; fi
+            sleep $((k * 3))
+          done
+          echo "⛔报推不上 $REPORT（五试）"; exit 1

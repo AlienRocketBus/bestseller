@@ -8,6 +8,28 @@
 #     ★其余任一项红照旧拦;★★本章回执一交,即恢复「全绿才许推」。
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
+# 【1027·坑51】暂存之推⛔本地全测：git 所喂之行（<本地ref> <本地sha> <远端ref> <远端sha>；删者本地作 (delete)、sha 全 0）
+#   所推之远端 ref 俱係 refs/heads/章-*（封版之标）、治-*（治推）、备份/*（存底、心跳、报）者——章-*、治-* 一推即触 GitHub autopush，
+#   推时 pre-push 即闸、一试一回，果入 备份/报（工具/推报.py）；本地⛔再跑十余分之全测（旧：一章之树三跑闸·GitHub 之路恒输）。
+#   ★余者（主枝，或混主枝）照旧全闸；git 所喂无一行（俱已同或已被拒，⛔一 ref 将动）亦免；手跑（无参、⛔读 stdin）照旧全闸。
+if [ $# -ge 1 ]; then
+  N_ALL=0; N_STAGE=0
+  while read -r L_REF L_SHA R_REF R_SHA; do
+    [ -n "$R_REF" ] || continue
+    N_ALL=$((N_ALL + 1))
+    case "$R_REF" in
+      refs/heads/章-*|refs/heads/治-*|refs/heads/备份/*) N_STAGE=$((N_STAGE + 1)) ;;
+    esac
+  done
+  if [ "$N_ALL" -eq 0 ]; then
+    echo "· pre-push：无一 ref 将动（俱已同或已被拒）——免闸。"
+    exit 0
+  fi
+  if [ "$N_ALL" -eq "$N_STAGE" ]; then
+    echo "· pre-push：所推 $N_ALL 枝俱暂存（章-*／治-*／备份/*）——闸归 GitHub autopush（果见 备份/报），本地⛔跑全测。"
+    exit 0
+  fi
+fi
 if [ "$ZM_SKIP_HOOK" = "1" ]; then
   printf '%s | 绕行 | %s | %s\n' "$(date '+%Y-%m-%d %H:%M')" "${ZM_STREAM:-?}" "$(git log -1 --pretty=%s | cut -c1-90)" >> 设定/绕行审计.log
   N=$(grep -c '绕行' 设定/绕行审计.log 2>/dev/null || echo 0)
@@ -21,6 +43,8 @@ fi
 # 【1022·推闸中】全测之中写 设定／版本／正文 即令「负测留字」红而拦推（1022 实踩）：起时记 pid，PreToolUse 钩（工具/推闸中.py）见之即拦其写；毕即删
 GD="$(git rev-parse --git-common-dir)"; case "$GD" in /*) ;; *) GD="$ROOT/$GD" ;; esac
 echo $$ > "$GD/推闸中.pid"; trap 'rm -f "$GD/推闸中.pid"' EXIT
+# 【1027·坑51】闸之果落 $GD/推闸之果（绿／红）：autopush 据之分「闸红」与「推被拒」（⛔凭 push 之 rc 混判）
+GUO_F="$GD/推闸之果"; rm -f "$GUO_F"
 echo "── pre-push:全测中(批115)……"
 # 【W51·1017】全测改并行（工具/全测并.py：工作副本隔离、同表同判；副本建不成即自退串行）——一处试：同一 HEAD 串 1153 秒、并 408 秒，186 项过否全同，主仓库 sha256 同
 OUT=$(ZM_STREAM="${ZM_STREAM:-streamA-cli}" python3 工具/全测并.py 2>&1)
@@ -28,16 +52,20 @@ rc=$?
 echo "$OUT"
 if [ $rc -eq 0 ]; then
   echo "✓ 全测通过,放行。"
+  echo 绿 > "$GUO_F"
   exit 0
 fi
 if echo "$OUT" | grep -q '✓推闸·分等：放行'; then
   echo "✓ 只器之红，只报不拦（X55·读者可见之闸俱绿）；器红入 设定/器红账.json 限三章治。"
+  echo 绿 > "$GUO_F"
   exit 0
 fi
 if echo "$OUT" | grep -q '✓推闸·跑轮档：放行'; then
   echo "✓ 跑轮档放行(非全绿;所放行者只结构性之二项,详见上「推闸」之语)。"
   echo "  ★而本章回执一交,此二项自销,届时须全绿方许推。"
+  echo 绿 > "$GUO_F"
   exit 0
 fi
 echo "⛔ 全测未过,推送已拦停。修好再推,或 ZM_SKIP_HOOK=1 绕行并记因(绕行会留痕计数)。"
+echo 红 > "$GUO_F"
 exit 1

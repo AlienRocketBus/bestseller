@@ -4298,6 +4298,8 @@ def _冷轮逾期俱有否决记(raw):
     '负测·段序之守',   # 1023 作者令：设计十章→写十章→审十章，暂停令之到点——红即拦
     '负测·重取',   # 1024·盘坏：容器之盘坏块即稿与库读不出、存底亦死——红即拦
     '负测·大审挂限',   # 1024 坑㊽：大审之限定读者可见之致命几时治——录成早於下一章之限，册一成即逾、限误则治静静拖——红即拦
+    '负测·autopush',   # 1027 坑51：主枝之进係读者读得到与否；GitHub 之闸二跑而恒败、主枝只由沙盒直推——守闸之闸，红即拦
+    '负测·法用之守',   # 1027 坑52：法立而囤灰——守已取之法之守被悄悄改坏，则诸法复归闲置——红即拦
 }
 
 
@@ -4677,8 +4679,16 @@ def chk_fengban_neg():
 
 
 def chk_tui_neg():
-    """负测·推（1022 坑㊺：会话起於游离之 HEAD、推旧枝而 non-fast-forward 三回）：`工具/推.py --自测`——枝正：游离而枝为其祖即挪枝检出。"""
+    """负测·推（1022 坑㊺：会话起於游离之 HEAD、推旧枝而 non-fast-forward 三回）：`工具/推.py --自测`——枝正：游离而枝为其祖即挪枝检出；
+    1027 坑51：默交 GitHub（治-<sha12>）、--候 零 token（坏报即早返）、--直 兜底。"""
     return _自测之项('负测·推', '工具/推.py')
+
+
+def chk_autopush_neg():
+    """负测·autopush（1027 坑51：autopush 一树二跑闸、无取无重试而恒败，主枝只由沙盒直推而进）：`工具/推报.py --自测`——
+    静验 autopush.yml 与 pre-push（一试一闸、被拒即取而判已在或并而再试至多三、改 workflows 先判拒、报写 备份/报、只删治枝、
+    触含 章-*／治-*、钩只免三暂存之前缀而主枝照闸），旧 yml（540c1c91）回灌须红；桩闸真跑 yml 之 bash 於临时裸库（成、主动、已在、红、拒）。"""
+    return _自测之项('负测·autopush', '工具/推报.py')
 
 
 def chk_paozhang_neg():
@@ -4751,6 +4761,23 @@ def chk_jiluo_neg():
 def chk_chongqu_neg():
     """负测·重取（1024 省 token·C 组·盘坏之哨）：`工具/重取.py --自测`——见盘坏之旗只印重 clone 换目之步，⛔自跑。"""
     return _自测之项('负测·重取', '工具/重取.py')
+
+
+def chk_fayong_neg():
+    """负测·法用之守（1027 作者令「一定要有一个专门的机制确保这一切发生」·坑52）：`工具/法用之守.py --自测`——
+    证之诸式真伪两局（假仓：档、跑、git、报、钩、或若限轻起阶）、完备之律（法立无证）、待之逾限、缓之界、接线；
+    并以 406—410 之真料回放：autopush 之证五章俱红（真败），而「主枝含章-N」俱绿（只验主枝即空跑）。守之守——红即拦。"""
+    return _自测之项('负测·法用之守', '工具/法用之守.py')
+
+
+def chk_fayong():
+    """法用之守（1027）：今之状——完备之律（总章§八与方法账 1027 起之行俱有册之据）、册之形、逾限之待（只报·入器红账）。"""
+    out = run('法用之守', ['工具/法用之守.py', '--报'], timeout=120)
+    if out is None:
+        return False, '运行失败（崩或逾时）'
+    末 = [x.strip() for x in out.strip().split('\n') if x.strip()]
+    语 = 末[-1] if 末 else '（无印）'
+    return 语.startswith('✓'), 语[:170]
 
 
 def chk_paozhang():
@@ -4986,9 +5013,12 @@ def 诸项(quick):
         items.append(('负测·稿差', chk_gaocha_neg))        # ★1024 省 token·A：窄审之稿差
         items.append(('负测·记落', chk_jiluo_neg))         # ★1024 省 token·B：记席机械之格归器
         items.append(('负测·重取', chk_chongqu_neg))       # ★1024 省 token·C：盘坏之哨
+        items.append(('负测·法用之守', chk_fayong_neg))    # ★1027 作者令·坑52：已取之法每章有证（守之守）
+        items.append(('法用之守', chk_fayong))             # ★1027：完备与逾限之待（只报）
         items.append(('负测·段序之守', chk_duanxu_neg))    # ★1023 作者令·段序
         items.append(('负测·跑账', chk_paozhang_neg))       # ★1022·新机承账
         items.append(('负测·推', chk_tui_neg))              # ★1022·坑㊺ 枝正
+        items.append(('负测·autopush', chk_autopush_neg))   # ★1027·坑51 GitHub 推闸真并、备份/报
         items.append(('负测·封版', chk_fengban_neg))        # ★1022·--前 跑质量三闸
         items.append(('负测·接棒守', chk_jiebang_neg))       # ★1022·书停：交棒後候接
         items.append(('负测·改单', chk_gaidan_neg))         # ★W60·X11：施单之守与式段之约

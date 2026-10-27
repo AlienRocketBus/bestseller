@@ -420,7 +420,8 @@ def _环(文):
     return 出
 
 
-_主推式 = re.compile(r'git\s+(?:-c\s+\S+\s+)*push\b[^\n]*refs/heads/(?:\$MAIN|\$\{MAIN\}|' + re.escape(主枝) + r')\b')
+# 推主枝之形：refspec 之的为主枝——带 refs/heads/ 与否、$MAIN／${MAIN}／字面（B-v 驳：旧式只认「refs/heads/$MAIN」而 \b 不认 ${MAIN}，"$CAND:$MAIN" 之短式漏）
+_主推式 = re.compile(r'git\s+(?:-c\s+\S+\s+)*push\b[^\n]*?[\s:"\'](?:refs/heads/)?(?:\$MAIN|\$\{MAIN\}|' + re.escape(主枝) + r')(?![\w/-])')
 _推式 = re.compile(r'git\s+(?:-c\s+\S+\s+)*push\b[^\n]*')
 # 直跑钩之形：行首、;&|!( 之後、then／do／else、bash／sh／source／exec 之後（⛔只认行首——`if ! bash 工具/githooks/pre-push` 亦一树二跑）
 _直钩式 = re.compile(r'(?m)(?:^|[;&|!(]|\b(?:then|do|else|bash|sh|source|exec)\b)\s*(?:\./)?["\']?[^\s"\';|&]*(?:工具/githooks|钩)/pre-push\b')
@@ -631,6 +632,8 @@ def 验乙(诸文, 钩):
     for 名, w in (('演练.yml', Y), ('gate.yml', G)):
         if any(_主推式.search(r) for r in _跑文(w)) or '"$CAND:refs/heads/$MAIN"' in (诸文.get(名) or ''):
             缺.append('④主推：%s ⛔推主枝' % 名)
+    if _推式.search('\n'.join(_跑文(Y))) or re.search(r'git/refs\b', 诸文.get('演练.yml') or ''):
+        缺.append('④主推：演练.yml ⛔git push、⛔动 git/refs（演只经 推报.py --落 写 备份/报：⛔推主枝、⛔删枝）')
     # ⑤已在 ⑥拒（备候）
     备跑 = '\n'.join(s.get('run') or '' for j in 备 for s in j.get('steps') or [])
     if not (re.search(r'"\$MODE" = 推[^\n]*merge-base --is-ancestor "\$T" "origin/\$MAIN"', 备跑) and 'GUO=已在' in 备跑):
@@ -1297,6 +1300,11 @@ def 自测():
         '演练删枝': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin ":refs/heads/$REF"\n          python3 工具/推报.py --落 "$D"')),
         '演练⛔推之触': ('演练.yml', y.replace("    branches: ['备份/演/*']\n", "    branches: ['演/*']\n")),
         '绕钩之字': ('gate.yml', g.replace('git config core.hooksPath 工具/githooks', 'export ZM_SKIP_HOOK=1')),
+        # B-v 驳：推主枝之短式（"$CAND:$MAIN"、${MAIN}、推本地同名之枝）旧式俱漏
+        '演练推主枝·短式': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$CAND:$MAIN"\n          python3 工具/推报.py --落 "$D"')),
+        '演练推主枝·${MAIN}': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$CAND:refs/heads/${MAIN}"\n          python3 工具/推报.py --落 "$D"')),
+        '演练推同名之枝': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$MAIN"\n          python3 工具/推报.py --落 "$D"')),
+        'autopush 二推主枝·短式': ('autopush.yml', a.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$GITHUB_SHA:$MAIN"\n          python3 工具/推报.py --落 "$D"')),
     }
     错 = [k for k, (n, v) in 坏形.items() if v == 诸[n] or not 验乙(dict(诸, **{n: v}), 钩)]
     T('②之五 乙形诸改坏（%d 形）各红%s' % (len(坏形), ('：未红 ' + '、'.join(错)) if 错 else ''), not 错)

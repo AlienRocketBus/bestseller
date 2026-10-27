@@ -320,7 +320,7 @@ def 自测():
     d = json.load(io.open(os.path.join(ROOT, '设定', 'canon事实库.json'), encoding='utf-8'))
     有 = any(x.get('id') == 'FS18' and str(x.get('status', '')).lower() in 清
              for x in d.get('foreshadows', []))
-    R.append(('②FS18 今已销（其付在313·拍101—110）', 有))
+    R.append(('②FS18 今已销（其付在313·拍104—113·D1施前作拍101—110）', 有))
     R.append(('③回执里确有「FS18…本章付毕」之句（⛔证②不是空销）',
               any(i == 'FS18' for i, _ in _扫回执())))
     # ④⛔「付毕」二字不在同一句者不认（不许拿一句不相干的话当付讫）

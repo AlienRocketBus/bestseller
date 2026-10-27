@@ -287,6 +287,18 @@ def 照整章(卡):
     return sorted(x for x in 提 if not re.search(r'(?<!\d)%s\s*[:：]\s*\d' % x, 卡))
 
 
+def 前文之缺(d, n):
+    """★1027 X58：章料拆二档——_料.md 点明 _料_前文.md 者，彼档须在、⛔逾 120KB；旧之一档（未点明）照旧。→ [坏]"""
+    p, 前 = os.path.join(d, '_料.md'), os.path.join(d, '_料_前文.md')
+    if not os.path.exists(p) or '_料_前文.md' not in open(p, encoding='utf-8').read()[:1200]:
+        return []
+    if not os.path.exists(前):
+        return ['章料之前文白文与账（_料_前文.md）不在（先跑 python3 工具/章料.py %d）' % n]
+    if os.path.getsize(前) > 120 * 1024:
+        return ['章料·前文 %d KB 逾 120KB（坑③）' % (os.path.getsize(前) // 1024)]
+    return []
+
+
 def 料全(n, root=ROOT):
     坏 = []
     d = os.path.join(root, '版本', '第%d章' % n)
@@ -297,6 +309,7 @@ def 料全(n, root=ROOT):
         坏.append('无章料（先跑 python3 工具/章料.py %d）' % n)
     elif os.path.getsize(p) > 120 * 1024:
         坏.append('章料 %d KB 逾 120KB（坑③）' % (os.path.getsize(p) // 1024))
+    坏 += 前文之缺(d, n)
     for k in (n - 1, n - 2):
         if not 正文档(k, root):
             坏.append('第%d章正文不在' % k)
@@ -342,6 +355,16 @@ def 自测():
     共 += 1; ok += all(os.path.exists(os.path.join(ROOT, '工具', x[0] + '.py')) for x in 致命 + 报)
     共 += 1; ok += (线(381) == '暗' and 线(380) == '主' and 线(404) == '主' and 线(405) == '暗' and 线(999) is None)   # 右栏之章亦认
     共 += 1; ok += (照整章('点户照 268 原句，腔照 211') == ['211', '268'] and 照整章('照 268 原句（268:61—77）') == [])
+    import tempfile as _tf9                   # ★1027 X58：二档之料——点明彼档而彼档缺即红；彼档在、旧之一档 → 不红
+    with _tf9.TemporaryDirectory() as _d9:
+        open(os.path.join(_d9, '_料.md'), 'w', encoding='utf-8').write('# 料\n## 〔本料二档〕\n前文在 `版本/第9章/_料_前文.md`\n')
+        _缺9 = 前文之缺(_d9, 9)
+        open(os.path.join(_d9, '_料_前文.md'), 'w', encoding='utf-8').write('# 前文\n')
+        _在9 = 前文之缺(_d9, 9)
+        open(os.path.join(_d9, '_料.md'), 'w', encoding='utf-8').write('# 料（旧之一档）\n')
+        os.remove(os.path.join(_d9, '_料_前文.md'))
+        _旧9 = 前文之缺(_d9, 9)
+    共 += 1; ok += (len(_缺9) == 1 and '_料_前文.md' in _缺9[0] and _在9 == [] and _旧9 == [])
     # ★X02：红处之要——五逗不重计、硬闸印句、起草闸印甲层红项（造局以字串，⛔钉盘上之数）
     文 = ('# 第九百九十九章 试\n\n甲，乙，丙，丁，戊，己。他说——好。\n平常一句。\n\n---\n\n'
           '【本章亮点】\n\n①子，丑，寅，卯，辰，巳。②平。')

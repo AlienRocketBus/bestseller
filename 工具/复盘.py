@@ -11,7 +11,12 @@
       → 写 设定/复盘/<月日>_W12_380造式.md（已在则⛔覆）；自＝任务起时（缺则取工作流账之「起」）
   python3 工具/复盘.py 主环 二代定稿 --自 2026-10-09T03:05 [--至 2026-10-09T04:05]   # 非工作流之任务（总编辑亲手）亦须复盘
   python3 工具/复盘.py W61 401造式 wf_… --简 --平台 84.97   # --平台＝本会话 get_session 之 cost_usd（X56）； ★1021 章之简式：数归器、判只三问三句（作者令「总结⛔过度消耗」）
+  python3 工具/复盘.py W72 题 wf_… --简 --平台 "不可分：<由>"   # 一会话跨数件、get_session 之 cost_usd 係累计而分不出者（由四字以上）
+  ★1027（执行之审 #86）：--简 无 --平台 即拒（器计曾低估 2.4 倍·X56）。
   python3 工具/复盘.py --验     # 闸：设定/复盘/ 诸档须有 耗费／无用功／改进方案／坑 四节，坑节须点坑账之号或写「无新坑」
+      ★1027 起之档另验二样（执行之审 #5 #58 #81②·「立停」之证）：
+        ①逾估：实费（平台之实，无则总费）＞工作流账该件预估×1.5 而档无「逾估：<由>」即红；
+        ②机器之活：「机器能办而花token」占实费 >5% 者，其「进化」（简式）或「改进方案」须引瑕疵总账在账之 X 号、或「已行：工具/<器>.py」而其器在盘
   python3 工具/复盘.py --效账   # 诸复盘之「效」汇一表：总费、服务目标之费与其占、浪费、机器能办而花token；按类比上回
   python3 工具/复盘.py --自测
 
@@ -69,6 +74,52 @@ def 制作(自, root=ROOT, 至=None):
 
 def 坑号们(t):
     return set(re.findall(r'[\u2460-\u2473\u3251-\u325F\u32B1-\u32BF]|坑\d+', t))
+
+
+新律起 = '1027'   # ★1027 执行之审 #5 #58 #81②：逾估之由、机器之活之引——自此日之档起验（旧档⛔追·同 1015／1018／1021 之例）
+
+
+def _元(效文, 项):
+    m = re.search(r'^- %s：(?:约\s*)?\$\s*(\d+(?:\.\d+)?)' % 项, 效文, re.M)
+    return float(m.group(1)) if m else None
+
+
+def 估之元(W, root=ROOT):
+    """工作流账该件之「预估」之 $ 数（首见者）；无件、无 $ → None。"""
+    try:
+        件 = next((x for x in json.load(open(os.path.join(root, '设定', '工作流账.json'), encoding='utf-8'))['件'] if x.get('id') == W), {})
+    except Exception:
+        return None
+    m = re.search(r'\$\s*(\d+(?:\.\d+)?)', str(件.get('预估', '')))
+    return float(m.group(1)) if m else None
+
+
+def 新律之坏(名, t, root=ROOT):
+    """★1027 起之复盘：①逾估无由 ②机器之活逾 5% 而未引账／未行。→ [坏]"""
+    坏 = []
+    效 = re.search(r'^## 效[^\n]*\n(.*?)(?=^## |\Z)', t, re.M | re.S)
+    if not 效:
+        return 坏
+    实 = _元(效.group(1), '平台之实') or _元(效.group(1), '总费')
+    m = re.match(r'\d{4}_(W\d+)_', 名)
+    估 = 估之元(m.group(1), root) if m else None
+    if 实 and 估 and 实 > 1.5 * 估 and not re.search(r'逾估[：:]\s*(?:\S\s*){4,}', t):
+        坏.append('%s 实费 $%.2f 逾预估 $%.2f 之 1.5 倍，而无「逾估：<由>」（立停之证·1027 执行之审 #81②）' % (名, 实, 估))
+    机 = _元(效.group(1), '机器能办而花token')
+    if 实 and 机 and 机 / 实 > 0.05:
+        问 = re.search(r'^- 进化：(.*)$', t, re.M)
+        改 = re.search(r'^## 改进方案[^\n]*\n(.*?)(?=^## |\Z)', t, re.M | re.S)
+        文 = (问.group(1) if 问 else '') + '\n' + (改.group(1) if 改 else '')
+        try:
+            账 = open(os.path.join(root, '设定', '瑕疵总账.md'), encoding='utf-8').read()
+        except OSError:
+            账 = ''
+        引 = [x for x in re.findall(r'X\d+', 文) if re.search(r'^\|\s*%s\s*\|' % x, 账, re.M)]
+        行 = [x for x in re.findall(r'已行[：:][^\n]*?工具/([\w\u4e00-\u9fff]+\.py)', 文) if os.path.exists(os.path.join(root, '工具', x))]
+        if not 引 and not 行:
+            坏.append('%s 机器能办而花token $%.2f 占实费 %.0f%%（>5%%），而其「进化」／「改进方案」未引瑕疵总账在账之 X 号、亦无「已行：工具/<器>.py」（坑⑫·1027 执行之审 #5 #58）'
+                      % (名, 机, 100 * 机 / 实))
+    return 坏
 
 
 def 验(root=ROOT):
@@ -135,6 +186,8 @@ def 验(root=ROOT):
                     m = re.search(r'^- %s：(.*)$' % 项, 完.group(1), re.M)
                     if not m or not m.group(1).strip() or m.group(1).strip().startswith('（填'):
                         坏.append('%s 之完美之问缺「%s」' % (名, 项))
+        if m日 and m日.group(1) >= 新律起:
+            坏 += 新律之坏(名, t, root)
         坑节 = t.split('## 坑', 1)[1] if '## 坑' in t else ''
         号 = 坑号们(坑节)
         if '## 坑' in t and not re.search(r'^\s*[-*]?\s*无新坑', 坑节, re.M) and not 号:
@@ -245,7 +298,8 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
          '- 类：（填：一章／造剧情／核验／治器设计……——效账按类比上回）',
          '- 目标：（填：此件最该服务之目标一句）',
          '- 总费：$%.2f（自动：诸席 $%.2f＋主环 $%.2f）' % (总金 + (主['金'] if 主 else 0), 总金, 主['金'] if 主 else 0),
-         ] + (['- 平台之实：$%.2f（本会话 get_session 之 cost_usd·X56：以此为准；器计 $%.2f，差 %.1f 倍）' % (平台, 总金 + (主['金'] if 主 else 0), 平台 / max(总金 + (主['金'] if 主 else 0), 0.01))] if 平台 else []) + [
+         ] + (['- 平台之实：$%.2f（本会话 get_session 之 cost_usd·X56：以此为准；器计 $%.2f，差 %.1f 倍）' % (平台, 总金 + (主['金'] if 主 else 0), 平台 / max(总金 + (主['金'] if 主 else 0), 0.01))]
+              if isinstance(平台, (int, float)) else ['- 平台之实：%s（以器计之总费为准）' % 平台] if 平台 else []) + [
          '- 服务目标之费：$（填：直接产出目标之席与来回之费，引费审之类或费账）',
          '- 浪费：$（填：无用功逐条之 $ 合计）',
          '- 机器能办而花token：$（填：须 $0；非零即入坑账。主环等待／轮询之回，机器自认：%d 回 $%.2f）' % 等,
@@ -269,7 +323,11 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
     if 简:   # ★1021 简式：任务、流程、制作、耗费、效（数俱器填）＋三问三句＋坑；长节俱去（作者令「总结不要过度消耗」）
         止 = 文.index('## 与上回比（一次比一次好·1009）')
         文 = [x for x in 文[:止] if not x.startswith('## 产出') and not x.startswith('（总编辑填：成了什么')]
-        文 = [('- 类：一章' if x.startswith('- 类：（填') else '- 目标：写%s，以最少之钱写到最好' % 题 if x.startswith('- 目标：（填') else
+        _名 = str(件.get('名', '')) + ' ' + 题      # ★1027：类照件名（旧恒填「一章」——W72、W73 之治器与审入写书之占，费哨失真）
+        _类 = ('一章' if re.search(r'第\d+章|\d{3}造式|造式二代', _名) else '造剧情' if '剧情庭' in _名
+              else '核验' if re.search(r'审', _名) else '治器设计')
+        文 = [('- 类：%s' % _类 if x.startswith('- 类：（填') else
+              ('- 目标：写%s，以最少之钱写到最好' % 题 if _类 == '一章' else '- 目标：办%s，以最少之钱办到最好' % 题) if x.startswith('- 目标：（填') else
               '- 服务目标之费：$%.2f（自动：诸席）' % 总金 if x.startswith('- 服务目标之费：') else
               '- 机器能办而花token：$0（机器自认等待 %d 回 $%.2f）' % 等 if x.startswith('- 机器能办而花token：') else x) for x in 文]
         文 += ['## 三问（1021 作者令：每章之始与末一想即得，⛔长文）', '',
@@ -307,6 +365,39 @@ def 自测():
         ok = ok and 验(t)[0] is True                                    # 「约 $N」亦过
         open(f, 'w', encoding='utf-8').write(re.sub(r'- 浪费：.*', '- 浪费：约一块', s2) + '无新坑\n')
         ok = ok and 验(t)[0] is False                                   # 无 $ 之数仍红
+        os.remove(f)
+        # ★1027 执行之审 #5 #58 #81②：1027 起之档——逾估无由即红、写「逾估：」即过；机器之活逾 5% 未引账即红、引在账之 X 或已行之器即过；旧档（1026）⛔追
+        json.dump({'件': [{'id': 'W9', '名': '测', '目的': '测', '预估': '约 2 时、$10', '裁': []}]},
+                  open(os.path.join(t, '设定', '工作流账.json'), 'w'), ensure_ascii=False)
+        open(os.path.join(t, '设定', '瑕疵总账.md'), 'w', encoding='utf-8').write('## 未治\n| X7 | 机器之活 | s | t | 420 段前 |\n')
+        os.makedirs(os.path.join(t, '工具'), exist_ok=True)
+        open(os.path.join(t, '工具', '某器.py'), 'w').write('#')
+        模 = ('# 复盘\n## 耗费\n- x\n## 效\n- 类：一章\n- 目标：测\n- 总费：$%s\n- 服务目标之费：$1\n- 浪费：$0\n- 机器能办而花token：$%s\n'
+             '## 三问\n- 法行否：行\n- 最贵之席值否：值\n- 进化：%s\n%s## 坑\n- 无新坑\n')
+        def 局(日, 总, 机, 进, 尾=''):
+            for x in glob.glob(os.path.join(t, '设定', '复盘', '*.md')):
+                os.remove(x)
+            open(os.path.join(t, '设定', '复盘', '%s_W9_测.md' % 日), 'w', encoding='utf-8').write(模 % (总, 机, 进, 尾))
+            return 验(t)
+        r1 = 局('1027', 20, 0, '无：测')                                   # 20 > 10×1.5 而无由 → 红
+        r2 = 局('1027', 20, 0, '无：测', '- 逾估：执笔撞顶重派三席，估未计重派\n')
+        r3 = 局('1026', 20, 0, '无：测')                                   # 旧档⛔追
+        r4 = 局('1027', 12, 1, '无：测')                                   # 机 1/12 > 5% 而未引 → 红
+        r5 = 局('1027', 12, 1, '入账 X7（限 420 段前）')
+        r6 = 局('1027', 12, 1, '已行：工具/某器.py 归脚本')
+        r7 = 局('1027', 12, 1, '入账 X99（账上无此号）')
+        r8 = 局('1027', 12, 0.5, '无：测')                                 # 0.5/12 ≈ 4% → 不红
+        ok = ok and (r1[0] is False and '逾估' in r1[1][0] and r2[0] and r3[0] and r4[0] is False and '机器能办' in r4[1][0]
+                     and r5[0] and r6[0] and r7[0] is False and r8[0])
+        # --简 无 --平台 → 拒（rc=2）；--平台 不可分：由 → 起草（档记其由）
+        p0 = subprocess.run([sys.executable, os.path.abspath(__file__), 'W9', '测', '--简'], capture_output=True, text=True, cwd=t)
+        if p0.returncode != 2:                                          # 守未拦即会起草入真仓——当场清之（⛔留字）
+            for x in glob.glob(os.path.join(ROOT, '设定', '复盘', '*_W9_测.md')):
+                os.remove(x)
+        ok = ok and p0.returncode == 2 and '--平台' in p0.stdout
+        with contextlib.redirect_stdout(io.StringIO()):
+            f2 = 起草('W9', '测二', [rd], t, '1027', 简=True, 平台='不可分：一会话跨三件')
+        ok = ok and bool(f2) and '- 平台之实：不可分：一会话跨三件' in open(f2, encoding='utf-8').read()
     finally:
         shutil.rmtree(t)
     print('复盘·自测 %d/1' % int(ok))
@@ -332,7 +423,16 @@ if __name__ == '__main__':
         i = a.index('--至'); 至 = a[i + 1]; a = a[:i] + a[i + 2:]
     平台 = None
     if '--平台' in a:   # ★X56：本会话 get_session 之 cost_usd（器计曾低估 2.4 倍）
-        i = a.index('--平台'); 平台 = float(a[i + 1].lstrip('$')); a = a[:i] + a[i + 2:]
+        i = a.index('--平台'); v = a[i + 1] if i + 1 < len(a) else ''; a = a[:i] + a[i + 2:]
+        if re.match(r'不可分[：:]\s*(?:\S\s*){4,}', v):
+            平台 = v
+        else:
+            try:
+                平台 = float(v.lstrip('$'))
+            except ValueError:
+                print('⛔ --平台 须是 $ 之数（get_session 之 cost_usd），或「不可分：<由>」（由四字以上）'); sys.exit(2)
+    if 简 and 平台 is None:   # ★1027 执行之审 #86：简式之费以平台之实为准——⛔无之即拒
+        print('⛔ --简 须带 --平台 $X（本会话 get_session 之 cost_usd·X56：器计曾低估 2.4 倍）；一会话跨数件而分不出者写 --平台 "不可分：<由>"'); sys.exit(2)
     if len(a) < 2:
         print(__doc__); sys.exit(2)
     起草(a[0], a[1], a[2:], 自=自, 至=至, 简=简, 平台=平台)

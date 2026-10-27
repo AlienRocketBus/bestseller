@@ -13,8 +13,12 @@
 防滥（⛔拿一个旗把闸关掉）：令须引作者原话（「令」含「作者令」），其「据」须指到入口档里真有「暂停令」三字之那一行；
 二者缺一即不认，诸闸照旧。解令只一条路：`--解 "<作者之言>"`，记其时与其言，⛔删档。
 
+现状与入口之对（1027 执行之审 #30 #61 #31·治「旧暂停令仍印在必读之首」「交接首节停在 1024」）——`--查` 另验二样，红即 rc=1（全测「暂停令」之格）：
+  ①令在而 `设定/交接_续跑.md` 首节题内之日（MMDD）早於令之「立」→ ⛔「交接现状过期」；
+  ②入口档（README、常令、交接、第一铁律、总章）凡「⏸⏸⏸ 暂停令（MMDD」之块，其日 ≠ 今令之「立」（或令已解）→ ⛔——
+    暂停令之真本只在 `设定/暂停令.json`＋本器，入口档⛔抄旧令（坑⑭）。
 用法：
-  python3 工具/暂停令.py --查                  # 在不在、立於何时、令之原文、其据
+  python3 工具/暂停令.py --查                  # 在不在、立於何时、令之原文、其据；交接现状与入口档之旧令（红即 rc=1）
   python3 工具/暂停令.py --解 "作者令：……"      # 作者令下方解；记时与言
   python3 工具/暂停令.py --例外 W18 "作者令：……"  # 暂停之中作者亲令一件：只许此一件开一回（记时与言；用即销），其余照停
   python3 工具/暂停令.py --守书已停            # 主环照所印之参 update_trigger(enabled=false) 调毕记之（1024）
@@ -91,6 +95,57 @@ def 审至(至, root=ROOT):
         if m and int(m.group(1)) >= 至 and not 空(p):
             return True
     return False
+
+
+入口档 = ('README.md', os.path.join('设定', '00_作者常令_不停之律.md'), os.path.join('设定', '交接_续跑.md'),
+         '00_第一铁律_GitHub为准_必读.md', '00_总章.md')
+交接档 = os.path.join('设定', '交接_续跑.md')
+# ★1027 待合（并行之轨·合流方除）：README、第一铁律（线 B 删其旧块／删档）、常令（线 A 删其旧块）於 zh/C 枝内⛔动——
+#   其旧块限 412 前（411 封前）除尽，逾即红；合流後（A、B 之块已删）此表随删
+待合 = {'README.md': '线 B', os.path.join('设定', '00_作者常令_不停之律.md'): '线 A', '00_第一铁律_GitHub为准_必读.md': '线 B'}
+待合之限 = 412
+
+
+def _日(立):
+    """「2026-10-27 07:50 UTC」→ '1027'；读不出 → ''。"""
+    m = re.match(r'\d{4}-(\d{2})-(\d{2})', str(立 or ''))
+    return (m.group(1) + m.group(2)) if m else ''
+
+
+def 对(root=ROOT, 下=None):
+    """→ (红[], 黄[])：交接现状过期、入口档之旧暂停令块。下＝下一章（待合之限用；缺取 自走.末章()+1）。"""
+    红, 黄 = [], []
+    d = 读令(root) or {}
+    在否 = 在(root)[0]
+    今日 = _日(d.get('立')) if (d and not d.get('解')) else ''
+    if 在否 and 今日:
+        try:
+            首 = open(os.path.join(root, 交接档), encoding='utf-8').read().split('\n', 1)[0]
+        except OSError:
+            首 = ''
+        m = re.search(r'(?<!\d)(\d{4})(?!\d)', 首)
+        if not m or m.group(1) < 今日:
+            红.append('⛔ 交接现状过期：%s 首节（%s）早於暂停令之立（%s）——照今之状改写首节' % (交接档, (m.group(1) if m else '无日'), 今日))
+    if 下 is None:
+        try:
+            import 自走
+            下 = 自走.末章() + 1
+        except Exception:
+            下 = 0
+    for f in 入口档:
+        p = os.path.join(root, f)
+        if not os.path.exists(p):
+            continue
+        for i, l in enumerate(open(p, encoding='utf-8').read().split('\n'), 1):
+            for 日 in re.findall(r'⏸⏸⏸\s*暂停令（\s*(\d{4})', l):
+                if 日 == 今日:
+                    continue
+                语 = '入口档之旧暂停令：%s:%d「⏸⏸⏸ 暂停令（%s」≠ 今令之立（%s）——删其块，换一行「暂停令之真本：python3 工具/暂停令.py --查」' % (f, i, 日, 今日 or '无令')
+                if f in 待合 and 下 < 待合之限:
+                    黄.append('⚠ 待合·%s（%s 之轨·限 %d 前除尽）' % (语, 待合[f], 待合之限))
+                else:
+                    红.append('⛔ ' + 语)
+    return 红, 黄
 
 
 def 许(件, root=ROOT):
@@ -242,6 +297,37 @@ def 自测():
                         and len(哨解[0]) <= 160 and 哨解[0].endswith('--守书已开'))   # 自走默印每行截於 160 字
         src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
         共 += 1; ok += ('trig_' not in src)                               # 号⛔硬写於本器（取 席在跑吗.守书之令）
+        # 1027 执行之审 #30 #61 #31：交接现状过期、入口档之旧暂停令块——令在而交接首节早於令之立即红；入口档旧块红（待合之档限前只黄）
+        w({'立': '2026-10-27 07:50 UTC', '令': '作者令：411 候令', '据': '设定/交.md:2', '解': None})
+        jp = os.path.join(t, 交接档)
+        open(jp, 'w', encoding='utf-8').write('# 现状（1024 晨）\n- 旧\n')
+        红1, _ = 对(t, 411)
+        open(jp, 'w', encoding='utf-8').write('# 现状（1027·五大主义）\n- 新\n')
+        红2, _ = 对(t, 411)
+        共 += 1; ok += (any('交接现状过期' in x for x in 红1) and 红2 == [])           # 1024 < 1027 → 红；改写为 1027 → 过（放行之反例）
+        open(os.path.join(t, 'README.md'), 'w', encoding='utf-8').write('> **⏸⏸⏸ 暂停令（1017 12:55 UTC·作者令）**：旧\n')
+        open(jp, 'a', encoding='utf-8').write('> **⏸⏸⏸ 暂停令（1017 12:55 UTC·作者令）**：旧\n> **⏸⏸⏸ 暂停令（1027 07:50 UTC·作者令）**：今\n')
+        红3, 黄3 = 对(t, 411)
+        红4, 黄4 = 对(t, 412)
+        共 += 1; ok += (len(红3) == 1 and '交接_续跑.md:3' in 红3[0] and len(黄3) == 1 and 'README.md:1' in 黄3[0]   # 交接之旧块红、今令之块⛔红；README 待合限前只黄
+                        and len(红4) == 2 and 黄4 == [])                                                          # 逾待合之限即红
+        with contextlib.redirect_stdout(io.StringIO()):
+            解('作者令：开', t)
+        红5, _ = 对(t, 411)
+        共 += 1; ok += (any('1027' in x and '交接_续跑' in x for x in 红5) and not any('交接现状过期' in x for x in 红5))   # 令已解：今令之块亦旧；现状⛔再验
+        try:   # 回灌旧树：db52f247 之交接首节（1024）与入口档（1017、1008 之块）→ 俱红
+            import subprocess as _sp
+            旧 = {f: _sp.run(['git', 'show', 'db52f247:%s' % f], cwd=ROOT, capture_output=True, text=True) for f in (交接档, 'README.md')}
+            if all(r.returncode == 0 for r in 旧.values()):
+                for f, r in 旧.items():
+                    open(os.path.join(t, f), 'w', encoding='utf-8').write(r.stdout)
+                w({'立': '2026-10-27 07:50 UTC', '令': '作者令：411 候令', '据': '设定/交.md:2', '解': None})
+                红6, 黄6 = 对(t, 412)
+                共 += 1; ok += (any('交接现状过期' in x for x in 红6) and any('交接_续跑.md:19' in x for x in 红6) and any('README.md:7' in x for x in 红6))
+            else:
+                print('  · 回灌旧树略：db52f247 不在（浅克隆）')
+        except Exception as e:
+            print('  · 回灌旧树略：%s' % e)
     finally:
         shutil.rmtree(t)
     print('暂停令·自测 %d/%d' % (ok, 共))
@@ -253,7 +339,11 @@ if __name__ == '__main__':
     if a == ['--自测']:
         sys.exit(0 if 自测() else 1)
     if a == ['--查']:
-        print(在()[1]); sys.exit(0)
+        print(在()[1])
+        红, 黄 = 对()
+        for x in 红 + 黄:
+            print(x)
+        sys.exit(1 if 红 else 0)
     if a[:1] == ['--例外'] and len(a) == 3:
         sys.exit(0 if 例外(a[1], a[2]) else 1)
     if a in (['--守书已停'], ['--守书已开']):

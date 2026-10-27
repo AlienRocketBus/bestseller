@@ -7,9 +7,13 @@
   前两章白文（全）｜开镜卡里点到之人之状态（取最新一章之态）｜涉本章之 canon 卡（有界之卡在前）｜
   悬线里钉在本章之行｜大师进化账末十五条（1015 自三十减：390 之料 130KB 逾限，末十五条为今仍活之教，旧者已入法）｜叫绝之拍库「十条手艺」。
 席之令：先读 `版本/第N章/_料.md`；料外只许 grep 核一处、上下三行；⛔自己搜料。
+★1027 X58（410 选、审诸席：_料.md 约 4.9 万 token 逾单回 Read 之限、须分两回读）——拆二档：
+  `_料.md`＝卡与令（开镜卡、段案、预令、所引原句、内部名、硬门槛、余章总案、人物之态、全员之账、canon、十条手艺）；
+  `_料_前文.md`＝前文白文与账（前两章白文、随身物之末位、悬线、进化账）。_料.md 首节点明彼档；执笔、合稿、记席并读，选、审先读卡与令。
+  （全员之账留卡与令：稿差.py 之窄席料摘读之·坑㊱ 之消费者。）
 
 用法：
-  python3 工具/章料.py N [出档]  → 写 版本/第N章/_料.md（或出档），印各节之大小
+  python3 工具/章料.py N [出档]  → 写 版本/第N章/_料.md 与 _料_前文.md（或 出档 与 出档去 .md 加 _前文.md），印各节之大小
   python3 工具/章料.py --自测
 """
 import os as _o, sys as _s
@@ -256,6 +260,18 @@ def 物之末位(文, 物文, n=10 ** 6, 限=8000):
     return 出
 
 
+前文之节 = ('前文·', '随身物之末位', '悬线·', '大师进化账·')   # ★X58：「前文白文与账」一档之节（余俱入卡与令）
+
+
+def 属前文(名):
+    return 名.startswith(前文之节)
+
+
+def 前文之档(出):
+    """_料.md → _料_前文.md（出档 x.md → x_前文.md）。"""
+    return (出[:-3] if 出.endswith('.md') else 出) + '_前文.md'
+
+
 def 汇(n, root=ROOT, 出=None):
     d = os.path.join(root, '版本', '第%d章' % n)
     卡 = 读(os.path.join(d, '_开镜卡.md'))
@@ -325,17 +341,29 @@ def 汇(n, root=ROOT, 出=None):
     手 = 节(拍, '## 十条手艺') or 节(拍, '## 十')
     if 手:
         段.append(('叫绝之拍库·十条手艺', 手))
-    文 = ['# 第%d章·章料（工具/章料.py 零 token 汇；席只读此档，料外只许 grep 核一处、上下三行）\n' % n]
-    for 名, t in 段:
-        文.append('## 〔%s〕\n\n%s\n' % (名, t.strip()))
     出 = 出 or os.path.join(d, '_料.md')
+    出前 = 前文之档(出)
+    卡段 = [(名, x) for 名, x in 段 if not 属前文(名)]
+    前段 = [(名, x) for 名, x in 段 if 属前文(名)]
+    相 = os.path.relpath(出前, root) if os.path.abspath(出前).startswith(os.path.abspath(root) + os.sep) else 出前
+    文 = ['# 第%d章·章料·卡与令（工具/章料.py 零 token 汇；席只读此二档，料外只许 grep 核一处、上下三行）\n' % n,
+         '## 〔本料二档（X58·1027 拆）〕\n\n本档＝卡与令。**前文白文与账**（%s）在 `%s`——执笔、合稿、记席并读之（Read·allow_large）；选、审诸席先读本档，须前文时再读彼档。\n'
+         % ('、'.join(名.split('（')[0] for 名, _ in 前段) or '无', 相)]
+    for 名, x in 卡段:
+        文.append('## 〔%s〕\n\n%s\n' % (名, x.strip()))
+    前文 = ['# 第%d章·章料·前文白文与账（工具/章料.py 零 token 汇；卡与令在 _料.md）\n' % n]
+    for 名, x in 前段:
+        前文.append('## 〔%s〕\n\n%s\n' % (名, x.strip()))
     open(出, 'w', encoding='utf-8').write('\n'.join(文))
-    for 名, t in 段:
-        print('  %-28s %6d 字节' % (名, len(t.encode())))
-    大 = os.path.getsize(出)
-    print('✓ 写 %s（%d KB）' % (os.path.relpath(出, root), 大 // 1024))
-    if 大 > 限料:
-        print('⛔ 章料 %d KB 逾限 %d KB（坑③：档要短——每席每回都背它）：先瘦开镜卡与预令，⛔删全员之账与 canon' % (大 // 1024, 限料 // 1024))
+    open(出前, 'w', encoding='utf-8').write('\n'.join(前文))
+    for 名, x in 段:
+        print('  %s %-28s %6d 字节' % ('前' if 属前文(名) else '卡', 名, len(x.encode())))
+    大, 大前 = os.path.getsize(出), os.path.getsize(出前)
+    print('✓ 写 %s（卡与令 %d KB）、%s（前文白文与账 %d KB）' % (os.path.relpath(出, root), 大 // 1024, os.path.relpath(出前, root), 大前 // 1024))
+    坏 = [(名, k) for 名, k in ((os.path.basename(出), 大), (os.path.basename(出前), 大前)) if k > 限料]
+    if 坏:
+        print('⛔ 章料 %s 逾限 %d KB（坑③：档要短——每席每回都背它）：先瘦开镜卡与预令，⛔删全员之账与 canon'
+              % ('、'.join('%s %d KB' % (名, k // 1024) for 名, k in 坏), 限料 // 1024))
         return None
     return 出
 
@@ -389,8 +417,13 @@ def 自测():
     _o = os.path.join(_tf.mkdtemp(), 'x.md')
     with _cl.redirect_stdout(_io.StringIO()):
         汇(384, ROOT, _o)
-    _x = open(_o, encoding='utf-8').read()
+    _卡 = open(_o, encoding='utf-8').read()
+    _x = open(前文之档(_o), encoding='utf-8').read()
     共 += 1; ok += ('前文·第383章白文（异线·只白文' in _x and '前文·第382章白文（全' in _x and '\n1｜' in _x)   # 异线只白文、同线照全；行首带号
+    # ★X58（1027）：拆二档——前文白文与账⛔在卡与令；卡与令首节点明彼档；全员之账留卡与令（稿差之消费者）；回灌：旧之一档之式此判即红
+    共 += 1; ok += ('〔前文·' not in _卡 and '〔随身物之末位' not in _卡 and '〔悬线·' not in _卡 and '〔大师进化账·' not in _卡 and '〔开镜卡〕' in _卡 and '〔全员之账' in _卡
+                   and '〔本料二档' in _卡.split('## 〔开镜卡〕')[0] and os.path.basename(前文之档(_o)) in _卡 and '〔开镜卡〕' not in _x)
+    共 += 1; ok += (前文之档('/a/_料.md') == '/a/_料_前文.md' and 属前文('前文·第3章白文') and not 属前文('全员之账（生死）'))
     print('章料·自测 %d/%d' % (ok, 共))
     return ok == 共
 

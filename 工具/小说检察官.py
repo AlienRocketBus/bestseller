@@ -11,7 +11,8 @@
 常用命令：
   python3 工具/小说检察官.py             # 全部现有章节
   python3 工具/小说检察官.py 71          # 第71章（文件存在时）
-  python3 工具/小说检察官.py --开拍 72   # 从当前最后一章生成写前简报
+  python3 工具/小说检察官.py --末章 410  # 末章硬闸单跑（封版 --前／--後）
+  python3 工具/小说检察官.py --十一轮 410  # 第十一轮之凭
   python3 工具/小说检察官.py --selftest  # 规则自检 + 项目接线自检
   python3 工具/小说检察官.py --doctor    # 查路径/canon/章号/文档/阅读器接线
 
@@ -297,7 +298,7 @@ OPEN_BRIEF_CARD_SCHEMA = {
     #     ⛔**无路上、无水边**（封版席亲印白文 5—329 行）。
     #   ★★★**355之线已由 `总纲:261` 钉死作「暗·129」**——而卡只记两条线此刻各在哪儿，
     #     ⛔**不记下一章走哪一条，亦不代裁其形与其向**（其形其向由 `版本/第355章/_开镜卡.md` 当场定
-    #     ——**其卡今日已立并填毕七问四格，`起草庭.py 355` 十三格全绿**；
+    #     ——**其卡今日已立并填毕七问**（四格与其器起草庭 1027 已汰）；
     #     并须由 `开轮六检.py 355` 复验：**判犯则改事，不许改卡去就闸**）。
     # ★2026-09-22·第356章封版之序（⛔**案席·末一道、357起草之前那一道**）插：
     #   ⛔**并当面补一件 355 封版之序所欠**：**next_ch=356 那一格本表从来没有过**
@@ -402,7 +403,7 @@ OPEN_BRIEF_CARD_SCHEMA = {
     #   ⛔**并当面报一处缺口**：**325 之卡（即 next_ch=325 那一格）本表从来没有过**
     #     ——324 之案席自书「本章未封版·未交提」（`设定/回执_20260913_第324章作业单.md` §六），
     #     其封版之序未走完，故 325 起草之前那一格空着；**325 案席只补自己该补的那一格（326），
-    #     ⛔不代 324 补它欠的那一格**（补它即是替一次没走完的封版打一个假勾）。原样报上，交作者裁。
+    #     ⛔不代 324 补它欠的那一格**（补它即是替一次没走完的封版打一个假勾）。原样记下，由总编辑自裁、办毕记其所为（1027 自决之律）。
     # ★2026-09-13·第326章封版之序（案席·末一道、327起草之前那一道）插：
     #   ★照320案席所立之取法「两条线各取其末见」——主线末见＝326（水边·第一百二十一天），
     #     暗线末见仍＝325（屋内·第一百一十四日），并E4。
@@ -3228,147 +3229,6 @@ def _receipt_ok(n):
             return True
     return False
 
-def _load_side(fn, head_n=0, grep=None):
-    """读取设定层伴生文档(病历本/开笔清单),供--开拍总调度喷发。"""
-    p=os.path.join(REPO_ROOT,'设定',fn)
-    try: tx=open(p,encoding='utf-8').read()
-    except OSError: return []
-    lines=[l.rstrip() for l in tx.split('\n') if l.strip()]
-    if grep: lines=[l for l in lines if grep in l]
-    return lines[:head_n] if head_n else lines
-
-
-def print_dispatch():
-    """开笔总调度:病历本前三大病号 + 开笔前必答清单三十二问 + 三层机制令。"""
-    print('\n████ 开笔总调度 · 三层机制一次喷发(批九十) ████')
-    print('\n【第一层·病历本 前三大病号(每章开笔必读)】')
-    rows=[l for l in _load_side('执笔病历本_模式性错误档案.md') if l.startswith('| P')]
-    if not rows:
-        print('  ⚠ 病历本未找到——机制缺件,禁止开笔')
-    else:
-        def _cnt(l):
-            cells=[x.strip() for x in l.split('|')]
-            try: return int(cells[4])
-            except (ValueError,IndexError): return 0
-        for l in sorted(rows,key=_cnt,reverse=True)[:3]:
-            cells=[x.strip() for x in l.split('|')]
-            print(f'  ▣ {cells[1]} {cells[2]}(复发{cells[4]}次) → 处方:{cells[5]}')
-        over=[l for l in rows if _cnt(l)>=3]
-        if over: print(f'  ⚠ 累犯达3次者{len(over)}项:处方已判无效,须按升级栏执行,不许只写"下次注意"')
-    print('\n【第二层·开笔前必答清单(答不完不许落笔)】')
-    q=_load_side('开笔前必答清单_十八轮真伤倒推.md')
-    heads=[l for l in q if l.startswith('## ')]
-    items=[l for l in q if re.match(r'^[A-G]\d ',l)]
-    for h in heads: print('  '+h.replace('## ',''))
-    print(f'  共{len(items)}问,逐条作答后写入开拍笔记;封版时与回执对账。')
-    print('\n【第三层·十庭复核(封版前)】常开①硬伤②越权③回声 + 抽开二庭;收庭三问入回执。')
-    print('【禁语】见底/没法再改/已达最好。合法申报:"第N轮已清零;换镜头,仍可再挖。"')
-
-
-def print_console():
-    """启动总控台：每次启动必现。到期账／病历／在役机制名录一次摊开，无需另行调用。"""
-    print('◆灵魂三问(每启必答):这一章最神的一句在哪?读者会在哪一段合不上书?删掉此章,全书断什么?')
-    print('◆循环令:九轮必走;ERROR或自检未满格=修了再跑,循环至双绿,方许交付作者(推送闸即此令之铁)。')
-        # ★2026-08-18补：冷藏之笔不入催办——冷藏本为「明记读者已不在等」，若仍按到期章催，二制相犯（祖案PLOT-111B已cold却判逾期2章）
-    try:
-        files=sorted(_chapters().keys()); cur=max(files) if files else 0
-        items=[x for x in _load_due() if x.get('状态') not in _CLEARED_STATES]
-        due=[x for x in items if x.get('到期章',10**9)<=cur]
-        od=[x for x in due if cur-x['到期章']>=2]
-        nxt=sorted([x for x in items if x.get('到期章',10**9)>cur],key=lambda z:z['到期章'])[:2]
-        print('◆到期账(自动运营·已写至第%d章):到期%d项,逾期>=2章%d项%s'%(cur,len(due),len(od),'  ⛔封版门将判ERROR' if od else '  ✓'))
-        for x in due: print(('    ⛔' if cur-x['到期章']>=2 else '    ⚠'),'[%s]%s(限%d章)'%(x['id'],x['事'],x['到期章']))
-        for x in nxt: print('    ·下一笔 [%s]%s(限%d章)'%(x['id'],x['事'],x['到期章']))
-    except Exception as e:
-        print('◆到期账读取失败(机制缺件,视同逾期):',e)
-    try:
-        rows=[l for l in open(os.path.join(REPO_ROOT,'设定','执笔病历本_模式性错误档案.md'),encoding='utf-8').read().split('\n') if l.startswith('| P')]
-        def _cn(l):
-            cs=[x.strip() for x in l.split('|')]
-            try: return int(cs[4])
-            except Exception: return 0
-        top=sorted(rows,key=_cn,reverse=True)[:3]
-        print('◆病历本前三大病号:', ' ; '.join('%s(%d次)'%([x.strip() for x in l.split('|')][2],_cn(l)) for l in top))
-    except Exception:
-        print('◆病历本读取失败')
-    print('◆在役机制(全在册,写章逐项走):①开笔前必答清单29问 ②执笔病历本 ③挑刺十庭制 ④交付三检 ⑤九步管线 ⑥冻结增补令 ⑦到期账 ⑧双绿闸+回执闸 ⑨改旧章(改单／还账)')
-    print('  文件:设定/开笔前必答清单_十八轮真伤倒推.md | 设定/执笔病历本_模式性错误档案.md | 设定/挑刺提示词_镇冢秘术专用十庭制.md | 设定/交付三检提示词_逐字存档.md | 设定/到期账.json')
-    # 【第102批】⑨改旧章挂上唯一入口：★封版≠不可改，全书任何一处只要改了整本书更好即可改。
-    #   ★★而其所以须印在此处：第六十六批早已立此法，却因只在文件里躺着，一个月无人跑。
-    #   ★★★依批93「凡在役机制一律挂到唯一入口」，故每启必现。
-    #   ⛔1027：回修令（回修.py 之开案／波及／验案、全测之「回修案」）随十三轮汰——其路今即 改单（读者可见之闸）与大审之还账
-    print('  ⑨改旧章:封版之后一样可以改——全书任何一处,只要改了整本书更好。')
-    print('    路:python3 工具/改单.py --立／--施单(管档之改须有单·改单闸据此拦) 或 大审之还账(python3 工具/还账.py)')
-    print('    三问答不出即不立案:①不改读者会在哪一段掉下去(指不出段就是手痒)②服务这一章还是全书③牵动几章')
-    print('    ★而末一问不答案不成立:全书因这一改,强在哪一处?')
-    print('-'*60)
-
-
-
-_TEN_COURTS = ['①硬伤庭','②越权庭','③回声庭','④资源庭','⑤感官庭','⑥在场庭','⑦内面庭','⑧时序庭','⑨节奏庭','⑩留白庭']
-
-
-def _courts_used(n):
-    """读取该章回执，看已开过哪几庭（用于轮换指派）。"""
-    used=set()
-    for fp in _receipt_files(n):   # ★体检账 一〇一 之治（限351）：以档名认章，⛔不认「文书里提到过第N章」
-        try: tx=open(fp,encoding='utf-8').read()
-        except OSError: continue
-        for k in _TEN_COURTS:
-            if k in tx or k[1:] in tx: used.add(k)
-    return used
-
-
-def _threshold_lines():
-    """自施工表§四取本章硬门槛，逐条派活。"""
-    try: g=open(BUILD_TABLE_PATH,encoding='utf-8').read()
-    except OSError: return []
-    m=re.search(r'## 四、续写第 *(\d+) *章前的硬门槛[^\n]*\n(.*?)\n\n（',g,re.S)
-    if not m: return []
-    return [l.strip('- ').strip() for l in m.group(2).split('\n') if l.strip().startswith('-')]
-
-
-
-def _emit(path, title, picker=None, limit=None):
-    """把设定层提示词原文喷进终端：单一真源在文件，呈现在此，免去另行翻阅。"""
-    fp=os.path.join(REPO_ROOT,'设定',path)
-    if not os.path.exists(fp):
-        print('  ⛔机制缺件:%s'%fp); return
-    tx=open(fp,encoding='utf-8').read()
-    lines=[l for l in tx.split('\n') if l.strip() and not l.startswith('> ')]
-    if picker: lines=picker(lines)
-    if limit: lines=lines[:limit]
-    print('\n──── %s ────'%title)
-    for l in lines: print('  '+l)
-
-
-def emit_prompts(n):
-    """作业令配套：起草设计令／招式库／本章指派两庭之自问条目／交付三检提示词，一次喷全。"""
-    _emit('顶级起草法_招式库与设计令.md','顶级起草法（招式库＋设计令原文·落笔前必填）',
-          picker=lambda ls:[l for l in ls if not l.startswith('# ')])
-    opt=_TEN_COURTS[3:]
-    pick=[opt[(2*n)%len(opt)], opt[(2*n+1)%len(opt)]]
-    fp=os.path.join(REPO_ROOT,'设定','挑刺提示词_镇冢秘术专用十庭制.md')
-    if os.path.exists(fp):
-        tx=open(fp,encoding='utf-8').read()
-        print('\n──── 十庭·本章开庭条目原文（常开①②③＋指派%s） ────'%('、'.join(pick)))
-        want=['①硬伤庭','②越权庭','③回声庭']+pick
-        for blk in tx.split('### ')[1:]:
-            head=blk.split('\n',1)[0]
-            if any(k[1:] in head or k in head for k in want):
-                for l in blk.strip().split('\n'):
-                    if l.strip(): print('  '+l)
-                print()
-    _emit('交付三检提示词_逐字存档.md','交付三检·作者原文（写后逐检独立开庭）',
-          picker=lambda ls:[l for l in ls if not l.startswith('# ')])
-    _emit('终检_连读与逐段生死.md','检四·终检（连读检＋逐段生死检·三检之后双绿之前）',
-          picker=lambda ls:[l for l in ls if not l.startswith('# ')])
-    print('\n──── 收庭三问（每轮挑完必答，写入回执） ────')
-    print('  1.本轮刀口原文与改后原文，逐条列出。 2.本轮高光句是哪一句（改出来的）。')
-    print('  3.三验：原生（像不像补丁）／抬杠（新句经不经得起再戳）／涟漪（缝线两侧有无新病）。')
-    print('  禁语：见底／没法再改／已达最好。合法申报只有一句：第N轮已清零；换镜头，仍可再挖。')
-
-
 
 _PROPS = ['铃','马灯','胸灯','背架','衔木','铜针','拓片','刀','布条','鸡蛋','油壶','本子','玉']
 
@@ -3476,97 +3336,7 @@ def diff_gate(n, base="HEAD"):
     print('█'*3+' 改动闸毕：机械层%s '%('通过' if bad==0 else '未过')+'█'*3)
     return 1 if bad else 0
 
-def acceptance(n, files):
-    """--验收 N：写后唯一命令。机检＋写后全部提示词＋回执清单＋闸门状态＋翻页清单，一次到位。"""
-    print('\n'+'█'*3+' 验收令 · 第%d章（写后唯一入口·逐条过关） '%n+'█'*3)
-    print('\n【一·机器层】以下为硬闸，未清零不许进入人工层：')
-    _lib=_load_lib()
-    err = priority_one(files, n, _lib) + mech_layer(files, n, _lib)
-    print('  机器层ERROR=%d %s'%(err,'✓' if err==0 else '⛔先清零再往下走'))
-    print('\n【一·五·改动闸（若本轮有改动，先过此闸）】')
-    try: diff_gate(n)
-    except Exception as _e: print('  (改动闸失败:%s)'%_e)
-    print('\n【二·写后自检（P17处方·落笔后固定动作）】')
-    print('  破折／半角／英文／五逗／单字爷／抖族／永禁机制词／段间空行 —— 逐项跑一遍再交机器')
-    print('\n【三·交付三检（逐检独立开庭，不许合并）】')
-    _emit('交付三检提示词_逐字存档.md','三检·作者原文',picker=lambda ls:[l for l in ls if not l.startswith('# ')])
-    print('\n【四·检四终检（三检之后、双绿之前）】')
-    _emit('终检_连读与逐段生死.md','连读检＋逐段生死检',picker=lambda ls:[l for l in ls if not l.startswith('# ')])
-    opt=_TEN_COURTS[3:]
-    pick=[opt[(2*n)%len(opt)], opt[(2*n+1)%len(opt)]]
-    print('\n【五·十庭（常开①②③＋本章指派%s）】'%('、'.join(pick)))
-    fp=os.path.join(REPO_ROOT,'设定','挑刺提示词_镇冢秘术专用十庭制.md')
-    if os.path.exists(fp):
-        tx=open(fp,encoding='utf-8').read()
-        want=['①硬伤庭','②越权庭','③回声庭']+pick
-        for blk in tx.split('### ')[1:]:
-            head=blk.split('\n',1)[0]
-            if any(k[1:] in head or k in head for k in want):
-                for l in blk.strip().split('\n'):
-                    if l.strip(): print('  '+l)
-                print()
-    print('【六·收庭三问】1.刀口原文与改后原文逐条 2.本轮高光句 3.三验（原生／抬杠／涟漪）')
-    print('  禁语：见底／没法再改／已达最好。合法申报：第N轮已清零；换镜头，仍可再挖。')
-    print('\n【七·回执九项token（缺一红灯）】五钩·伏笔·新锚·病历·清单·原场·到期账·章魂与三拳·生死检·**改动闸**')
-    print('  归档路径：设定/回执_*_第%d章作业单.md'%n)
-    print('\n【八·双绿闸】仪表盘ERROR=0 ＋ 自检满格 ＋ 契约负测3/3，缺一不许推送')
-    print('\n【九·翻页八件套】圣经双锚／README／施工表N行＋§四／SCHEMA插N+1／json状态卡＋brief／提示词号／两站成对／**滚动到期账**')
-    try: due_report(n)
-    except Exception: pass
-    print('\n【十·全书体检＋双绿闸实跑】')
-    try:
-        _w,_=project_doctor(files, check_reader=True)
-        print('  项目接线医生：%s'%('通过' if _w==0 else '失败(先清零)'))
-    except Exception as _e: print('  医生失败:',_e)
-    print('  提示：本命令已覆盖写后全部工序；推送前另跑 --selftest 与无参全书体检，双绿方许交付。')
-    print('\n'+'█'*3+' 验收令毕：十项 '+'█'*3)
 
-def work_order(n):
-    """作业令：检察官从实时状态推导出的编号任务表，逐条执行，缺一不许封版。"""
-    files=sorted(_chapters().keys()); cur=max(files) if files else 0
-    print('\n' + '█'*3 + ' 作业令 · 第%d章（检察官签发·逐条执行·缺一不放行） '%n + '█'*3)
-    i=0
-    print('【写前】')
-    items=[x for x in _load_due() if x.get('状态') not in _CLEARED_STATES]
-    due=[x for x in items if x.get('到期章',10**9)<=cur or x.get('到期章')==n]
-    for x in due:
-        i+=1; lag=cur-x['到期章']
-        print('  %2d. 【到期账·%s】%s（限%d章%s）'%(i,x['类'],x['事'],x['到期章'],'·已逾期%d章'%lag if lag>=1 else ''))
-    try:
-        rows=[l for l in open(os.path.join(REPO_ROOT,'设定','执笔病历本_模式性错误档案.md'),encoding='utf-8').read().split('\n') if l.startswith('| P')]
-        def _cn(l):
-            cs=[x.strip() for x in l.split('|')]
-            try: return int(cs[4])
-            except Exception: return 0
-        for l in sorted(rows,key=_cn,reverse=True)[:3]:
-            cs=[x.strip() for x in l.split('|')]
-            i+=1; print('  %2d. 【病历·%s(%d次)】执行处方：%s'%(i,cs[2],_cn(l),cs[6] if len(cs)>6 and cs[6] else cs[5]))
-    except Exception: pass
-    i+=1; print('  %2d. 【清单】答毕开笔前必答清单29问，写入 设定/开拍笔记_第%d章.md（含日历链＋证据线＋在役规矩清单）'%(i,n))
-    i+=1; print('  %2d. 【设计令·顶级起草法】落笔前先填：①章魂一句 ②三记必中之拳（招式库选招＋落点，禁同族）'%i)
-    print('        ③收章句候选三条（先写结尾） ④本章禁用（解说腔/告知式/陈词/替读者划重点） ⑤删章之问')
-    print('        招式库十招：器物换岗/情感账目化/自破其规付代价/以物代言/跨章回声兑现/折子话/世界无动于衷/留白止笔/漏洞翻主题/同一动作两代人')
-    print('        文件：设定/顶级起草法_招式库与设计令.md ——【此条在【写中】之前完成，不填不许落笔】')
-    for t in _threshold_lines():
-        i+=1; print('  %2d. 【门槛】%s'%(i,t[:78]))
-    print('【写中】')
-    i+=1; print('  %2d. 【分量】先列本章必须发生的五件事＋两处慢镜头，初稿一次写足（铁底2000，凑字＝与剧情矛盾同罪）'%i)
-    print('【写后】')
-    i+=1; print('  %2d. 【自检】跑本章禁词自检（P17处方）：破折/半角/英文/五逗/单字爷/抖族/机制词/段间空行'%i)
-    i+=1; print('  %2d. 【机检】python3 工具/小说检察官.py %d —— 九轮走查＋⑮⑯⑰⑲哨兵，逐条裁决'%(i,n))
-    i+=1; print('  %2d. 【三检】检一升华庭 → 检二三视角庭（作家/执笔/毒舌读者/编辑） → 检三挑刺王终读，逐检呈现刀口'%i)
-    i+=1; print('  %2d. 【检四·终检】连读检（接上章末五百字顺读，标走神点/跳读点/接缝感）＋逐段生死检（每段问"删掉它本章断什么"，答不出即删）'%i)
-    opt=_TEN_COURTS[3:]
-    pick=[opt[(2*n)%len(opt)], opt[(2*n+1)%len(opt)]]
-    prev=[opt[(2*(n-1))%len(opt)], opt[(2*(n-1)+1)%len(opt)]]
-    i+=1; print('  %2d. 【十庭】常开①硬伤②越权③回声；本章抽开指派：%s（上章为%s，确定性轮换·三章内不重复）'
-                %(i,'、'.join(pick),'、'.join(prev)))
-    i+=1; print('  %2d. 【回执】设定/回执_*_第%d章作业单.md 必含：五钩·伏笔·新锚·病历·清单·原场·到期账·**章魂与三拳验收**'%(i,n))
-    i+=1; print('  %2d. 【闸门】双绿（仪表盘ERROR=0＋自检满格＋契约负测3/3）方许推送'%i)
-    i+=1; print('  %2d. 【翻页】八件套：圣经双锚/README/施工表/SCHEMA/json状态卡/提示词号/两站成对/**滚动到期账**'%i)
-    print('█'*3 + ' 作业令毕：%d条 '%i + '█'*3)
-    try: emit_prompts(n)
-    except Exception as _e: print('  (提示词喷发失败:%s)'%_e)
 # ⛔1027 汰冷眼轮（大审瘦式每十章一回、盲读每章读 N-2／N-1 已代之）：旧之冷轮自派（逐章派生「第N章冷眼轮」之到期账）
 #   与其转调开轮六检⑥之四判（执、废、限、无面而明裁）俱去；到期账之 COLD 行同日清。
 def _load_due():
@@ -4338,11 +4108,6 @@ def _body(text):
     return '\n'.join(keep)
 
 
-def _content_len(s):
-    """数实打实的汉字字数(不含标点空白)。"""
-    return sum(1 for c in s if '\u4e00' <= c <= '\u9fff')
-
-
 
 # ====================================================================
 # canon保护账 · 逐章机验闸（2026-08-11 立）
@@ -4380,9 +4145,6 @@ CANON_MUST = {
     156: [(r'右边', '第156章末必须错报「右边」，纠错只能发生在第157章')],
 }
 
-def _canon_body(t):
-    """取正文（去亮点段），亮点为工作稿不入事实链之验。"""
-    return t.split('【本章亮点】')[0]
 
 def canon_ledger_check(files):
     """canon保护账逐章机验：肩位链、日序链、禁回流、必现锚。返回 (errors, lines)。
@@ -4468,121 +4230,6 @@ def canon_ledger_check(files):
     return err, out
 
 
-def cross_chapter_check(files):
-    """跨章体检:① 全书反复出现的≥6字短语(认母题还是认重复);② 相邻两章交界处撞词。"""
-    from collections import defaultdict
-    out = []
-    bodies = [(os.path.basename(f), _body(open(f, encoding='utf-8').read())) for f in files]
-
-    # ① 全书反复短语:6字汉字窗口,出现在>=2章 → 合并重叠成长短语 → 提醒确认
-    K = 6
-    gram_ch = defaultdict(set)
-    for name, body in bodies:
-        for seg in re.split(r'[^\u4e00-\u9fff]+', body):   # 只取连续汉字段,不跨标点
-            local = set()
-            for i in range(len(seg) - K + 1):
-                g = seg[i:i + K]
-                if g not in local:
-                    gram_ch[g].add(name); local.add(g)
-    grams = {g for g, chs in gram_ch.items() if len(chs) >= 2}
-
-    def _nchap(p):
-        return sum(1 for _, b in bodies if p in b)
-    merged = True            # 重叠6字窗口接成长短语:排序遍历(确定性),且只在合并后仍≥2章才接(绝不误丢)
-    while merged:
-        merged = False
-        for g in sorted(grams):
-            for h in sorted(grams):
-                if g != h and g[1:] == h[:-1] and _nchap(g + h[-1]) >= 2:
-                    grams.discard(g); grams.discard(h); grams.add(g + h[-1])
-                    merged = True; break
-            if merged:
-                break
-    PHRASE_OK_CROSS = [
-        # 引用/复现:前文原话后文点名复述、遗言兑现、对仗呼应
-        '墙皮的裂对上裂','道是干净的','能给您个说法','我们能给您个','算好了放你进','好了放你进去','不知多少辈子','二十七级台阶','极轻地咔了一声','补丁皮照原样按回','一样一样说给您','一步都不能踏进','都不能踏进去','也未必就是活路','哪天它发了烫',
-        '就该死透了的人','一个两千年前','两千年的墓','血图无风自动','玉合上的那一','一个字都不差',
-        '塞进我手心的','合成了一整块','就这么糊里糊涂','什么都不知道','它们一直都在',
-        # 核心设定/人物道具固定指称
-        '独亮的右眼','灰白的翳','枯瘦的右手','温润生光','合而为一',
-        '那块合而为一','用血画成的墓','就是那张血图','旁人看不见','旁人都看不见','躺了不知多少',
-        '了不知多少年','锁了二十多年','整整二十三年','了我二十三年','借来的越野车','我贴身揣着的',
-        '我隔着衣裳去','提灯的那只手','那具尸首身上','爷爷的遗像在','黑洞洞的坑口',
-        # 信息复述/场景锚/通用语
-        '报社派的差事','去采访一处刚','我下个月要去的','走到台阶底下','把那束光重新','在我心里压了',
-        '不知什么时候','在同一个地方','只有我一个人','看得清清楚楚','我还没来得及','爷爷这一辈子',
-        '锁了我二十多年','你一步都不能','蒙着一层灰白','那只独亮的',
-    ]   # 2026-07-03全量清账后判留:引用/设定/道具/场景锚/通用语,机器放行;新增前须人工判
-    phrases = []
-    for g in grams:
-        if any(w in g or g in w for w in PHRASE_OK_CROSS):
-            continue
-        chs = sorted(name for name, body in bodies if g in body)
-        if len(chs) >= 2:
-            phrases.append((g, chs))
-    phrases.sort(key=lambda x: (-len(x[0]), x[0]))
-    if phrases:
-        out.append('〔反复短语〕≥6字短语在多章重现,确认是有意母题、还是该换的无意重复:')
-        for g, chs in phrases[:15]:
-            tag = '、'.join(c.replace('镇冢秘术_', '').replace('望气_', '').replace('.md', '') for c in chs)
-            out.append(f'    「{g}」—— 见于 {tag}')
-
-    # ② 相邻两章交界撞词:前章尾 vs 后章首,所有共同子串(≥4字、实词≥2),比 difflib 全
-    def _grams(s, k):
-        g = set()
-        for seg in re.split(r'[^\u4e00-\u9fff]+', s):
-            for j in range(len(seg) - k + 1):
-                g.add(seg[j:j + k])
-        return g
-    for i in range(len(bodies) - 1):
-        n1, b1 = bodies[i]; n2, b2 = bodies[i + 1]
-        tail, head = b1[-280:], b2[:280]
-        common = _grams(tail, 4) & _grams(head, 4)
-        common = {g for g in common if not any(w in g or g in w for w in PHRASE_OK_CROSS)}
-        mg = True            # 同样:排序遍历 + 只在合并后仍同时见于两端才接
-        while mg:
-            mg = False
-            for g in sorted(common):
-                for h in sorted(common):
-                    if g != h and g[1:] == h[:-1] and (g + h[-1]) in tail and (g + h[-1]) in head:
-                        common.discard(g); common.discard(h); common.add(g + h[-1])
-                        mg = True; break
-                if mg:
-                    break
-        hits = sorted((g for g in common if sum(1 for c in g if c not in _FILLER) >= 2),
-                      key=lambda g: (-len(g), g))
-        if hits:
-            s1 = n1.replace('镇冢秘术_', '').replace('望气_', '').replace('.md', '')
-            s2 = n2.replace('镇冢秘术_', '').replace('望气_', '').replace('.md', '')
-            out.append(f'〔交界撞词〕{s1}结尾 ↔ {s2}开头: ' + '、'.join(f'「{h}」' for h in hits[:6]))
-
-    # ③ 生理恐惧描写"密度监控"(不禁用！用户明示:可以用,是好手法,但要有度、别每章雷同)
-    #    统计各章的生理恐惧类描写,只在①单章内出现≥2次 或 ②连续3章都用同族 时,温和提示"注意频率、换个手法",绝不当禁词清零。
-    PHYS_FEAR = ['脊背', '脊梁', '后颈', '后脊', '后背', '脖颈', '头皮', '汗毛', '鸡皮疙瘩', '手心.{0,3}汗', '腿.{0,2}软', '脊椎']
-    phys_by_chap = []   # [(章名, 命中次数, [命中词])]
-    for name, body in bodies:
-        hitw = []
-        for w in PHYS_FEAR:
-            c = len(re.findall(w, body))
-            if c: hitw += [w.replace('.{0,3}','').replace('.{0,2}','')] * c
-        phys_by_chap.append((name.replace('镇冢秘术_','').replace('.md',''), len(hitw), hitw))
-    # 单章内≥2次 → 提示密度
-    dense_single = [(nm, cnt, ws) for nm, cnt, ws in phys_by_chap if cnt >= 2]
-    if dense_single:
-        out.append('   〔生理恐惧·密度提示〕以下章单章内出现≥2次生理恐惧描写,注意别在一章里反复用同种身体反应(可保留最有力的一处,其余换手法):')
-        for nm, cnt, ws in dense_single:
-            out.append(f'      · {nm}: {cnt}次（{("、".join(ws))}）')
-    # 连续3章都用 → 提示跨章雷同
-    run = []
-    for i, (nm, cnt, ws) in enumerate(phys_by_chap):
-        if cnt >= 1: run.append(nm)
-        else: run = []
-        if len(run) >= 3:
-            out.append(f'   〔生理恐惧·跨章提示〕{run[0]}起连续多章都在用生理恐惧描写,隔几章换个侧面手法更有力(此为频率提醒,非禁用)')
-            run = []
-    return out
-
-
 
 FRAMEWORK = """
 ════════ 《镇冢秘术》当前剧情权威入口 ════════
@@ -4648,20 +4295,6 @@ PENDING_HOOKS = [
  ('空场给谁腾地方', 16, '卷一', '未收'), ('朱砂门线·出场验断', 17, 23, '已收'),
  ('第三家是哪几家', 16, '卷五', '未收'), ('墙上启事替我站岗', 17, '卷一', '未收'),
 ]
-def hooks_report(max_ch):
-    out, red = [], 0
-    for name, born, due, st in PENDING_HOOKS:
-        if st == '已收':
-            out.append(f'   ✅ 已收：「{name}」(埋于第{born}章)')
-        elif isinstance(due, int):
-            if max_ch >= due:
-                out.append(f'   ✗ 到期未收：「{name}」(埋于第{born}章,应在第{due}章前后回收)——立刻排进当章!')
-                red += 1
-            else:
-                out.append(f'   ⏳ 在押：「{name}」(埋于第{born}章 → 第{due}章)')
-        else:
-            out.append(f'   ⏳ 排期中：「{name}」(埋于第{born}章 → {due})')
-    return out, red
 
 def round11_audit(n):
     """【批126·检察官侧第十一轮】作者令：第十一轮须启动小说检察官，查这十轮到底有没有认真干、有没有尽全力。
@@ -4983,126 +4616,41 @@ def _kailun_duibiao(ch):
         pass
 
 
-def main():
-    # 兼容旧调用名，但统一进入下方当前入口；以下旧实现保留作历史代码且不可达。
-    return super_main()
-    args = sys.argv[1:]
-    if args and args[0] in ('框架', '--framework'):
-        print(FRAMEWORK)
-        return
-    if args and args[0] in ('规范', '导出规范', '知识', '--spec', '--knowledge'):
-        print_knowledge()
-        return
-
-    files = args or sorted(
-        [f for f in glob.glob(os.path.join(HERE, '镇冢秘术_第*章_*.md'))
-         if not re.search(r'(对照|改前|改后|整理稿|报告|简介|框架|规范|本轮|这轮|这段)', os.path.basename(f))],
-        key=_chap_num)
-    if not files:
-        print('没找到要检查的章节文件(镇冢秘术_第?章_*.md)。'); return
-    print('=' * 64)
-    print('   小说检察官 · 《镇冢秘术》体检报告')
-    print('=' * 64)
-    for path in files:
-        iss, avg, n = check_file(path)
-        iss += intra_repeat(open(path, encoding='utf-8').read())
-        print(f'\n—— {os.path.basename(path)} （{n}句, 平均{avg:.1f}逗号/句）')
-        if not iss:
-            print('   ✅ 机检未发现问题')
-        else:
-            for it in iss:
-                print('   ' + it)
-    if len(files) >= 2:
-        cc = cross_chapter_check(files)
-        print('\n' + '=' * 64)
-        print('   跨章体检（多章一起看才查得出的）:')
-        print('=' * 64)
-        if cc:
-            for it in cc:
-                print('   ' + it)
-        else:
-            print('   ✅ 没发现跨章撞词/反复短语')
-
-        # —— 未揭名守卫·主动播报(每次全书体检都报一次,省得人去翻) ——
-        print('\n' + '=' * 64)
-        print('   未揭名守卫（苏衍视角不该知道的名字）:')
-        print('=' * 64)
-        st = '；'.join(nm + ('=全书禁用' if NAME_REVEAL.get(nm, NAME_REVEAL_CH) is None
-                              else f'=第{NAME_REVEAL.get(nm, NAME_REVEAL_CH)}章起放行')
-                       for nm in HIDDEN_NAMES)
-        total = 0
-        for path in files:
-            t = open(path, encoding='utf-8').read()
-            cn = _chap_num(path)
-            for nm in HIDDEN_NAMES:
-                _rev = NAME_REVEAL.get(nm, NAME_REVEAL_CH)
-                if not (_rev is None or cn < _rev):
-                    continue
-                c = t.count(nm)
-                if c:
-                    total += c
-                    print(f'   ✗ {os.path.basename(path)}：「{nm}」×{c} —— 苏衍此刻不该知道这名字!')
-        if total == 0:
-            print(f'   ✅ 守卫状态：受护名字 {HIDDEN_NAMES}（{st}）；全书叙述里一处都没漏，干净。')
-        else:
-            print(f'   ✗ 守卫状态：{st}；共 {total} 处越界(见上)，须改成"她/那女人/眼前这人"。')
-
-        print('\n' + '=' * 64)
-        print('   伏笔台账（剧情守卫·自动盘点）:')
-        print('=' * 64)
-        _max = max(_chap_num(pp) for pp in files)
-        _rows, _red = hooks_report(_max)
-        for r in _rows:
-            print(r)
-        print(f'   —— 台账合计{len(PENDING_HOOKS)}项：到期未收 {_red} 项' + ('!!' if _red else '，无欠账。'))
-
-    print('\n' + '=' * 64)
-    print('   九轮打磨 + 封神三问（逐轮走查向导·冲击「中国第一」）')
-    print('=' * 64)
-    print('   ┌─ 总纲：凡事不搞一刀切、不绝对化。成语/套语/生理描写都能用，')
-    print('   │        判断标准只有三字「契合度」——这儿最好的表达是什么，')
-    print('   │        而不是「有没有某类词」。这套是尺子不是笔，守门用，')
-    print('   └─       真正的封神靠往下写的每一个字。')
-    print()
-    _ROUNDS = [
-        ('一·骨架关', '逻辑闭环无硬伤(物理/时间线/光源/方位)；设定不漂；泄密红线一字没松(敌是谁/玉是什么/两千年，照面章尤严)；巧合律+知识流律+四账全对上；清手误(破折号/英文词/错字)'),
-        ('二·血肉关', '该演的高光演够没？最神奇那一下(合玉/开眼/尸体呼吸/显形)给足慢镜头特写没？该展开的没被图快一句带过？关键转变用递进细节铺了没？'),
-        ('三·人物关', '人物反应合人之常情没(挣回条命别云淡风轻)？情感真实动人没(读者记住的是人物)？违背本能的事写出内心拉扯没？各角色的弧推进没(她/老头/苏衍)？对白贴身份贴情绪没？'),
-        ('四·字句关', '关键动词形容词是「最准」还是「差不多」？成语/套语/生理描写——贴切就留图省事才换(见总纲)。比喻自洽贴切一眼懂有画面没？感觉句写清楚没？生理描写只控密度不禁用。'),
-        ('五·钩子关', '开头动静配得上上章钩子没(别小动静泄大悬念的气)？开头别跟上章结尾撞词？章末停在揭露/危机/悬念上没(收在安稳上要重写)？'),
-        ('六·冗余关', '同义反复删一个(整句整段语义重复靠眼睛)？鲜明词/意象别相邻句扎堆？上章演透的别复述？——但有意的修辞重复(排比/递进/母题回响)要保留，也是不一刀切。'),
-        ('七·节奏关', '节奏对没(大高潮后有喘息没/张弛有度没)？段落句子长短有变化没？该快的快得起、该慢的沉得下没？有没有「闷」段(信息重复/推进停滞/读者想跳过)？'),
-        ('八·整体关', '密度对齐——完成度、字句密度跟全书最好的章一致没？母题呼应——核心意象(玉温语法/活的墓/烧命护人)照应没？跨章——让开与前后章撞词？'),
-        ('九·终审关', '以最苛刻读者眼光通读一遍；改动处衔接顺没、有没有改出新问题(错字/断裂/前后不搭)？机检全项归零(四项零/禁名/台账/密度)？'),
-    ]
-    for nm, desc in _ROUNDS:
-        print(f'   【第{nm}】{desc}')
-    print()
-    print('   ★封神三问（不是查错，是拔高——逼这章长出让人忘不掉的东西）:')
-    print('     一问·高光：这章有没有一个让读者记住、想引用的「神来之笔」(一句话/一意象/一转折)？没有=还只是合格，回去想它的高光该是什么。')
-    print('     二问·全局：跳出这章看全书这盘棋——位置对没？推进主线没(还是原地打转)？信息节奏(几章一小揭/卷中反转/埋钩回收)踩点没？')
-    print('     三问·读者：普通读者读到这儿会想往下翻没？哪段会走神想跳过？哪句会心头一动？读完有没有非追下章不可的冲动？——比任何技术检查都重要。')
-    print()
-
-    print('\n' + '=' * 64)
-    print('   机检完。下面这些机器判不了,得人工逐条读着对(九轮的细化落地):')
-    print('=' * 64)
-    for i, m in enumerate(MANUAL, 1):
-        print(f'   {i}. {m}')
-    print()
-
-
-
 
 # ═══════════════════════════════════════════════════════════════
 #   超级智能体 v5.3 —— 小说检察官当前入口
 #   外部 canon 为强制权威；内嵌仅保留早期通用机械规则且不能脱库运行；
 #   第一优先级=canon保真与回述保真;
-#   回述/绝对化自动跨章对撞;欠写雷达;--开拍简报;双重保障第二道闸(AI核查令)。
-#   入口: 无参=全书 | N=封版门 | *.md=九轮+全融合 | --开拍 [N] | --selftest
+#   回述/绝对化自动跨章对撞;欠写雷达;双重保障第二道闸(AI核查令)。
+#   入口: 无参=全书 | N=封版门 | *.md=封版门 | --末章 N | --十一轮 N | --doctor | --selftest（一代诸令 1027 汰）
 # ═══════════════════════════════════════════════════════════════
 import json as _json, os as _os
 _EMBEDDED_LIB=_json.loads(r'''{"_说明": "canon事实库:每立一条新canon必须同步追加。level=ERROR(封版前必须清零)/FYI(债务仪表)。except_ch=豁免章号。", "facts": [{"id": "F001_暗门机关", "note": "堂屋暗门=补丁皮下铜钥匙锁孔(ch1权威);爷爷从未教授开门法", "level": "ERROR", "forbid": ["爷爷[^。，]{0,8}教过我", "和爷爷教我的", "爷爷临走前教", "哪一块砖该按", "没有把手，没有锁孔", "老宅[^。]{0,25}没有锁孔"], "except_ch": []}, {"id": "F002_年龄", "note": "苏衍=23岁;禁任何'我+二十X(≠三)'", "level": "ERROR", "forbid": ["我[^。]{0,4}二十[一二四五六七八九]"], "except_ch": []}, {"id": "F003_玉交接", "note": "ch1权威:红布包塞手;禁'戴到我的脖子'", "level": "ERROR", "forbid": ["戴到了?我的脖"], "except_ch": []}, {"id": "F004_浅纹初见", "note": "初见=ch22马灯下;禁他章自称头一回见纹", "level": "ERROR", "forbid": ["头一回[^。]{0,12}[瞧看]见[^。]{0,10}纹", "[瞧看]见[^。]{0,6}纹[^。]{0,8}头一回"], "except_ch": [22]}, {"id": "F005_手机手电", "note": "7610无手电;照明=手电筒/屏;禁'手机…的手电/背面的手电'及'从未见过它发光'", "level": "ERROR", "forbid": ["手机[^。]{0,10}的手电", "背面的手电", "从未见过它发光"], "except_ch": []}, {"id": "F006_年份", "note": "全书=2006;禁一切错年份", "level": "ERROR", "forbid": ["二〇〇[一二三四五七八九]年", "二〇一.?年", "一九九[〇0-9]", "19[89][0-9]年", "200[0-57-9]年"], "except_ch": []}, {"id": "F007_打介词", "note": "打作方位/时间介词全书禁(含对白)", "level": "ERROR", "forbid": ["打[这那北南东西明今后小心进出]"], "except_ch": []}, {"id": "F008_禀报转折", "note": "禀报式转折禁(变故陡生类)", "level": "ERROR", "forbid": ["变故陡生", "变故突生", "意外就在这时", "说时迟"], "except_ch": []}, {"id": "F010_债词仪表", "note": "债词:新章回避;旧章计数观察", "level": "FYI", "forbid": ["一寸一寸", "纹丝不动", "后脊梁", "就在这时", "喉咙发紧", "一下，一下", "九死一生", "亘古"], "except_ch": []}], "musts": [{"ch": 12, "pat": "二〇〇六年二月十七日", "note": "悬赏落款年份主锚"}, {"ch": 9, "pat": "诺基亚7610", "note": "机型唯一点名处"}, {"ch": 9, "pat": "一百万像素", "note": "像素话术"}, {"ch": 22, "pat": "我今年二十三", "note": "年龄修复钉"}, {"ch": 20, "pat": "一个字都没教过", "note": "静地案修复钉"}, {"ch": 1, "pat": "小手电筒", "note": "守灵手电canon"}, {"ch": 1, "pat": "锈铁钉", "note": "空钉子伏笔"}, {"ch": 17, "pat": "红彤彤的二〇〇六", "note": "挂历辅锚"}, {"ch": 60, "pat": "整整一个楼兰", "note": "浅纹链终锚"}], "reveal": {"黎东来": 57, "柏冢": 13, "钱满": 18}, "perm_forbidden": ["望气", "鼎心", "换锚", "抽气运", "九处", "验钥台", "大阵", "阵眼", "锚位", "点亮", "气运", "夺舍", "龙脉", "鼎使", "守鼎", "第九鼎", "九鼎", "赵阙", "苏玄微", "樗里", "青乌", "执刑", "沈鸢", "殉葬"], "mech5_except": ["我怕脚下的某一块青砖", "从这座厅堂的最深处", "往那道透着晨光的缝隙", "是埋在土底下的那桩", "背后跟着两个把命交给我的人"], "abs_ok": ["这样的东西，我从没见过", "从没见过它像此刻这样", "从未闻过的东西", "我从没见过那样的地方", "从未走过这样漫长"]}''')
+# ★1027·执行之审 #13 之守（线 D）：D1（老头之年·四十八年前；圣经 改单#G0929-01、裁_1020_D1落式）落後，
+#   白文「二十七年」之年数语境回退即红（D1施 之六式「「二十七年」作年义」残 0 之常守；⛔只验一回）。
+#   ★其开关：瑕疵总账 X17 之行在「## 未治」节＝D1 未落（207 处係已挂之账，由账限哨催，此守只记 FYI ⛔拦）；
+#     X17 移出未治（线 E 器施 D1 後移已治）即开——此後白文再见一处即 ERROR（全书检、--末章 俱拦）。
+#   ⛔误拦之防：只跑白文（亮点层只印 ℹ）；「一百二十七年」之类前带数字者⛔中。
+_D1守之式 = r'(?<![〇零一二三四五六七八九十百千两])二十七年'
+
+
+def _D1已落(账文=None):
+    """D1 落否：瑕疵总账「## 未治」节无 X17 之行 → 已落。账读不得 → 作已落（宁严：守照拦）。"""
+    if 账文 is None:
+        try:
+            账文 = open(os.path.join(REPO_ROOT, '设定', '瑕疵总账.md'), encoding='utf-8').read()
+        except OSError:
+            return True
+    m = re.search(r'(?ms)^## 未治[^\n]*\n(.*?)(?=^## |\Z)', 账文)
+    return not (m and re.search(r'(?m)^\|\s*X17\s*\|', m.group(1)))
+
+
+def _D1守(落):
+    return {'id': 'D1守_老头之年', 'level': 'ERROR' if 落 else 'FYI',
+            'note': '老头之年：四十八年前（D1·圣经 改单#G0929-01）；白文⛔「二十七年」（D1 落後之常守·执行之审 #13）',
+            'forbid': [_D1守之式], 'except_ch': []}
+
+
 def _load_lib():
     lib=_json.loads(_json.dumps(_EMBEDDED_LIB))
     p=CANON_PATH
@@ -5143,6 +4691,8 @@ def _load_lib():
         lib['abs_ok']=sorted(set(lib.get('abs_ok',[]))|set(ext.get('abs_ok',[])))
     else:
         raise SystemExit(f'  ✗ 项目 canon 缺失: {p}\n    为防止使用过期内嵌库产生假全绿，体检已中止。')
+    if not any(f.get('id') == 'D1守_老头之年' for f in lib['facts']):
+        lib['facts'].append(_D1守(_D1已落()))
     return lib
 def _chapters():
     fs={}
@@ -5400,7 +4950,7 @@ def mech_layer(files,focus,lib):
 
                 with contextlib.redirect_stdout(_buf): _dg=diff_gate(n)
 
-                if _dg: pr.append('改动闸机械层未清零(工作区较HEAD的变动段含破折/半角/英文/五逗/禁词)——跑 --改检 %d 清零后再封版'%n)
+                if _dg: pr.append('改动闸机械层未清零(工作区较HEAD的变动段含破折/半角/英文/五逗/禁词)：%s——清零后再封版'%('；'.join(_l.strip() for _l in _buf.getvalue().splitlines() if '⛔' in _l)[:240] or '见改动闸之报'))
 
             except Exception: pass
 
@@ -5513,33 +5063,8 @@ def second_gate(scope):
     print('  ③ 欠写雷达每条:判"设计留白/真省字→当场增厚"')
     print('  ④ 数字负向:年龄23·年份2006·台阶27级·悬赏2-17·手机7610,逐个再对一遍')
     print('  ⑤ 封神三问+九轮走查;⑥新canon若立→当场追加canon事实库.json')
-    print('  ⑦ 因果与经济配位:每处惊叹/稀罕断言与每笔大宗交易,答\"证据配不配\"(1+1=2式惊叹=病)\n  ⑧ 原场与概念:爷爷丧事、老宅地窖古尸发现、柏冢入口与各次照面分别服从各自首次完整原场;老宅地窖≠柏冢;地图给目的地,玉只响应同源信号\n  ⑨ 台词绝对化:每处"头一句/几天没说话",核该人物该时段真沉默否、与机敏在场人设冲突否\n  ⑪ 状态弧与哨兵:沈鸢伤势、合玉状态、玉温、钱包、在场、题眼、季节逐条对表。\n  ⑩ 修复回访:本次一切改动处连同前后各两段重读,核原生感与逻辑涟漪。\n  ⑫ 翻页力与闭环:五钩必答;到期伏笔必显式裁决(接/展期/废)并登记。\n  ⑬ 阅读器同步检查须通过;回执未交或ERROR未清零,禁止封版。\n  ⑭ 回执闸已机器化(第73章起ERROR级):当章回执缺档即红灯;圣经三闸(末章锚/下一章接写锚/CANON-ID同一)由医生逐次核验——写后全流程靠闸门,不靠记性。\n  ⑮ 新锚催办(76起入回执闸):每章新生数字量词候选自动列出,AI逐条裁决钉入F规则或豁免——未来的雷,在出生当章登记造册。\n  ⑱ 三层机制总调度:--开拍即喷发病历本前三大病号＋开笔清单三十二问＋十庭令;78起回执须含"病历归档"与"清单对账",缺即红灯。\n  ⑲ 回述实证哨兵(A级防线):凡"前章事件＋具体地点/数字"之句自动列出,必须grep原场逐字比对并在回执贴原文;78起回执须含"原场"字样,缺即红灯。祖案:77写"坡上/三个字/攥腕",68原场实为"窗外/衍娃两字/麻绳拴腕穿铃"。\n  ⑳ 到期账催办:统一欠账台账(冷轮/剧情/伏笔/工程/病历处方)按到期章催办;逾期1章WARN,逾期≥2章ERROR禁封版——文本里的错机器扫得到,不在文本里的欠账须另立台账。\n  ㉑ 作业令签发(批94):检察官不止报错,更自实时状态推导编号任务表(到期账/病历处方/清单/门槛/分量/自检/机检/三检/十庭指派/回执/闸门/翻页),逐条派活,缺一不放行——由被动检查器升为主动调度官。\n  ㉒ 顶级起草法(批95):起草前必出设计令——章魂一句/三记必中之拳(招式库十招)/收章句候选三条/本章禁用/删章之问;写后逐拳验收中偏空,入回执。防错机制之外的**正向机制**:好句不是防出来的,是设计出来的。\n  ㉓ 一条命令全套(批96):--开拍 N 一次喷发——总控台/开拍简报/编号作业令/顶级起草法原文(招式库十招＋设计令五项)/十庭本章开庭条目原文/交付三检作者原文/收庭三问与禁语。提示词单一真源仍在设定层文件,呈现全部内嵌,写章不必另翻任何文件。\n  ㉔ 检四终检(批97):既有写后检查全为分析式,无一道是"读"。补连读检(读者位·带缝口·标走神点/跳读点/接缝感)与逐段生死检(每段自证"删掉它本章断什么",答不出即处死;两段说一件事必并)。位列交付三检之后、双绿闸之前;82章起回执须含"生死检"。\n  ㉕ 双命令制(批98):写前 --开拍 N（总控台/简报/作业令/起草法/十庭条目/三检/收庭三问），写后 --验收 N（机检硬闸/自检清单/三检原文/检四原文/十庭指派条目/收庭三问/回执八token/双绿闸/翻页八件套/到期账）。两条命令覆盖全流程,不必再记任何步骤。\n  ㉖ 改动闸(批99):新伤只长在改动的缝口上,全章扫会被九成未变的文字稀释。--改检 N [基线] 取git上一版做diff,只查变动段及左右邻段六项:机械层/自造重复(新增四字串在他处已有)/悬空指代(变动段以代词起)/器物动线(涉及器物之全章处数,P18处方)/数字冲突/段间空行。**改完提交前必跑**,已内嵌--验收。\n  ⑯复读哨兵:章内四字串≥3次自动列出,AI裁回声或灌。⑰时长断言哨兵:半年/X个月类必对时间卡——75章欠了半年案为祖案。')
+    print('  ⑦ 因果与经济配位:每处惊叹/稀罕断言与每笔大宗交易,答\"证据配不配\"(1+1=2式惊叹=病)\n  ⑧ 原场与概念:爷爷丧事、老宅地窖古尸发现、柏冢入口与各次照面分别服从各自首次完整原场;老宅地窖≠柏冢;地图给目的地,玉只响应同源信号\n  ⑨ 台词绝对化:每处"头一句/几天没说话",核该人物该时段真沉默否、与机敏在场人设冲突否\n  ⑪ 状态弧与哨兵:沈鸢伤势、合玉状态、玉温、钱包、在场、题眼、季节逐条对表。\n  ⑩ 修复回访:本次一切改动处连同前后各两段重读,核原生感与逻辑涟漪。\n  ⑫ 翻页力与闭环:五钩必答;到期伏笔必显式裁决(接/展期/废)并登记。\n  ⑬ 阅读器同步检查须通过;回执未交或ERROR未清零,禁止封版。\n  ⑭ 回执闸已机器化(第73章起ERROR级):当章回执缺档即红灯;圣经三闸(末章锚/下一章接写锚/CANON-ID同一)由医生逐次核验——写后全流程靠闸门,不靠记性。\n  ⑮ 新锚催办(76起入回执闸):每章新生数字量词候选自动列出,AI逐条裁决钉入F规则或豁免——未来的雷,在出生当章登记造册。\n  ⑲ 回述实证哨兵(A级防线):凡"前章事件＋具体地点/数字"之句自动列出,必须grep原场逐字比对并在回执贴原文;78起回执须含"原场"字样,缺即红灯。祖案:77写"坡上/三个字/攥腕",68原场实为"窗外/衍娃两字/麻绳拴腕穿铃"。\n  ⑳ 到期账催办:统一欠账台账(冷轮/剧情/伏笔/工程/病历处方)按到期章催办;逾期1章WARN,逾期≥2章ERROR禁封版——文本里的错机器扫得到,不在文本里的欠账须另立台账。\n  ㉔ 检四终检(批97):既有写后检查全为分析式,无一道是"读"。补连读检(读者位·带缝口·标走神点/跳读点/接缝感)与逐段生死检(每段自证"删掉它本章断什么",答不出即处死;两段说一件事必并)。位列交付三检之后、双绿闸之前;82章起回执须含"生死检"。\n  ㉖ 改动闸(批99):新伤只长在改动的缝口上,全章扫会被九成未变的文字稀释。第十一轮取git上一版做diff,只查变动段及左右邻段六项:机械层/自造重复(新增四字串在他处已有)/悬空指代(变动段以代词起)/器物动线(涉及器物之全章处数,P18处方)/数字冲突/段间空行。**第十一轮自跑**（一代 --改检、--验收 1027 已汰）。\n  ⑯复读哨兵:章内四字串≥3次自动列出,AI裁回声或灌。⑰时长断言哨兵:半年/X个月类必对时间卡——75章欠了半年案为祖案。')
 
-def briefing(files,lib,next_ch=None):
-    print('═'*50); print('  ◆ 开拍简报 —— 写新章前必读(检察官自动生成) ◆'); print('═'*50)
-    try: due_report(next_ch-1)
-    except Exception as _e: print('  (到期账读取失败:%s)'%_e)
-    print_dispatch()
-    try: work_order(next_ch)
-    except Exception as _e: print('  (作业令签发失败:%s)'%_e)
-    mx=max(files,default=0)
-    nx=next_ch or mx+1
-    print(f'  已收录至第{mx}章,即将审写:第{nx}章')
-    if mx in files:
-        tail=_bodyx(files[mx][2]).strip()[-260:]
-        print('  【上一章结尾】…'+tail.replace(chr(10),'␤'))
-    st=[]
-    for w,rv in sorted(lib['reveal'].items(),key=lambda x:str(x[1])):
-        st.append(f'{w}:'+('永禁' if rv is None else (f'≥{rv}章可写' if nx<rv else '已揭,可写')))
-    print('  【揭名现状】',';'.join(st))
-    print('  【唯一活动设定输入】', '；'.join(EXPECTED_ACTIVE_INPUTS), '；设定目录内其余旧“终极／唯一／定稿／框架／闭环录／交接稿”全部排除')
-    print('  【永禁机制词】',','.join(lib['perm_forbidden']))
-    print('  【债词回避(新章一律绕开)】',','.join(sorted({p for fa in lib["facts"] if fa.get("level")=="FYI" for p in fa["forbid"]})))
-    print('  【硬规矩】破折号零;半角零;英文零;单句逗≤4(真排比登记豁免);单字爷禁;打[这那北南东西明今后小心进出]禁;禀报转折禁;十二时辰禁;年份=二〇〇六;年龄=二十三;折寿只写白发/浅纹;回述必贴原场;高潮必给足慢镜头,严禁省字。')
-    print('  【本轮因果钉】ch28禁入夏以来/时间回声；ch40北京=同日傍晚；ch57电视揭黎东来并收章、ch58沈鸢报姓名；ch13血图与尸身联锁；柏冢外围封控不蒸发；ch70定两日时钟→ch71完整准备并抵第一弯外→ch72必须从黑缝外接写；终局沈鸢断气后不可救，赵阙只能诱骗，苏衍只能保尸，老头送刀只为割绳。')
-    print('  【流程】足量写→小说检察官 章号(ERROR=0)→AI回执→新canon入库→交付四件套。')
-    print(LAWS_DIGEST)
-    if next_ch: statecard(next_ch); foreshadow_report(slice_for=next_ch); print('  ▶ 战情简报: python3 工具/小说检察官.py --军师 '+str(next_ch)+'  (唯一剧情权威=00_镇冢秘术_唯一总圣经.md; CANON-ID='+EXPECTED_CANON_ID+')')
 
 def reader_sync_check():
     """只读核对 HTML 阅读器；绝不在检察官里自动写回。"""
@@ -6041,7 +5566,30 @@ def selftest(files,lib):
     for name,good in ye_checks:
         passed+=good
         print(('  ✓' if good else '  ✗单字爷错'),f'[{name}]')
-    total=len(cases)+len(safe)+len(scope_checks)+len(reveal_checks)+len(weight_checks)+len(abolish_checks)+len(ye_checks)
+    # ★1027·执行之审 #13：D1 之守——坏例（X17 之原句）红、放行之反例（未落、亮点层、一百二十七年）⛔红
+    _未账 = '# 账\n\n## 未治\n\n| X17 | 旧文年数 |\n\n## 已治（1015）\n\n| X1 | 甲 |\n'
+    _已账 = '# 账\n\n## 未治\n\n| X41 | 乙 |\n\n## 已治（1015）\n\n| X17 | 旧文年数 |\n'
+    _式 = _D1守(True)['forbid'][0]
+    d1_checks=[
+      ('D1守·X17 在未治＝未落（只 FYI ⛔拦）', (not _D1已落(_未账)) and _D1守(False)['level']=='FYI'),
+      ('D1守·X17 移已治＝已落（ERROR 即拦）', _D1已落(_已账) and _D1守(True)['level']=='ERROR'),
+      ('D1守·回灌 103:176「二十七年前他十四，今年四十一」红', bool(re.search(_式,'二十七年前他十四，今年四十一'))),
+      ('D1守·回灌 211:35「二十七年了」红', bool(re.search(_式,'他说，二十七年了。'))),
+      ('D1守·放行「一百二十七年」（非老头之年数）', not re.search(_式,'那口井有一百二十七年了。')),
+      ('D1守·放行「四十八年前」（新岁）', not re.search(_式,'四十八年前他来过。')),
+      ('D1守·入 lib（全书检、--末章 之 priority_one 读之）', any(f.get('id')=='D1守_老头之年' for f in lib['facts'])),
+    ]
+    # ★线 D 复核：端到端——已落（ERROR）则 priority_one 计白文一处；亮点层、「一百二十七年」⛔计；未落（FYI）⛔计
+    import io as _io, contextlib as _cl
+    _d1文 = {103: ('p', 'x', '他说，二十七年前他十四。\n\n【本章亮点】\n亮：二十七年前。\n'), 104: ('p', 'x', '那口井一百二十七年了。\n')}
+    with _cl.redirect_stdout(_io.StringIO()):
+        _d1落 = priority_one(_d1文, None, {'facts': [_D1守(True)], 'musts': []})
+        _d1未 = priority_one(_d1文, None, {'facts': [_D1守(False)], 'musts': []})
+    d1_checks.append(('D1守·端到端：已落则白文一处计 ERROR 1（亮点层、一百二十七年⛔计）；未落 0', _d1落 == 1 and _d1未 == 0))
+    for name,good in d1_checks:
+        passed+=good
+        print(('  ✓' if good else '  ✗D1守错'),f'[{name}]')
+    total=len(cases)+len(safe)+len(scope_checks)+len(reveal_checks)+len(weight_checks)+len(abolish_checks)+len(ye_checks)+len(d1_checks)
     contract_passed,contract_total=contract_negative_selftest(files)
     wiring,_=project_doctor(files,check_reader=True)
     latest_error=0
@@ -6055,20 +5603,6 @@ def selftest(files,lib):
     return (passed==total and contract_passed==contract_total and
             wiring==0 and latest_error==0)
 
-# ═══════════ v5 军师级模块 ═══════════
-PLAYBOOK=[
- "①章末必悬:结尾三段内必落一钩(新威胁/未解之问/反转/两难/倒计时),平收=哑弹",
- "②信息滴灌:每章至多解一个旧问,必抛一个新问;全解不抛=断电",
- "③延迟满足:大揭晓先给果不给因(先见空寨爪痕,最后一格才给半句因),读者自己拼图最上瘾",
- "④危机阶梯:本章危机必须比上章高半档(范围更大/更近身/更不可逆),持平即下坡",
- "⑤情绪过山车:恐后给暖,暖后夺走;连恐三章必插一口人间烟火再压下去",
- "⑥三层钩同场:章内小钩+卷内中钩+全书大钩,任一时刻至少两层在场",
- "⑦承诺-兑现:卷首许的爆点准时兑付且超预期;跳票一次,信任降一档",
- "⑧欲望冲突:每个在场主要人物,心里都揣一句'想要,但不能'",
- "⑨最痛选择:高潮=两难抉择且代价当场可见,不给两全",
- "⑩读者多知半步:让读者比主角早知半拍(戏剧反讽),替他攥汗",
- "⑪晚进早出:场景在冲突已起时进,在余波未平时出,掐头去尾",
- "⑫金句锚:每章至少一句可被摘抄转发的句子,位置宜在高潮或收尾"]
 # 剧情 beat 不入机器：唯一权威是总圣经；机器只递情报，不替正文发明事实。
 def _paras(body): return [x.strip() for x in re.split(r'\n\s*\n',body) if x.strip()]
 def cardiogram(n,files):
@@ -6160,19 +5694,6 @@ def title_eye(n,files):
     hits=max((body.count(ch) for ch in nm), default=0)
     if hits<=1: print(f"【题眼哨兵】⚠章名《{nm}》关键字全章仅现{hits}次——题眼疑虚设(参40《门缝》缝无实景案),回执裁:落地或改名")
 
-def strategist(nxt,files=None):
-    print('══════════════════════════════')
-    print(f'  ◆ 战情简报 · 第{nxt}章(情报参谋·不下军令) ◆')
-    print('══════════════════════════════')
-    if files and (nxt-1) in files:
-        _,_,pt=files[nxt-1]
-        tl=re.sub(r'\s+','',pt)[-160:]
-        print('【上章尾钩(原文)】…'+tl)
-    foreshadow_report(slice_for=nxt)
-    print('【剧情权威】设定/00_镇冢秘术_唯一总圣经.md（CANON-ID='+EXPECTED_CANON_ID+'）；未被其推翻的已演出事件再对首个完整原场；机器不提供剧情指令。')
-    print('【翻页力兵法(参考手册,非军令;静水深流章可弃用并说明)】')
-    for x in PLAYBOOK: print('   '+x)
-    print('【硬规矩】足量写|每句≤4逗|零破折|全角|"从"不"打"|红线留白|债词绕开|写后:检察官 章号→ERROR=0+回执')
 
 def _resolve_md_arg(arg,files):
     candidates=[_os.path.abspath(arg),_os.path.join(REPO_ROOT,arg),_os.path.join(CHAPTER_DIR,_os.path.basename(arg))]
@@ -6184,56 +5705,7 @@ def _resolve_md_arg(arg,files):
 
 def _usage():
     print(__doc__.strip())
-    print('\n附加命令: --伏笔 [N] | --军师 N | --心电图 N | 框架 | 规范')
-
-
-def jj_hook(n, note=''):
-    """【批103】跑轮挂钩：--验收 跑完自动存版＋棘轮闸；满十轮自动横评。
-    立法：机制不设平行命令，一律走检察官单一入口；作者只说"续"与"挑刺"。"""
-    try:
-        import importlib.util as _ilu
-        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '跑轮.py')
-        if not os.path.exists(_p):
-            return
-        _s = _ilu.spec_from_file_location('_jj', _p)
-        _m = _ilu.module_from_spec(_s)
-        _s.loader.exec_module(_m)
-    except Exception as e:
-        print('  ⚠跑轮模块未能加载：%s' % e)
-        return
-    print('\n' + '=' * 64)
-    print('   【跑轮 · 批103自动挂钩】本轮挑刺完毕，自动存版')
-    print('=' * 64)
-    # 批131·吞记闸第二形：说明未填即落占位，而落完之後正文与末版逐字相同，
-    # 空轮闸遂拦住 --存版／--补存，那一行占位说明再也改不掉——账上多一版跑过的样子，
-    # 而它说不出自己跑的是哪一轮。故此处不许再静静落一行占位：先把话说在前头。
-    if not note:
-        # ★★★★★2026-09-02·293第3轮改（第二十四犯第二形之根治）：
-        #   ★前此只是「先出声，照旧落占位」；★★而一坐之内我从这个口走过六回
-        #     （292 v16/v17、293 v02/v05/v07/v08/v11/v12），**每一回都是同一个来回**：
-        #     做完活 → 跑一次不带说明的 --验收 查硬项 → 它把版存了 →
-        #     我带着说明再存，空轮闸判「正文与末版逐字相同」→ 拦 → 回头 --填记。
-        #   ★★★数其群（令§六①②）：**全书台账 3,352 版，占位行旧史只 1 行（第101章 v03）**；
-        #     **而今日一坐造出 8 行**——**群不在旧史里，在今日这一坐里，而它是同一个口。**
-        #   ★★★★故不再落占位：**不带说明的 --验收 只查不存**。
-        #     ★**其由**：**一行读不出自己跑的是哪一轮的账，不如不落**；
-        #     ★★**而「挑刺」带说明者照旧存版，批103之单一入口未动**（只少了「空说明也存」这一路）。
-        print('  ⚠说明未填：**本次只查不存**（不落占位行）。')
-        print('     ★说明是位置参数：python3 工具/小说检察官.py --验收 %d "第N轮·某庭：所改何事"' % n)
-        print('     ★★带说明者照旧自动存版；不带者只跑挑刺，台账一行不动。')
-        print('=' * 64)
-        return
-    _m.save(n, note or '（本轮说明未填，须在回执补记开庭与真伤级别）')
-    _d, _led = _m.paths(n)
-    try:
-        import json as _j
-        _v = _j.load(open(_led, encoding='utf-8'))['版本']
-        if len(_v) >= 10:
-            print('\n  ✓已满十轮，自动横评：')
-            _m.compare(n)
-        # ★1027 汰：「下一轮该开」之提示（十三轮之序·冷轮补执）随十三轮之机与冷眼轮同废——其式三占二参，恒崩而被吞、从未印出
-    except Exception:
-        pass
+    print('\n附加命令: 框架 | 规范（一代诸令 1027 已汰）')
 
 
 
@@ -6322,39 +5794,23 @@ def _round11_main(n):
     return 0
 
 
+_一代已汰之令 = ('--开拍', '--验收', '--五钩', '--伏笔', '--军师', '--心电图', '--改检')
+
+
 def super_main():
-    # 【批107】并发闸前置：开拍／验收之前先查仓库是否被别路动过
-    if len(sys.argv) > 1 and sys.argv[1] in ('--开拍', '--验收'):
-        try:
-            import importlib.util as _i2
-            _p2 = os.path.join(os.path.dirname(os.path.abspath(__file__)), '跑轮.py')
-            if os.path.exists(_p2):
-                _s2 = _i2.spec_from_file_location('_jj2', _p2)
-                _m2 = _i2.module_from_spec(_s2); _s2.loader.exec_module(_m2)
-                _m2.concurrency_check()
-        except Exception as _e2:
-            print('  ⚠并发闸未能运行：%s' % _e2)
+    # ★1027·执行之审 #54：一代诸令（--开拍、--验收、--五钩、--伏笔、--军师、--心电图、--改检）与每跑必印之「在役机制」（print_console）俱汰——
+    #   二代（造章.js·章料）取代之；今只留 --末章／--doctor／--selftest／--十一轮／封版门（N、*.md）与全书体检。法用册「废」检察官一代诸令。
     args=sys.argv[1:]
     if args and args[0] in ('-h','--help'):
         _usage(); return 0
     if args and args[0] in ('--十一轮','--总核'):
         return _round11_main(int(args[1]))
+    if args and args[0] in _一代已汰之令:   # ★线 D 复核：旧令⛔静默落成「封版门 N」（`--开拍 410` 旧作跑 410 之封版门而不出一声）
+        print(f'  ⛔ {args[0]} 係检察官一代之令，1027 已汰（执行之审 #54·法用册「废」检察官一代诸令）。')
+        print('     代之者：造式二代（工具/席/造章.js·章料）；本器只留 --末章 N｜--十一轮 N｜--doctor｜--selftest｜N（封版门）｜无参（全书检）。')
+        return 2
     lib=_load_lib()
     files=_chapters()
-    # ★★★2026-09-03·八造：五钩单出一口（对位闸所逮）
-    #   其由：`pageturn` 全仓只有一个调用点，在 `ai_homework` 之内，而 `ai_homework` 只在
-    #   `--封版` 之下——**十三轮无一轮调得着它**；於是本书唯一一件量「读者翻不翻页」的器，
-    #   出声之时文已定。今另开此口，令第7轮（节奏／留白）跑得着它，**趁文还改得动**。
-    if args and args[0] == '--五钩':
-        if len(args) < 2 or not args[1].lstrip('-').isdigit():
-            print('  ✗ 用法：python3 工具/小说检察官.py --五钩 N'); return 2
-        _c = int(args[1])
-        if _c not in files:
-            print('  ✗ 第%d章不存在' % _c); return 2
-        pageturn(_c, files)
-        foreshadow_report(slice_for=_c)
-        print('  ★此口只报不判：五钩之分由人打，而**打分之时文还改得动**，这正是它移到第7轮的全部理由。')
-        return 0
     if args and args[0] in ('框架','--framework'):
         print(FRAMEWORK.strip()); return 0
     if args and args[0] in ('规范','导出规范','知识','--spec','--knowledge'):
@@ -6366,49 +5822,6 @@ def super_main():
     if args and args[0]=='--末章' and len(args)>1 and args[1].isdigit():   # ★1020：自检之「末章硬闸」单跑（数秒）——封版 --前 左移之（398 亮点 5+逗 至全测·快方红）
         n=int(args[1]); e=priority_one(files,n,lib)+mech_layer(files,n,lib)
         print(f'  末章硬闸·第{n}章：{"通过" if e==0 else "失败"}'); return 0 if e==0 else 1
-    if args and args[0]=='--伏笔':
-        foreshadow_report(upto=int(args[1]) if len(args)>1 else 999); return 0
-    if args and args[0]=='--军师':
-        if not files:
-            print('  ✗ 正文章数=0，不能生成战情简报'); return 2
-        n=int(args[1]) if len(args)>1 else (max(files)+1)
-        strategist(n, files); return 0
-    if args and args[0]=='--心电图':
-        if len(args)<2 or not args[1].isdigit() or int(args[1]) not in files:
-            print('  ✗ 请给出已存在的章号，例如 --心电图 70'); return 2
-        cardiogram(int(args[1]),files); return 0
-    if args and args[0]=='--改检':
-        if not files: print('  ✗ 正文章数=0'); return 2
-        n=int(args[1]) if len(args)>1 and args[1].isdigit() else max(files)
-        base=args[2] if len(args)>2 else 'HEAD'
-        return diff_gate(n, base)
-    if args and args[0]=='--验收':
-        if not files: print('  ✗ 正文章数=0'); return 2
-        m=max(files)
-        n=int(args[1]) if len(args)>1 and args[1].isdigit() else m
-        acceptance(n, files)
-        note=args[2] if len(args)>2 else ''
-        jj_hook(n, note)
-        return 0
-    if args and args[0]=='--开拍':
-        if not files:
-            print('  ✗ 正文章数=0，拒绝生成无根简报'); return 2
-        wiring,_=project_doctor(files,check_reader=True)
-        if wiring:
-            print('  ✗ 开拍被项目红灯拦下；先清零 doctor／阅读器错误'); return 1
-        expected=max(files)+1
-        if len(args)>1 and not args[1].isdigit():
-            print(f'  ✗ 开拍章号必须是整数；当前唯一合法下一章为第{expected}章'); return 2
-        nx=int(args[1]) if len(args)>1 else expected
-        if nx!=expected:
-            print(f'  ✗ 不得重复或跳章：当前末章第{max(files)}章，只允许 --开拍 {expected}')
-            return 2
-        print(f'════ 开拍前复核·第{max(files)}章封版硬闸 ════')
-        sealed=priority_one(files,max(files),lib)+mech_layer(files,max(files),lib)
-        if sealed:
-            print(f'  ✗ 第{max(files)}章封版硬错={sealed}；清零前不生成第{nx}章简报')
-            return 1
-        briefing(files,lib,nx); return 0
     md=[a for a in args if a.endswith('.md')]; num=[a for a in args if a.isdigit()]
     if md:
         total_error=0; total_review=0
@@ -6480,5 +5893,4 @@ def super_main():
         return 0 if e==0 else 1
 
 if __name__ == '__main__':
-    print_console()
     raise SystemExit(super_main())

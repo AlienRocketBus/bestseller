@@ -11,6 +11,14 @@
 
 ★旧裁以棘轮守（同 `进化链.py`）：**未生效之裁数只许降、不许升**；
   0924（含）以後所立之裁，一份也不许未生效——立裁之日须同日配器。
+
+★1027·执行之审 #75 #129 #56（总编辑之裁·线 D）：
+  ①**裁之判唯归本器**（进化链⛔再收裁，同功两处即废劣者）。
+  ②**行之证**：只点器名者，证得了「有器在跑」，证不了「裁之文被施」（裁_1020_D1落式 点 行号随移.py 即算生效，而其裁之实一字未行）。
+    故 **1027（含）以後所立之裁，须书行之证之一**——`法用#<id>`（其 id 在法用册之法／待）｜`到期账 <id>`（在账，到限须已结）｜
+    `改单#G…`（在改单账且已结）；⛔只点器者判未生效。
+    **0924—1026 之裁过渡**：只点器而无行之证者印其数（「只点器之底」·棘轮只许降），⛔拦。
+  ③**旧裁未生效之底至第 420 章须 0**（限章），未达即红——⛔只禁涨不逼降。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -23,6 +31,9 @@ import io, os, re, sys, glob, json
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 棘轮档 = os.path.join(ROOT, '设定', '裁之生效_棘轮.json')
 新令起 = '0924'   # ★此日（含）以後之裁：一份也不许未生效
+行证令起 = '1027'  # ★1027·#75：此日（含）以後之裁须书行之证之一（法用#／到期账／改单#）
+限章 = 420         # ★1027·#56：旧裁未生效之底至此章须 0
+_结 = ('done', 'closed', '清', '已清', '废弃', '废', '已废', 'void')
 
 
 def _src(rel):
@@ -45,24 +56,82 @@ def 守器(裁文):
 
 def 随汰(裁文):
     """★1027：裁之退役——文中「〔随汰·<日>：所守之法 `工具/<器>` 已彻删……〕」而其器真已不在盘上 → 其器名；否则 ''。
-    ⛔借 进化链.随汰（一处判，⛔两份码）；其器仍在即⛔认（防借标关闸）。"""
-    import importlib.util as _u
-    _sp = _u.spec_from_file_location('_jhl', os.path.join(ROOT, '工具', '进化链.py'))
-    _m = _u.module_from_spec(_sp)
-    _sp.loader.exec_module(_m)
-    return _m.随汰(裁文, ROOT)
+    ⛔借 进化链.随汰（一处判，⛔两份码）；其器仍在、或从未有过（git 史中无其删），俱⛔认（防借标关闸）。"""
+    return _链().随汰(裁文, ROOT)
 
 
-def 查(档们=None, 在役=None):
-    """→ [(裁名, 由)]：未生效之裁（随汰而退役者不计）。"""
+_链模 = []
+
+
+def _链():
+    """进化链之模（一回载入、缓存：随汰之判与 git 史之删器集俱借之）。"""
+    if not _链模:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_jhl', os.path.join(ROOT, '工具', '进化链.py'))
+        _m = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_m)
+        _链模.append(_m)
+    return _链模[0]
+
+
+def _读json(rel):
+    try:
+        return json.load(io.open(os.path.join(ROOT, rel), encoding='utf-8'))
+    except Exception:
+        return None
+
+
+def 诸账():
+    """→ {'法': 法用册之法与待之 id 集, '到期': {id: 笔}, '改单': {号: 单}}（读不得者空）。"""
+    册 = _读json(os.path.join('设定', '法用册.json')) or {}
+    到 = _读json(os.path.join('设定', '到期账.json'))
+    笔们 = 到 if isinstance(到, list) else ((到 or {}).get('账') or (到 or {}).get('items') or [])
+    改 = _读json(os.path.join('设定', '改单账.json')) or {}
+    return {'法': {x.get('id') for x in (册.get('法') or []) + (册.get('待') or []) if x.get('id')},
+            '到期': {x['id']: x for x in 笔们 if isinstance(x, dict) and x.get('id')},
+            '改单': {x['号']: x for x in 改.get('单') or [] if x.get('号')}}
+
+
+def 行之证(裁文, 账, 末=0):
+    """→ (证们, 坏们)：法用#<id>（在法／待）｜到期账 <id>（在账；其到期章 ≤ 末章者须已结）｜改单#G…（在账且 状=毕）。"""
+    证, 坏 = [], []
+    for i in re.findall(r'法用#([^\s`，。、；：）)〕\]」｜|*]+)', 裁文):
+        (证 if i in 账['法'] else 坏).append('法用#%s%s' % (i, '' if i in 账['法'] else '（册无此法）'))
+    for 号 in re.findall(r'改单#\s*(G\d{4}-\d{2})', 裁文):
+        x = 账['改单'].get(号)
+        if x and x.get('状') == '毕':
+            证.append('改单#' + 号)
+        else:
+            坏.append('改单#%s（%s）' % (号, '未结' if x else '账无此单'))
+    for i in re.findall(r'到期账\s*[`「]?([A-Z][A-Z0-9]*-[^\s`」，。、；：）)〕\]｜|*]+)', 裁文):
+        x = 账['到期'].get(i)
+        if not x:
+            坏.append('到期账 %s（账无此笔）' % i); continue
+        到 = x.get('到期章')
+        if isinstance(到, int) and 末 and 到 <= 末 and str(x.get('状态', '')).strip() not in _结:
+            坏.append('到期账 %s（限 %d 已到而未结）' % (i, 到)); continue
+        证.append('到期账 ' + i)
+    return 证, 坏
+
+
+def 查(档们=None, 在役=None, 账=None, 末=None, 只点=None):
+    """→ [(裁名, 由)]：未生效之裁（随汰而退役者不计）。只点：传一列者，0924—1026 之裁只点器而无行之证者入之（⛔入坏）。"""
     档们 = 档们 if 档们 is not None else sorted(glob.glob(os.path.join(ROOT, '设定', '裁_*.md')))
     在役 = _在役() if 在役 is None else 在役
+    账 = 诸账() if 账 is None else 账
+    末 = 末章() if 末 is None else 末
     坏 = []
     for f in 档们:
         名 = os.path.basename(f)
         _文 = io.open(f, encoding='utf-8', errors='replace').read()
         if 随汰(_文):
             continue                     # ★1027：所守之法已彻删、裁随之退役（⛔计未生效；其史在档）
+        日 = _日(名)
+        证, 证坏 = 行之证(_文, 账, 末) if 日 >= 新令起 else ([], [])
+        if 日 >= 行证令起:              # ★1027·#75：只点器名不再算生效
+            if not 证:
+                坏.append((名, '无行之证（法用#<id>｜到期账 <id>｜改单#G… 之一）%s' % (('：' + '；'.join(证坏)) if 证坏 else '')))
+            continue
         器 = 守器(_文)
         if not 器:
             坏.append((名, '无一样器守它'))
@@ -70,6 +139,8 @@ def 查(档们=None, 在役=None):
         活 = [x for x in 器 if x in ('全测.py', '自走.py') or os.path.basename(x) in 在役 or x in 在役]
         if not 活:
             坏.append((名, '所点之器（%s）未接进全测／自走／诸席' % '、'.join(sorted(器))))
+        elif 只点 is not None and 日 >= 新令起 and not 证:
+            只点.append((名, '只点器（%s）而无行之证' % '、'.join(sorted(活))))
     return 坏
 
 
@@ -78,36 +149,67 @@ def _日(名):
     return m.group(1) if m else '0000'
 
 
-def 报():
-    坏 = 查()
+def 末章():
+    """盘上正文之末章（借 进化链.末章）；读不出 → 0（限章⛔判）。"""
+    try:
+        import importlib.util as _u
+        _sp = _u.spec_from_file_location('_jhl2', os.path.join(ROOT, '工具', '进化链.py'))
+        _m = _u.module_from_spec(_sp)
+        _sp.loader.exec_module(_m)
+        _m.ROOT = ROOT
+        return _m.末章()
+    except Exception:
+        return 0
+
+
+def 判(坏, 只点, 底, 末):
+    """纯判 → (ok, 行们, 新底)。底：{'旧裁未生效之底', '只点器之底'}（缺者初立）。"""
     新坏 = [x for x in 坏 if _日(x[0]) >= 新令起]
     旧坏 = [x for x in 坏 if _日(x[0]) < 新令起]
-    底 = None
-    if os.path.exists(棘轮档):
-        try:
-            底 = json.load(io.open(棘轮档, encoding='utf-8')).get('旧裁未生效之底')
-        except Exception:
-            底 = None
-    ok = True
-    print('════ 裁之生效 ════（做了的决定须有器守、且那器真在跑）')
+    底 = dict(底 or {})
+    ok, L = True, []
     if 新坏:
         ok = False
-        print('  ⛔0924 以後之裁未生效 %d 份（⛔立裁同日须配器）：' % len(新坏))
-        for n, why in 新坏:
-            print('     · %s：%s' % (n, why))
-    if 底 is None:
-        json.dump({'旧裁未生效之底': len(旧坏)}, io.open(棘轮档, 'w', encoding='utf-8'), ensure_ascii=False)
-        底 = len(旧坏)
-        print('  ℹ棘轮初立：旧裁未生效 %d 份（此後只许降）' % 底)
-    elif len(旧坏) > 底:
+        L.append('  ⛔0924 以後之裁未生效 %d 份（⛔立裁同日须配器；1027 起须书行之证）：' % len(新坏))
+        L += ['     · %s：%s' % (n, why) for n, why in 新坏]
+    b = 底.get('旧裁未生效之底')
+    if b is None:
+        底['旧裁未生效之底'] = b = len(旧坏)
+        L.append('  ℹ棘轮初立：旧裁未生效 %d 份（此後只许降）' % b)
+    elif len(旧坏) > b:
         ok = False
-        print('  ⛔棘轮红：旧裁未生效 %d 份 ＞ 其底 %d' % (len(旧坏), 底))
+        L.append('  ⛔棘轮红：旧裁未生效 %d 份 ＞ 其底 %d' % (len(旧坏), b))
     else:
-        if len(旧坏) < 底:
-            json.dump({'旧裁未生效之底': len(旧坏)}, io.open(棘轮档, 'w', encoding='utf-8'), ensure_ascii=False)
-        print('  ✓旧裁未生效 %d 份（其底 %d·只许降）' % (len(旧坏), 底))
+        底['旧裁未生效之底'] = min(b, len(旧坏))
+        L.append('  ✓旧裁未生效 %d 份（其底 %d·只许降）' % (len(旧坏), b))
+    if 旧坏 and 末 and 末 >= 限章:
+        ok = False
+        L.append('  ⛔限章红：第 %d 章已到限（%d）而旧裁未生效仍 %d 份——须 0（执行之审 #56）' % (末, 限章, len(旧坏)))
+    if 旧坏:
+        L += ['     · %s：%s' % (n, why) for n, why in 旧坏]
+    c = 底.get('只点器之底')
+    if c is None:
+        底['只点器之底'] = c = len(只点)
+    if len(只点) > c:
+        ok = False
+        L.append('  ⛔棘轮红：0924—1026 之裁只点器而无行之证 %d 份 ＞ 其底 %d（过渡之数只许降）' % (len(只点), c))
+    else:
+        底['只点器之底'] = min(c, len(只点))
+        L.append('  ℹ过渡：0924—1026 之裁只点器而无行之证 %d 份（其底 %d·只许降；补「法用#／到期账／改单#」之一即出此数）' % (len(只点), c))
     if ok and not 新坏:
-        print('  ✓0924 以後之裁，份份有器在守。')
+        L.append('  ✓0924 以後之裁，份份有器在守；1027 起之裁份份有行之证。')
+    return ok, L, 底
+
+
+def 报():
+    只点 = []
+    坏 = 查(只点=只点)
+    底 = _读json(os.path.relpath(棘轮档, ROOT)) if os.path.exists(棘轮档) else None
+    ok, L, 新底 = 判(坏, 只点, 底, 末章())
+    print('════ 裁之生效 ════（做了的决定须有器守、且那器真在跑；1027 起须有行之证）')
+    print('\n'.join(L))
+    if 新底 != (底 or {}):
+        json.dump(新底, io.open(棘轮档, 'w', encoding='utf-8'), ensure_ascii=False)
     return ok
 
 
@@ -118,19 +220,67 @@ def 自测():
     try:
         a = os.path.join(d, '裁_0999_空.md'); io.open(a, 'w', encoding='utf-8').write('只写了一句话。')
         b = os.path.join(d, '裁_0999_有器不在役.md'); io.open(b, 'w', encoding='utf-8').write('由 `工具/分量闸.py` 守。')
-        c = os.path.join(d, '裁_0999_有器在役.md'); io.open(c, 'w', encoding='utf-8').write('由 `工具/分量闸.py` 守。')
-        R.append(('①无器之裁判未生效', 查([a], 在役='')[0][1] == '无一样器守它'))
-        R.append(('②有器而未接进全测者判未生效', bool(查([b], 在役=''))))
-        R.append(('③有器且在役者过', 查([c], 在役='工具/分量闸.py') == []))
+        c = os.path.join(d, '裁_0999_有器在役.md'); io.open(c, 'w', encoding='utf-8').write('由 `工具/分量闸.py` 守。法用#假法')
+        账 = {'法': {'假法'}, '到期': {'ARC-999-甲': {'id': 'ARC-999-甲', '到期章': 400, '状态': 'done'},
+                                       'ARC-999-乙': {'id': 'ARC-999-乙', '到期章': 400, '状态': 'open'},
+                                       'ARC-999-丙': {'id': 'ARC-999-丙', '到期章': 999, '状态': 'open'}},
+              '改单': {'G9999-01': {'号': 'G9999-01', '状': '毕'}, 'G9999-02': {'号': 'G9999-02', '状': '开'}}}
+        K = dict(账=账, 末=410)
+        R.append(('①无器之裁判未生效', 查([a], 在役='', **K)[0][1] == '无一样器守它'))
+        R.append(('②有器而未接进全测者判未生效', bool(查([b], 在役='', **K))))
+        R.append(('③有器且在役者过', 查([c], 在役='工具/分量闸.py', **K) == []))
         e = os.path.join(d, '裁_0999_假名.md'); io.open(e, 'w', encoding='utf-8').write('由 `工具/并不存在之器.py` 守。')
         R.append(('④点名不存在之器不算（⛔不许写个假名混过）',
-                  查([e], 在役='并不存在之器.py') == [('裁_0999_假名.md', '无一样器守它')]))
-        g = os.path.join(d, '裁_0999_随汰.md'); io.open(g, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/并不存在之器.py` 已彻删〕')
+                  查([e], 在役='并不存在之器.py', **K) == [('裁_0999_假名.md', '无一样器守它')]))
+        g = os.path.join(d, '裁_0999_随汰.md'); io.open(g, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/接坐记.py` 已彻删〕')
         h = os.path.join(d, '裁_0999_借标.md'); io.open(h, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/分量闸.py` 已彻删〕')
-        R.append(('⑤随汰（所守之器真已彻删）之裁退役、⛔计未生效', 查([g], 在役='') == []))
-        R.append(('⑥⛔借标：随汰所点之器仍在者照旧判', 查([h], 在役='') != []))
+        h2 = os.path.join(d, '裁_0999_借名.md'); io.open(h2, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/并不存在之器.py` 已彻删〕')
+        R.append(('⑤随汰（所守之器 git 史中真已彻删·接坐记）之裁退役、⛔计未生效', 查([g], 在役='', **K) == []))
+        R.append(('⑥⛔借标：随汰所点之器仍在者照旧判', 查([h], 在役='', **K) != []))
+        _删 = _链().删过之器(ROOT)
+        R.append(('⑥之二⛔借名：随汰所点之名从未有过（不在盘上≠已删）者照旧判（git 史验不得时略）',
+                  _删 is None or 查([h2], 在役='', **K) != []))
+        # ⑦ 1027·#75 行之证：1027 起之裁只点器（在役）即判未生效；书真行之证即过；伪证俱⛔
+        def 新(名, 文):
+            p = os.path.join(d, '裁_1028_%s.md' % 名); io.open(p, 'w', encoding='utf-8').write(文); return p
+        R.append(('⑦1027 起之裁只点在役之器而无行之证 → 未生效（裁_1020_D1落式 之形：点器而其实未行）',
+                  bool(查([新('只点', '由 `工具/分量闸.py` 守。')], 在役='工具/分量闸.py', **K))))
+        R.append(('⑦之二 放行：法用#<册中之法>、改单#<已结>、到期账 <已结或未到限> 俱算行之证',
+                  查([新('法', '其证：法用#假法')], 在役='', **K) == [] and 查([新('改', '改单#G9999-01 施之')], 在役='', **K) == []
+                  and 查([新('结', '到期账 ARC-999-甲 已结')], 在役='', **K) == [] and 查([新('待', '到期账 ARC-999-丙 限 999')], 在役='', **K) == []))
+        R.append(('⑦之三 伪证俱⛔：册无之法、未结之改单、到限未结之到期账、账无之笔',
+                  all(bool(查([新(n, 文)], 在役='', **K)) for n, 文 in (('伪法', '法用#无此法'), ('开单', '改单#G9999-02'),
+                                                                     ('欠', '到期账 ARC-999-乙'), ('无笔', '到期账 ARC-999-丁')))))
+        # ⑧ 0924—1026 过渡：只点器而无行之证入「只点」（⛔入坏）；书行之证即出
+        只 = []
+        p8 = os.path.join(d, '裁_0930_过渡.md'); io.open(p8, 'w', encoding='utf-8').write('由 `工具/分量闸.py` 守。')
+        p9 = os.path.join(d, '裁_0930_有证.md'); io.open(p9, 'w', encoding='utf-8').write('由 `工具/分量闸.py` 守。改单#G9999-01')
+        R.append(('⑧0924—1026 之裁只点器：入「只点」之数、⛔入未生效；带行之证者⛔入',
+                  查([p8, p9], 在役='工具/分量闸.py', 只点=只, **K) == [] and [x[0] for x in 只] == ['裁_0930_过渡.md']))
+        # ⑨ 判：只点器之底只许降；旧裁未生效至限章须 0
+        ok1, _, 底1 = 判([], [('裁_0930_甲.md', 'x'), ('裁_0930_乙.md', 'x')], {'旧裁未生效之底': 0, '只点器之底': 1}, 410)
+        ok2, _, 底2 = 判([], [('裁_0930_甲.md', 'x')], {'旧裁未生效之底': 0, '只点器之底': 2}, 410)
+        R.append(('⑨只点器之数逾其底即红；降则底随降', ok1 is False and ok2 is True and 底2['只点器之底'] == 1))
+        ok3, _, _ = 判([('裁_0916_旧.md', '无一样器守它')], [], {'旧裁未生效之底': 1, '只点器之底': 0}, 420)
+        ok4, _, _ = 判([('裁_0916_旧.md', '无一样器守它')], [], {'旧裁未生效之底': 1, '只点器之底': 0}, 419)
+        R.append(('⑨之二 限章：旧裁未生效 1 份於第 420 章即红、419 照棘轮不红（#56）', ok3 is False and ok4 is True))
+        ok5, _, _ = 判([('裁_1028_新.md', '无行之证')], [], {'旧裁未生效之底': 0, '只点器之底': 0}, 410)
+        R.append(('⑨之三 1027 起之裁未生效即红（⛔借棘轮）', ok5 is False))
     finally:
         shutil.rmtree(d, ignore_errors=True)
+    # ⑩ 回灌真仓：裁_1020_D1落式（只点 行号随移.py 等）若照 1027 之律判，即未生效——证此律真红（⛔空验）
+    p = os.path.join(ROOT, '设定', '裁_1020_D1落式.md')
+    if os.path.exists(p):
+        t = io.open(p, encoding='utf-8').read()
+        t1 = re.sub(r'改单#\s*G\d{4}-\d{2}', '', t)
+        q = tempfile.mkdtemp()
+        try:
+            f = os.path.join(q, '裁_1028_D1落式之回灌.md'); io.open(f, 'w', encoding='utf-8').write(t1)
+            R.append(('⑩回灌真仓：裁_1020_D1落式去其改单之引、照 1027 之律判 → 未生效（只点器不算）', bool(查([f], 末=410))))
+        finally:
+            shutil.rmtree(q, ignore_errors=True)
+    else:
+        R.append(('⑩回灌真仓：裁_1020_D1落式不在', False))
     for n, o in R:
         print('  %s %s' % ('✓' if o else '⛔', n))
     k = sum(1 for _, o in R if o)

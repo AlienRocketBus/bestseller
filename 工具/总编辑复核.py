@@ -196,6 +196,15 @@ def 自测():
         import subprocess as _sp
         _浅 = _sp.run(['git', 'rev-parse', '--is-shallow-repository'], cwd=ROOT, capture_output=True, text=True).stdout.strip() == 'true'
         r.append(('⑩真读：410 之封时读得出（浅克隆无其史者免·⑧ 之不判）', isinstance(封时(410), int) or _浅))
+        # ⑪复核补·回灌真账（⛔只靠造局）：db52f247 之复核账（末裁 1022）而法用册无废 → 写 411（410 封於 1024）即红；
+        #   今之法用册（1027 汰旧之「废于」）算裁 → 过（放行之反例）
+        _旧 = _sp.run(['git', 'show', 'db52f247:设定/总编辑复核账.json'], cwd=ROOT, capture_output=True, text=True)
+        if _旧.returncode == 0 and 封时(410):
+            _旧账 = json.loads(_旧.stdout)
+            r.append(('⑪回灌真账：db52f247 之复核账、法用册无废 → 写 411 即红；今法用册「废于」算裁 → 过',
+                      bool(甲之判(411, 封时, 诸裁之时(_旧账, {}))) and 甲之判(411, 封时, 诸裁之时(_旧账)) == ''))
+        else:
+            print('  · ⑪旧树或封时不在（浅克隆）——略')
     finally:
         账档 = 旧
     for n, v in r:

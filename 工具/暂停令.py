@@ -112,6 +112,18 @@ def _日(立):
     return (m.group(1) + m.group(2)) if m else ''
 
 
+def _首之日(首):
+    """交接首节之题 → 'MMDD'；读不出 → ''。先认「YYYY-MM-DD」（⛔把年「2026」当 MMDD——「2026」恒 ≥ 任一 MMDD，过期之首节亦判不出），
+    次认首个四位而月日合式者（01—12 月、01—31 日）。"""
+    m = re.search(r'(?<!\d)\d{4}-(\d{2})-(\d{2})(?!\d)', 首)
+    if m:
+        return m.group(1) + m.group(2)
+    for x in re.findall(r'(?<!\d)(\d{4})(?!\d)', 首):
+        if 1 <= int(x[:2]) <= 12 and 1 <= int(x[2:]) <= 31:
+            return x
+    return ''
+
+
 def 对(root=ROOT, 下=None):
     """→ (红[], 黄[])：交接现状过期、入口档之旧暂停令块。下＝下一章（待合之限用；缺取 自走.末章()+1）。"""
     红, 黄 = [], []
@@ -123,9 +135,9 @@ def 对(root=ROOT, 下=None):
             首 = open(os.path.join(root, 交接档), encoding='utf-8').read().split('\n', 1)[0]
         except OSError:
             首 = ''
-        m = re.search(r'(?<!\d)(\d{4})(?!\d)', 首)
-        if not m or m.group(1) < 今日:
-            红.append('⛔ 交接现状过期：%s 首节（%s）早於暂停令之立（%s）——照今之状改写首节' % (交接档, (m.group(1) if m else '无日'), 今日))
+        日 = _首之日(首)
+        if not 日 or 日 < 今日:
+            红.append('⛔ 交接现状过期：%s 首节（%s）早於暂停令之立（%s）——照今之状改写首节' % (交接档, 日 or '无日', 今日))
     if 下 is None:
         try:
             import 自走
@@ -305,6 +317,14 @@ def 自测():
         open(jp, 'w', encoding='utf-8').write('# 现状（1027·五大主义）\n- 新\n')
         红2, _ = 对(t, 411)
         共 += 1; ok += (any('交接现状过期' in x for x in 红1) and 红2 == [])           # 1024 < 1027 → 红；改写为 1027 → 过（放行之反例）
+        # 复核所逮：首节题带年（「2026-10-24」）——旧取首个四位「2026」≥「1027」即判不过期（假绿）；今认 YYYY-MM-DD 之月日
+        open(jp, 'w', encoding='utf-8').write('# 现状（2026-10-24 晨）\n- 旧\n')
+        红7, _ = 对(t, 411)
+        open(jp, 'w', encoding='utf-8').write('# 现状（2026-10-27·五大主义）\n- 新\n')
+        红8, _ = 对(t, 411)
+        共 += 1; ok += (any('交接现状过期' in x and '1024' in x for x in 红7) and 红8 == []
+                       and _首之日('# 现状（2026 年·1027）') == '1027' and _首之日('# 现状') == '')
+        open(jp, 'w', encoding='utf-8').write('# 现状（1027·五大主义）\n- 新\n')
         open(os.path.join(t, 'README.md'), 'w', encoding='utf-8').write('> **⏸⏸⏸ 暂停令（1017 12:55 UTC·作者令）**：旧\n')
         open(jp, 'a', encoding='utf-8').write('> **⏸⏸⏸ 暂停令（1017 12:55 UTC·作者令）**：旧\n> **⏸⏸⏸ 暂停令（1027 07:50 UTC·作者令）**：今\n')
         红3, 黄3 = 对(t, 411)

@@ -77,6 +77,14 @@ def 坑号们(t):
 
 
 新律起 = '1027'   # ★1027 执行之审 #5 #58 #81②：逾估之由、机器之活之引——自此日之档起验（旧档⛔追·同 1015／1018／1021 之例）
+新律起W = 72      # ★复核所逮：档名之日只有月日（MMDD），跨年（0101 起）「≥1027」即不成立、新律静默失效——另以 W 号接住（W 号只增）
+
+
+def 新律之档(名):
+    """日 ≥ 1027 之档，或 W 号 ≥ 72 之档（跨年之後档名之日回到 01xx，以 W 号接住）。"""
+    m = re.match(r'(\d{4})_', 名)
+    w = re.match(r'\d{4}_W(\d+)_', 名)
+    return bool(m and m.group(1) >= 新律起) or bool(w and int(w.group(1)) >= 新律起W)
 
 
 def _元(效文, 项):
@@ -186,7 +194,7 @@ def 验(root=ROOT):
                     m = re.search(r'^- %s：(.*)$' % 项, 完.group(1), re.M)
                     if not m or not m.group(1).strip() or m.group(1).strip().startswith('（填'):
                         坏.append('%s 之完美之问缺「%s」' % (名, 项))
-        if m日 and m日.group(1) >= 新律起:
+        if 新律之档(名):
             坏 += 新律之坏(名, t, root)
         坑节 = t.split('## 坑', 1)[1] if '## 坑' in t else ''
         号 = 坑号们(坑节)
@@ -238,6 +246,7 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
     费审之行 = []
     流程 = []
     总金 = 0.0
+    机总 = 0.0          # ★1027 复核所逮：诸 Run 之机器之活之席（费审.类）——简式之「机器能办而花token」照填（旧恒填 $0，#5 #58 之验遂空）
     for r in runs:
         d = r if os.path.isdir(r) else (glob.glob(os.path.expanduser('~/.claude/projects/*/*/subagents/workflows/%s' % r)) or [r])[0]
         if not os.path.isdir(d):
@@ -257,6 +266,7 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
             疑.append('- 花费最多：%s（$%.2f；%d 回、工具 %d）——是在造，还是在翻料／办机器之活？' % (x['名'], x['金'], x['回'], x['具']))
         import re as _re
         机 = sum(x['金'] for x in 行 if _re.search(dict(费审.类)['机器之活'], x['名']))
+        机总 += 机
         if 机:
             疑.append('- 机器之活（定位／机闸／案席／封版）占美元 %d%%——凡机器能办者，下回归脚本' % (100 * 机 / 金))
     主 = None
@@ -329,7 +339,8 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
         文 = [('- 类：%s' % _类 if x.startswith('- 类：（填') else
               ('- 目标：写%s，以最少之钱写到最好' % 题 if _类 == '一章' else '- 目标：办%s，以最少之钱办到最好' % 题) if x.startswith('- 目标：（填') else
               '- 服务目标之费：$%.2f（自动：诸席）' % 总金 if x.startswith('- 服务目标之费：') else
-              '- 机器能办而花token：$0（机器自认等待 %d 回 $%.2f）' % 等 if x.startswith('- 机器能办而花token：') else x) for x in 文]
+              '- 机器能办而花token：$%.2f（自动：机器之活之席 $%.2f＋主环等待 %d 回 $%.2f）' % (机总 + 等[1], 机总, 等[0], 等[1])
+              if x.startswith('- 机器能办而花token：') else x) for x in 文]
         文 += ['## 三问（1021 作者令：每章之始与末一想即得，⛔长文）', '',
               '- 法行否：（填一句：原法还靠谱否——费比上章、致命、盲读）',
               '- 最贵之席值否：（填一句：最贵之席值不值，可省之数）',
@@ -389,6 +400,9 @@ def 自测():
         r8 = 局('1027', 12, 0.5, '无：测')                                 # 0.5/12 ≈ 4% → 不红
         ok = ok and (r1[0] is False and '逾估' in r1[1][0] and r2[0] and r3[0] and r4[0] is False and '机器能办' in r4[1][0]
                      and r5[0] and r6[0] and r7[0] is False and r8[0])
+        # 跨年：「0105_W90_」仍验（W≥72）；「1026_W71_」、「1009_主环_」⛔追；「1027_主环_」验
+        ok = ok and 新律之档('0105_W90_第450章.md') and 新律之档('1027_W72_执行.md') and not 新律之档('1026_W71_第410章.md') \
+            and not 新律之档('1009_主环_坑账.md') and 新律之档('1027_主环_x.md')
         # --简 无 --平台 → 拒（rc=2）；--平台 不可分：由 → 起草（档记其由）
         p0 = subprocess.run([sys.executable, os.path.abspath(__file__), 'W9', '测', '--简'], capture_output=True, text=True, cwd=t)
         if p0.returncode != 2:                                          # 守未拦即会起草入真仓——当场清之（⛔留字）
@@ -398,6 +412,27 @@ def 自测():
         with contextlib.redirect_stdout(io.StringIO()):
             f2 = 起草('W9', '测二', [rd], t, '1027', 简=True, 平台='不可分：一会话跨三件')
         ok = ok and bool(f2) and '- 平台之实：不可分：一会话跨三件' in open(f2, encoding='utf-8').read()
+        # ★1027 复核所逮（#5 #58 之验旧为空验）：简式之「机器能办而花token」旧恒填 $0——机器之活之席（封版）占满亦过；今照费审之类自填，
+        #   1027 起之档其占逾 5% 而「进化」未引账即红；引在账之 X 号即过（放行之反例）
+        rd2 = os.path.join(t, 'run2'); os.makedirs(rd2)
+        json.dump({'description': '封版'}, open(os.path.join(rd2, 'agent-1.meta.json'), 'w'), ensure_ascii=False)
+        open(os.path.join(rd2, 'agent-1.jsonl'), 'w').write(json.dumps({'type': 'assistant', 'timestamp': '2026-10-27T01:00:00Z', 'message': {
+            'id': 'm1', 'model': 'claude-opus-5-5', 'usage': {'input_tokens': 10, 'cache_read_input_tokens': 4000000, 'output_tokens': 20000}, 'content': []}}) + '\n')
+        for x in glob.glob(os.path.join(t, '设定', '复盘', '*.md')):
+            os.remove(x)
+        with contextlib.redirect_stdout(io.StringIO()):
+            f3 = 起草('W9', '测三', [rd2], t, '1027', 简=True, 平台='不可分：一会话跨三件')
+        s3 = open(f3, encoding='utf-8').read() if f3 else ''
+        m3 = re.search(r'^- 机器能办而花token：\$(\d+\.\d+)（自动：机器之活之席 \$(\d+\.\d+)', s3, re.M)
+        s3 = re.sub(r'- 法行否：.*', '- 法行否：行', s3); s3 = re.sub(r'- 最贵之席值否：.*', '- 最贵之席值否：值', s3)
+        s3 = re.sub(r'- 浪费：.*', '- 浪费：$0', s3)
+        s3 = re.sub(r'- 进化：.*', '- 进化：无：测', s3) + '\n无新坑\n'
+        open(f3, 'w', encoding='utf-8').write(s3)
+        r9 = 验(t)
+        open(f3, 'w', encoding='utf-8').write(s3.replace('- 进化：无：测', '- 进化：入账 X7（限 420 段前）'))
+        r10 = 验(t)
+        ok = ok and bool(m3) and float(m3.group(1)) > 0 and m3.group(1) == m3.group(2) \
+            and r9[0] is False and any('机器能办' in x for x in r9[1]) and r10[0] is True
     finally:
         shutil.rmtree(t)
     print('复盘·自测 %d/1' % int(ok))

@@ -69,8 +69,8 @@ def _日(s):
     if m:
         return '%s-%s-%s' % m.groups()
     m = re.search(r'_(\d\d)(\d\d)_', s)
-    if m:
-        return '2026-%s-%s' % m.groups()
+    if m:   # ★1027 治跨年：只书月日之档始於 2026 年七月——月 < 07 者即跨年之後（旧写死 2026，0105 之教训即排到最旧）
+        return '%s-%s-%s' % ('2026' if m.group(1) >= '07' else '2027', m.group(1), m.group(2))
     return '—'
 
 

@@ -75,14 +75,19 @@ const 裁SCHEMA = { type: 'object', additionalProperties: false, properties: {
   carried: { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
     old_no: { type: 'string' }, ruling: { type: 'string' }, limit: { type: 'integer' }, reason: { type: 'string' } },
     required: ['old_no', 'ruling', 'reason'] } },
-  verdict_line: { type: 'string' }, to_next_segment: { type: 'array', items: { type: 'string' } } },
-  required: ['read', 'to', 'rows', 'carried', 'verdict_line', 'to_next_segment'] }
+  verdict_line: { type: 'string' }, to_next_segment: { type: 'array', items: { type: 'string' } },
+  beats: { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
+    ch: { type: 'integer' }, beat: { type: 'string' }, quote: { type: 'string' }, why: { type: 'string' } },
+    required: ['ch', 'quote', 'why'] } },
+  no_beats_reason: { type: 'string' } },
+  required: ['read', 'to', 'rows', 'carried', 'verdict_line', 'to_next_segment', 'beats', 'no_beats_reason'] }
 
 const 裁 = await agent(`${五大}你是大审（第 ${A}—${B} 章）之**裁席**——总编辑之手。⛔重读十章；只读下附四席之报，与 \`${旧笔}\`（上册「已挂」到期之笔）。要核一句只许 \`awk 'NR==L' 正文/<档>\`（档名 \`ls 正文/ | grep -F '_第…章_'\`）。⛔写档、⛔git。
-【裁之准·作者令】改只为让书明显更好看：fatal 必治；leap 改；minor 末了集中一回或判不治；「微」⛔改。**出口归造**：凡治法属下一段（409 起）可造者，ruling「已挂」、limit 填 410（或所兑之章）、to_segment 写入段案之一句（「409 段案：……」）；已写章之读者可见致命，ruling「还账」、repay=true、limit 408（器施一单）；四席所判同一事者并为一行；你判其不成者「判驳」带由；无可裁之留痕「留痕·不裁」。
-【上册逾限之笔】${旧笔} 逐笔当面裁入 carried（old_no 照其号）：其多挂「W11 之某节（器上）」——W11 未始。照「旧章之改并入 W11 同回、单以器施；⛔为一字开封」之律：仍归 W11 者改限须写新限与其由（W11 起时之章号未定者，限 417 并写「W11 未始·下回大审再面」）；已不值者判不治；所指之器、令已随瘦式废者（如人审令之读列）判不治并写所废。⛔静静顺延。
+【裁之准·作者令】改只为让书明显更好看：fatal 必治；leap 改；minor 末了集中一回或判不治；「微」⛔改。**出口归造**：凡治法属下一段（${B + 1} 起）可造者，ruling「已挂」、limit 填 ${(Math.floor(B / 10) + 1) * 10}（或所兑之章）、to_segment 写入段案之一句（「${B + 1} 段案：……」）；已写章之读者可见致命，ruling「还账」、repay=true、limit ${B}（器施一单）；四席所判同一事者并为一行；你判其不成者「判驳」带由；无可裁之留痕「留痕·不裁」。
+【上册逾限之笔】${旧笔} 逐笔当面裁入 carried（old_no 照其号）：其多挂「W11 之某节（器上）」——W11 未始。照「旧章之改并入 W11 同回、单以器施；⛔为一字开封」之律：仍归 W11 者改限须写新限与其由（W11 起时之章号未定者，限 ${B + 9} 并写「W11 未始·下回大审再面」）；已不值者判不治；所指之器、令已随瘦式废者（如人审令之读列）判不治并写所废。⛔静静顺延。
 【verdict_line】一句：这十章合起来，是「慢而深」还是「原地打转」，凭什么。
-【to_next_segment】入 409—418 段之剧情庭题与段案之条（每条一句、可照做）。
+【to_next_segment】入 ${B + 1}—${B + 10} 段之剧情庭题与段案之条（每条一句、可照做）。
+【beats·叫绝之拍入库】四席之报凡写「叫绝／全书最／拍案」之拍，择其真够与 \`设定/叫绝之拍库.md\` 四十拍对标者入 beats（ch 章号、beat 拍号或行、quote 原句、why 何以叫绝·对标哪一拍）——由器录入拍库「第${B - 9}段」之节；无一够者 beats 写空列、no_beats_reason 写其由（四字以上）。⛔凑数（法用#拍库随段）。
 
 四席之报（JSON）：
 ${JSON.stringify(报.map(x => ({ 席: x.席, 报: x.r || '未交' })))}`,

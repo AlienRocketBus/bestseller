@@ -431,6 +431,33 @@ def 裁之文(x, b):
     return 裁
 
 
+拍库 = os.path.join(ROOT, '设定', '叫绝之拍库.md')
+
+
+def 入库(裁果, a, b, 库=None):
+    """★1027（执行之审 #99·法用#拍库随段）：裁席之 beats 录入拍库「## 第{a}段」之节（在「已定未写之标杆」之前；已有其节⛔重录），
+    → 册之行；无 beats 者册写「本段无入库之拍：<由>」——裁席未交其由则书「未交」（⛔代填：421 起法用之守即红，主环面裁）。"""
+    库 = 库 or 拍库
+    bs = [x for x in (裁果.get('beats') or []) if isinstance(x, dict) and str(x.get('quote', '')).strip()]
+    if not bs:
+        由 = str(裁果.get('no_beats_reason') or '').strip()
+        return ['本段无入库之拍：%s' % 由] if len(re.sub(r'\s', '', 由)) >= 4 else ['本段之拍入库：未交（裁席既无 beats、亦无四字以上之由）']
+    行 = ['- %s%s「%s」——%s' % (x.get('ch', ''), (':' + str(x['beat'])) if x.get('beat') else '',
+                               str(x['quote']).replace('\n', ' '), str(x.get('why', '')).replace('\n', ' ')) for x in bs]
+    题 = '## 第%d段（%d—%d·大审入库）' % (a, a, b)
+    try:
+        文 = io.open(库, encoding='utf-8').read()
+    except OSError:
+        文 = ''
+    if 题 not in 文:
+        块 = '%s\n\n%s\n\n' % (题, '\n'.join(行))
+        k = 文.find('## 已定未写之标杆')
+        k = 文.rfind('---', 0, k) if k >= 0 else -1
+        文 = (文[:k] + 块 + 文[k:]) if k >= 0 else (文.rstrip('\n') + '\n\n' + 块)
+        io.open(库, 'w', encoding='utf-8').write(文)
+    return ['入拍库 %d 拍（`设定/叫绝之拍库.md`「第%d段」）：' % (len(bs), a)] + 行
+
+
 def 录(run, a=None, b=None):
     """★1023 X27：自 workflow 之 journal 排册之一、二节（逐席之判）与三节（裁席之裁）——⛔一席抄档（W50 录册一席 $20.96）。"""
     import glob
@@ -506,6 +533,7 @@ def 录(run, a=None, b=None):
     L += ['\n## 四·本回之数（器出，非估）\n', '见 `设定/_草/大审%d/包.md` 甲节（零 token 先行诸器之红）。\n' % b,
           '## 五·本回之得（一句话）\n', str(裁果.get('verdict_line', '〔裁席未交〕')) + '\n',
           '## 六·出口归造（入下一段之剧情庭题与段案）\n'] + ['- %s' % x for x in (裁果.get('to_next_segment') or [])]
+    L += ['\n## 七·叫绝之拍入库（法用#拍库随段）\n'] + 入库(裁果, a, b)
     io.open(p, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
     print('★大审之册已录：%s（席 %d、裁 %d 行、旧笔 %d）' % (os.path.relpath(p, ROOT), len(席果), len(裁果.get('rows') or []), len(cs)))
     return p
@@ -522,6 +550,13 @@ if __name__ == '__main__':
     if '--包' in sys.argv:
         i = sys.argv.index('--包')
         包(int(sys.argv[i + 1]), int(sys.argv[i + 2]))
+        # ★1027（执行之审 #55 #103·线 D 之遗）：段末一回之囤灰普查——只印主环（⛔入包：四席⛔读器之事），候退、档之囤灰由总编辑当段裁（删、修或留由）
+        import subprocess
+        try:
+            r = subprocess.run(['python3', os.path.join(ROOT, '工具', '囤灰闸.py'), '--普查'], cwd=ROOT, capture_output=True, text=True, timeout=120)
+            print('── 主环·段末囤灰普查（零 token；候者当段裁：删、修或留由）──\n' + (r.stdout or r.stderr or '（无出）').strip())
+        except Exception as e:
+            print('⚠ 囤灰普查跑不成：%s' % e)
         raise SystemExit(0)
     if '--录' in sys.argv:
         录(sys.argv[sys.argv.index('--录') + 1])

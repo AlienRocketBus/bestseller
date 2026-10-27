@@ -98,6 +98,26 @@ def 跑():
        ('已挂·限411', '已挂·限415', '已挂·限411（还账·器施）', '已治'))
     判('⑧之三', '录用 裁之文（⛔另写一路）', '裁 = 裁之文(x, b)' in src, True)
 
+    # ⑨【拍库随段·1027 #99】裁席之 beats 录入拍库「第{a}段」（⛔重录）；无 beats 者册写「本段无入库之拍：由」；无由⛔代填
+    入 = getattr(m, '入库', None)
+    if 入:
+        import tempfile
+        库 = os.path.join(tempfile.mkdtemp(), '库.md')
+        io.open(库, 'w', encoding='utf-8').write('# 库\n\n---\n\n## 已定未写之标杆\n- y\n')
+        r1 = 入({'beats': [{'ch': 415, 'beat': '7', 'quote': '她把灯吹了。', 'why': '对标 01'}]}, 411, 420, 库)
+        入({'beats': [{'ch': 416, 'quote': '又一拍。', 'why': 'x'}]}, 411, 420, 库)
+        文 = io.open(库, encoding='utf-8').read()
+        判('⑨', '入库：拍库得「## 第411段」一节（在标杆之前、⛔重录），册列其拍',
+           (文.count('## 第411段') == 1 and 文.index('## 第411段') < 文.index('## 已定未写之标杆') and '又一拍' not in 文
+            and any('415:7「她把灯吹了。」' in x for x in r1)), True)
+        判('⑨之二', '无拍：有由 → 「本段无入库之拍：由」；无由 → 未交（⛔代填，421 法用即红）',
+           (入({'beats': [], 'no_beats_reason': '十章无一拍够对标'}, 411, 420, 库)[0], 入({'beats': []}, 411, 420, 库)[0].startswith('本段无入库之拍')),
+           ('本段无入库之拍：十章无一拍够对标', False))
+    判('⑨之三', '录册接入库（⛔另写一路）', "入库(裁果, a, b)" in src, True)
+    # ⑩【大审.js 之数随参】1024 实踩之根：裁令写死「limit 408／409 起／409—418」，410 之审照旧数挂限——数须由 B 推
+    js = io.open(os.path.join(ROOT, '工具', '席', '大审.js'), encoding='utf-8').read()
+    判('⑩', '大审.js 裁令无写死之章号（4xx）、有 beats 之栏', (re.findall(r'(?<![\d$])4\d\d(?!\d)', js), "beats:" in js and 'no_beats_reason' in js), ([], True))
+
     print('════ 负测·大审挂限 ════（守：「已挂」带限，到期不裁即逾期）')
     for x in 败:
         print('  ⛔ ' + x)

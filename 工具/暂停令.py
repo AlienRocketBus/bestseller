@@ -35,7 +35,7 @@ try:
     import _账
 except Exception:
     pass
-import os, sys, re, json, time, tempfile, shutil
+import os, sys, re, json, time, tempfile, shutil, datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 档 = os.path.join('设定', '暂停令.json')
@@ -102,21 +102,34 @@ def 审至(至, root=ROOT):
 # ★1027 合流：线 A（常令）、线 B（README 删块、旧入口档删）之旧块俱已除，待合之表随删（入口档之旧块一律即红）
 
 
-def _日(立):
-    """「2026-10-27 07:50 UTC」→ '1027'；读不出 → ''。"""
-    m = re.match(r'\d{4}-(\d{2})-(\d{2})', str(立 or ''))
-    return (m.group(1) + m.group(2)) if m else ''
+def _日(立, 全=False):
+    """「2026-10-27 07:50 UTC」→ '1027'（全：'20261027'）；读不出 → ''。"""
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})', str(立 or ''))
+    return ((m.group(1) if 全 else '') + m.group(2) + m.group(3)) if m else ''
 
 
-def _首之日(首):
-    """交接首节之题 → 'MMDD'；读不出 → ''。先认「YYYY-MM-DD」（⛔把年「2026」当 MMDD——「2026」恒 ≥ 任一 MMDD，过期之首节亦判不出），
-    次认首个四位而月日合式者（01—12 月、01—31 日）。"""
-    m = re.search(r'(?<!\d)\d{4}-(\d{2})-(\d{2})(?!\d)', 首)
+def _天(八):
+    try:
+        return datetime.date(int(八[:4]), int(八[4:6]), int(八[6:])).toordinal()
+    except ValueError:
+        return 0
+
+
+def _首之日(首, 近=''):
+    """交接首节之题 → 'YYYYMMDD'；读不出 → ''。先认「YYYY-MM-DD」（⛔把年「2026」当 MMDD——「2026」恒 ≥ 任一 MMDD，过期之首节亦判不出），
+    次认首个四位而月日合式者（01—12 月、01—31 日）：题有「YYYY 年」即取其年，无则取离 近（令立之 YYYYMMDD）最近之年——
+    ★1027 治跨年：只比 MMDD，则 1230 立之令、0102 写之交接即诬为过期。"""
+    m = re.search(r'(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)', 首)
     if m:
-        return m.group(1) + m.group(2)
+        return ''.join(m.groups())
+    年 = re.search(r'(?<!\d)(20\d{2})\s*年', 首)
     for x in re.findall(r'(?<!\d)(\d{4})(?!\d)', 首):
         if 1 <= int(x[:2]) <= 12 and 1 <= int(x[2:]) <= 31:
-            return x
+            if 年:
+                return 年.group(1) + x
+            if not 近[:4].isdigit():
+                return str(time.gmtime().tm_year) + x
+            return min((str(int(近[:4]) + d) + x for d in (0, -1, 1)), key=lambda z: abs(_天(z) - _天(近)))
     return ''
 
 
@@ -126,14 +139,15 @@ def 对(root=ROOT, 下=None):
     d = 读令(root) or {}
     在否 = 在(root)[0]
     今日 = _日(d.get('立')) if (d and not d.get('解')) else ''
+    今全 = _日(d.get('立'), 全=True) if 今日 else ''
     if 在否 and 今日:
         try:
             首 = open(os.path.join(root, 交接档), encoding='utf-8').read().split('\n', 1)[0]
         except OSError:
             首 = ''
-        日 = _首之日(首)
-        if not 日 or 日 < 今日:
-            红.append('⛔ 交接现状过期：%s 首节（%s）早於暂停令之立（%s）——照今之状改写首节' % (交接档, 日 or '无日', 今日))
+        日 = _首之日(首, 今全)
+        if not 日 or 日 < 今全:
+            红.append('⛔ 交接现状过期：%s 首节（%s）早於暂停令之立（%s）——照今之状改写首节' % (交接档, 日[4:] or '无日', 今日))
     for f in 入口档:
         p = os.path.join(root, f)
         if not os.path.exists(p):
@@ -310,7 +324,9 @@ def 自测():
         open(jp, 'w', encoding='utf-8').write('# 现状（2026-10-27·五大主义）\n- 新\n')
         红8, _ = 对(t, 411)
         共 += 1; ok += (any('交接现状过期' in x and '1024' in x for x in 红7) and 红8 == []
-                       and _首之日('# 现状（2026 年·1027）') == '1027' and _首之日('# 现状') == '')
+                       and _首之日('# 现状（2026 年·1027）') == '20261027' and _首之日('# 现状') == ''
+                       and _首之日('# 现状（0102 晨）', '20261230') == '20270102' and _首之日('# 现状（1229）', '20270102') == '20261229'
+                       and _首之日('# 现状（1027）', '20261027') == '20261027')
         open(jp, 'w', encoding='utf-8').write('# 现状（1027·五大主义）\n- 新\n')
         open(os.path.join(t, 'README.md'), 'w', encoding='utf-8').write('> **⏸⏸⏸ 暂停令（1017 12:55 UTC·作者令）**：旧\n')
         open(jp, 'a', encoding='utf-8').write('> **⏸⏸⏸ 暂停令（1017 12:55 UTC·作者令）**：旧\n> **⏸⏸⏸ 暂停令（1027 07:50 UTC·作者令）**：今\n')

@@ -694,7 +694,7 @@ def 标推未成之语(n, 由=''):
 时戳之凭 = ('_十一轮.json', '_总核.json')   # 第十一轮重跑即新其「时」与「流」（跑者之号·跑轮._stream_id）——余键须同（左眼、右眼、软项、版数……）
 跑者之键 = ('时', '流')
 器生之档 = ('设定/进化链.md',)   # 进化链.py 自盘上诸器重写（活态之报之 负测·自进化环 → L3）：随今之器（叠器）而变，⛔同步之档——只注其摘
-章之料档 = ('工具/小说检察官.py',)   # 在 可提交 之列（记席与本器所写之章之料）——叠今之器时⛔叠（提示词系统之档 1027 汰：叠器即删之、⛔复）
+章之料档 = {'工具/小说检察官.py': r'(?ms)^OPEN_BRIEF_CARD_SCHEMA = \{\n.*?^\}\n'}   # 器档而载章之料（记席所写之块）：叠今之器时码随今、其块随底
 演练账 = os.path.join('设定', '演练账.json')
 
 
@@ -722,14 +722,26 @@ def 封之笔(n, root=ROOT, 范=None):
 
 
 def 叠器(root, 仓, 底):
-    """今之器（工具／.claude／.github：已提交、未提交、新增、已删）叠於副本——章之料档⛔叠。→ 所叠之路们"""
+    """今之器（工具／.claude／.github：已提交、未提交、新增、已删）叠於副本→ 所叠之路们。
+    章之料档（器档而载章之料，如检察官之 OPEN_BRIEF_CARD_SCHEMA）：码随今之器、其块随底（1027 合流之演：旧式整档留底，
+    底之检察官犹调已汰之器——开轮六检之 _cold_done、提示词系统之档——末章硬闸、医生假红）；两边俱寻不着其块即⛔叠（整档留底）。"""
     改 = _g(['diff', '--name-only', 底, '--', '工具', '.claude', '.github'], root).stdout.split('\n')
     新 = _g(['ls-files', '--others', '--exclude-standard', '--', '工具', '.claude', '.github'], root).stdout.split('\n')
     叠 = []
     for p in sorted(set(x.strip() for x in 改 + 新 if x.strip())):
-        if p in 章之料档:
-            continue
         源, 去 = os.path.join(root, p), os.path.join(仓, p)
+        if p in 章之料档:
+            式 = re.compile(章之料档[p])
+            try:
+                今, 旧 = open(源, encoding='utf-8').read(), open(去, encoding='utf-8').read()
+            except OSError:
+                continue
+            m今, m旧 = 式.search(今), 式.search(旧)
+            if not (m今 and m旧):
+                continue
+            open(去, 'w', encoding='utf-8').write(今[:m今.start()] + m旧.group(0) + 今[m今.end():])
+            叠.append(p)
+            continue
         if os.path.exists(源):
             os.makedirs(os.path.dirname(去), exist_ok=True)
             shutil.copy2(源, 去)
@@ -876,7 +888,8 @@ def 演练(n, root=ROOT, 记=True):
 
 def _封之笔之局():
     """演练诸器之局（临时之二仓·⛔钉真仓之史：浅克隆亦通）：封之笔认「封版#9」⛔误认「封版#90」；复同步复纯同步之档於底^；
-    演之比：叠器⛔比、活迹只注、十一轮之凭唯时新只注、余入差（其後之笔逐字同者注後治）、新增之档入差。"""
+    演之比：叠器⛔比、活迹只注、十一轮之凭唯时新只注、余入差（其後之笔逐字同者注後治）、新增之档入差；
+    叠器：删者删、改者叠；章之料档码随今、其块随底。"""
     d = tempfile.mkdtemp(prefix='封版演局_')
     env = dict({k: v for k, v in os.environ.items() if not k.startswith('GIT_')}, GIT_CONFIG_GLOBAL=os.devnull,
                GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
@@ -910,7 +923,19 @@ def _封之笔之局():
                '版本/第9章/_总核.json': '{"时": "2", "版数": 6}',
                '设定/s.md': '乙', '设定/新.md': '丁', '工具/q.py': 'y', '设定/进化链.md': '链2'})
         差, 注 = 演之比(仓, 底, 9, ['工具/q.py'], 源)
-        return (封之笔(9, 源) == 底 and 封之笔(90, 源) not in (None, 底) and 封之笔(8, 源) == 旧式 and 封之笔(7, 源) is None
+        # 叠器：删者删、改者叠；章之料档（检察官）码随今、OPEN_BRIEF_CARD_SCHEMA 之块随底（回灌：整档留底即旧码调已汰之器）
+        叠源, 叠仓 = os.path.join(d, '叠源'), os.path.join(d, '叠仓')
+        subprocess.run(['git', 'init', '-q', 叠源], env=env, capture_output=True)
+        叠底 = 提(叠源, {'工具/小说检察官.py': "import 旧器\nOPEN_BRIEF_CARD_SCHEMA = {\n    9: '底之卡',\n}\nX = 1\n", '工具/汰.py': 'x', '工具/留.py': '1'}, 'c')
+        subprocess.run(['git', 'clone', '-q', 叠源, 叠仓], env=env, capture_output=True)
+        os.remove(os.path.join(叠源, '工具', '汰.py'))
+        写(叠源, {'工具/小说检察官.py': "import 新器\nOPEN_BRIEF_CARD_SCHEMA = {\n    9: '底之卡',\n    10: '後之卡',\n}\nX = 2\n", '工具/留.py': '2'})
+        叠 = 叠器(叠源, 叠仓, 叠底)
+        叠了 = (sorted(叠) == ['工具/小说检察官.py', '工具/汰.py', '工具/留.py'] and not os.path.exists(os.path.join(叠仓, '工具', '汰.py'))
+               and open(os.path.join(叠仓, '工具', '留.py')).read() == '2'
+               and open(os.path.join(叠仓, '工具', '小说检察官.py'), encoding='utf-8').read()
+               == "import 新器\nOPEN_BRIEF_CARD_SCHEMA = {\n    9: '底之卡',\n}\nX = 2\n")
+        return (叠了 and 封之笔(9, 源) == 底 and 封之笔(90, 源) not in (None, 底) and 封之笔(8, 源) == 旧式 and 封之笔(7, 源) is None
                 and 封之笔(9, 源, ['HEAD~4']) is None and 封之笔(9, 源, ['HEAD~3']) == 底
                 and 复 == [阅] and 复了 and [x['档'] for x in 注] == ['版本/第9章/_十一轮.json', '版本/第9章/_器之迹.md', '设定/进化链.md']
                 and 注[2]['摘'] == ['-链1', '+链2'] and 差[1].get('摘') == ['-甲', '+乙']

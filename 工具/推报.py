@@ -751,13 +751,16 @@ def 读流(root=ROOT):
     return 诸
 
 
-def 验盘(root=ROOT):
-    诸 = 读流(root)
-    钩 = open(os.path.join(root, '工具', 'githooks', 'pre-push'), encoding='utf-8').read()
-    缺 = 验(诸['autopush.yml'], 钩, 诸)
-    if not 是乙(诸['autopush.yml']):
+def 验诸(诸, 钩):
+    """盘上之验（诸＝{档名: 文}）：静验之缺，并⑰——甲形（一 job 串跑）静验虽合，盘上⛔再许（法用之守 废之去证「推报验」同取此一判）。"""
+    缺 = 验(诸.get('autopush.yml') or '', 钩, 诸)
+    if not 是乙(诸.get('autopush.yml') or ''):
         缺.append('⑰须分片（坑54）：盘上 autopush.yml 须调 gate.yml（甲形之一 job 串跑，闸十余分卡关键路）')
     return 缺
+
+
+def 验盘(root=ROOT):
+    return 验诸(读流(root), open(os.path.join(root, '工具', 'githooks', 'pre-push'), encoding='utf-8').read())
 
 
 # ═══ 四、演（自测用·桩真跑诸 workflow 於临时之裸库；⛔碰真仓） ═══

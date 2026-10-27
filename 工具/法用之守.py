@@ -13,13 +13,14 @@
   ★完备之律（立法须同日立证）：总章第八节每一条、方法账 1027 起每一行，须有一条之据点着它——否则「法立无证」红；
     机证不能（纯理）须写由、⛔逾四之一。自此⛔取一法而无用证。
 ★执行之守·丝滑之守（1027 作者令「执行主义」「丝滑主义」·坑53：沙盒推与 GitHub 推同推主枝、新法立而旧路未除）：
-  ①所废除尽：册之「废」一废一条——据、废于、在（废前之笔）、去证（无档｜无文｜无格｜推报验）；去证有一尚在即「废而未除」红
+  ①所废除尽：册之「废」一废一条——据、废于、在（废前之笔）、去证（无档｜无文｜无格｜推报验｜无踪｜无渲）；去证有一尚在即「废而未除」红
     （待合＝并行之轨合流方除：限前只报⚠）；每条去证於其「在」之树须红（--自测 验之：式写错即永绿）。
   ②写者唯一：`设定/写者册.json` 一族之枝一写者（推.py --直 係唯一之审计之例外）；静析 工具/*.py、githooks、workflows、席之 js 之
     git push（随简变量、函之返、他模之常量、列之串接、git 之包〔以其体识〕解其靶；push 须係 git 之令；yml 自析、⛔依推报之私函），
     册外之写者即「二写者」红；例外只许於其旗之正支（else、否之判⛔算）。回灌：540c1c91（推.py 默直推主枝、自进化环裸推）须红。
   ③同功之检：每法书 功、处（沙盒｜GitHub）；二活法同功异处即红——除非其一入废、或书互补带由。
-  ④演练之证：流程之法（流程:true）须有真料之演（设定/演练账.json｜备份/报 之 报/演/*.json，果 同／过，早於其起章之封）；
+  ④演练之证：流程之法（流程:true）须有真料之演（设定/演练账.json｜备份/报 之 报/演/*.json，果 同／过——演练账之「唯後治之异」而诸闸之判过即同，
+    早於其起章之封）；
     演练之律前已行者（立 ≤ 412）方许演免。
   ⑤报之读：自走之首一取 备份/报，报/推、报/演 之 红／拒／败 未为後之成所消者印 ⛔（≤三行）。
 用法：
@@ -39,7 +40,7 @@ try:
     import _账  # 跑账·自记（工具/跑账.py）
 except Exception:
     pass
-import os, sys, re, json, glob, time, subprocess, calendar, ast, shlex, fnmatch
+import os, sys, re, json, glob, time, subprocess, calendar, ast, shlex, fnmatch, tempfile, shutil
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 册名 = os.path.join('设定', '法用册.json')
@@ -147,6 +148,13 @@ class 盘:
             v = o if rc == 0 else None
         self._缓[p] = v
         return v
+
+    def 踪(self, 式):
+        """git 所踪之档（glob）→ 路们：今之盘问其索引（ls-files·⛔认 .gitignore 之盘上之档）、史之盘即其树。"""
+        if self.版 is not None:
+            return self.有(式)
+        rc, o = _git(self.root, 'ls-files', '--', 式)
+        return [x for x in o.split('\n') if x] if rc == 0 else []
 
     def 含(self, 词, 式们):
         """式们（glob）之档里含 词 者 → 路们（史之盘以 git grep 一回先滤，⛔逐档 show）。"""
@@ -820,7 +828,7 @@ def 回放(n0, n1, root=ROOT, 册=None):
 #   新法已立而旧路未除（废而未除），一器⛔问「此枝谁写」「此废真除否」「此新流程演过否」。
 写者册名 = os.path.join('设定', '写者册.json')
 演练账名 = os.path.join('设定', '演练账.json')
-去证之键 = ('无档', '无文', '无格', '推报验')
+去证之键 = ('无档', '无文', '无格', '推报验', '无踪', '无渲')
 诸处 = ('沙盒', 'GitHub')
 演律之界 = 412          # 立 ≤ 此之流程之法（演练之律 1027 立前已行、或同轮合流将行）方许「演免」；其後者⛔免——须真料之演
 演之好 = ('同', '过')
@@ -854,7 +862,9 @@ def 读者可见(盘_):
 
 def 验去证(c, 盘_):
     """→ (态, 语)：✓ 已除｜⛔ 尚在（语指其处）。无档：路（glob·目亦算）⛔在｜无文：正则⛔见於 于（glob 们；守者自身免）｜
-    无格：全测之格表（于＝快 即只问 --快 之表）与读者可见之闸⛔列｜推报验：推报.验(autopush.yml, pre-push) 之缺⛔有中此正则者。"""
+    无格：全测之格表（于＝快 即只问 --快 之表；于＝读者 即只问读者可见之闸——格可留而⛔入其等）与读者可见之闸⛔列｜
+    推报验：推报.验诸（诸 workflow 与 pre-push；盘上须乙形·⑰）之缺⛔有中此正则者｜无踪：git ⛔踪其档（盘上可有·.gitignore）｜
+    无渲：造章.js 渲第「章」章（默 411·负测_造章令之桩）之诸令（席：label 之首们；含「果」即并其返值）⛔中此正则。"""
     if '无档' in c:
         诸 = 盘_.在(c['无档'])
         return ('⛔', '%s 尚在%s' % (诸[0], '（等 %d 处）' % len(诸) if len(诸) > 1 else '')) if 诸 else ('✓', '%s 已无' % c['无档'])
@@ -868,6 +878,13 @@ def 验去证(c, 盘_):
             if m:
                 return '⛔', '%s:%d 犯「%s」' % (p, t.count('\n', 0, m.start()) + 1, m.group(0).strip()[:40])
         return '✓', '「%s」已无' % c['无文'][:30]
+    if '无踪' in c:
+        诸 = 盘_.踪(c['无踪'])
+        return ('⛔', '%s 仍为 git 所踪' % 诸[0]) if 诸 else ('✓', '%s 已⛔踪' % c['无踪'])
+    if '无渲' in c:
+        return _验渲(c, 盘_)
+    if '无格' in c and c.get('于') == '读者':
+        return ('⛔', '读者可见之闸仍列「%s」' % c['无格']) if c['无格'] in 读者可见(盘_) else ('✓', '「%s」已出读者可见之闸' % c['无格'])
     if '无格' in c:
         快 = c.get('于') == '快'
         if c['无格'] in 诸格(盘_, 快):
@@ -881,10 +898,42 @@ def 验去证(c, 盘_):
             return '⛔', 'autopush.yml 或 pre-push 读不得'
         import 推报, inspect
         他 = {os.path.basename(p): 盘_.读(p) or '' for p in 盘_.有('.github/workflows/*.yml')}   # 诸流俱交（闸分於 gate.yml 者⛔只验 autopush 而空绿）
-        缺 = [x for x in (推报.验(yml, 钩, 他) if len(inspect.signature(推报.验).parameters) > 2 else 推报.验(yml, 钩))
-             if re.match(c['推报验'], x)]
+        他['autopush.yml'] = yml
+        缺 = [x for x in (推报.验诸(他, 钩) if hasattr(推报, '验诸') else 推报.验(yml, 钩, 他) if len(inspect.signature(推报.验).parameters) > 2
+                          else 推报.验(yml, 钩)) if re.match(c['推报验'], x)]
         return ('⛔', '推报.验：' + '；'.join(缺)[:120]) if 缺 else ('✓', '推报.验 无「%s」之缺' % c['推报验'])
     return '⛔', '去证之式不识：%s' % '、'.join(c)
+
+
+def _验渲(c, 盘_):
+    """无渲：盘上之 造章.js 以 负测_造章令 之桩渲第 n 章（诸席之交以假代之、只收令）——⛔读 js 之原文（N≤410 之枝照旧留其字）。"""
+    n, 式 = int(c.get('章') or 起章), re.compile(c['无渲'])
+    键 = ('渲', n)
+    if 键 not in 盘_._缓:
+        t = 盘_.读(os.path.join('工具', '席', '造章.js'))
+        if t is None:
+            return '⛔', '工具/席/造章.js 读不得'
+        d = tempfile.mkdtemp(prefix='法用渲_')
+        try:
+            import 负测_造章令 as Z
+            js, 器 = os.path.join(d, '造章.js'), os.path.join(d, '渲.js')
+            open(js, 'w', encoding='utf-8').write(t)
+            open(器, 'w', encoding='utf-8').write(Z._器)
+            盘_._缓[键] = Z.渲(器, n, js=js, 果=True)
+        except Exception as e:
+            return '⛔', '造章.js 渲 %d 不起：%s' % (n, str(e)[:80])
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+    收, 果 = 盘_._缓[键]
+    席 = c.get('席') or []
+    文们 = [(x['label'], x['prompt']) for x in 收 if not 席 or any(x['label'].startswith(s) for s in 席)]
+    if not 席 or '果' in 席:
+        文们.append(('果', json.dumps(果, ensure_ascii=False)))
+    for 名, 文 in 文们:
+        m = 式.search(文 or '')
+        if m:
+            return '⛔', '造章.js 渲 %d 之「%s」犯「%s」' % (n, 名, m.group(0)[:40])
+    return '✓', '造章.js 渲 %d 无「%s」' % (n, c['无渲'][:30])
 
 
 def 验废(册, 盘_, n=None):
@@ -1529,7 +1578,10 @@ def 演录(盘_, root=ROOT, 取=True):
         d = []
     for r in d if isinstance(d, list) else []:
         if isinstance(r, dict):
-            录.append({'源': '账', 'id': str(r.get('id', '')), '何': str(r.get('何', '')), '果': r.get('果'), '时': _秒(r.get('时')),
+            果 = r.get('果')
+            if 果 not in 演之好 and str(r.get('结', '')).startswith('唯後治之异') and (r.get('判') or {}).get('演') == '过':
+                果 = '同'           # 唯後治之异（1027 A2）：副本之异尽与封後真仓所落之治逐字同、诸闸之判同（过）——今之序於封时即治其旧红，即同
+            录.append({'源': '账', 'id': str(r.get('id', '')), '何': str(r.get('何', '')), '果': 果, '时': _秒(r.get('时')),
                        '文': json.dumps(r, ensure_ascii=False)})
     try:
         import 推报
@@ -1662,6 +1714,26 @@ def 自测_执(T, 全):
         finally:
             _推.验 = _旧验
         T('⑧之八 推报验 诸流俱交（推报.验 受 他 者）：gate.yml 直跑 pre-push → ⛔、无 → ✓（⛔只验 autopush.yml 而空绿）', 分红 == '⛔' and 分绿 == '✓')
+        # ⑧之九（1027 合流）：无踪（盘上可有、git ⛔踪）、无格之于读者（格留而⛔入读者可见之闸）、推报验之⑰（甲形静验虽合、盘上⛔许）、无渲（渲而⛔读原文）
+        g = os.path.join(t, '踪')
+        _写档(g, {'设定/x.log': 'a\n', '工具/全测.py': "def 诸项(quick):\n    items = [('甲', chk_a), ('乙', chk_b)]\n    return items\n\n\n读者可见之闸 = {\n    '甲',\n}\n"})
+        _e = dict({k: v for k, v in os.environ.items() if not k.startswith('GIT_')}, GIT_CONFIG_GLOBAL=os.devnull)
+        subprocess.run(['git', 'init', '-q', g], capture_output=True, env=_e)
+        踪前 = 验去证({'无踪': '设定/x.log'}, 盘(g))[0]
+        subprocess.run(['git', 'add', '设定/x.log'], cwd=g, capture_output=True, env=_e)
+        踪後 = 验去证({'无踪': '设定/x.log'}, 盘(g))[0]
+        读们 = [验去证({'无格': k, '于': '读者'}, 盘(g))[0] for k in ('甲', '乙')]
+        七 = [验去证({'推报验': '^⑰'}, 盘(ROOT, v))[0] for v in (_推.单闸yml之笔, None)] if hasattr(_推, '验诸') else []
+        渲 = [验去证(dict({'无渲': '冷轮补执', '席': ['记席']}, **k), 盘(ROOT, v))[0] for k, v in (({}, None), ({'章': 410}, None), ({}, '97286329'))]
+        T('⑧之九 无踪（未踪 ✓、add 即 ⛔）、无格于读者（列 ⛔、格在而未列 ✓）、推报验⑰（97286329 之甲形 ⛔、今 ✓）、无渲（411 ✓、410 之枝照旧 ⛔、97286329 之 411 ⛔）%s'
+          % ('' if 渲 == ['✓', '⛔', '⛔'] else '：渲 %s' % 渲), 踪前 == '✓' and 踪後 == '⛔' and 读们 == ['⛔', '✓'] and 七 == ['⛔', '✓']
+          and 渲 == ['✓', '⛔', '⛔'])
+        # ⑪之五（1027 合流）：封版之演「唯後治之异」（异尽与封後之治逐字同、诸闸之判同过）即同；未解之异⛔
+        _写档(g, {演练账名: json.dumps([{'id': '封版後演·9·甲', '何': 'x', '果': '异', '结': '唯後治之异：a 异於封版之提交而与其後之治逐字同', '判': {'演': '过'}, '时': '2026-10-27T06:58:04Z'},
+                                     {'id': '他演·9·乙', '何': 'x', '果': '异', '结': '未解之异：b', '判': {'演': '过'}, '时': '2026-10-27T06:58:04Z'}], ensure_ascii=False)})
+        _录 = 演录(盘(g), g, 取=False)
+        T('⑪之五 演练账「唯後治之异」（诸闸之判过）即同 → ✓；「未解之异」⛔', 验演({'流程': True, '演': [{'账': '^封版後演·'}]}, _录)[0] == '✓'
+          and 验演({'流程': True, '演': [{'账': '^他演·'}]}, _录)[0] == '⛔')
         假 = {'法': [全({'id': '甲', '名': '甲', '据': 'x', '起': 9, '时': '开', '证': [{'档': 'a'}]})], '待': [],
               '废': [{'id': '废甲', '名': 'x', '据': 'x', '废于': '1027', '在': '540c1c91', '法': '甲', '去证': [{'无档': '工具/新.py'}]},
                     {'id': '废乙', '名': 'x', '据': 'x', '废于': '1027', '在': '540c1c91', '待合': 'A1', '限': 11, '去证': [{'无档': '工具/旧.py'}]}]}

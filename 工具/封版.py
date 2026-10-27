@@ -682,12 +682,24 @@ def 後(n, 演=False, root=ROOT):
     print('  %s 提交 %s' % ('✓' if r.returncode == 0 else '⛔', subprocess.run(['git', 'log', '--oneline', '-1'], cwd=root, capture_output=True, text=True).stdout.strip()[:100]))
     if r.returncode != 0:
         print(r.stdout + r.stderr); return False
+    标败 = None
     for 名, a in 後之存(n):
         rc, out, 秒 = 跑(a, root)
         末 = [l for l in out.split('\n') if l.strip()][-1:] or ['']
         print('  %s %-8s rc=%d %5.0fs  %s' % ('✓' if rc == 0 else '⚠', 名, rc, 秒, 末[0].strip()[:150]))
+        if 名 == '存底 --标' and rc != 0:
+            标败 = 末[0].strip()[:150]
+    if 标败 is not None:   # ★1027 A2 验：一章唯此一推——败而仍印「封版毕」，主环 --候主 白候九十分（无章-N 即无 autopush、无报），逾限之 workflow_dispatch 亦无其枝
+        print(标推未成之语(n, 标败)); return False
     print(封毕之语(n))
     return True
+
+
+def 标推未成之语(n, 由=''):
+    """封版之提交已成而「章-N」未推上（1027 A2 验：一章唯此一推，败即当场红、⛔候主）。"""
+    return ('⛔ 封版#%d 之提交已成而「章-%d」未推上（%s）——autopush 未触、⛔候主：先 `python3 工具/存底.py --标 %d`'
+            '（HEAD 即封版#%d 之提交；或 `python3 工具/自进化环.py` 之 L0 缺碑自补），成後 `python3 工具/接棒守.py --候主 %d`'
+            % (n, n, 由 or '推败', n, n, n))
 
 
 # ═══ 演练（1027 A2·丝滑主义：改流程之器先演於真料、⛔径上线）═══
@@ -1014,7 +1026,11 @@ def 自测():
                    and [x[0] for x in 後之存(400)] == ['存底 --存', '存底 --标', '撤锁']
                    and 後之存(400)[-1] == ('撤锁', [器('心跳.py'), '--收', '400'])
                    and '闸, 并 = 後之闸(n), {}' in _体 and 'in 後之存(n):' in _体 and '活态之报(n, root)' in _体
-                   and _体.index('活态之报(n, root)') < _体.index("'commit', '-q'"))
+                   and _体.index('活态之报(n, root)') < _体.index("'commit', '-q'")
+                   # ★1027 A2 验：章-N 一推败 → 当场 ⛔、返非零、⛔印「封版毕」（回灌：旧之只印 ⚠ 而续印封毕之语即红）
+                   and "if 名 == '存底 --标' and rc != 0:" in _体 and 'print(标推未成之语(n, 标败)); return False' in _体
+                   and _体.index('标推未成之语(n, 标败)') < _体.index('print(封毕之语(n))')
+                   and '存底.py --标 411' in 标推未成之语(411, 'x') and '--候主 411' in 标推未成之语(411) and '封版毕' not in 标推未成之语(411))
     # ★1027 A2：--演 只於 --试 所立之副本里跑（无演之记即止，⛔在真仓同步而不提交）；诸闸之判自其印取；医生与末章硬闸并起
     import io as _io0, contextlib as _cl0
     _目1 = tempfile.mkdtemp(prefix='封版演记_')

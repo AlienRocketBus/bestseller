@@ -328,11 +328,20 @@ def 候(sha, 限分=90, 隔=60, 查=None, 读=None, 进=None, 取=None, 今=time
         睡(隔)
 
 
+def 在推(root=ROOT):
+    """有无推送在跑——即本器之锁被占否（⛔pgrep 猜进程名·1027 A2：自进化环 L1 之守取此，旧 pgrep 'git push -u origin' 已认不着本器所起之推）。"""
+    try:
+        锁 = 取锁(root)
+    except OSError:
+        return False                               # 锁档开不得（.git 非目录之副本）：本器亦推不得，⛔作在推
+    if 锁 is None:
+        return True
+    锁.close()
+    return False
+
+
 def 状(root=ROOT):
-    锁 = 取锁(root)
-    在跑 = 锁 is None
-    if 锁:
-        锁.close()
+    在跑 = 在推(root)
     print('推送在跑：%s｜本地超前 %d 笔｜待推之记：%s' % (
         '是' if 在跑 else '否', 超前(root), '有' if os.path.exists(os.path.join(_git目录(root), '推.待')) else '无'))
 
@@ -345,13 +354,13 @@ def 自测():
         def __init__(s, c, o=''): s.returncode, s.stdout, s.stderr = c, o, ''
     # ① 持锁时，第二个取锁者拿不到（⛔靠进程名猜）
     a = 取锁(t); b = 取锁(t)
-    共 += 1; ok += (a is not None and b is None)
+    共 += 1; ok += (a is not None and b is None and 在推(t) is True)       # ★1027 A2：在推 即锁之态（自进化环 L1 取之）
     # ② 锁被占 → 直推() 立即返回 2 并登记待推，⛔等待
     t0 = time.time(); rc = 直推(t, 推法=lambda: R(0))
     共 += 1; ok += (rc == 2 and os.path.exists(os.path.join(t, '.git', '推.待')) and time.time() - t0 < 2)
     a.close()
     # ③ 锁一放即可取（进程死、锁即放）
-    c = 取锁(t); 共 += 1; ok += (c is not None); c.close()
+    c = 取锁(t); _c在 = c is not None; c.close(); 共 += 1; ok += (_c在 and 在推(t) is False)
     # ④ 被拦不重试：推法只被调一次
     次 = []
     rc = 直推(t, 推法=lambda: (次.append(1), R(1, '  ✗ 某闸\nerror: failed'))[1])

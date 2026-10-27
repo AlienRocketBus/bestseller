@@ -405,5 +405,11 @@ return {
   合: { file: 草.file, words: 草.words, beats: 草.beats, base: 草.base, gates_green: 草.gates_green, reds: 草.reds },
   盲读: 盲, 逻辑审: { hard: (审.hard || []).length, soft: 审.soft, misread: 审.misread },
   记,
-  下一步: '主环：python3 工具/封版.py ' + N + ' --後',
+  // ★1027 A2（N≥411·一章一提交一推）：复盘与交接先写（⛔另提交），封版#N 一提交载之；其末「章-N」一推、GitHub autopush 闸而并
+  下一步: N >= 411
+    ? '主环（序⛔换）：①python3 工具/复盘.py W<号> 第' + N + '章 <runId> --简 --平台 <本会话 cost_usd>（三问各一句）'
+      + '②交接现状写入 设定/交接_续跑.md 首节（⛔另提交）③python3 工具/心跳.py --跳 ' + (N + 1)
+      + '④python3 工具/封版.py ' + N + ' --後（封版#' + N + ' 一提交载记席诸档、复盘、交接；其末推「章-' + N + '」——一章唯此一推）'
+      + '⑤python3 工具/接棒守.py --候主 ' + N + '（run_in_background·零 token；红者治而 推.py 交治枝，⛔沙盒跑全闸）'
+    : '主环：python3 工具/封版.py ' + N + ' --後',
 }

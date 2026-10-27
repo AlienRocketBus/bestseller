@@ -1586,6 +1586,18 @@ def chk_promise_due():
     return _简测('负测·约到期闸', '工具/负测_约到期.py')
 
 
+def chk_promise_due_live():
+    """约到期闸（1027 A2·执行主义之隙：旧唯一坐调 `约到期.py --闸`——一坐已汰，全测只跑其负测（钉 291:139），新章之约无一闸实判）。
+    今实跑於全书：正文自陈之约到期而到期之章（轮记、开镜卡、回执）一处未提其号即红——读者可见（立了约而不看，读者记得），入读者可见之闸；
+    封版 --前（N≥411·记席之栏，记席尚能答）与 --後 之读者之快照拦。"""
+    import subprocess as _sp
+    r = _sp.run([sys.executable, os.path.join(ROOT, '工具', '约到期.py'), '--闸'], cwd=ROOT, capture_output=True, text=True, timeout=300)
+    if r.returncode == 0:
+        return True, '无到期而未看之约（约到期.py --闸）'
+    红 = [x.strip() for x in r.stdout.split('\n') if x.strip().startswith('⛔')]
+    return False, ('；'.join(红[:3]) or (r.stderr or '').strip().split('\n')[-1][:200] or 'rc=%d' % r.returncode)
+
+
 def chk_station_ledger():
     """站账闸（2026-09-02·293封版之後立·作者令「一切服务於质量，不管张数」之机化）
     ★其由：约第五节第3条曰「三数任一掉了 → 当场压章」——★★而实际走的是反面：
@@ -1790,7 +1802,7 @@ def chk_fengban_liuqi():
 
 def chk_sealed_flags():
     """封版之章不得留旗（2026-09-05·机制总审·八路之流程之缝审第15条）——★旗之义是「那一轮的版没存上」，封了版还留着旗，旗就成了谎。
-    ★★其红在哪一行：161／175／220 三章皆有回执而 _拦停.json 仍在（220 之因係空轮闸而说明为占位串，_flag_stale 永不自销）。★★★今日一次清扫，此後 收.py ⑥ 见旗拒封。
+    ★★其红在哪一行：161／175／220 三章皆有回执而 _拦停.json 仍在（220 之因係空轮闸而说明为占位串，_flag_stale 永不自销）。★★★今日一次清扫，此後见旗拒封（今之守：本项与 负测·封版留旗）。
 
     ★**其负测在 `工具/负测_封版留旗.py`（2026-09-23·限361 立·12 格）**——
       ★★**其⑥格验反面**：**旧式（只问封没封版，不问旗）对同一份沙盘报两章**，故新式非陪跑；
@@ -1932,7 +1944,7 @@ def chk_dashen_shoufang():
     ★守一句——**一册之裁定表，几行算「有人收」。**
     ⛔**其立之由**：本坐填「至第357章」一册时落了两样旧式不认的真判，
       **旧式各算一行「没人收」**，**於是本器逼着填册的人把它们改写成假的「已治」或「判驳」**——
-      ★**一道闸若逼着人为过它而改判，那道闸就是在教人说谎**（同 `收.py::④之五` 之律）。
+      ★**一道闸若逼着人为过它而改判，那道闸就是在教人说谎**（④之五之律）。
     ★★**而本测之重不在「新名认不认得」，在「口开宽了之後，空模子还拦不拦得住」**。
     """
     out = run('负测·大审收方', ['工具/负测_大审收方.py'])
@@ -4290,8 +4302,9 @@ def _冷轮逾期俱有否决记(raw):
 #   器之负测、跑账、对位、囤灰诸器之红只报不拦，入 设定/器红账.json 限三章治（⛔删一检）。
 读者可见之闸 = {
     '全书检', '书级体检', '质量三闸', '改单', '抄袭闸', '圣经引号', '分量闸', '字数闸',
-    '含拍', '数闸', '外声闸', 'FS沉默闸', '亮点在', '亮点界', '净重对表', '版档指纹',
+    '含拍', '数闸', '外声闸', 'FS沉默闸', '亮点在', '亮点界', '净重对表',   # 1027 A2：版档指纹出（其红唯器自坏——只报之器，归器红）
     '钩子挂载', '负测留字',
+    '约到期闸',   # 1027 A2：正文自陈之约到期而未看——读者记得；旧唯一坐实跑之（已汰），今实跑、红即拦
     '负测·存底', '负测·会话之守', '负测·存底守',   # 1021·402 之失：稿之存亡係读者读得到与否——红即拦
     '负测·席在跑吗', '负测·接棒守', '负测·心跳', '坑账', '负测·自走', '暂停令', '负测·推闸中', '负测·接力', '负测·跑账', '负测·封版', '负测·推',   # 1022：书停即读者无书可读；坑必有格——红即拦
     '负测·续跑之守', '负测·承',   # 1023·坑㊻：续跑重跑已成之席即白耗写书之钱；承.py 係其正路——红即拦
@@ -4325,6 +4338,26 @@ def _器红入账(器红, 章):
     except OSError:
         pass
     return [k for k, v in 账.items() if 章 > v['限']]
+
+
+def _器红并账(红, 绿, 章, fp=None):
+    """★1027 A2：只并所跑之格（封版之活态之报：接力、跑账、负测·自进化环）——红者入（首见留）、绿者销；
+    余格之笔⛔动（_器红入账 係全跑之判：不在其红者即销，只跑三格而用之即误销他格之账）。→ 逾限之名们"""
+    import json as _j
+    fp = fp or os.path.join(ROOT, '设定', '器红账.json')
+    try:
+        账 = _j.load(open(fp, encoding='utf-8'))
+    except (OSError, ValueError):
+        账 = {}
+    for k in 绿:
+        账.pop(k, None)
+    for k in 红:
+        账.setdefault(k, {'首见': 章, '限': 章 + 3})
+    try:
+        _j.dump(账, open(fp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+    except OSError:
+        pass
+    return [k for k in 红 if 章 > 账[k]['限']]
 
 
 def 推闸(fails):
@@ -4825,15 +4858,17 @@ def 诸项(quick):
              ('字数对齐回归', chk_zishu),
              ('节奏方差闸回归', chk_rhythm),
              ('轮次完整性回归', chk_lunci),
-             ('检察官自测', chk_selftest), ('医生', chk_doctor),
-             ('跑轮负测', chk_shilun)]
+             ('检察官自测', chk_selftest), ('医生', chk_doctor)]
     # 1008 总编辑：快测须含设定层诸闸（圣经随裁、圣经引号、改单、工作流账、对账预筛、席令之禁）——否则改圣经／裁档後快测全绿而推时被拦（1008 D3 之裁漏「据 剧情庭_D3」之教）
     if quick:
         items += [('圣经随裁', chk_shengjing_suicai), ('圣经引号', chk_shengjing_yin), ('改单', chk_gaidan),
-                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('章料', chk_zhangliao), ('改记', chk_gaiji), ('费审', chk_feishen), ('费审对拍', chk_duipai), ('方案', chk_fangan), ('二代诸器', chk_erdai), ('复盘', chk_fupan), ('坑账', chk_kengzhang), ('暂停令', chk_zanting), ('席令之禁', chk_xiling_jin)]
+                  ('工作流账', chk_gongzuoliu), ('对账预筛', chk_duizhang_yushai), ('章料', chk_zhangliao), ('改记', chk_gaiji), ('费审', chk_feishen), ('费审对拍', chk_duipai), ('方案', chk_fangan), ('二代诸器', chk_erdai), ('复盘', chk_fupan), ('坑账', chk_kengzhang), ('暂停令', chk_zanting), ('席令之禁', chk_xiling_jin),
+                  ('约到期闸', chk_promise_due_live)]   # ★1027 A2：封版 --後 之读者之快取此一格
 
 
     if not quick:
+        # ★1027 A2：跑轮负测（二百余秒，八成五係十三轮之旧轮务）出快测——封版 --後 之闸⛔再含之；全闸（GitHub autopush）照跑
+        items.append(('跑轮负测', chk_shilun))
         items.append(('爆窗', chk_burst_window))
         items.append(('负测·爆窗', chk_burst_window_neg))
         items.append(('席法', chk_seat_lint))
@@ -4949,6 +4984,7 @@ def 诸项(quick):
         items.append(('负测·横评重开', chk_compare_reopen))
         items.append(('负测·站账闸', chk_station_ledger))
         items.append(('负测·约到期闸', chk_promise_due))
+        items.append(('约到期闸', chk_promise_due_live))   # ★1027 A2：实跑（旧唯一坐调之）
         items.append(('大审闸', chk_grand_audit))
         items.append(('负测·一事几陈', chk_yishi_jichen))
         items.append(('负测·章型带', chk_band))

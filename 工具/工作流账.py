@@ -250,6 +250,7 @@ def 登方法账(i, 由, root=ROOT, 今=None):
     清 = lambda t, n: re.sub(r'[|\n]', '／', t.strip())[:n]
     k = 由.find('所废'); j = 由.find('较旧')
     法 = 清(由[k:] if k >= 0 else 由, 100)
+    法 += ''.join(' ' + x for x in re.findall(r'法用#[^\s，,；;|）)]+', 由) if x not in 法)   # ★1027 法用之守：行之用证之号⛔随截而失
     旧 = 清(由[j:] if j >= 0 else '', 100) or '—'
     if '## 升级链' not in 文:
         文 = 文.rstrip('\n') + ('\n\n## 升级链（1021 立·`工具/工作流账.py --裁 W 取` 自添一行，零 token；作者令「升级之的只一：写出全中国最好看的小说」）\n\n'
@@ -306,6 +307,8 @@ def 裁(i, 法, 由, 新时限=None, root=ROOT, 今=None):
                 登方法账(i, 由, root, 今)
             except Exception as e:
                 print('⚠ 升级链未登：%s' % e)
+            if '法用#' not in 由:   # ★1027 立法须同日立证：升级链 1027 起之行须有 设定/法用册.json 之据，否则下一章封版 法用之守 红
+                print('⚠ 法用之守：此行无「法用#<id>」——新法先入 设定/法用册.json（带证），再於行内补「法用#<id>」；否则下一章封版红（法立无证）')
         return True
     print('⛔ 无此件：' + i); return False
 

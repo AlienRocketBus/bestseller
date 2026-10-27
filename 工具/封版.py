@@ -13,7 +13,9 @@
   python3 工具/封版.py N --後 --试   # 只跑诸闸与第十一轮之验，⛔写、⛔提交、⛔存底（演练用）
   python3 工具/封版.py --自测         # 以已封版之 380 之真料核诸数（与其锁定行亲核之数逐个同）
 次序之据：开轮六检於第十一轮之前跑——十一轮一过、回执在，章即「已封版」，开轮六检⑭即判「封版之章不得再跑十轮」（1013 实测）。
-推送：本器⛔推；跑毕主环 `python3 工具/推.py`（後台）。
+推送：本器⛔推主枝；其末 `存底 --标` 推「章-N」即触 GitHub autopush（推时即闸、绿即并入主枝、果入 备份/报）——
+  跑毕主环 `python3 工具/接棒守.py --候主 N`（run_in_background、零 token：主枝含即快进返 0、坏报即返其红）；
+  ⛔即跑 推.py（1027 坑51：旧印「下一步 推.py」，沙盒直推抢先、GitHub 之推恒 non-fast-forward 而败，一章之树三跑闸）。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -517,6 +519,12 @@ def 後之存(n):
             ('存底包', [器('存底包.py')]), ('撤锁', [器('心跳.py'), '--收', str(n)])]
 
 
+def 封毕之语(n):
+    """封毕之下一步（1027 坑51）：章-N 已触 GitHub autopush——主环只候（零 token），⛔直推主枝。"""
+    return ('✓ 封版毕。下一步（主环）：python3 工具/接棒守.py --候主 %d（run_in_background；零 token——「章-%d」已触 GitHub autopush，'
+            '推时即闸、绿即并入主枝；坏报即早返其红，逾限方 推.py --直）' % (n, n))
+
+
 def 阶段之数(n, root=ROOT):
     """★X53·1021：README 阶段句与提示词系统:20「--开拍 N+1」随封版自改（零 token；旧由记席／主环手改，401 漏之即红於全测·快）。"""
     改 = []
@@ -595,7 +603,7 @@ def 後(n, 试=False, root=ROOT):
         rc, out, 秒 = 跑(a, root)
         末 = [l for l in out.split('\n') if l.strip()][-1:] or ['']
         print('  %s %-8s rc=%d %5.0fs  %s' % ('✓' if rc == 0 else '⚠', 名, rc, 秒, 末[0].strip()[:150]))
-    print('✓ 封版毕。下一步（主环）：python3 工具/推.py（後台）')
+    print(封毕之语(n))
     return True
 
 
@@ -682,6 +690,10 @@ def 自测():
                        and _跳.可收(400, [{'章': 401, '时': 1}, {'章': None, '毕': 400, '时': 2}])[0] is True)
     except Exception:
         共 += 1
+    # ★1027 坑51：封毕之下一步係 接棒守 --候主 N（後台·零 token），⛔推.py（沙盒直推抢先、GitHub 之推恒败）；後() 只经 封毕之语 印之
+    _毕 = 封毕之语(411)
+    共 += 1; ok += ('python3 工具/接棒守.py --候主 411' in _毕 and '推.py（' not in _毕 and 'print(封毕之语(n))' in _体
+                   and 'python3 工具/推.py（後台）' not in open(__file__, encoding='utf-8').read().split('def 自测')[0])
     共 += 1; ok += 红行('x\n  ✗ 负测·甲  坏\n⛔⛔ 永远的痛·D6\n  ✓ 乙\n⛔ 停') == ['✗ 负测·甲  坏', '⛔ 停']   # ★1020：红则印诸红项、⛔D6 之训
     _印 = '  ✗第9章《甲》:\n      第十一轮未过:未见 x\n  末章硬闸·第9章：失败'
     共 += 1; ok += 末章之病(_印) == [] and 末章之病(_印.replace('      第十一轮', '      5+逗:甲\n      第十一轮')) == ['5+逗:甲']   # ★1020：--前 免第十一轮（其归 --後）、余病照报

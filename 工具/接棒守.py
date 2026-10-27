@@ -10,7 +10,7 @@
     → ✓接棒成（rc=0）；逾限（默三十分）无人接 → rc=2，醒交棒者重开。候时 Stop 钩认之放行。
   ③定时之保：守书之会话（小模型）每时被唤一回，跑 `--哨`：有人在写或交棒中即止；停写即开写书之会话（总章三之5）。
 用法：
-  python3 工具/接棒守.py --候主 403 [分]   # 封版後候主枝含 403（run_in_background；零 token）
+  python3 工具/接棒守.py --候主 403 [分]   # 封版後候主枝含 403（run_in_background；零 token）：0 已含（已快进）｜3 GitHub 报红／拒／败（印其红）｜2 逾限
   python3 工具/接棒守.py --候 404 [分]     # 交棒後以 run_in_background 跑
   python3 工具/接棒守.py --在候            # rc=0 在候
   python3 工具/接棒守.py --立守书          # 守书之会话首回立之（⛔写书之坐立之）
@@ -141,17 +141,69 @@ def 主含(n):
     return bool(主) and 跑('git', 'merge-base', '--is-ancestor', sha, 主).returncode == 0
 
 
-def 候主(n, 限分=90, 隔=120, 查=None, 今=time.time, 睡=time.sleep):
+def 治之在飞(标):
+    """→ 云端治枝之含 标（章-n 之封版之笔）者 [(枝, sha)]：章红而治推已交、GitHub 未毕——其果当读治枝之报。"""
+    r = subprocess.run(['git', '-c', 'core.quotepath=off', 'ls-remote', 'origin', 'refs/heads/治-*'], cwd=ROOT, capture_output=True, text=True)
+    诸 = [(x.split('refs/heads/', 1)[1], x.split()[0]) for x in r.stdout.split('\n') if 'refs/heads/治-' in x]
+    if 诸:
+        subprocess.run(['git', 'fetch', '-q', 'origin'] + ['refs/heads/' + 枝 for 枝, _ in 诸], cwd=ROOT, capture_output=True)
+    return [(枝, s) for 枝, s in 诸 if subprocess.run(['git', 'merge-base', '--is-ancestor', 标, s], cwd=ROOT,
+                                                     capture_output=True).returncode == 0]
+
+
+def 章之坏报(n, 读=None, 标=None, 飞=None):
+    """→ 印之行：GitHub autopush 於 备份/报 之 报/推/章-n.json 之果为红／拒／败、且其 sha 即云端 章-n 之标者；否则 []。
+    （1027 坑51：旧候主只问主枝含否，autopush 红了亦白候九十分。读与 推.py --候 同一把尺：推报.读）
+    章红而含此章之治枝已交（治在飞）：⛔以章之旧红早返——读治枝之报，坏即返其红、未毕即候。"""
+    import 推报
+    读 = 读 or (lambda 枝: 推报.读(枝, ROOT))
+    d = 读('章-%d' % int(n))
+    if not d or d.get('果') not in 推报.坏果:
+        return []
+    if 标 is None:
+        r = subprocess.run(['git', 'ls-remote', 'origin', 'refs/heads/章-%d' % int(n)], cwd=ROOT, capture_output=True, text=True)
+        标 = r.stdout.split()[0] if r.returncode == 0 and r.stdout.strip() else ''
+    if 标 and d.get('sha') != 标:
+        return []                      # 旧标之报（⛔认他笔之果）
+    在飞 = (飞 or 治之在飞)(标 or d.get('sha', ''))
+    if 在飞:
+        # 治枝红者不删（autopush 只删已并者）：旧治红而新治已交未毕，⛔以旧治之红早返——诸治俱有坏报方返，取其最晚者
+        配 = [x for x, (_, s) in zip([读(枝) for 枝, _ in 在飞], 在飞) if x and x.get('sha') == s]
+        if len(配) < len(在飞) or any(x.get('果') not in 推报.坏果 for x in 配):
+            return []                  # 治在飞而有未毕者（或已成待并）——候
+        d = max(配, key=lambda x: str(x.get('时') or ''))
+    L = 推报.报之语(d)
+    if d.get('果') == '拒':
+        L.append('  → 兜底：python3 工具/推.py --直（GITHUB_TOKEN 推不得改 .github/workflows 之提交；本地全闸直推主枝）')
+    elif d.get('果') == '红':
+        L.append('  → 推闸之红逐条治（⛔绕、⛔弱化）、提交，再 python3 工具/推.py（交 GitHub）→ 其所印 --候；治毕再交棒')
+    else:
+        L.append('  → 看 run_url；GitHub 停摆即 python3 工具/推.py --直')
+    return L
+
+
+def 候主(n, 限分=90, 隔=120, 查=None, 报=None, 进=None, 今=time.time, 睡=time.sleep):
     """封版之後、交棒之前：候 GitHub autopush 把第 n 章推进主枝（零 token；Stop 钩认本器之进程放行）。
-    rc=0 已含→即交棒（总章三之5）；rc=2 逾限→跑 `python3 工具/推.py` 兜底、逐红治。"""
+    rc=0 已含→本地快进主枝、即交棒（总章三之5）；rc=3 备份/报 报章-n 红／拒／败→即返其红（⛔白候）；
+    rc=2 逾限（GitHub 或停摆）→ `python3 工具/推.py --直` 兜底。主含先问：章已由治推入主即⛔认旧坏报。"""
     查 = 查 or 主含
+    报 = 报 or 章之坏报
+    if 进 is None:
+        import 推报
+        进 = lambda: 推报.快进(ROOT)
     始 = 今()
     while True:
         if 查(n):
             print('✓主枝已含第%s章——即照总章三之5 交棒（收锁、开新会话、--候）' % n)
+            print(进()[1])
             return 0
+        坏 = 报(n)
+        if 坏:
+            print('\n'.join(坏))
+            print('⛔GitHub autopush 未并第%s章（见上）——照其末行办；主枝含之後再交棒' % n)
+            return 3
         if 今() - 始 >= 限分 * 60:
-            print('⛔主枝 %d 分未含第%s章——跑 `python3 工具/推.py` 兜底、推闸之红逐条治；治毕再交棒' % (限分, n))
+            print('⛔主枝 %d 分未含第%s章、亦无其坏报——GitHub 或停摆：跑 `python3 工具/推.py --直` 兜底、推闸之红逐条治；治毕再交棒' % (限分, n))
             return 2
         睡(隔)
 
@@ -259,15 +311,56 @@ def 自测():
     T('④之三 撤锁十分（交棒中）→ rc=0（⛔另开一坐）', 哨判({'章': None, '毕': 403, '时': 今 - 600}, 今, 限)[0] == 0)
     T('④之四 撤锁逾三十分无人接 → rc=2 停写（402 封後书停之形）', 哨判({'章': None, '毕': 402, '时': 今 - 31 * 60}, 今, 限)[0] == 2)
     T('④之五 心跳读不出 → rc=2', 哨判(None, 今, 限)[0] == 2)
+    import io, contextlib
     钟 = [0.0]
     序 = iter([False, False, True])
-    T('⑤候主：第三查含 → rc=0（候了四分）', 候主(404, 隔=120, 查=lambda n: next(序), 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x)) == 0 and 钟[0] == 240)
+    进了 = []
+    无报 = lambda n: []
+    with contextlib.redirect_stdout(io.StringIO()):
+        rc = 候主(404, 隔=120, 查=lambda n: next(序), 报=无报, 进=lambda: (进了.append(1), (True, '快进'))[1],
+                 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x))
+    T('⑤候主：第三查含 → rc=0（候了四分）、本地快进一回', rc == 0 and 钟[0] == 240 and 进了 == [1])
     钟[0] = 0.0
-    T('⑤之二 九十分不含 → rc=2（推.py 兜底）', 候主(404, 隔=120, 查=lambda n: False, 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x)) == 2)
+    with contextlib.redirect_stdout(io.StringIO()) as o:
+        rc = 候主(404, 隔=120, 查=lambda n: False, 报=无报, 进=lambda: (True, ''), 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x))
+    T('⑤之二 九十分不含、亦无坏报 → rc=2（推.py --直 兜底）', rc == 2 and '推.py --直' in o.getvalue())
+    # ⑤之三—六 1027 坑51：备份/报 之坏报即早返（⛔白候九十分）；主含先问；旧标之报⛔认
+    红报 = {'ref': '章-404', 'sha': 'a' * 40, '果': '红', '红': ['✗ 质量三闸  一章一日', '⛔全测未过：质量三闸'], 'run_url': 'u', '时': 't'}
+    钟[0] = 0.0
+    with contextlib.redirect_stdout(io.StringIO()) as o:
+        rc = 候主(404, 查=lambda n: False, 报=lambda n: 章之坏报(n, 读=lambda 枝: dict(红报), 标='a' * 40, 飞=lambda 标: []), 进=lambda: (True, ''),
+                 今=lambda: 钟[0], 睡=lambda x: 钟.__setitem__(0, 钟[0] + x))
+    T('⑤之三 报/推/章-N.json 红 → 即 rc=3、印其红行（⛔候）', rc == 3 and 钟[0] == 0 and '✗ 质量三闸  一章一日' in o.getvalue())
+    with contextlib.redirect_stdout(io.StringIO()):
+        rc = 候主(404, 查=lambda n: True, 报=lambda n: ['⛔红'], 进=lambda: (True, ''), 今=lambda: 0, 睡=lambda x: None)
+    T('⑤之四 主枝已含（治推已并）→ rc=0，⛔认旧坏报', rc == 0)
+    T('⑤之五 旧标之报（sha 非今之章标）、成报 → ⛔坏', 章之坏报(404, 读=lambda 枝: dict(红报), 标='b' * 40, 飞=lambda 标: []) == []
+      and 章之坏报(404, 读=lambda 枝: dict(红报, 果='成', 红=[]), 标='a' * 40) == [] and 章之坏报(404, 读=lambda 枝: None, 标='') == [])
+    无飞 = lambda 标: []
+    拒 = 章之坏报(404, 读=lambda 枝: dict(红报, 果='拒', 因='workflow', 红=['⛔拒：改 .github/workflows']), 标='a' * 40, 飞=无飞)
+    T('⑤之六 拒 → 印 --直 兜底与其由', any('推.py --直' in x for x in 拒) and any('workflow' in x for x in 拒))
+    诸报 = {'章-404': dict(红报), '治-bbbbbbbbbbbb': None}
+    飞 = lambda 标: [('治-bbbbbbbbbbbb', 'b' * 40)] if 标 == 'a' * 40 else []
+    候中 = 章之坏报(404, 读=lambda 枝: 诸报.get(枝), 标='a' * 40, 飞=飞)
+    诸报['治-bbbbbbbbbbbb'] = dict(红报, ref='治-bbbbbbbbbbbb', sha='b' * 40, 红=['✗ 改单  治推又红'])
+    治红 = 章之坏报(404, 读=lambda 枝: 诸报.get(枝), 标='a' * 40, 飞=飞)
+    T('⑤之七 章红而含此章之治枝在飞：未毕 → 候（⛔以章之旧红早返）；治报红 → 返治之红', 候中 == [] and any('治推又红' in x for x in 治红)
+      and not any('一章一日' in x for x in 治红))
+    # ⑤之八 旧治红（其枝不删）而新治已交未毕 → 候（⛔以旧治之红早返）；二治俱红 → 返最晚者之红
+    诸报['治-cccccccccccc'] = None
+    飞2 = lambda 标: [('治-bbbbbbbbbbbb', 'b' * 40), ('治-cccccccccccc', 'c' * 40)]
+    旧红新候 = 章之坏报(404, 读=lambda 枝: 诸报.get(枝), 标='a' * 40, 飞=飞2)
+    诸报['治-bbbbbbbbbbbb']['时'] = '2026-10-27T01:00:00Z'
+    诸报['治-cccccccccccc'] = dict(红报, ref='治-cccccccccccc', sha='c' * 40, 红=['✗ 新治之红'], 时='2026-10-27T02:00:00Z')
+    俱红 = 章之坏报(404, 读=lambda 枝: 诸报.get(枝), 标='a' * 40, 飞=飞2)
+    T('⑤之八 旧治红而新治未毕 → 候（⛔以旧治之红早返）；二治俱红 → 返最晚者之红', 旧红新候 == []
+      and any('新治之红' in x for x in 俱红) and not any('治推又红' in x for x in 俱红))
     src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     段主含 = src.split('def 主含(')[1].split('\ndef ')[0]
     段候主 = src.split('def 候主(')[1].split('\ndef ')[0]
-    T('⑥候主之默认查係 主含（1022 复核：⛔以注入之假查充其验）', '查 = 查 or 主含' in 段候主)
+    T('⑥候主之默认查係 主含、默认报係 章之坏报、默认进係 推报.快进（1022 复核：⛔以注入之假查充其验）',
+      '查 = 查 or 主含' in 段候主 and '报 = 报 or 章之坏报' in 段候主 and '推报.快进(ROOT)' in 段候主
+      and "推报.读(枝, ROOT)" in src.split('def 章之坏报(')[1].split('\ndef ')[0])
     T('⑥之二 主含真查云端：章-N 之标为主枝之祖', all(k in 段主含 for k in ("'merge-base', '--is-ancestor'", "'refs/heads/章-%d'", 'ls-remote')))
     参 = 派之参(411, 名='第411章')
     T('⑦派之参：题、模、源、枝、令俱定形', 参['title'] == '镇冢秘术·第411章' and 参['model'] == 'claude-opus-5-5'

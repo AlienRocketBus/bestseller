@@ -219,12 +219,14 @@ def L1(自修=True):
     elif 上回分 < 推之间隔分:
         语.append('  ★上一回推发起於 %.0f 分钟前（限 %d）——⛔不再起' % (上回分, 推之间隔分))
     else:
+        # ★1027 坑51：自修之推交 GitHub——`推.py` 默推「治-<sha>」，GitHub 推时即闸、绿即并入主枝（果入 备份/报）；
+        #   ⛔沙盒直推主枝（本地再跑十余分之全测，且与 autopush 抢主枝、令其 non-fast-forward 而败）。
         try:
-            subprocess.Popen('git push -u origin %s > "%s" 2>&1' % (主枝, 记),
+            subprocess.Popen('"%s" "%s" > "%s" 2>&1' % (sys.executable, os.path.join(ROOT, '工具', '推.py'), 记),
                              cwd=ROOT, shell=True, start_new_session=True,
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                              stdin=subprocess.DEVNULL)
-            语.append('  ★已自修：发起一回推（後台·走闸不绕·其印落 设定/_自进化环_推.out）')
+            语.append('  ★已自修：交 GitHub 一回（後台·推.py 默推治枝、GitHub 闸而并·其印落 设定/_自进化环_推.out）')
         except Exception as e:
             语.append('  ⛔发起推不成：%s' % e)
     # ★上一回推之果：若仍被拦，读出其「点名之红」作因
@@ -473,6 +475,9 @@ def 自测():
     R.append(('⑥⛔L1 之推走闸不绕（码里无 --no-verify／ZM_SKIP_HOOK）',
               all(w not in io.open(__file__, encoding='utf-8').read().split('def L1')[1]
                   .split('def L2')[0] for w in ('--no-verify', 'ZM_SKIP_HOOK'))))
+    _L1 = io.open(__file__, encoding='utf-8').read().split('def L1')[1].split('def L2')[0]
+    R.append(('⑥之二·L1 之自修交 GitHub（推.py 默推治枝），⛔沙盒直推主枝（坑51）',
+              "'工具', '推.py'" in _L1 and 'git push -u origin %s' not in _L1))
     R.append(('⑦本环每跑一回落一行日志（本环之脉）', '日志' in io.open(__file__, encoding='utf-8').read()))
     R.append(('⑧封版中之章（回执在而未提交）⛔算已封——⛔自红其缺碑；已提交者照算',
               _封之章(['设定/回执_1_第390章封版席.md', '设定/回执_1_第391章封版席.md'], {'设定/回执_1_第390章封版席.md'}) == {390}))

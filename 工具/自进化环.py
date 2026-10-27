@@ -304,7 +304,11 @@ def L3():
         return 3 if '书之族' in x['器'] else 2
     无器 = [x for x in 族 if _无器(x) and x['例'] >= _限(x)]
     器不在 = []
+    # ★1027：随汰之族（「〔随汰·…`工具/<器>` 已彻删〕」而其器真不在）退役——⛔作「器不在」；判借 进化链.随汰（一处判，⛔两份码；器仍在即⛔认）
+    _汰 = _器('进化链').随汰
     for x in 族:
+        if _汰(x['器'], ROOT):
+            continue
         for f in re.findall(r'`([^`]+\.py)`', x['器']):
             if not os.path.exists(os.path.join(ROOT, '工具', os.path.basename(f))):
                 器不在.append('%s→%s' % (x['名'], f))

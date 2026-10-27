@@ -35,6 +35,7 @@
     python3 工具/存底.py --验                        # 自云端取回来数一遍
     python3 工具/存底.py --演 309                    # ★真克隆下来比一遍（约三十秒·人手之演：1027 A2 出封版之每章之序——章-N 之克隆归 GitHub autopush 之取）
     python3 工具/存底.py --自测
+    python3 工具/存底.py --演章 309 [--源 URL]       # 只演章标一半（1027 坑54：GitHub autopush 於章-* 每章跑之、判入报之「演」）
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -342,20 +343,41 @@ def 演(章=None):
                                            os.path.getsize(os.path.join(ROOT, '正文', x))))
         if 差:
             坏.append('正文有 %d 档对不上：%s' % (len(差), '、'.join(差[:3])))
-        # 乙·章标
+        # 乙·章标（1027 坑54：每章之演归 GitHub autopush——章-* 之跑以同一 演章 真克隆其标、判入报之「演」）
         if 章 is not None:
-            d2 = os.path.join(tmp, '乙')
-            r2 = _跑('git', 'clone', '-q', '--depth', '1', '--branch', '章-%d' % int(章), url, d2)
-            if r2.returncode != 0:
-                坏.append('章标 章-%s 克隆不下来' % 章)
-            else:
-                缺 = [x for x in ('正文', '设定', '工具') if not os.path.isdir(os.path.join(d2, x))]
-                if 缺:
-                    坏.append('章标 章-%s 里缺 %s——**它不是一份跑得动的仓**' % (章, '、'.join(缺)))
+            rc2, m2 = 演章(章, url)
+            if rc2 != 0:
+                坏.append(m2)
         if 坏:
             return 2, '；'.join(坏)
         return 0, '存底枝克隆下来 %d 章，逐档与本地同（含正在写而未提交的那一章）%s' % (
             len(章们), ('｜章标 章-%s 亦是一份跑得动的仓' % 章) if 章 is not None else '')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+可跑之档 = ('正文', '设定', '工具')
+
+
+def 仓缺(d):
+    """一份克隆下来的仓缺哪几样（正文、设定、工具）——缺一即「跑不动」。"""
+    return [x for x in 可跑之档 if not os.path.isdir(os.path.join(d, x))]
+
+
+def 演章(章, url=None):
+    """乙·章标之演：真克隆「章-N」（--depth 1），看它是不是一份跑得动的仓。→ (rc, 语)
+    1027 坑54：每章之演归 GitHub autopush（章-* 之跑·报之「演」，演之效全同：只克隆云端之标）——沙盒 --演 N 亦经此一函（⛔两份）。"""
+    url = url or _跑('git', 'remote', 'get-url', 'origin').stdout.strip()
+    tmp = tempfile.mkdtemp(prefix='演章_')
+    try:
+        d = os.path.join(tmp, '乙')
+        r = _跑('git', 'clone', '-q', '--depth', '1', '--branch', '章-%d' % int(章), url, d)
+        if r.returncode != 0:
+            return 2, '章标 章-%s 克隆不下来：%s' % (章, (r.stderr or '').strip()[:120])
+        缺 = 仓缺(d)
+        if 缺:
+            return 2, '章标 章-%s 里缺 %s——**它不是一份跑得动的仓**' % (章, '、'.join(缺))
+        return 0, '章标 章-%s 真克隆下来是一份跑得动的仓（%s 俱在）' % (章, '、'.join(可跑之档))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -518,6 +540,22 @@ def 自测():
     T('⑰诸 git 之调（_跑）败即问盘坏之迹（1024：add 每回败而只入日志，无人见）', '重取.查迹(r.returncode, r.stderr' in 段跑)
     T('⑦每存一回，顺手记一步续跑（东西保住而进度丢了仍是断）',
       'import 续跑' in s and '续跑.记(' in s)
+    # ⑳1027 坑54：演章（GitHub 之 autopush 每章所跑）——临时之裸库真克隆：全者过、缺工具者红、无此标者红
+    with tempfile.TemporaryDirectory() as _t:
+        _e = dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+        _裸, _工 = os.path.join(_t, 'o.git'), os.path.join(_t, 'w')
+        subprocess.run(['git', 'init', '-q', '--bare', _裸], check=True, env=_e)
+        subprocess.run(['git', 'init', '-q', _工], check=True, env=_e)
+        for _x in 可跑之档:
+            os.makedirs(os.path.join(_工, _x))
+            open(os.path.join(_工, _x, 'a'), 'w').write('1')
+        for _c in (['add', '-A'], ['commit', '-qm', 'a'], ['push', '-q', _裸, 'HEAD:refs/heads/章-1'], ['rm', '-rq', '工具'], ['commit', '-qm', 'b'],
+                   ['push', '-q', _裸, 'HEAD:refs/heads/章-2']):
+            subprocess.run(['git'] + _c, cwd=_工, check=True, env=_e, capture_output=True)
+        _u = 'file://' + _裸
+        T('⑳演章：真克隆章标——全者过、缺工具者红、无此标者红（GitHub 每章之演同此一函）',
+          演章(1, _u)[0] == 0 and 演章(2, _u)[0] == 2 and '工具' in 演章(2, _u)[1] and 演章(3, _u)[0] == 2
+          and '演章(章, url)' in 段演)
     # ⑩—⑯·1021 防覆（402 之失）：真起一个临时之远端与工作仓，两机一锁，逐形跑一遍（⛔只看字样）
     for 名, 条 in 防覆之演():
         T(名, 条)
@@ -540,6 +578,11 @@ if __name__ == '__main__':
         i = a.index('--标')
         rc, m = 标(a[i + 1])
         print('✓章标：%s' % m if rc == 0 else '⛔打标未成：%s' % m)
+        sys.exit(rc)
+    if '--演章' in a:
+        i = a.index('--演章')
+        rc, m = 演章(a[i + 1], a[a.index('--源') + 1] if '--源' in a and a.index('--源') + 1 < len(a) else None)
+        print('✓演章：%s' % m if rc == 0 else '⛔演章不过：%s' % m)
         sys.exit(rc)
     if '--演' in a:
         i = a.index('--演')

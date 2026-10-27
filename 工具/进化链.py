@@ -91,7 +91,7 @@ def 诸环():
         t = io.open(f, encoding='utf-8', errors='replace').read()
         题 = (t.split('\n', 1)[0].lstrip('# ').strip() or os.path.basename(f))
         环.append({'源': os.path.basename(f)[:40], '名': re.sub(r'\*', '', 题)[:70],
-                   '日': _日(os.path.basename(f) + t[:300]), '守': _守(t, 有)})
+                   '日': _日(os.path.basename(f) + t[:300]), '守': _守(t, 有), '汰': 随汰(t)})   # ★1027：裁／册亦认随汰
     # 三·病族
     p = os.path.join(ROOT, '设定', '病族账.md')
     if os.path.exists(p):
@@ -100,7 +100,8 @@ def 诸环():
             if m:
                 环.append({'源': '病族账', '名': m.group(1).strip()[:70], '日': '2026-09-24',
                            '守': _守(m.group(3), 有) or (['（书之族·第三回方立）']
-                                                        if '书之族' in m.group(3) else [])})
+                                                        if '书之族' in m.group(3) else []),
+                           '汰': 随汰(m.group(3))})   # ★1027：病族之环亦认随汰（其器彻删、其病随之去）
     return 环
 
 
@@ -140,8 +141,8 @@ def 写链(环):
 
 def 跑(写=True):
     环 = 诸环()
-    有, 无 = (写链(环) if 写 else (sum(1 for x in 环 if x['守']),
-                                   sum(1 for x in 环 if not x['守'])))
+    有, 无 = (写链(环) if 写 else (sum(1 for x in 环 if x['守'] and not x.get('汰')),
+                                   sum(1 for x in 环 if not x['守'] and not x.get('汰'))))   # ★1027：dry 与写同计（汰者俱不计）
     底 = 读底()
     print('════ 进化链 · 犯过的每一个错，今天有没有一道器在守着 ════')
     print('  共 %d 环｜有守 %d｜⛔无守（只写在纸上）%d' % (len(环), 有, 无))
@@ -181,6 +182,10 @@ def 自测():
     R.append(('③串得出链（今 %d 环·体检账＋裁＋册＋病族）' % len(环), len(环) > 200))
     R.append(('④四处皆入链', {'体检账', '病族账'} <= set(x['源'] for x in 环)
               and any(x['源'].startswith('裁_') for x in 环)))
+    # ★1027：裁、病族之环亦认随汰（旧只体检账认之——裁之所守彻删，其环只得作无守而涨棘轮）
+    R.append(('④之二·裁与病族亦认随汰（今 裁 %d 环、病族 %d 环已汰）' % (
+        sum(1 for x in 环 if x['源'].startswith('裁_') and x.get('汰')), sum(1 for x in 环 if x['源'] == '病族账' and x.get('汰'))),
+              any(x['源'].startswith('裁_') and x.get('汰') for x in 环) and any(x['源'] == '病族账' and x.get('汰') for x in 环)))
     # ⑤⛔棘轮之牙：无守之数比底大即红
     import tempfile
     global 棘轮

@@ -3133,7 +3133,6 @@ OPEN_BRIEF_CARD_SCHEMA = {
         'E3·有意识校准进度',
     ),
 }
-PROMPT_PATH = os.path.join(REPO_ROOT, '工具', '镇冢秘术_防前后矛盾提示词系统.md')
 READER_SYNC = os.path.join(REPO_ROOT, '工具', '同步全本阅读器.py')
 DENSE = 5  # 单句逗号 >= 这个数,算"顿得偏碎"
 
@@ -3274,7 +3273,6 @@ def print_console():
     try:
         files=sorted(_chapters().keys()); cur=max(files) if files else 0
         items=[x for x in _load_due() if x.get('状态') not in _CLEARED_STATES]
-        items=[x for x in items if not x['id'].startswith('COLD-')]+_auto_cold(files)
         due=[x for x in items if x.get('到期章',10**9)<=cur]
         od=[x for x in due if cur-x['到期章']>=2]
         nxt=sorted([x for x in items if x.get('到期章',10**9)>cur],key=lambda z:z['到期章'])[:2]
@@ -3294,7 +3292,7 @@ def print_console():
     except Exception:
         print('◆病历本读取失败')
     print('◆在役机制(全在册,写章逐项走):①开笔前必答清单29问 ②执笔病历本 ③挑刺十庭制 ④交付三检 ⑤九步管线 ⑥冻结增补令 ⑦到期账 ⑧双绿闸+回执闸 ⑨回修令')
-    print('  文件:设定/开笔前必答清单_十八轮真伤倒推.md | 设定/执笔病历本_模式性错误档案.md | 设定/挑刺提示词_镇冢秘术专用十庭制.md | 设定/交付三检提示词_逐字存档.md | 设定/到期账.json | 设定/10_回修令.md')
+    print('  文件:设定/开笔前必答清单_十八轮真伤倒推.md | 设定/执笔病历本_模式性错误档案.md | 设定/挑刺提示词_镇冢秘术专用十庭制.md | 设定/交付三检提示词_逐字存档.md | 设定/到期账.json')
     # 【第102批】⑨回修令挂上唯一入口：★封版≠不可改，全书任何一处只要改了整本书更好即可改。
     #   ★★而其所以须印在此处：第六十六批早已立此法，却因只在文件里躺着，一个月无人跑。
     #   ★★★依批93「凡在役机制一律挂到唯一入口」，故每启必现。
@@ -3529,7 +3527,6 @@ def work_order(n):
     i=0
     print('【写前】')
     items=[x for x in _load_due() if x.get('状态') not in _CLEARED_STATES]
-    items=[x for x in items if not x['id'].startswith('COLD-')]+_auto_cold(files)
     due=[x for x in items if x.get('到期章',10**9)<=cur or x.get('到期章')==n]
     for x in due:
         i+=1; lag=cur-x['到期章']
@@ -3569,136 +3566,8 @@ def work_order(n):
     print('█'*3 + ' 作业令毕：%d条 '%i + '█'*3)
     try: emit_prompts(n)
     except Exception as _e: print('  (提示词喷发失败:%s)'%_e)
-# ★★★★★2026-09-03·295第1轮·全测三红之一所逮：**冷轮之判在本仓有两把尺。**
-#   ★其形：本器自有一份 `_cold_done` 与一句硬写的 `到期章=n+2`；
-#     而 `开轮六检.py` 另有一份，**其限读档自书之「限N」（档里没写的才退回通则 N+2，且逾 N+5 者不认）**，
-#     **其执认否决记「COLD-N·本章未执」，且以「提过此笔之回执中章号最大的那一份」为准**。
-#   ★★取二组数（令§六①②）：**73—295 之间，二尺之限相异者 99 章**；
-#     ★★★**而执之判今日相异 0 章**——**只因今日无一份回执含否决记**；
-#     **一写否决记，本器即与六检分家**（其形正是 `硬闸.py` 档头所治之「散在四处，各记各的，遂成两本账」）。
-#   ★★★★**故本器不再自留一份**：**限与执俱转调 `开轮六检.py`**，取不着时方退回旧法。
-#   ★**其所认者（令§六④之一行）**：**限认三样**——档首之「限N」／通则 N+2／N+5 之上限；
-#     **执认两样**——回执中之「N章冷眼轮」六字与否决记「COLD-N·本章未执」，**否决在先，签核在後**。
-_COLD_SIX = {}
-
-
-def _cold_six():
-    """取 开轮六检 之二函数（限与执）。取不着即返 None，由调用处退回旧法。
-    ★W60 X39：一进程载一回（键＝档之路·mtime·size，档一改即重载）——旧式每调重载一回，
-      `_auto_cold` 逐章四调，--末章 一跑七百余载（cProfile 实测约 6 秒）；载之即同一份码，判一字不改。"""
-    try:
-        import importlib.util as _iu
-        _p = os.path.join(REPO_ROOT, '工具', '开轮六检.py')
-        if not os.path.exists(_p):
-            return None
-        _st = os.stat(_p)
-        _k = (_p, _st.st_mtime_ns, _st.st_size)
-        if _k in _COLD_SIX:
-            return _COLD_SIX[_k]
-        _s = _iu.spec_from_file_location('_klj', _p)
-        _m = _iu.module_from_spec(_s); _s.loader.exec_module(_m)
-        _COLD_SIX.clear(); _COLD_SIX[_k] = _m
-        return _m
-    except Exception:
-        return None
-
-
-def _cold_done(n):
-    """冷眼轮完成判定——★转调 开轮六检::_cold_done（认否决记，且以章号最大之回执为准）。"""
-    _m = _cold_six()
-    if _m is not None and hasattr(_m, '_cold_done'):
-        return _m._cold_done(n)
-    # ★体检账 一〇一 之治（限351）：⛔不许再留一条会悄悄变坏的退路。
-    #   模块取不着即当场报红并停——报红会吵，而悄悄放行会签掉真账。
-    raise RuntimeError('⛔冷轮判定之器取不着：开轮六检::_cold_done 不在。⛔不许以旧退路蒙混放行（体检账 一〇一·限351 之治）。')
-
-
-def _cold_void(n):
-    """★某冷轮是否已判作废——★转调 开轮六检::_cold_void（一处判，不再各写一份码）。
-
-    ⛔**其所以补**（0916·338 之案席当日报出而未代改，今作者当面裁）：
-    **`开轮六检::⑥` 认 `_cold_void`，而本档之 `_auto_cold` 不读它**——
-    **遂对 COLD-333／COLD-334 二笔（各有其「废」档，且从来没有立过面）
-      照通则报其逾期，`--全书检` 当场判 ERROR。**
-    ★**一处判而两份码，改一份的人以为自己改完了**（体检账 ㊸ 之同型，本日第三度）。
-    ⛔**取不着 `开轮六检` 时返 False**——**宁可多催一笔，不可少催一笔。**
-    """
-    _m = _cold_six()
-    if _m is not None and hasattr(_m, '_cold_void'):
-        return _m._cold_void(n)
-    return False
-
-
-def _cold_due(n):
-    """冷眼轮之限——★转调 开轮六检::_cold_limit（档自书之限压倒通则）。"""
-    _m = _cold_six()
-    if _m is not None and hasattr(_m, '_cold_limit'):
-        try:
-            return _m._cold_limit(n)
-        except Exception:
-            pass
-    return n + 2
-
-
-def _cold_无面而明裁(n):
-    """★第n章之冷轮：盘上无档，而其回执里有一句立／不立之明裁——**即不凭空记一笔欠**。
-
-    ★★2026-09-22 立（⛔**此非新令，是把本日那一裁补进第二处码**·
-      其裁在 `设定/裁_0922_冷轮之令_无档者不凭空记一笔欠.md`）：
-      **当日只改了 `开轮六检::check6` 一处**，⛔**而本档之 `_auto_cold` 是第二处判同一件事的码**
-      ——**於是 `开轮六检⑥` 已不再催 `COLD-350`，而 `--doctor` 之到期账照旧把它印作到期，
-        并据之判 `ERROR`**（0922 本坐亲见：医生印「到期3项……⛔[COLD-350]」而 350 之回执 §九
-      逐字写着「**销而不立**……**本章不立新冷轮·明裁·⛔非无声跳过**」）。
-    ★★★**此正是 `体检账 ㊸`／`_cold_void` 那一注所说的同型**：**一处判而两份码，改一份的人以为自己改完了。**
-      ⛔**本坐今日不把这一条再抄一遍，只转调 `开轮六检` 那两个判**——**一处判。**
-    ⛔**取不着 `开轮六检` 时返 False**——**宁可多催一笔，不可少催一笔。**
-    """
-    _m = _cold_six()
-    if _m is None or not hasattr(_m, '_cold_有档') or not hasattr(_m, '_cold_明裁'):
-        return False
-    try:
-        return (not _m._cold_有档(n)) and bool(_m._cold_明裁(n))
-    except Exception:
-        return False
-
-
-_AUTO_COLD = {}
-
-
-def _冷轮之印():
-    """`_auto_cold` 所读之盘之印：设定/回执_*.md、设定/冷轮_COLD*.md、工具/开轮六检.py 之（路, mtime_ns, size）——盘一动即异。"""
-    out = []
-    for _pat in (('设定', '回执_*.md'), ('设定', '冷轮_COLD*.md'), ('工具', '开轮六检.py')):
-        for _fp in sorted(glob.glob(os.path.join(REPO_ROOT, *_pat))):
-            try:
-                _st = os.stat(_fp); out.append((_fp, _st.st_mtime_ns, _st.st_size))
-            except OSError:
-                out.append((_fp, None, None))
-    return tuple(out)
-
-
-def _auto_cold(files):
-    """冷轮自动派生：其限由 开轮六检::_cold_limit 定（档自书之限压倒通则 N+2）。
-    ★W60 X39：同一进程内同局只算一回——`--末章` 一跑调两回（启动总控台 print_console、mech_layer 之 due_report），
-      每回逐章（73—末）转调 开轮六检::_cold_done，而其每判一章读遍全部回执（四百余档·七兆字）、逐档跑正则：
-      400 实测每回约 45 秒，两回约 90 秒（cProfile：_auto_cold 2 调 89.97 秒／全程 90.6 秒）。
-      键＝章表＋四判之函（负测换判之沙盘即另算）＋盘之印（回执、冷轮档、开轮六检一动即另算）；⛔减其所查：判仍逐章全跑、一字不改。"""
-    if not files: return []
-    _k = (tuple(files), _cold_done, _cold_void, _cold_due, _cold_无面而明裁, _冷轮之印())
-    if _k in _AUTO_COLD:
-        return [dict(x) for x in _AUTO_COLD[_k]]
-    cur=max(files)
-    out=[]
-    for n in sorted(files):
-        if n < 73 or _cold_done(n) or _cold_void(n) or _cold_无面而明裁(n):
-            continue
-        due=_cold_due(n)
-        if due <= cur:
-            out.append({'id':'COLD-%d'%n,'类':'冷轮(自动)',
-                        '事':'第%d章冷眼轮（镜头须避开该章热轮已开者）'%n,
-                        '立账章':n,'到期章':due,'状态':'open'})
-    _AUTO_COLD.clear(); _AUTO_COLD[_k] = [dict(x) for x in out]
-    return out
+# ⛔1027 汰冷眼轮（大审瘦式每十章一回、盲读每章读 N-2／N-1 已代之）：旧 _auto_cold 逐章派生「第N章冷眼轮」之到期账
+#   与其转调开轮六检⑥之四判（_cold_done／_cold_void／_cold_due／_cold_无面而明裁）俱去；到期账之 COLD 行同日清。
 def _load_due():
     p=os.path.join(REPO_ROOT,'设定','到期账.json')
     try: return json.load(open(p,encoding='utf-8')).get('items',[])
@@ -3728,8 +3597,6 @@ _CLEARED_STATES = ('done', 'closed', 'half', '废弃', 'cold', '冷藏', '已清
 def due_report(cur, as_gate=False):
     """统一欠账催办：逾期1章WARN，逾期>=2章ERROR。cur=当前最新章号。"""
     items=[x for x in _load_due() if x.get('状态') not in _CLEARED_STATES]
-    items=[x for x in items if not x['id'].startswith('COLD-')]
-    items+=_auto_cold(sorted(_chapters().keys()))
     due=[x for x in items if x.get('到期章',10**9)<=cur]
     err=[x for x in due if cur-x['到期章']>=2]
     if not as_gate:
@@ -5632,7 +5499,7 @@ LAWS_DIGEST=("  ▣ 二十一项常驻守卫:①回述必贴原场,只补白不�
 "  ▣ ⑳望气能力:苏衍从小能看见气;望气负责看气息/状态,玉可同时响应多个高浓度同源源头。二者互补,但都不自动判断敌我或安全路线\n"
 "  ▣ ㉑终局生命三层:霍钧=未断气旧伤续命,沈鸢断气后不可救,赵阙只能拿霍钧作伪证诱骗;苏衍留流只能保尸;老头送刀只为割绳\n"
 "  ▣ ⑫账尺归机器,心策归执笔:唯一剧情权威=《00_镇冢秘术_唯一总圣经.md》(CANON-ID=ZM-CANON-20260722-101);只带入配套施工表和事实库,其余旧设定全部排除;未被推翻的已演出事件再对首个完整原场;到期账必裁决(接/展期/废)\n"
-"  ▣ 全文见《镇冢秘术_防前后矛盾提示词系统.md》(python3 小说检察官.py --提示词 一键打印;两文件同步进化,永为一体)")
+"  ▣ （旧全文《镇冢秘术_防前后矛盾提示词系统.md》係十三轮之令，1027 汰——无一席读之；史见版本库）")
 
 def second_gate(scope):
     print(); print('█'*50)
@@ -5899,18 +5766,12 @@ def project_doctor(files, check_reader=True):
             if not re.search(rf'^\| {latest} \|',build,re.M):
                 raise ValueError('施工表缺少当前末章行')
 
-            prompt=open(PROMPT_PATH,encoding='utf-8').read()
-            prompt_id=re.search(r'CANON-ID=`([^`]+)`',prompt)
-            if not prompt_id or prompt_id.group(1)!=EXPECTED_CANON_ID:
-                raise ValueError('提示词系统 CANON-ID 未同步')
-            if f'python3 工具/小说检察官.py --开拍 {next_ch}' not in prompt:
-                raise ValueError('提示词系统开拍章号未同步')
-
+            # ⛔1027：提示词系统（十三轮之旧令，无一席读之；封版 阶段之数 逐章改其「--开拍 N+1」只为此检之绿）——其档与此检同日汰
             sync_source=open(READER_SYNC,encoding='utf-8').read()
             sync_id=re.search(r'^CANON_ID\s*=\s*[\'\"]([^\'\"]+)[\'\"]',sync_source,re.M)
             if not sync_id or sync_id.group(1)!=EXPECTED_CANON_ID:
                 raise ValueError('阅读器同步器 CANON-ID 未同步')
-            print(f'  ✓ README／施工表／提示词／同步器均指向第{latest}→{next_ch}章与同一 CANON-ID')
+            print(f'  ✓ README／施工表／同步器均指向第{latest}→{next_ch}章与同一 CANON-ID')
         except (OSError, ValueError) as exc:
             print(f'  ✗ 项目文档接线无效: {exc}'); errors+=1
     reader=reader_sync_check() if check_reader and files else 0
@@ -6322,7 +6183,7 @@ def _resolve_md_arg(arg,files):
 
 def _usage():
     print(__doc__.strip())
-    print('\n附加命令: --伏笔 [N] | --军师 N | --心电图 N | --提示词 | 框架 | 规范')
+    print('\n附加命令: --伏笔 [N] | --军师 N | --心电图 N | 框架 | 规范')
 
 
 def jj_hook(n, note=''):
@@ -6521,9 +6382,6 @@ def super_main():
         if len(args)<2 or not args[1].isdigit() or int(args[1]) not in files:
             print('  ✗ 请给出已存在的章号，例如 --心电图 70'); return 2
         cardiogram(int(args[1]),files); return 0
-    if args and args[0]=='--提示词':
-        if _os.path.exists(PROMPT_PATH): print(open(PROMPT_PATH,encoding='utf-8').read()); return 0
-        print('  ✗ 提示词系统文件缺失: '+PROMPT_PATH); return 2
     if args and args[0]=='--改检':
         if not files: print('  ✗ 正文章数=0'); return 2
         n=int(args[1]) if len(args)>1 and args[1].isdigit() else max(files)

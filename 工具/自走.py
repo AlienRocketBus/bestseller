@@ -571,7 +571,6 @@ def 断(印=True):
                          '其後段料 → 段案十章俱全（立、驳、验）方写第%d章。' % (_段 - 1, _段))
             L.append('  Workflow({scriptPath:\'工具/席/剧情庭.js\', args:{题:\'设定/剧情庭题/势_第%d段.md\', 名:\'势_第%d段\', 式:\'新\'}})' % (_段, _段))
     L.append('  python3 工具/席法.py                      # 钥匙不绿，一个席也不许派')
-    L.append('  python3 工具/起草庭.py %d' % 下)
     L.extend(派令(下))
     return ('欠' if 欠 else '起'), L
 

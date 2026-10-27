@@ -3,8 +3,8 @@
 
 ★立此器之由（其红在哪一行，上磁盘核过）：
   ★令§三③写死「**器物须有来去，入、用、出，缺一即伤**」，并指名「**其主人是第6轮·资源庭**」；
-  ★★而 `工具/一坐.py::逐轮之器` 只列 4、5、7、8、9、12 六轮——**第6轮空着**；
-  ★★★故295第6轮实跑之时，一坐印「下一轮：第6轮」而**未印一件器**，
+  ★★而旧 `一坐.py::逐轮之器`（1027 随十三轮汰）只列 4、5、7、8、9、12 六轮——**第6轮空着**；
+  ★★★故295第6轮实跑之时，旧一坐印「下一轮：第6轮」而**未印一件器**，
     那一轮之数只得自手打之 grep（见 版本/第295章/_轮记.md 第6轮·甲）。
   ★★★★**一条有主人的法，主人手上没有尺**——记为欠-295A，今兑。
 
@@ -39,6 +39,25 @@ except Exception:
 import io, os, re, sys, glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CN = {'零': 0, '一': 1, '二': 2, '三': 3, '四': 4,
+      '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+
+
+def cn2i(t):
+    """中文章号 → 整（1027 自 一坐.py 移此：一坐随十三轮汰；旧逐正文档载一坐全器只为此函）。"""
+    v = 0
+    m = re.match(r'([一二三四五六七八九])?百(.*)', t)
+    if m:
+        v = CN.get(m.group(1), 1) * 100
+        t = m.group(2)
+    m = re.match(r'([一二三四五六七八九])?十(.*)', t)
+    if m:
+        v += CN.get(m.group(1), 1) * 10
+        t = m.group(2)
+    for c in t:
+        if c in CN:
+            v += CN[c]
+    return v
 
 # ★手器全集（九样）——**本书主角手上真正过过的器物之名**。
 #   ★其数（W60·X33② 亲跑：295—400 有册之章 106，其册之本名或别名含该字者几份）：
@@ -111,11 +130,7 @@ def 正文(n):
         m = re.search(r'第([零一二三四五六七八九十百]+)章', os.path.basename(f))
         if not m:
             continue
-        from importlib.util import spec_from_file_location, module_from_spec
-        sp = spec_from_file_location('_yz', os.path.join(ROOT, '工具', '一坐.py'))
-        mo = module_from_spec(sp)
-        sp.loader.exec_module(mo)
-        if mo.cn2i(m.group(1)) != n:
+        if cn2i(m.group(1)) != n:
             continue
         t = io.open(f, encoding='utf-8').read().split('【本章亮点】')[0]
         return re.sub(r'^.*?第.+?章[^\n]*\n', '', t, count=1, flags=re.S)

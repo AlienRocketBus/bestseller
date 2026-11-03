@@ -99,6 +99,17 @@ def run():
     r6 = q.run('返2', ['-c', 'import sys; print("⛔ 查出"); sys.exit(2)'])
     R.append(('⑥不误伤·返码非零而无 traceback 者仍返印', bool(r6) and '查出' in r6))
 
+    # ⑥之二（X43⑥）：_自测之项 看 rc——印「全通」而以 1 退者红；rc=0 而全通者绿；带码之 run 返 (印, rc)
+    _d6 = tempfile.mkdtemp(prefix='自测之项_')
+    _假 = lambda n, 码: io.open(os.path.join(_d6, n), 'w', encoding='utf-8').write(码) and os.path.join(_d6, n)
+    _坏 = _假('坏.py', 'import sys\nprint("自测 3/3 全通")\nsys.exit(1)\n')
+    _好 = _假('好.py', 'print("自测 3/3 全通")\n')
+    _r坏, _r好 = q._自测之项('假·坏', _坏), q._自测之项('假·好', _好)
+    _码 = q.run('返2', ['-c', 'import sys; print("x"); sys.exit(2)'], 带码=True)
+    import shutil as _sh6; _sh6.rmtree(_d6, ignore_errors=True)
+    R.append(('⑥之二·_自测之项看 rc：印「全通」而 rc=1 者红（%s）；rc=0 全通者绿；带码之 run 返 (印, rc)' % _r坏[1][:30].replace('全通', '全·通').replace('/', '／'),
+              _r坏[0] is False and 'rc=1' in _r坏[1] and _r好[0] is True and _码 == ('x\n', 2)))
+
     # ⑦自陈在册·run() 之注写明它只认「崩」，不认「印错」（§一⑤）
     src = io.open(os.path.join(ROOT, '工具', '全测.py'), encoding='utf-8').read()
     R.append(('⑦自陈在册·run() 注明只认「崩」不认「印错」', '本函只认「崩」' in src and '仍须各 hook 自验其项名' in src))

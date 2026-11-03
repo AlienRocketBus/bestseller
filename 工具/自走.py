@@ -900,12 +900,17 @@ def 自测():
     # ⑬之八★1020 X29（淘汰之律）：**码里所印之 Workflow 席，盘上须在**——
     #   一代救章席已彻删，而旧码三判仍印其 scriptPath；照它派，当场取不着那一席（且违 1008 令⛔审改之轮）。
     #   ★回灌：旧码之一行（逐字）灌进同一判，须逮出；今码须零。
+    #   ★X43⑤：其尺⛔自抄——与 囤灰闸.派令之席 同出 囤灰闸.派令之路（剔注、容转义之引号、子目录之路亦认）
+    import importlib.util as _iu
+    _sp = _iu.spec_from_file_location('_囤灰闸', os.path.join(ROOT, '工具', '囤灰闸.py')); _囤 = _iu.module_from_spec(_sp); _sp.loader.exec_module(_囤)
     def _死席(文):
-        return sorted(set(p for p in re.findall(r"scriptPath:\\?'(工具/席/[^'\\]+\.js)", 文)
-                          if not os.path.exists(os.path.join(ROOT, p))))
+        return sorted(p for p in _囤.派令之路([('自走.py', 文)]) if not os.path.exists(os.path.join(ROOT, p)))
     _旧行 = "L.append('     Workflow({scriptPath:\\'工具/席/救章.js\\', args:{章:%d}})' % 末)"
-    R.append(('⑬之八 码里所印之席盘上皆在（X29·救章席已汰）；旧码之行回灌须逮出',
-               _死席(码) == [] and _死席(_旧行) == ['工具/席/救章.js']))
+    _SP = 'scriptPath:' + "'工具/席/"   # 拆写：本档自身亦係派令之文（囤灰闸读之），测之串⛔作真派令
+    _注行 = "x = 1   # 旧派 Workflow({" + _SP + "救章.js'})——已汰\n# L.append(\"Workflow({" + _SP + "救章.js'})\")\n"
+    R.append(('⑬之八 码里所印之席盘上皆在（X29·救章席已汰）；旧码之行回灌须逮出；注里之 scriptPath ⛔算（X43⑤·与囤灰闸一尺）；子目录之死路亦逮',
+               _死席(码) == [] and _死席(_旧行) == ['工具/席/救章.js'] and _死席(_注行) == []
+               and _死席("L.append(\"Workflow({" + _SP + "_旧/无此席.js'})\")") == ['工具/席/_旧/无此席.js']))
     R.append(('⑬之六 分得清左眼右眼（账之事席治不了）',
                '右眼（检察官）报红＝书之事' in 码 and '左眼（跑轮总核）报红＝账之事** → ⛔**席治不了**' in 码))
     R.append(('⑬之七 有拦停旗者当场说明其圈（不叫人白跑一庭）',

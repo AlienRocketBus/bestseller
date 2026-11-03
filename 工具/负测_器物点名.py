@@ -204,6 +204,9 @@ def _手器之数(m, 沙):
     注 = re.search(r'295—400 有册之章 (\d+)[^\n]*\n#\s+([^\n]+)', src)
     if not 注:
         return ['★㉙手器全集之注无「295—400 有册之章」之实数']
+    块 = src[src.find('# ★手器全集'):注.end()]
+    if '册份数' not in 块 or '非 grep 全书' not in 块:   # X43⑦：其数之义（册份数）须明书，⛔与其选之 grep 全书相混
+        return ['★㉙手器全集之注未明其数係「册份数」（⛔非 grep 全书正文之见数）']
     记 = dict((k, int(v)) for k, v in re.findall(r'([一-鿿]+) (\d+)', 注.group(2)))
     import glob as _g
     ns = sorted(int(re.search(r'第(\d+)章', x).group(1))

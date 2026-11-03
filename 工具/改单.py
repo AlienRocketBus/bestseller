@@ -399,8 +399,9 @@ def 施单(单档, 落=False, 号=None, _写後=None, _验後=None):
     if 坏:
         import tempfile
         存 = tempfile.mkdtemp(prefix='施单之原_')   # 改前原文存仓外（⛔入仓），供逐档核之
-        for rel in 诸档:
-            with open(os.path.join(存, rel.replace('/', '__')), 'w', encoding='utf-8', newline='') as f:
+        for rel in 诸档:   # 守其路之层（⛔压平：a__b.md 与 a/b.md 压平同名相覆·W60 驳）；mkdtemp 之目各回独一（⛔只精到秒）
+            p = os.path.join(存, *rel.split('/')); os.makedirs(os.path.dirname(p), exist_ok=True)
+            with open(p, 'w', encoding='utf-8', newline='') as f:
                 f.write(原文[rel])
         for e in 坏:
             print('⛔ 再验：' + e)
@@ -481,6 +482,8 @@ def _庭单之约():
           {'cwd': 沙, 'args': 段('设定/剧情庭题/带反引号.md'), 'keep': True},
           {'cwd': 沙, 'args': 段('设定/剧情庭题/无反引号.md'), 'keep': False,   # 验题席所报之段料路与首行所点不合（席抄错）⛔认
            '首': {'topic_exists': True, 'first_line': 首们['无反引号'], 'liao_path': '设定/段案/_料_2-3.md', 'liao_exists': True}}]
+    怪路 = ["设定/剧情庭题/甲'乙.md", '设定/剧情庭题/甲\\乙.md', '设定/剧情庭题/甲\n乙.md']   # X43①：题路入验题之 bash 单引号串，⛔注入
+    案 += [{'cwd': 沙, 'args': 段(x), 'keep': False} for x in 怪路]
     案档 = os.path.join(沙, '案.json'); 器 = os.path.join(沙, '器.js')
     open(案档, 'w', encoding='utf-8').write(json.dumps(案, ensure_ascii=False)); open(器, 'w', encoding='utf-8').write(_庭器)
     try:
@@ -491,7 +494,7 @@ def _庭单之约():
     shutil.rmtree(沙, ignore_errors=True)
     if not 果:
         return [('㉕约·剧情庭.js 渲染不起：%s' % str(getattr(o, 'stderr', o))[:300], False)]
-    真, 无引, 带引, 无料, 料缺, 无题, 无W, 守, 错路 = 果[:len(真题)], *果[len(真题):]
+    真, 无引, 带引, 无料, 料缺, 无题, 无W, 守, 错路, *怪 = 果[:len(真题)], *果[len(真题):]
     开 = lambda x, 料='设定/段案/_料_1-10.md': not x['err'] and x['r'] and x['r'].get('料') == 料 and x['r'].get('单') == '设定/_草/W99/剧情庭单.json'
     闭 = lambda x, 句: bool(x['err']) and '⛔式段不开' in x['err'] and 句 in x['err'] and [c['label'] for c in x['令']] == ['验题·首行']
     裁令 = next((c['prompt'] for c in 带引['令'] if c['label'] == '裁'), '')
@@ -506,6 +509,8 @@ def _庭单之约():
         ('㉖约·首行之认：带／不带反引号俱开；无料、段料不在、题不在、验题席报路不合俱⛔开且只派验题一席；无 W ⛔开、一席不派',
          开(无引) and 开(带引) and 闭(无料, '首行须写') and 闭(料缺, '段料不在') and 闭(无题, '题档不在') and 闭(错路, '不合')
          and bool(无W['err']) and 'args.W' in 无W['err'] and not 无W['令']),
+        ('㉖之二约·题路含单引号／反斜杠／换行俱⛔开、一席不派（验题之 bash ⛔注入）',
+         len(怪) == 3 and all(bool(x['err']) and '不许含单引号' in x['err'] and not x['令'] for x in 怪)),
         ('㉗约·段裁令（1103 X69）：裁席只写裁档——末节「改文之条」、⛔写单、⛔亲改、⛔立改单、⛔grep 大档、来回 ≤25；旧「须同步更新圣经」「当场」「grep -c -F」⛔见；单之四键⛔在裁令',
          '## 改文之条' in 裁令 and '⛔写单' in 裁令 and '⛔亲改圣经' in 裁令 and '⛔`python3 工具/改单.py --立`' in 裁令
          and '来回 ≤25' in 裁令 and '⛔grep 大档' in 裁令 and 键 not in 裁令
@@ -678,6 +683,37 @@ def 自测():
     v, o = 跑(自单, 落=True)
     禁果['单档本身'] = not v and '单档本身' in o
     r.append(('㉔施单·正文／剧情庭裁档／改单账／修改清单／单档本身俱⛔、不写', all(禁果.values()) and len(禁果) == 5))
+    # ㉔之二（X43①）：_禁施 之 .git 拦——.git/ 下之档、.git 本名俱⛔；名似而非（.gitignore、设定/.github）⛔误拦
+    写档('.gitignore', '老井\n'); 写档('设定/.github/x.md', '老井\n')
+    git前 = 读档('.git/HEAD')
+    v, o = 跑(单([{'档': '.git/HEAD', '原': 'ref', '新': 'ref甲', '由': 'x'}]), 落=True)
+    v2, o2 = 跑(单([{'档': '.git', '原': 'x', '新': 'y', '由': 'x'}]), 落=True)
+    v3, o3 = 跑(单([{'档': '.gitignore', '原': '老井', '新': '老井甲', '由': 'x'},
+                   {'档': '设定/.github/x.md', '原': '老井', '新': '老井乙', '由': 'x'}]))
+    r.append(('㉔之二施单·.git/HEAD 与 .git 本身⛔施、不写；.gitignore、设定/.github/ ⛔误拦',
+              not v and '⛔施於 .git/HEAD' in o and 读档('.git/HEAD') == git前 and not v2 and '⛔施於 .git' in o2 and v3))
+    # ㉔之三（X43②）：再验不过时改前原文存仓外守其路之层——a__b.md 与 a/b.md ⛔压平相覆；两回之存目各独一
+    写档('设定/a__b.md', '扁：老井。\n'); 写档('设定/a/b.md', '层：老井。\n')
+    def 坏写():
+        with open(os.path.join(t, '设定', 'a', 'b.md'), 'a', encoding='utf-8') as f:
+            f.write('又老井甲\n')
+    存们 = []
+    for _ in range(2):
+        写档('设定/a__b.md', '扁：老井。\n'); 写档('设定/a/b.md', '层：老井。\n')
+        v, o = 跑(单([{'档': '设定/a__b.md', '原': '老井', '新': '老井甲', '由': 'x'},
+                      {'档': '设定/a/b.md', '原': '老井', '新': '老井甲', '由': 'x'}]), 落=True, _写後=坏写)
+        m = re.search(r'改前原文存於 (\S+)（仓外）', o); 存们.append(m and m.group(1))
+    def 存读(d, *k):
+        try:
+            return open(os.path.join(d, *k), encoding='utf-8').read()
+        except OSError:
+            return None
+    r.append(('㉔之三施单·再验不过之存：a__b.md 与 a/b.md 各守其层、⛔相覆；两回存目各独一',
+              not v and all(存们) and 存们[0] != 存们[1]
+              and all(存读(d, '设定', 'a__b.md') == '扁：老井。\n' and 存读(d, '设定', 'a', 'b.md') == '层：老井。\n' for d in 存们)))
+    for d in 存们:
+        if d:
+            shutil.rmtree(d, ignore_errors=True)
     账档, 清单, ROOT = 旧
     shutil.rmtree(t, ignore_errors=True)
     r += _庭单之约()

@@ -105,26 +105,52 @@ def 量(章=None, 根路=None):
     return 不符, 相符, 无档
 
 
+裁档 = os.path.join('设定', '版档指纹_裁.json')   # ★1103 X59：旧版·不复之裁（MECH-345）——章号版名只在此数据档，⛔写死於器（㊸·⑧）
+
+
+def 分(不符, 无档, 根路=None):
+    """★1103 X59：照裁档分 已裁（旧版·不复）与 新。→ (已裁不符, 新不符, 已裁无档, 新无档)。
+    已裁须（章、版、记、实）四样逐一相合——版档或台账改後其数自变，即离裁而复报为新。"""
+    R = 根路 or 根
+    try:
+        d = json.load(io.open(os.path.join(R, 裁档), encoding='utf-8'))
+    except (OSError, ValueError):
+        d = {}
+    旧 = {tuple(x) for x in d.get('旧版不复') or []}
+    旧无 = {tuple(x) for x in d.get('无档') or []}
+    已, 新 = [], []
+    for x in 不符:
+        (已 if tuple(x[:4]) in 旧 else 新).append(x)
+    已无 = [x for x in 无档 if tuple(x) in 旧无]
+    新无 = [x for x in 无档 if tuple(x) not in 旧无]
+    return 已, 新, 已无, 新无
+
+
 def 跑(章=None, 报=True):
     不符, 相符, 无档 = 量(章)
+    已, 新, 已无, 新无 = 分(不符, 无档)
     if 报:
         总 = 相符 + len(不符)
         print('════ 版档指纹 · 台账自书之净重 对 版档实算 ════')
         # ⛔0917 当场自正其名：本器只认「书净重」者，故此数非「无档」之全数——
         #   盘上无档者今共 45，其中 42 条根本不书净重（重开之记其 soft 为空），本器不认。
         #   ★两个数不是一件事，名混作一个，即是拿一把尺去量另一样。
-        print('  可比版档 %d｜相符 %d｜⛔不符 %d｜书有净重而无其档者 %d'
-              % (总, 相符, len(不符), len(无档)))
+        print('  可比版档 %d｜相符 %d｜⛔不符 %d（已裁·旧版不复 %d｜新 %d）｜书有净重而无其档者 %d（已裁 %d｜新 %d）'
+              % (总, 相符, len(不符), len(已), len(新), len(无档), len(已无), len(新无)))
         if 总:
             print('  ★相符 %d 处係本器之尺与 score() 同之凭——先证尺同，再看不符。'
                   % 相符)
-        for n, v, 记, 实, 说 in 不符:
-            print('  ⛔ 第%d章 %s：记 %d，实 %d（差 %+d）｜%s'
+        for n, v, 记, 实, 说 in 新:
+            print('  ⛔新 第%d章 %s：记 %d，实 %d（差 %+d）｜%s'
                   % (n, v, 记, 实, 实 - 记, 说))
-        if not 不符:
-            print('  ✓ 逐档相符。')
-        print('  ── ⛔本器只报不拦（其由见档首）：交 MECH-345-版档指纹 当面裁 ──')
-    return 不符
+        for n, v in 新无:
+            print('  ⛔新 第%d章 %s：台账书净重而无其档' % (n, v))
+        if 已 or 已无:
+            print('  · 已裁（旧版·不复·%s）%d 处不逐列' % (裁档, len(已) + len(已无)))
+        if not 新 and not 新无:
+            print('  ✓ 裁外逐档相符。')
+        print('  ── 裁内只报；裁外之新者 --闸 拦（1103 X59：0924 起 save() 一 txt 出数与档，新不符即器之病）──')
+    return 新 + 新无
 
 
 def 自测():
@@ -175,6 +201,20 @@ def 自测():
                   all(x[1] != 'v01' for x in f2)))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    # ⑨⑩ 1103 X59：裁档之分——四样俱合方已裁；数一变即离裁而为新；裁外之无档为新
+    tmp = tempfile.mkdtemp(prefix='版档指纹裁_')
+    try:
+        os.makedirs(os.path.join(tmp, '设定'))
+        json.dump({'旧版不复': [[7, 'v02', 19, 10]], '无档': [[7, 'v09']]},
+                  io.open(os.path.join(tmp, 裁档), 'w', encoding='utf-8'), ensure_ascii=False)
+        a1 = 分([(7, 'v02', 19, 10, ''), (7, 'v04', 5, 6, '')], [(7, 'v09'), (8, 'v01')], tmp)
+        a2 = 分([(7, 'v02', 19, 11, '')], [], tmp)
+        R.append(('⑨裁之分：四样俱合者已裁、裁外者新（不符与无档各一）',
+                  [x[1] for x in a1[0]] == ['v02'] and [x[1] for x in a1[1]] == ['v04']
+                  and a1[2] == [(7, 'v09')] and a1[3] == [(8, 'v01')]))
+        R.append(('⑩实算一变即离裁（v02 实 10→11 判新）', a2[0] == [] and len(a2[1]) == 1))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     # ⑧⛔㊸之守：本器不许把「今日之数」写死在自己身上
     码 = io.open(os.path.abspath(__file__), encoding='utf-8').read()
     尾 = 码.split('def 自测', 1)[0]
@@ -192,5 +232,5 @@ if __name__ == '__main__':
     ch = None
     if '--章' in sys.argv:
         ch = int(sys.argv[sys.argv.index('--章') + 1])
-    跑(ch)
-    sys.exit(0)   # ⛔只报不拦
+    新 = 跑(ch)
+    sys.exit(1 if ('--闸' in sys.argv and 新) else 0)   # 裁内只报；--闸 拦裁外之新（1103 X59）

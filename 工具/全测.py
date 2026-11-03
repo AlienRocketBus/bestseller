@@ -47,7 +47,7 @@ def _测数(out, 兜底):
             return m.group(1)
     return '★未取着·' + 兜底
 
-def run(desc, args, timeout=900):
+def run(desc, args, timeout=900, 带码=False):
     """跑一件器，返其印；**器崩即返 None**。
 
     ★2026-09-05·机制总审·八路之陪跑闸审所逮（其红在哪一行）：旧式把 stdout＋stderr 原样返回，
@@ -75,7 +75,7 @@ def run(desc, args, timeout=900):
             return None
         if 'Traceback (most recent call last)' in (err or ''):
             return None
-        return (out or '') + (err or '')
+        return ((out or '') + (err or ''), p.returncode) if 带码 else (out or '') + (err or '')   # 带码：X43⑥ 自测之项须看 rc
     except Exception:
         return None
 
@@ -636,6 +636,12 @@ def chk_canon_forbid_neg():
     return _负测四器('负测·canon禁式之界', '工具/负测_canon禁式之界.py', '4/4')
 
 
+def chk_win_newline_neg():
+    """负测·窗界之换行（1103·X61·见 工具/负测_窗界之换行.py）——
+    **守：跨整章找东西之窗（检察官 ANTIPHYS／AWKWARD／CANON_FORBID、内外 canon forbid）须挡换行，跨段⛔缝成一句；同句照中。**"""
+    return _负测四器('负测·窗界之换行', '工具/负测_窗界之换行.py', '5/5')
+
+
 def chk_fenliang_neg():
     """负测·分量闸取数之口径（0918·见 工具/负测_分量闸取正文.py）——
     **守：本闸问的是「这一章有多厚」，故取正文亲算，⛔不取台账。**"""
@@ -685,13 +691,18 @@ def chk_version_fingerprint():
     ★★★⛔**故本项之红只有一样：那个器自己坏了**（自测不过／跑不起来）。
     　⛔**不许拿「今日不符几处」当判据**——**今日是二十五，明日不是**（㊸）。"""
     neg = run('版档指纹·自测', ['工具/版档指纹.py', '--自测'])
-    if neg is None or '8/8' not in neg:
+    if neg is None or '10/10' not in neg:
         return False, (neg or '').strip().split('\n')[-1] or '自测运行失败'
-    out = run('版档指纹', ['工具/版档指纹.py'])
-    if out is None:
+    # ★1103 X59：旧版·不复之裁（设定/版档指纹_裁.json）之内只报；裁外之新不符／新无档 --闸 拦（0924 起 save() 一 txt 出数与档）
+    _r = run('版档指纹', ['工具/版档指纹.py', '--闸'], 带码=True)
+    if _r is None:
         return False, '运行失败'
+    out, _rc = _r
+    if _rc != 0:
+        _新 = [x.strip() for x in out.split('\n') if x.strip().startswith('⛔新')]
+        return False, '裁外有新不符 %d 处（器之病，逐条查其存版之路）：%s' % (len(_新), '；'.join(_新[:3]))
     ln = [x.strip() for x in out.split('\n') if '可比版档' in x]
-    return True, (ln[0] if ln else '已跑') + '｜⛔只报不拦（交 MECH-345-版档指纹 裁）｜自测 8/8'
+    return True, (ln[0] if ln else '已跑') + '｜裁内只报、裁外拦｜自测 10/10'
 
 
 def chk_draft_gate_day():
@@ -941,10 +952,11 @@ def chk_crash_green_neg():
     if out is None:
         return False, '运行失败'
     import re as _r
-    m = _r.search(r'(\d+)/(\d+) (全通|⛔未通)', out)
-    if not m:
+    _诸 = _r.findall(r'(\d+)/(\d+) (全通|⛔未通)', out)   # ★1103 W78 驳：取末一（总行）——格名嵌假器之印「3/3 全通」者⛔先中
+    if not _诸:
         return False, '未见其数'
-    return m.group(3) == '全通', '全测崩绿负测 %s/%s' % (m.group(1), m.group(2))
+    m = _诸[-1]
+    return m[2] == '全通', '全测崩绿负测 %s/%s' % (m[0], m[1])
 
 
 def chk_day_gap():
@@ -3713,11 +3725,15 @@ def chk_jieli():
 
 
 def _自测之项(名, 档):
-    """★W60·X33⑦：跑一器之 --自测，须印「全通」且无「未过」（器崩→None→红）；回印其自印之数（令§一②）。"""
-    out = run(名, [档, '--自测'], timeout=300)
-    if out is None:
+    """★W60·X33⑦：跑一器之 --自测，须印「全通」且无「未过」（器崩→None→红）；回印其自印之数（令§一②）。
+    ★X43⑥：且 rc 须 0——器印「全通」而以非零退（其末之判红、sys.exit(1)；或印在前而後崩於无 Traceback 之退）旧照绿。"""
+    跑 = run(名, [档, '--自测'], timeout=300, 带码=True)
+    if 跑 is None:
         return False, '运行失败（崩或逾时）'
+    out, rc = 跑
     末 = [x.strip() for x in out.strip().split('\n') if x.strip()]
+    if rc != 0:
+        return False, ('rc=%d｜' % rc + (末[-1] if 末 else '（无印）'))[:170]
     if '全通' not in out or '未过' in out:
         return False, (末[-1] if 末 else '（无印）')[:170]
     return True, _测数(out, '?/?') + ' 全通'
@@ -4047,6 +4063,7 @@ def 诸项(quick):
         items.append(('负测·章型连锁', chk_xingchain_neg))
         # ★0918·本日新立之四样负测，一并接进跑口（囤灰闸当日报「造了没人跑」，逮得对）
         items.append(('负测·canon禁式之界', chk_canon_forbid_neg))
+        items.append(('负测·窗界之换行', chk_win_newline_neg))
         items.append(('负测·分量闸取正文', chk_fenliang_neg))
         items.append(('负测·版档当场对档', chk_bandang_neg))
         items.append(('负测·FS闸付语与期', chk_fs_fuyu_neg))

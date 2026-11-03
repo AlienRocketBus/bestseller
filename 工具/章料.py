@@ -14,6 +14,7 @@
 
 用法：
   python3 工具/章料.py N [出档]  → 写 版本/第N章/_料.md 与 _料_前文.md（或 出档 与 出档去 .md 加 _前文.md），印各节之大小
+  python3 工具/章料.py --稿引 <稿>...  → 诸稿【本章亮点】所引之章:行汇展（X62·选、合、审诸席⛔awk 补查）
   python3 工具/章料.py --自测
 """
 import os as _o, sys as _s
@@ -152,15 +153,19 @@ _设档 = {'总纲': os.path.join('设定', '02_余章之势_总纲.md'),
         'D3': os.path.join('设定', '剧情庭题', 'D3_真拦之敌_主案.md'),
         'D6': os.path.join('设定', '剧情庭题', 'D6_床上那人_六审主案.md')}
 _引式 = re.compile(r'(?<![\d:A-Za-z])(总纲|余章总案|D3|D6|\d{3})(?:\.md)?(?:\s*主案)?\s*[:：]\s*(\d{1,4})(?:\s*[—\-～~]\s*[:：]?(\d{1,4}))?(?!\d)')
+# ★X62（1027）：诸稿【本章亮点】之引另认二式——章号一至三位（「73：165」）、行段以「至」连（「404：99至105」）；卡与段案之引照 _引式（⛔动）
+_稿引式 = re.compile(r'(?<![\d:A-Za-z])(?<!拍库)(?<!拍库 )(总纲|余章总案|D3|D6|[1-9]\d{0,2})(?:\.md)?(?:\s*主案)?\s*[:：]\s*(\d{1,4})(?:\s*[—\-～~至]\s*[:：]?(\d{1,4}))?(?!\d)')
 _行式 = re.compile(r'(?<![A-Za-z])(D3|D6)\s*(?:主案\s*)?([RWT]\d{1,3})(?!\d)')
 
 
-def 引之原句(文, root=ROOT, 限=80, 段限=30, 字限=30 * 1024, 略章=()):
+def 引之原句(文, root=ROOT, 限=80, 段限=30, 字限=30 * 1024, 略章=(), 式=None):
     """1013（坑⑬复踩之治）：开镜卡、段案、预令所引之「章:行」（如 380:69）与「总纲:行」逐一展开为原句。
     ⛔其由：381 之料只带章号不带原句（318:33、327:29 之掰口等），五稿三稿各撞坏一处已定之细（掰口写反、空钉、床位）。
     行号逾其章之行数者（如 380:2572 是净重，不是行）⛔展；空行⛔展。
     ★1015：①行段「268:61—77」整段展（每段至多 30 行）；②「D3:76」「D3 主案:76」「D6:75」「余章总案:54」认其档；
-    ③「D6 T44」「D3 W7」认主案表中以其号起之行；④展出逾 30KB 即止（照实印所舍）。"""
+    ③「D6 T44」「D3 W7」认主案表中以其号起之行；④展出逾 30KB 即止（照实印所舍）。
+    ★X43（1027·W60 驳席）：略章之认移於行号之验後——旧序先查略章、後查章长，卡中净重「397:2440」（397 為略章）即认作章引、列入「见前文白文」；
+    今行号逾其章之行数者，略章亦⛔列。式：所用之引式（缺省 _引式；诸稿之亮点用 _稿引式）。"""
     出, 见, 档 = [], set(), {}
     大 = 0
     略 = []                                   # ★1016：前文白文已全收（带行号）之章⛔重展，只列其号
@@ -169,26 +174,26 @@ def 引之原句(文, root=ROOT, 限=80, 段限=30, 字限=30 * 1024, 略章=())
         if f not in 档:
             档[f] = open(f, encoding='utf-8').read().split('\n')
         return 档[f]
-    for m in _引式.finditer(文):
+    for m in (式 or _引式).finditer(文):
         k = m.group(0)
         if k in 见:
             continue
         见.add(k)
         名 = m.group(1)
-        if 名.isdigit() and int(名) in 略章:
-            略.append(k); continue
         f = os.path.join(root, _设档[名]) if 名 in _设档 else 章档(int(名), root)
         if not f or not os.path.exists(f):
             continue
         L = 行们(f)
         i = int(m.group(2)); j = int(m.group(3)) if m.group(3) else i
+        if not (1 <= i <= len(L)):           # ★X43：先验行号（净重「397:2440」⛔认），後查略章
+            continue
+        if 名.isdigit() and int(名) in 略章:
+            略.append(k); continue
         if j < i or j - i >= 段限:
             j = i + 段限 - 1 if j >= i else i
         if (f, i, j) in 见:                    # 「D3:76」「D3 主案:76」同一处只展一回
             continue
         见.add((f, i, j))
-        if not (1 <= i <= len(L)):
-            continue
         块 = ['- %s　%s' % (k, L[i - 1].strip()[:400])] if i == j else \
              ['- %s' % k] + ['  %d｜%s' % (x, L[x - 1].strip()[:400]) for x in range(i, min(j, len(L)) + 1) if L[x - 1].strip()]
         if i == j and not L[i - 1].strip():
@@ -214,6 +219,23 @@ def 引之原句(文, root=ROOT, 限=80, 段限=30, 字限=30 * 1024, 略章=())
     if 略:
         出.append('- 见前文白文（料中已全收、行首带号，⛔重展）：%s' % '、'.join(略))
     return 出
+
+
+def 稿之引(路们, root=ROOT, 字限=24 * 1024):
+    """★X62（1027·410 选席七回、审席十回之料外补查·1024_W71 行家 flaws①—④）：诸稿【本章亮点】所引之「章:行」由器汇展——零 token，
+    选、合、审诸席照此印引原场、核致命之据，⛔awk 补查。先列各稿所引之号（⛔认【本章亮点】以前之白文），後展原句（诸稿同引者只展一回）。"""
+    出, 合 = [], []
+    for p in 路们:
+        t = 读(p) if os.path.exists(p) else ''
+        名 = os.path.basename(p)
+        if '【本章亮点】' not in t:
+            出.append('- %s：%s' % (名, '缺档' if not t else '无【本章亮点】')); continue
+        亮 = t[t.index('【本章亮点】'):]
+        号 = list(dict.fromkeys(m.group(0) for m in _稿引式.finditer(亮)))
+        出.append('- %s：%s' % (名, '、'.join(号) if 号 else '无章:行之引'))
+        合.append(亮)
+    展 = 引之原句('\n'.join(合), root, 限=200, 字限=字限, 式=_稿引式) if 合 else []
+    return ['〔诸稿所引〕'] + 出 + ['〔原场（章:行 逐一展开；行号逾其章者⛔展）〕'] + (展 or ['- 无'])
 
 
 def _他章已接(l, n):
@@ -411,6 +433,21 @@ def 自测():
     共 += 1; ok += (len(_d) == 3 and any(x.startswith('- D6 T44（D6:') for x in _d) and _d[1].startswith('- 余章总案.md:1'))
     _略 = 引之原句('380:1 与 381:2', ROOT, 略章={381})
     共 += 1; ok += (len(_略) == 2 and _略[0].startswith('- 380:1') and '381:2' in _略[1] and '见前文白文' in _略[1])   # 前文已收之章⛔重展
+    # ★X43（1027）：略章之卡中净重「397:2440」⛔认作章引（旧序先查略章——回灌即红）；略章之真行照列
+    _净 = 引之原句('净重 380:2572、380:1', ROOT, 略章={380})
+    共 += 1; ok += (_净 == ['- 见前文白文（料中已全收、行首带号，⛔重展）：380:1'])
+    # ★X62（1027）：诸稿亮点之引汇展——只认【本章亮点】以後；二位章号、「至」连之行段；诸稿同引只展一回；缺档照印
+    import tempfile as _tf2
+    _dd = _tf2.mkdtemp()
+    _a, _b = os.path.join(_dd, '起草_稿一.md'), os.path.join(_dd, '起草_稿二.md')
+    open(_a, 'w', encoding='utf-8').write('白文 380:3\n【本章亮点】\n接380：1，又 380:2—3；净重 380:2572\n')
+    open(_b, 'w', encoding='utf-8').write('白文\n【本章亮点】\n握380：1\n')
+    _g = 稿之引([_a, _b, os.path.join(_dd, '起草_稿三.md')], ROOT)
+    共 += 1; ok += (_g[1] == '- 起草_稿一.md：380：1、380:2—3、380:2572' and _g[2] == '- 起草_稿二.md：380：1' and _g[3] == '- 起草_稿三.md：缺档'
+                   and sum(x.startswith('- 380：1　') for x in _g) == 1 and any(x.startswith('- 380:2—3\n') for x in _g) and not any('380:3' in x for x in _g))
+    _c = os.path.join(_dd, '起草_稿四.md')
+    open(_c, 'w', encoding='utf-8').write('【本章亮点】\n握73：1至2\n')
+    共 += 1; ok += (not 章档(73)) or 稿之引([_c], ROOT)[-1].startswith('- 73：1至2\n  1｜')        # 二位章号、「至」之段
     共 += 1; ok += (_他章已接('- **386（主·一）**〔1014 已接写〕：…394…', 394) and not _他章已接('- **394（主·一）**〔已接写〕', 394) and not _他章已接('- 钉 394：某物', 394))
     共 += 1; ok += (内部名('「老头」「七七七七」「那盏灯」') == ['七七七七'] or 内部名('「老头」「七七七七」') == ['七七七七'])   # 正文 0 见者
     import tempfile as _tf, io as _io, contextlib as _cl
@@ -432,6 +469,9 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a == ['--自测']:
         sys.exit(0 if 自测() else 1)
+    if a[:1] == ['--稿引'] and len(a) > 1:   # ★X62：诸稿亮点所引之原场（选之先跑、合、审）
+        print('\n'.join(稿之引(a[1:])))
+        sys.exit(0)
     if len(a) not in (1, 2) or not a[0].isdigit():
         print(__doc__); sys.exit(2)
     sys.exit(0 if 汇(int(a[0]), 出=a[1] if len(a) == 2 else None) else 1)

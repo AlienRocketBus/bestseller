@@ -249,12 +249,18 @@ def 派令之席(派令之文):
     **子目录之派令**（`工具/席/_旧/X.js`）不算顶层之 X.js 有路（旧取 basename 而混同·W60·X33⑥）。
     ⛔只提其名（「一代在 工具/席/一章.js」之注、自测之串 `工具/席/救章.js`）不是派令——旧式子串之判凭此把已彻删之席判作有路。
     派令之文：一串（片段·二家之注俱认），或诸档之列——其项为串，或 (档名, 文)（照其扩展名定 py／js，逐档剔注）。"""
+    return {p[len('工具/席/'):] for p in 派令之路(派令之文) if '/' not in p[len('工具/席/'):]}
+
+
+def 派令之路(派令之文):
+    """★X43⑤：派令之文里真被调之席之**全路**集（'工具/席/X.js'、子目录者 '工具/席/_旧/Y.js' 亦在）——派令之席（顶层之名）与
+    `自走.py` ⑬之八 `_死席`（盘上不在之路）同出此一尺（⛔两抄：旧 _死席 自抄一正则而不剔注，注里之 scriptPath 亦算派令）。"""
     诸 = [派令之文] if isinstance(派令之文, str) else list(派令之文)
     出 = set()
     for x in 诸:
         名, 文 = x if isinstance(x, tuple) else ('', x)
         语 = 'py' if 名.endswith('.py') else 'js' if 名.endswith('.js') else None
-        出 |= set(re.findall(r"scriptPath:\\?'工具/席/([^'\\/]+\.js)", _去注(文, 语)))
+        出 |= {'工具/席/' + p for p in re.findall(r"scriptPath:\\?'工具/席/([^'\\]+\.js)", _去注(文, 语))}
     return 出
 
 

@@ -20,6 +20,8 @@
     回写之令实一字不动（411 去交之一句＝410 之令换号）；记令四刀（{done,left}、式取记料【一】、--前 --红 复跑）；
     窄审：第1回只读误者逻辑审·2 带窄审之门（稿差.py）、第1回之令记「据 正文＝vNN」、soft 并入第1回；有硬崩者照旧全审；承能拆键（承.py 之必填表＝通式之 required）。
     合流（B、C 二组之令）：411 执笔之【量】带「硬项只照 --量 所印之处」；记令带 记落.py 之末步、‹器:键› 诸占位、②之锚独立、主环之职栏⛔治；410 二者俱⛔带。
+  ⑧X62（1027·X58 之余）：411 选之先跑一条命令并印诸稿净重（净重对表 --量）与诸稿亮点所引之原场（章料 --稿引）、限 5；合核胜稿之原场同器；
+    逻辑审先跑并展正文亮点之引、限 8；410 之令照判俱红；选令之 --稿引 命令真跑於 410 之诸稿。
   回灌：②③④之判拿 397 之令（旧病）去判，须一一红；上回之假前提（读料之 Bash 末接 cat > 构思）、「思考里只想眼下这一拍」之牵灌回须红；
     ①之指换键序须变——证其判咬得住，⛔一律判过。
 ⛔限：渲染证得了「令里写了」，证不了「席守了」——守没守归 `工具/费审.py` 之「构思」「构思隔」两列（首落逾五分、诸写最长隔逾十分即⛔）。
@@ -285,6 +287,42 @@ def 通之条(器):
     return 出
 
 
+def X62之判(收, n):
+    """★1027 X62（X58 之余·1024_W71 410 选席七回、审席十回）：→ [(条, 合否)]。选之先跑一条命令并印诸稿之净重（净重对表 --量）与
+    诸稿亮点所引之原场（章料 --稿引·诸稿俱列）、回之限 5（<410 之 7）、致命之据⛔awk；合核胜稿之原场同器；逻辑审先跑并展正文之引、限 8（<410 之 10）。"""
+    选 = next((c['prompt'] for c in 收 if c['label'].startswith('选')), '')
+    合 = next((c['prompt'] for c in 收 if c['label'] == '合稿'), '')
+    审 = [c['prompt'] for c in 收 if c['label'].startswith('逻辑审')]
+    m = re.search(re.escape('python3 工具/章料.py --稿引') + r' ([^\n]+)', 选)
+    稿 = re.findall(r'版本/第%d章/起草_稿[一二三四五六七]\.md' % n, 选.split('【先跑')[0])
+    return [
+        ('选之先跑一条命令：诸稿之净重（净重对表 --量）与诸稿亮点之原场（章料 --稿引·诸稿俱列）同印',
+         bool(m) and bool(稿) and m.group(1).split() == 稿 and 'python3 工具/净重对表.py --量 "$f"; done; python3 工具/章料.py --稿引' in 选),
+        ('选：回之限 5（<410 之 7）、首回并发；致命之据照先跑之印⛔awk 补查',
+         '你这一席至多 5 回工具' in 选 and '【回之排·⛔来回翻】首回一条消息并发' in 选 and '（章:行，awk 亲印）' not in 选 and '⛔awk、sed、grep 补查' in 选),
+        ('合：胜稿之原场一条命令即展（章料 --稿引 胜稿）、⛔先 awk', ('python3 工具/章料.py --稿引 版本/第%d章/起草_稿' % n) in 合 and '先 awk 亲印两处原句' not in 合),
+        ('逻辑审（%d 回）：先跑并展正文亮点之引、限 8（<410 之 10）' % len(审), bool(审) and all(
+            ('python3 工具/崩坏闸.py %d; python3 工具/章料.py --稿引 正文/镇冢秘术_第' % n) in p and '你这一席至多 8 回工具' in p and '（前文之据 awk 亲印）' not in p for p in 审)),
+    ]
+
+
+def X62之条(器):
+    """411 俱过；410 之令（N≤410 ⛔动）照判俱红（回灌）；选令所载之 --稿引 命令真跑於 410 之诸稿，印得出原场。"""
+    收 = 渲(器, 411)
+    出 = [(条, ok) for 条, ok in X62之判(收, 411)]
+    出.append(('回灌·410 之令（旧病）照 X62 之判俱红', not any(ok for _, ok in X62之判(渲(器, 410), 410))))
+    选 = next(c['prompt'] for c in 收 if c['label'].startswith('选'))
+    m = re.search(re.escape('python3 工具/章料.py --稿引') + r' ([^\n]+)', 选)
+    稿 = m.group(1).replace('第411章', '第410章').split() if m else []
+    if not 稿:
+        return 出 + [('真跑·选令之 --稿引：选令无其命令', False)]
+    r = subprocess.run([sys.executable, os.path.join(ROOT, '工具', '章料.py'), '--稿引'] + 稿, cwd=ROOT, capture_output=True, text=True)
+    展 = [l for l in r.stdout.split('\n') if re.match(r'- \d{1,3}[:：]\d', l)]
+    出.append(('真跑·选令之 --稿引 於 410 之 %d 稿：rc 0、诸稿俱列、原场展 %d 处' % (len(稿), len(展)),
+              r.returncode == 0 and all(('- ' + os.path.basename(f) + '：') in r.stdout for f in 稿) and '〔原场' in r.stdout and len(展) >= 10))
+    return 出
+
+
 def _换笔(收, f):
     return [dict(c, prompt=f(c['prompt'])) if c['label'].startswith('执笔·甲') else c for c in 收]
 
@@ -339,6 +377,8 @@ def 跑():
         R.append(('①之二 N≤410 之诸令逐字不变、键序不变（%d 局·原序 sha256 同 c2659cdc 之基）%s' % (len(_基二), ('｜⛔变：' + '、'.join(坏2[:8])) if 坏2 else ''), not 坏2))
         for 名, ok in 通之条(器):
             R.append(('1024·' + 名, ok))
+        for 名, ok in X62之条(器):
+            R.append(('X62·' + 名, ok))
         # ⑥★1020 X40：须厚入令——401（须厚:true）之执笔令带其硬项、选令带其底；400 传之亦⛔认；401 不传者⛔带
         for 名, ok in 须厚之条(器):
             R.append(('X40·' + 名, ok))

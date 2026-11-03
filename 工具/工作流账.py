@@ -12,7 +12,9 @@
 ★D6 之痛·止损闸（1008 作者令「三十小时零结果，永远的痛；必须有应对机制，灵活变通」）：
   凡「进行」之件须有 起、时限、停止线、换法（开法三问）；逾时限而未裁 → --查 红（入全测，推不上去），
   逼总编辑到点必裁：取（达标）／重造（毁了重造，取其精华）／续（至多一回）。⛔烂尾：没有「守原了事」「不干了」这一出口——
-  问题必须解决；重造两回仍不达标 → 报作者商量新路，仍⛔撂下。⛔不裁而任其空转。
+  问题必须解决；重造两回仍不达标 → 自裁换法（另一合规之路）、记由入裁档、办毕报所为，仍⛔撂下（1027 第一律·自决）。⛔不裁而任其空转。
+★预估照实（1027 执行之审 #81 #93·坑⑧「估照费审之实」）：--开 之「预估」须带 $ 之数，且 ≥ 费账同类（章／剧情庭／大审／余）末五件实费之均值；
+  低者拒开，除非「预估」或「有效之据」写「低估之由：<由>」（四字以上）。旧之估凭猜（401 段剧情庭估 $18 实 $39.79、章估 $30 实 $67—90）。
   ★防此病最要紧的一招在开头：造时就造到满分（作者 1008：垃圾再怎么修也修不好；大厦一开始就造到质量过硬，就不会塌）。
 ⛔「已成」须真成：档在不算，收束之语在档尾才算（0930 病册第八册被截断而误报全成之教）。
 """
@@ -40,6 +42,10 @@ def 核件(件, root=ROOT):
             n = len([x for x in glob.glob(os.path.join(d, '*')) if os.path.isfile(x)]) if os.path.isdir(d) else 0
             if n < p.get('至少', 1):
                 缺.append('%s 只 %d 档（须 ≥%d）' % (p['目录'], n, p.get('至少', 1)))
+        if '档' in p and (p.get('汰') or '').strip():      # ★1027：产出後经总编辑裁汰（法用册「废」带去证）——档须真不在，在即红（⛔借标免查）
+            if os.path.exists(os.path.join(root, p['档'])):
+                缺.append('%s 标汰而档仍在' % p['档'])
+            continue
         if '档' in p:
             f = os.path.join(root, p['档'])
             if not os.path.exists(f):
@@ -156,6 +162,54 @@ def _存(账, root):
     json.dump(账, open(os.path.join(root, 账档), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 
 
+def 类之(名):
+    """件名 → 费之同类：章（第N章／NNN造式／造式二代）｜剧情庭｜大审｜余。"""
+    名 = 名 or ''
+    if re.search(r'第\d+章|\d{3}造式|造式二代', 名):
+        return '章'
+    if '剧情庭' in 名:
+        return '剧情庭'
+    if '大审' in 名:
+        return '大审'
+    return '余'
+
+
+def 同类之均(i, 名, root=ROOT, 件数=5):
+    """费账同类末五件（以 W 号之序·⛔本件、⛔主会话之行）之实费均值 → (均, [W…])；无同类 → (None, [])。"""
+    try:
+        行 = json.load(open(os.path.join(root, '设定', '费账.json'), encoding='utf-8')).get('行', [])
+    except (OSError, ValueError):
+        return None, []
+    按 = {}
+    for r in 行:
+        if str(r.get('键', '')).startswith('主会话'):
+            continue
+        m = re.match(r'(W\d+)·(.*)', str(r.get('名', '')))
+        if not m or m.group(1) == i or 类之(m.group(2)) != 类之(名):
+            continue
+        按[m.group(1)] = 按.get(m.group(1), 0.0) + float(r.get('美元') or 0)
+    末 = sorted(按, key=lambda w: int(w[1:]))[-件数:]
+    return (sum(按[w] for w in 末) / len(末), 末) if 末 else (None, [])
+
+
+def 估之验(i, 名, 预估, 有效之据='', root=ROOT):
+    """→ (许否, 语)。预估之 $ 数须 ≥ 同类末五件实费均值；低者须「低估之由：」（四字以上）。"""
+    均, 诸 = 同类之均(i, 名, root)
+    if 均 is None:
+        return True, ''
+    m = re.search(r'\$\s*(\d+(?:\.\d+)?)', 预估 or '')
+    if not m:
+        return False, '预估须带 $ 之数（费账同类「%s」末 %d 件 %s 实费均值 $%.2f·坑⑧ 估照费审之实）' % (类之(名), len(诸), '、'.join(诸), 均)
+    估 = float(m.group(1))
+    if 估 >= 均:
+        return True, ''
+    由 = re.search(r'低估之由[：:]\s*(?:\S\s*){4,}', (预估 or '') + '\n' + (有效之据 or ''))
+    if 由:
+        return True, '预估 $%.2f 低於同类均值 $%.2f，有「%s」' % (估, 均, 由.group(0)[:60])
+    return False, ('预估 $%.2f 低於费账同类「%s」末 %d 件（%s）实费均值 $%.2f——照实改估，或写「低估之由：<由>」（1027 执行之审 #81 #93·坑⑧）'
+                   % (估, 类之(名), len(诸), '、'.join(诸), 均))
+
+
 def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今=None):
     print(D6之痛); print('开法四问：' + 开法三问)
     try:
@@ -186,6 +240,13 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
         print('⛔ 拒开：' + _由); return False
     if _由:
         print('⚠ ' + _由)
+    # ★1027 执行之审 #81 #93（坑⑧·立停之前一道）：预估照费账同类之实——低者拒开，除非写「低估之由：」
+    _名2 = next((x.get('名', '') for x in 读(root)['件'] if x['id'] == i), '')
+    _估许, _估语 = 估之验(i, _名2, 预估, 有效之据, root)
+    if not _估许:
+        print('⛔ 拒开：' + _估语); return False
+    if _估语:
+        print('⚠ ' + _估语)
     # ★1009 作者令「进化之时先看曾经踩过的坑，踩过的坑⛔在新法里再现」：开前逐坑过一遍，有效之据须写坑之检
     try:
         import 方法坑账 as 坑账
@@ -250,6 +311,7 @@ def 登方法账(i, 由, root=ROOT, 今=None):
     清 = lambda t, n: re.sub(r'[|\n]', '／', t.strip())[:n]
     k = 由.find('所废'); j = 由.find('较旧')
     法 = 清(由[k:] if k >= 0 else 由, 100)
+    法 += ''.join(' ' + x for x in re.findall(r'法用#[^\s，,；;|）)]+', 由) if x not in 法)   # ★1027 法用之守：行之用证之号⛔随截而失
     旧 = 清(由[j:] if j >= 0 else '', 100) or '—'
     if '## 升级链' not in 文:
         文 = 文.rstrip('\n') + ('\n\n## 升级链（1021 立·`工具/工作流账.py --裁 W 取` 自添一行，零 token；作者令「升级之的只一：写出全中国最好看的小说」）\n\n'
@@ -291,7 +353,7 @@ def 裁(i, 法, 由, 新时限=None, root=ROOT, 今=None):
             x['时限'] = float(x.get('时限', 0)) + 加
         elif 法 == '重造':
             if sum(1 for r in 记 if r['法'] == '重造') >= 2:
-                print('⛔ 已重造两回仍未达标——报作者商量新路（⛔撂下、⛔烂尾）'); return False
+                print('⛔ 已重造两回仍未达标——自裁换法（另一合规之路）、记由入裁档（设定/裁_<日>_<W>.md）、办毕报所为（⛔撂下、⛔烂尾、⛔停工候作者）'); return False
             try:
                 x['时限'] = float(新时限)
             except (TypeError, ValueError):
@@ -306,6 +368,8 @@ def 裁(i, 法, 由, 新时限=None, root=ROOT, 今=None):
                 登方法账(i, 由, root, 今)
             except Exception as e:
                 print('⚠ 升级链未登：%s' % e)
+            if '法用#' not in 由:   # ★1027 立法须同日立证：升级链 1027 起之行须有 设定/法用册.json 之据，否则下一章封版 法用之守 红
+                print('⚠ 法用之守：此行无「法用#<id>」——新法先入 设定/法用册.json（带证），再於行内补「法用#<id>」；否则下一章封版红（法立无证）')
         return True
     print('⛔ 无此件：' + i); return False
 
@@ -322,6 +386,13 @@ def 自测():
         共 += 1; ok += (len(查(t)) == 1 and '收束' in 查(t)[0])           # 截断 → 红
         open(os.path.join(t, '设定', '甲.md'), 'a').write('\n## 总判\n完')
         共 += 1; ok += (查(t) == [])
+        账['件'][0]['产出'].append({'档': '工具/丙.py', '说明': '已汰之器', '汰': '1027·法用册「废」'})
+        json.dump(账, open(os.path.join(t, 账档), 'w'), ensure_ascii=False)
+        共 += 1; ok += (查(t) == [])                                       # ★1027 标汰而档真不在 → 放
+        os.makedirs(os.path.join(t, '工具'), exist_ok=True); open(os.path.join(t, '工具', '丙.py'), 'w').write('x')
+        共 += 1; ok += (len(查(t)) == 1 and '标汰而档仍在' in 查(t)[0])      # 标汰而档仍在 → 红（⛔借标免查）
+        os.remove(os.path.join(t, '工具', '丙.py')); 账['件'][0]['产出'].pop()
+        json.dump(账, open(os.path.join(t, 账档), 'w'), ensure_ascii=False)
         账['件'][0]['状态'] = '进行'; 账['件'][0]['产出'] = [{'档': '设定/乙.md', '收束': '毕'}]
         json.dump(账, open(os.path.join(t, 账档), 'w'), ensure_ascii=False)
         共 += 1; ok += (标('A', '已成', t) is False)                         # 未成拒标
@@ -367,13 +438,34 @@ def 自测():
         共 += 1; ok += (有复盘('A', t) is True and 有复盘('A2', t) is False)    # 精确认 W：A1 之复盘⛔算 A 的，A2 无
         共 += 1; ok += (裁('A', '重造', '新法', 4, t, H(10)) is True and 查(t, H(13)) == [] and len(查(t, H(15))) == 1)
         裁('A', '重造', '又一法', 4, t, H(15))
-        共 += 1; ok += (裁('A', '重造', '三法', 4, t, H(20)) is False)          # 重造两回後拒——报作者
+        共 += 1; ok += (裁('A', '重造', '三法', 4, t, H(20)) is False)          # 重造两回後拒——自裁换法、记由
         共 += 1; ok += (裁('A', '守原', '由', None, t, H(20)) is False)         # 无守原之出口（⛔烂尾）
         共 += 1; ok += (裁('A', '取', '达标', None, t, H(20)) is False)   # ★1017 淘汰之律：取而无「所废」即拒
         共 += 1; ok += (裁('A', '取', '达标；所废：无（新增）', None, t, H(20)) is False)   # 缺「较旧」即拒
         共 += 1; ok += (裁('A', '取', '达标；所废：无（新增）；较旧：无（新增）', None, t, H(20)) is True and 读(t)['件'][0]['状态'] == '已成')
         _链 = io.open(os.path.join(t, '设定', '方法账.md'), encoding='utf-8').read()   # ★1021 升级链：取即自登一行、⛔重登
         共 += 1; ok += ('## 升级链' in _链 and _链.count('| A·甲 |') == 1 and 登方法账('A', '再', t) is False)
+        # ★1027 执行之审 #81 #93：预估照实——同类（章）末五件均 $60：估 $30 拒；带「低估之由：」许；估 $70 许；无同类（余）许；无 $ 之估遇有同类拒
+        json.dump({'行': [{'键': 'wf_%d' % k, '名': 'W%d·第%d章' % (k, 400 + k), '美元': 50} for k in range(1, 8)]
+                         + [{'键': '主环:%d' % k, '名': 'W%d·第%d章' % (k, 400 + k), '美元': 10} for k in range(1, 8)]
+                         + [{'键': '主会话:x', '名': 'W7·第407章', '美元': 999}]},
+                  open(os.path.join(t, '设定', '费账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        均, 诸 = 同类之均('W9', '第409章（造式二代）', t)
+        共 += 1; ok += (abs(均 - 60) < 1e-9 and 诸 == ['W3', 'W4', 'W5', 'W6', 'W7'] and 同类之均('W9', '治器', t) == (None, []))
+        共 += 1; ok += (估之验('W9', '第409章', '约 4 时、$30', '', t)[0] is False and '均值 $60.00' in 估之验('W9', '第409章', '$30', '', t)[1]
+                       and 估之验('W9', '第409章', '$30；低估之由：重章减执笔二席', '', t)[0] is True
+                       and 估之验('W9', '第409章', '$30', '据；低估之由：五执笔减为三', t)[0] is True
+                       and 估之验('W9', '第409章', '约 $70', '', t)[0] is True and 估之验('W9', '治器三批', '$5', '', t)[0] is True
+                       and 估之验('W9', '第409章', '约 4 时', '', t)[0] is False)
+        # 回灌：W70（409 造式，估 $30）照旧法开得出；照新法（费账同类末五件均值约 $70）拒
+        账['件'].append({'id': 'W9', '名': '第409章（造式二代）', '目的': '测', '状态': '未始', '产出': [], '续之令': 'x', '依': []})
+        账['件'][0]['状态'] = '已成'
+        json.dump(账, open(os.path.join(t, 账档), 'w'), ensure_ascii=False)
+        shutil.copy(os.path.join(t, '设定', '方案', 'A.md'), os.path.join(t, '设定', '方案', 'W9.md'))
+        with _cl.redirect_stdout(_io.StringIO()):
+            r9 = 开('W9', 6, '停', '换', '据；零token之检：须模型', '约 4 时、$30', t, H(30))
+            r10 = 开('W9', 6, '停', '换', '据；零token之检：须模型', '约 4 时、$65', t, H(30))
+        共 += 1; ok += (r9 is False and r10 is True)
     finally:
         shutil.rmtree(t)
     print('工作流账·自测 %d/%d' % (ok, 共))

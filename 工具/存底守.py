@@ -10,7 +10,7 @@
      旧时诸席禁 git 写、⛔报心跳，写书之中锁逾四十五分即「死」，别坐看来无人在跑。
   最坏只失五分之工。进程随机生灭：机在则守在，机收则同收。日志 `.git/存底守.log`。
 用法：
-  python3 工具/存底守.py --起     # 钩用：未起则起（已起即免），即返
+  python3 工具/存底守.py --起     # 钩用：未起则起（已起即免），即返；守书之坐（只读之巡）只印盘坏之哨、⛔承账⛔起守（1027 A2）
   python3 工具/存底守.py --一回   # 跑一回（人手或验用）
   python3 工具/存底守.py --状     # 在跑否、末回何时
   python3 工具/存底守.py --自测
@@ -80,9 +80,25 @@ def _後台():
         return False
 
 
+def _盘坏(档, 语, rc=1):
+    """1024：遇盘坏之迹即立 <git 公目>/盘坏.flag（⛔只入日志——06:25 起每回 add 皆败而无人见）。"""
+    try:
+        import 重取
+        return 重取.查迹(rc, 语, 档)
+    except Exception:
+        return False
+
+
 def 一回():
     import 存底, 心跳
-    rc, m = 存底.存('存底守·定时', 续心跳=False, 跳同=True)
+    try:
+        rc, m = 存底.存('存底守·定时', 续心跳=False, 跳同=True)
+    except OSError as e:   # EIO 之读档（版本/ 诸档）直抛於此
+        _盘坏('存底守·一回', '%s：%s' % (getattr(e, 'filename', '') or '', e))
+        _记('⛔ %s' % e)
+        return 2
+    if rc:
+        _盘坏('存底守·一回', m or '')
     续 = ''
     鲜, 锁坐, 章 = 存底._锁()
     if 该续(鲜, 锁坐, 章, 心跳.坐(), 在写(), _後台()):
@@ -118,13 +134,33 @@ def 跑():
         time.sleep(间)
         try:
             # 每回另起一进程跑：器一改即下一回生效（⛔守里缓存旧码）；一回崩⛔拖垮守
-            subprocess.run([sys.executable, os.path.abspath(__file__), '--一回'], cwd=ROOT, timeout=间,
-                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            p = subprocess.run([sys.executable, os.path.abspath(__file__), '--一回'], cwd=ROOT, timeout=间,
+                               stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if p.returncode in (-7, 135):   # 1024：一回之进程死於 SIGBUS——盘坏
+                _盘坏('存底守 --一回', 'signal 7', p.returncode)
         except Exception as e:
             _记('⛔一回崩：%s' % e)
 
 
-def 起(开=subprocess.Popen):
+def 起(开=subprocess.Popen, 盘=None, 守书=None):
+    # 1024 盘坏之哨：SessionStart 之钩跑本器——旗在即首印（零 token；守书之坐亦见）
+    try:
+        import 重取
+        l = (盘 or 重取.印)()
+        if l:
+            print(l)
+    except Exception:
+        pass
+    # 1027 A2：守书之坐（只读之巡、⛔写书）⛔承账、⛔起守——旧其钩照起，跑账 --承 写 _跑账.json、五分一存推「备份/存底-<守书之坐>」
+    try:
+        if 守书 is None:
+            import 席在跑吗
+            守书 = 席在跑吗.守书之坐()
+    except Exception:
+        守书 = False
+    if 守书:
+        print('· 守书之坐（只读之巡）：⛔承账、⛔起存底守')
+        return 0
     # 1022：会话开头先承云端诸存底之跑账（新机之账空，封版之跑账闸判「从没跑过」而停——404 实踩）；後台、⛔候
     try:
         with open(日志, 'a') as lf:
@@ -183,20 +219,34 @@ def 自测():
         起们 = []
         f = open(锁档, 'a+')
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        起(开=lambda *a, **k: 起们.append(a))
+        起(开=lambda *a, **k: 起们.append(a), 守书=False)
         T('③已有一守在跑 → ⛔再起守（唯承账一回）', len(起们) == 1 and '--承' in 起们[0][0] and 在跑())
         起们.clear()
         fcntl.flock(f, fcntl.LOCK_UN)
         f.close()
-        起(开=lambda *a, **k: 起们.append(k))
+        起(开=lambda *a, **k: 起们.append(k), 守书=False)
         T('③之二 无守 → 承账一回＋起一守，俱脱离（新 session）、⛔占钩之管', len(起们) == 2 and 起们[-1].get('start_new_session')
           and 起们[-1].get('stdin') == subprocess.DEVNULL and 起们[-1].get('stdout') not in (None, subprocess.PIPE))
+        import io, contextlib
+        with contextlib.redirect_stdout(io.StringIO()) as 印:
+            起(开=lambda *a, **k: None, 盘=lambda: '⛔ 盘坏：试', 守书=False)
+        T('⑦盘坏之旗在 → 会话开头之钩首印其 ⛔ 行（1024）', 印.getvalue().startswith('⛔ 盘坏：试'))
+        with contextlib.redirect_stdout(io.StringIO()) as 印:
+            起(开=lambda *a, **k: None, 盘=lambda: '', 守书=False)
+        T('⑦之二 无旗 ⛔印', '盘坏' not in 印.getvalue())
+        起们.clear()
+        with contextlib.redirect_stdout(io.StringIO()) as 印:
+            _rc = 起(开=lambda *a, **k: 起们.append(a), 盘=lambda: '⛔ 盘坏：试', 守书=True)
+        T('⑧守书之坐（只读之巡）→ 盘坏之哨照印，而⛔承账、⛔起守（1027 A2）', _rc == 0 and not 起们
+          and 印.getvalue().startswith('⛔ 盘坏：试') and '守书之坐' in 印.getvalue())
     锁档, 日志 = 旧锁, 旧志
     T('⑥锁与日志落 git 之公目（全测之工作副本里 .git 係一档亦通）', 锁档.startswith(_仓目()) and os.path.isdir(_仓目()))
     s = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     T('④一回之存：⛔续心跳（续锁归 该续）、树未改即不推', "存('存底守·定时', 续心跳=False, 跳同=True)" in s)
     T('④之三 每回另起一进程跑（器改即生效、一回崩⛔拖垮守）', "'--一回'], cwd=ROOT, timeout=间" in s)
     段一回 = s.split('def 一回')[1].split('\ndef ')[0]
+    T('⑦之三 一回之败（rc≠0、OSError）与子进程死於 SIGBUS 俱问盘坏之迹', "_盘坏('存底守·一回', m or '')" in 段一回
+      and 'except OSError' in 段一回 and "_盘坏('存底守 --一回', 'signal 7', p.returncode)" in s)
     T('④之四 一回把後台之活交给该续（1022 复核：删之即复 403 封後之假停写，而旧自测照绿）', '在写(), _後台())' in 段一回)
     try:
         import 席在跑吗

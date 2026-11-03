@@ -45,7 +45,7 @@ def _git(*a):
 
 def _正文档(n):
     try:
-        import 一坐 as _y
+        import 器物点名 as _y      # ★1027：cn2i 自 一坐.py 移此
     except Exception:
         return None
     for f in glob.glob(os.path.join(ROOT, '正文', '*.md')):

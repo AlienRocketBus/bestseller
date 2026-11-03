@@ -180,7 +180,7 @@ def _搬走几句(n, 句):
     return n有, len(句), m
 
 
-def _末版係拆章前(n):
+def _末版係拆章前(n, 档=None):
     """末档是不是「拆章以前」的那一版——是则它与当前正文根本不是同一段文，逐项比无意义。
     ★其判（不猜，去盘上数）：本章若有一个自它拆出的章 m，
     　把末档正文切句，数其中有多少句**今天已不在本章、却在第 m 章正文里**。
@@ -198,7 +198,7 @@ def _末版係拆章前(n):
     本 = 剥(body_of(io.open(p2, encoding='utf-8').read()))
     邻 = 剥(body_of(io.open(p3, encoding='utf-8').read()))
     n搬 = 0
-    for x in 切(io.open(vs[-1], encoding='utf-8').read()):
+    for x in 切(io.open(档 or vs[-1], encoding='utf-8').read()):
         g = 剥(x)
         if g[:12] not in 本 and g[:12] in 邻:
             n搬 += 1
@@ -402,15 +402,56 @@ def 自测():
             不符 += 1
     R.append(('⑤台账之数与今日之尺重算不符者 %d／%d 章——故末版之数自档重算而不读台账' % (不符, 共档),
               不符 > 0))
-    # ⑥拆章之豁免不许滥发：111 之末档係拆章前（≥8句在112），而 200 无拆出章故不豁免
-    R.append(('⑥拆章豁免只发给真拆过的（111 认得出、200 不发）',
-              _末版係拆章前(111)[0] >= 8 and _末版係拆章前(200)[0] == 0))
+    # ⑥拆章之豁免不许滥发：111 之拆章前之版（v11·≥8句在112）认得出，而 200 无拆出章故不豁免
+    #   ★1027 合流：D1 落（改单#G1027-02）为 111 存了拆章後之 v12，末档已非拆章前——⛔钉「末档」，改钉 111 之 v11 之真档
+    _v11 = os.path.join(根, '版本', '第111章', 'v11.md')
+    R.append(('⑥拆章豁免只发给真拆过的（111 之 v11 认得出、200 不发）',
+              os.path.exists(_v11) and _末版係拆章前(111, _v11)[0] >= 8 and _末版係拆章前(200)[0] == 0))
     # ⑦豁免不吞真回退：拿一个无拆出章之章塞入三现串，照旧⛔（即③之章）
     R.append(('⑦豁免不吞真回退（③之章无拆出章）', _拆出章(绿) is None))
     for 名, ok in R:
         print(('  ✓ ' if ok else '  ⛔ ') + 名)
     print('  自测 %d/%d' % (sum(1 for _, o in R if o), len(R)))
     return all(o for _, o in R)
+
+
+# ★★★★★DEBT-298A（298第12轮立·限307·於307封版之序结清；1027 自 十轮精进.py 移此——十轮精进汰）
+#   ★其伤：棘轮之「四字三现」认的是四字之窗，不是词——一句五个字的重出算两处，六个字的算三处。
+#   ★★旧式照旧管棘轮之判（一行不动）；此认词之变式只供 `--项 四字三现·认词` 另报一数，供人裁。
+#   ★★★其法：以最长可合并之串为身——凡四字之窗出现≥3次者，向左右各试长一字，长出之串仍≥3次即顶掉短的；
+#     末了去掉「已被别的串整个含住」者。**一句只算一处，不论它有几个字。**
+def rep3_by_word(body, 门=3):
+    """四字三现·认词：把重叠之窗合成最长之串，一句只算一处。返回 (处数, [串…])。"""
+    seen = {}
+    for i in range(len(body) - 3):
+        k = body[i:i + 4]
+        if re.match(r'^[\u4e00-\u9fa5]{4}$', k):
+            seen[k] = seen.get(k, 0) + 1
+    cand = {k for k, v in seen.items() if v >= 门}
+    grown = set()
+    for k in cand:
+        cur = k
+        while True:
+            better = None
+            for ch in {body[m.end():m.end() + 1] for m in re.finditer(re.escape(cur), body)}:      # 向右长一字
+                if ch and re.match(r'^[\u4e00-\u9fa5]$', ch) and body.count(cur + ch) >= 门:
+                    better = cur + ch
+                    break
+            if better is None:
+                for ch in {body[max(m.start() - 1, 0):m.start()] for m in re.finditer(re.escape(cur), body)}:   # 向左长一字
+                    if ch and re.match(r'^[\u4e00-\u9fa5]$', ch) and body.count(ch + cur) >= 门:
+                        better = ch + cur
+                        break
+            if better is None or better == cur:
+                break
+            cur = better
+        grown.add(cur)
+    最长 = sorted(grown, key=len, reverse=True)      # 去被别的串整个含住者
+    留 = []
+    for x in 最长:
+        if not any(x in y and x != y for y in 留):
+            留.append(x)
+    return len(留), sorted(留)
 
 
 if __name__ == '__main__':
@@ -422,7 +463,7 @@ if __name__ == '__main__':
     # ★★★★★DEBT-298A（298第12轮立·限307·於307封版之序结清）之口：
     #   `python3 工具/棘轮预检.py N --项 四字三现·认词`
     #   ★旧式（四字之窗）照旧管棘轮之判，一行不动；此口只另报一个认词之数，供人裁。
-    #   ★★其由见 `工具/十轮精进.py::rep3_by_word` 之注；其验在 `工具/负测_棘轮认词.py`。
+    #   ★★其由见本档 `rep3_by_word` 之注（1027 自 十轮精进.py 移此）。
     if '--项' in sys.argv:
         i = sys.argv.index('--项')
         项 = sys.argv[i + 1] if len(sys.argv) > i + 1 else ''
@@ -440,10 +481,7 @@ if __name__ == '__main__':
         txt = io.open(f, encoding='utf-8').read()
         body = body_of(txt)
         _h, sf = score(txt)
-        import importlib.util as _iu
-        _sp = _iu.spec_from_file_location('_tj', os.path.join(根, '工具', '十轮精进.py'))
-        _tj = _iu.module_from_spec(_sp); _sp.loader.exec_module(_tj)
-        cnt, strs = _tj.rep3_by_word(body)
+        cnt, strs = rep3_by_word(body)
         print('════ 四字三现·认词 · 第%d章 ════' % n)
         print('  其文：%s' % os.path.basename(f))
         print('  旧式（四字之窗·棘轮所judge者）：%d' % sf.get('四字串三现', -1))

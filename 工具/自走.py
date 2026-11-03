@@ -12,6 +12,7 @@
 　　①**有人在跑** → 不许抢锁：印「候」，并印它跑到哪一段。
 　　②**末章未封版**（回执不在）→ 印「接着跑那一章」。
 　　③**末章封版而其第十一轮未过** → 印「补跑第十一轮」，不过者照其报治（`十一轮不过之治`；一代救章席 1020 已汰·X29）。
+　　③之二 **末章已封而未入主枝**（1027 A2·死锁之治）→ 其 GitHub 之报红／拒／败或缺章标即印「治」，报未毕即印「候」——⛔起下一章。
 　　④**逾期之欠压在下一章头上** → 印它，并把它写进下一章之卡。
 　　⑤**以上皆清** → 印「起下一章」，并把三条前置之命令一并印出。
 　★★**其末一行永远是一条可以照抄去跑的命令**——⛔**不许印「你可以考虑」这种话。**
@@ -254,6 +255,55 @@ def 云端已封(n):
         return False
 
 
+def 本树已封(n):
+    """本树（HEAD 之史）有第 n 章封版之提交否（取 封版.封之笔——同一把尺；零网）。"""
+    try:
+        import 封版
+        return bool(封版.封之笔(n, ROOT, ['HEAD']))
+    except Exception:
+        return False
+
+
+def 前章之治(末, 封=None, 主=None, 坏=None, 本封=None):
+    """★1027 A2·死锁之治：末章已封（本树有其封版之提交）而未入主枝 → (判, 诸行)；余（未封、已在主、读不出）→ None。
+    ①云端有「章-末」而其报红／拒／败 → 【判】治（印其红与治之令：逐红治、提交、推.py 交治枝；拒即 --直）；
+    ②有「章-末」而报未毕 → 【判】候（接棒守 --候主 末）；③无「章-末」→ 【判】治（自进化环 L0 缺碑自补：推封版#末之提交为章-末）。
+    ⛔起下一章：新会话自主枝起，主枝无末章即见不到它（【重派】之会话自章-末起，首务在此——接棒守.派之参 治形）。"""
+    try:
+        if not (本封 or 本树已封)(末):
+            return None
+        import 接棒守
+        有标 = (封 or 云端已封)(末)
+        if 有标 and (主 or 接棒守.主含)(末):
+            return None
+        L = []
+        if not 有标:
+            L.append('  【判】治。第%d章已封（本树有封版#%d 之提交）而云端无「章-%d」——封版之末推未成（坐死於推前？）；⛔起第%d章。' % (末, 末, 末, 末 + 1))
+            L.append('  → 本器头之自进化环 L0 缺碑自补（推封版#%d 之提交为「章-%d」·即触 GitHub autopush）；见其「补碑」之行，未补即 `python3 工具/自进化环.py`' % (末, 末))
+            L.append('  ── 下一条命令 ──')
+            L.append('  python3 工具/接棒守.py --候主 %d      # run_in_background·零 token；坏报即返其红，照其行治' % 末)
+            return '治', L
+        源 = (坏 or 接棒守.坏报之源)(末)
+        if not 源:
+            L.append('  【判】候。第%d章之「章-%d」已推、主枝未含、亦无其坏报（GitHub 未毕）——⛔起第%d章（新会话自主枝起，见不到第%d章）。' % (末, 末, 末 + 1, 末))
+            L.append('  ── 下一条命令 ──')
+            L.append('  python3 工具/接棒守.py --候主 %d      # run_in_background·零 token' % 末)
+            return '候', L
+        import 推报
+        d = 源[1]
+        L.append('  【判】治。第%d章之 GitHub 推闸报「%s」（%s）——先治之；主枝含第%d章後方起第%d章：' % (末, d.get('果'), 源[0], 末, 末 + 1))
+        L.extend('  ' + x for x in 推报.报之语(d))
+        L.append('  ⛔绕、⛔弱化：读者可见之闸红即逐条治、提交（器红只报，入器红账限三章）')
+        L.append('  ── 下一条命令 ──')
+        if d.get('果') == '拒':
+            L.append('  python3 工具/推.py --直      # 拒（改 .github/workflows，GITHUB_TOKEN 推不得）：审计之兜底·本地全闸')
+        else:
+            L.append('  python3 工具/推.py      # 治毕提交之後：交 GitHub（「治-<sha>」），照其所印 `推.py --候 <sha>` 後台零 token 候；败而 GitHub 停摆方 --直')
+        return '治', L
+    except Exception:
+        return None
+
+
 def 判锁滞(步, ch, 心跳时=None):
     """⛔纯判·不碰盘——**自测拿它跑假料，不拿今日之实去钉**（㊸：一张快照钉进一条常令）。
 
@@ -362,8 +412,52 @@ def 欠十一轮之章():
     return 欠
 
 
+def 残树(跑=None, root=None, 在用=None):
+    """★1027 执行之审 #63（执行主义「老旧拖累者直接删」）：已并而未删之 worktree 与枝 → (树[], 枝[])。
+    已并＝其枝在 `git branch --merged HEAD`（其顶为 HEAD 之祖）；主树与本枝⛔计；枝之已检出於某树者归树、⛔重计；
+    二时内有动之树（其 index 新）作「在用」⛔计（丝滑：⛔把他坐正跑之树报成残）。读崩 → ([], [])。"""
+    import subprocess
+    root = root or ROOT
+    跑 = 跑 or (lambda *a: subprocess.run(['git'] + list(a), cwd=root, capture_output=True, text=True, timeout=30).stdout)
+
+    def _在用(路):
+        try:
+            gd = io.open(os.path.join(路, '.git'), encoding='utf-8').read().split('gitdir:', 1)[1].strip()
+            return time.time() - os.path.getmtime(os.path.join(gd, 'index')) < 7200
+        except Exception:
+            return False
+    在用 = 在用 or _在用
+    try:
+        本 = 跑('rev-parse', '--abbrev-ref', 'HEAD').strip()
+        块们 = [b for b in 跑('worktree', 'list', '--porcelain').strip().split('\n\n') if b.strip()]
+        并 = set(x.strip() for x in 跑('branch', '--merged', 'HEAD', '--format=%(refname:short)').splitlines() if x.strip())
+    except Exception:
+        return [], []
+    树, 出枝 = [], set()
+    for i, 块 in enumerate(块们):
+        路 = re.search(r'^worktree (.+)$', 块, re.M)
+        枝 = re.search(r'^branch refs/heads/(.+)$', 块, re.M)
+        if 枝:
+            出枝.add(枝.group(1))
+        if i == 0 or not (路 and 枝) or 枝.group(1) == 本 or 枝.group(1) not in 并:
+            continue
+        if not 在用(路.group(1)):
+            树.append(路.group(1))
+    return 树, sorted(b for b in 并 if b != 本 and b not in 出枝)
+
+
+def 残树之印(树枝=None):
+    """→ [行]：>0 即⚠（只报，⛔拦——删他树须先看其在用否）；俱无 → []。"""
+    树, 枝 = 树枝 if 树枝 is not None else 残树()
+    if not 树 and not 枝:
+        return []
+    return ['  ⚠ 已并而未删之 worktree %d／枝 %d（执行主义：老旧拖累者即删）：%s' % (
+                len(树), len(枝), '、'.join([os.path.basename(x) for x in 树[:4]] + 枝[:4]) + ('……' if len(树) > 4 or len(枝) > 4 else '')),
+            '     删法：git worktree remove <路>；git branch -d <枝>（-d 只删已并者；⛔-D 强删未并之枝）']
+
+
 def 断(印=True):
-    """返回 (判, 诸行)。判 ∈ 候／跑／补／救／欠／起。"""
+    """返回 (判, 诸行)。判 ∈ 候／跑／补／治／救／欠／起（治：1027 A2·末章已封而未入主枝之报坏或缺章标）。"""
     L, 末 = [], 末章()
     try:
         import 暂停令 as _停
@@ -377,11 +471,21 @@ def 断(印=True):
         L.append('  作者令下方解：python3 工具/暂停令.py --解 "作者令：……"；解毕再跑一回本器。')
         L.append('  ── 下一条命令 ──')
         L.append('  python3 工具/心跳.py --立停     # 停锁（时在远後）：守书⛔每时空派、新坐⛔跳；解令时自换空锁')
+        try:   # ★1024·省审 sessions 四：停锁之下守书每唤只判「止」——关其定时之令，调毕记之（解令时 --解 印复开之参）
+            if not _停.守书停记():
+                L.append('  %s     # 停守书之巡（此为工具之调，非 shell）' % _停.守书之参(False))
+                L.append('  python3 工具/暂停令.py --守书已停     # 上一调毕即记')
+        except Exception:
+            pass
         L.append('  python3 工具/暂停令.py --查')
         return '停', L
     try:   # ★1021 开章之检（作者令「每一章只要一开始就看看原来的方法还行不行」）——零 token 数行
         import 费哨
         L.extend(费哨.章检(ROOT))
+    except Exception:
+        pass
+    try:   # ★1027 执行之审 #63：已并而未删之 worktree／枝 >0 即⚠
+        L.extend(残树之印())
     except Exception:
         pass
     跑, ch, 分 = 有人在跑()
@@ -406,7 +510,7 @@ def 断(印=True):
 
     if 跑:
         L.append('  【判】候。第%s章之席在跑（%s 分钟前报到）。' % (ch, 分))
-        L.append('  ⛔不许抢锁、不许动盘。★候不是停：手上若有真活（作者所派、到期之欠），办之；')
+        L.append('  ⛔不许抢锁、不许动盘。★候即止：手上若已有真活（作者所派、到期之欠），办之；')
         L.append('     ⛔无则不为候而找活、⛔看进度（续跑、翻转录、ps）——结束本回合，等通知（效之律·坑㉔）。')
         L.append('  ⛔⛔而席在跑之时，一切动整个工作区的命令一律不许（律⑮）：')
         L.append('     git stash／git checkout .／git reset --hard／git clean／git add -A')
@@ -432,6 +536,11 @@ def 断(印=True):
         L.append('  python3 工具/小说检察官.py --十一轮 %d' % 末)
         return '补', L
 
+    _治 = 前章之治(末)   # ★1027 A2·死锁之治：末章已封而未入主枝——先治／候，⛔起下一章（【重派】之会话自章-末起，首务在此）
+    if _治:
+        L.extend(_治[1])
+        return _治
+
     # ★1021 账限哨（作者问「为什么还是我自己发现」）：瑕疵总账之限到即欠——⛔凭主环记得
     try:
         import 账限哨
@@ -439,7 +548,7 @@ def 断(印=True):
     except Exception:
         _限拦, _限L = False, []
     if _限拦:
-        L.append('  【判】欠。瑕疵总账之限压在第%d章头上——先治（或於其行写「延：<由>」），再起笔：' % (末 + 1))
+        L.append('  【判】欠。瑕疵总账之限压在第%d章头上——先治；或写「延至 NNN…：<由>」（须新数限、一条至多一延，到期照拦），再起笔：' % (末 + 1))
         L.extend('  ' + x for x in _限L)
         L.append('  ── 下一条命令 ──')
         L.append('  python3 工具/账限哨.py')
@@ -535,6 +644,12 @@ def 断(印=True):
         L.append('  → `git fetch origin claude/the-novel-review-4dtuit && git merge --ff-only FETCH_HEAD`，或候 `python3 工具/接棒守.py --候主 %d`，再跑本器' % 下)
         return '候', L
     L.append('  【判】起。第%d章已封版且十一轮过——当起第%d章。' % (末, 下))
+    if 下 >= 411:   # ★1027 法用之守：开章即印本章须用之法与其证（≤10 行·零网）；封版 --前 印其红、--後 拦
+        try:
+            import 法用之守
+            L.extend('  ' + x for x in 法用之守.开(下))
+        except Exception as _e:
+            L.append('  ⛔法用之守印不出（%s）——python3 工具/法用之守.py --开 %d' % (_e, 下))
     L.append('  ── 下一条命令（⛔逐条照抄，序不许换）──')
     L.append('  python3 工具/心跳.py --跳 %d' % 下)
     if not 卡在(下):
@@ -548,7 +663,7 @@ def 断(印=True):
         #     **只在真有人照它跑的那一天塌**；⛔**而那一天，塌的是下一章的开镜卡。**
         L.append('  python3 工具/第零轮开镜庭.py --立 %d   # 卡不在，先立卡' % 下)
     # ★0927 敷衍普查（设定/敷衍普查_0927.md）：剧情庭之势旧只在封版之後由 剧情庭之关 事後判红——
-    #   即先写後定走向，等於先交一个过得去的再补。今於派章之前即印：段之势不在，先开剧情庭（式：新）。
+    #   即先写後定走向，等於先交一个过得去的再补。今於派章之前即印：段之势不在，先开剧情庭（式：段·1027）。
     if 下 >= 381:
         _段 = 381 + (下 - 381) // 10 * 10
         _势 = os.path.join(ROOT, '设定', '剧情庭_势_第%d段.md' % _段)
@@ -557,18 +672,42 @@ def 断(印=True):
             if _段 >= 411:
                 L.append('  ★段序（作者 1023 令·段序之守拦）：题须引 设定/大审_至第%d章.md——上段大审之孤钩、大进、二稿交本段一次造进去；'
                          '其後段料 → 段案十章俱全（立、驳、验）方写第%d章。' % (_段 - 1, _段))
-            L.append('  Workflow({scriptPath:\'工具/席/剧情庭.js\', args:{题:\'设定/剧情庭题/势_第%d段.md\', 名:\'势_第%d段\', 式:\'新\'}})' % (_段, _段))
+            L.append('  Workflow({scriptPath:\'工具/席/剧情庭.js\', args:{题:\'设定/剧情庭题/势_第%d段.md\', 名:\'势_第%d段\', 式:\'段\', W:\'W<号>\'}})   # 式段（总章 §四、§八.3·法用#剧情庭式段：裁席出单、主环 改单.py --施单；1027 复核：旧印式新＝裁席亲改、⛔施单，411 封版即⛔）；题档首行「料：设定/段案/_料_%d-%d.md」（先 python3 工具/段料.py %d %d）' % (_段, _段, _段, _段 + 9, _段, _段 + 9))
     L.append('  python3 工具/席法.py                      # 钥匙不绿，一个席也不许派')
-    L.append('  python3 工具/起草庭.py %d' % 下)
     L.extend(派令(下))
     return ('欠' if 欠 else '起'), L
 
 
+def 前哨():
+    """→ 零 token 之红行（1024）：守书之巡停而令已解（书断流之险）。行首⛔，默印即收入「前置诸哨之红」。"""
+    出 = []
+    try:
+        import 暂停令
+        出 += 暂停令.守书之哨()
+    except Exception as e:
+        出.append('⚠ 守书之哨跑不起来：%s' % e)
+    try:   # 1024 盘坏之哨：<git 公目>/盘坏.flag 在即首印（存底守 06:25 起每回败而只入日志之教）
+        import 重取
+        l = 重取.印()
+        if l:
+            出.insert(0, l)
+    except Exception as e:
+        出.append('⚠ 盘坏之哨跑不起来：%s' % e)
+    try:   # 1027 丝滑主义·问题早见：备份/报 之 报/推、报/演 未为後之成所消之 红／拒／败（一取·零 token·≤三行；经 推报.诸报）
+        import 法用之守
+        出 += 法用之守.报之读()
+    except Exception as e:
+        出.append('⚠ 报之读跑不起来：%s' % e)
+    return 出
+
+
 def 报():
+    for _l in 前哨():
+        print(_l)
     判, L = 断()
     # ★★★★★2026-09-24 作者当面令（律⑳）——**每一坐一开眼先看见这两句，不许再停下来问作者**：
     print('⭐【律⑳·总编辑之权】你是这本书的总负责人：凡须裁之事，照「让书更好看、成中国第一」当场裁定、落账、执行；'
-          '⛔不许写「交作者裁」而停。⛔此权只朝书更好看一个方向用（不凑字、不造高潮、不放宽闸让自己过）。')
+          '⛔不许把裁推回作者而停（1027 第一律·自决：自裁、记由、办毕报所为）。⛔此权只朝书更好看一个方向用（不凑字、不造高潮、不放宽闸让自己过）。')
     print('⭐【裁之生效】做了的决定须有器守且真在跑——`工具/裁之生效.py` 每坐必跑；⛔只写在纸上的裁不算裁。')
     try:
         import subprocess as _sp20, os as _os20
@@ -607,7 +746,7 @@ def 报():
         # ★★★★★2026-09-24 接·**自进化环在最前**（作者令「须有时刻运营之自我进化与纠错机制」）：
         #   ⛔**它与上面那道哨之别**：**哨只会报，环会自己修**——
         #     L0 存底枝逾 30 分未更新即**自存一回**；L1 主枝落後即**自推一回**（走闸不绕）；
-        #     **同一因连两回修不好即判卡死，⛔当面报作者，不许默默往下写**；
+        #     **同一因连两回修不好即判卡死——换法自通（另一合规之路），记由入裁档，办毕报所为；⛔停工候作者**（1027 第一律·自决）；
         #     L3 **同族病逮到第二回而无器管它即红**（其账在 `设定/病族账.md`）。
         #   ★**本环每跑一回落一行 `设定/自进化环.log`**——**逾两钟头没跑过，即本环自己停了**。
         #   ⛔**此处只跑 L0／L1／L3（快）**；L2（尺之校＋自省哨）在下面各自跑，免重跑。
@@ -626,7 +765,7 @@ def 报():
         _m6.记脉('自走头·L0L1L3')   # 脉由自进化环自落（本器不动盘）
         _卡6 = [(k, v) for k, v in _m6._读挂().items() if v.get('回', 0) >= _m6.卡死之回]
         if _卡6:
-            print('  ⛔⛔⛔ **卡死 %d 处——⛔须当面报作者，不许默默往下写**：%s'
+            print('  ⛔⛔⛔ **卡死 %d 处——换法自通（另一合规之路），记由入裁档，办毕报所为；⛔停工候作者、⛔默默往下写**：%s'
                   % (len(_卡6), '；'.join(k for k, _ in _卡6)))
         # ★★★★★2026-09-24 接·**尺之校在未上库哨之下**（律⑰）：
         #   ⛔0924 之实：一条清不掉的红堵了推六天，而其真身是一把尺瞎了六十章。
@@ -654,9 +793,13 @@ def 报():
         _sp9.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), '工作流账.py')])
     except Exception as _e9:
         print('  ⛔工作流账印不出：%s' % _e9)
-    # ★1021 X54：W11 之器（D1 换齐随 W11 逐节同改）——自走 --全 印其命令，W11 开时照办（对位闸之孤器二件由此有路）
-    print('· W11 之器（D1 老头年岁换齐随 W11 同改）：`python3 工具/D1施.py --核` → `python3 工具/D1施.py --施 --根 副本 --批 全` → `python3 工具/行号随移.py --施 --根 副本`')
-    print('· 推送：一律 `python3 工具/推.py`（文件锁、不排队、被拦即停；⛔自写排队脚本、⛔pgrep 猜进程）')
+    # ★1021 X54：D1 之器——自走 --全 印其命令（对位闸之孤器二件由此有路）；★1027 W11 汰：器施即施（线 E 施之），⛔候 W11
+    print('· D1 之器（老头年岁换齐·1027 W11 汰、器施即施）：`python3 工具/D1施.py --核` → `python3 工具/D1施.py --施 --根 副本 --批 全` → `python3 工具/行号随移.py --施 --根 副本`')
+    print('· 封版之序（1027 A2·一章一提交一推）：记席毕、`封版.py N --前 --红` 绿 → `复盘.py W… --简 --平台 $X`（$X＝get_session 之 cost_usd·1027 无 --平台 即拒）与交接现状（⛔另提交）→ '
+          '`心跳.py --跳 N+1` → `封版.py N --後`（封版#N 一提交载之；其末推「章-N」——一章唯此一推；沙盒⛔跑全闸）→ `接棒守.py --候主 N`')
+    print('· 推送：一律 `python3 工具/推.py`——交 GitHub（推「治-<sha>」、本地⛔全测；GitHub 分片而闸、绿即并入主枝），'
+          '其印之 `推.py --候 <sha>` 後台零 token 候；封版後只 `接棒守.py --候主 N`（章-N 已触 autopush）；'
+          '报「拒」或 GitHub 停摆方 `推.py --直`（审计之兜底·本地全闸；坑51；文件锁、不排队、被拦即停；⛔自写排队脚本、⛔pgrep 猜进程）')
     print('════ 自走 · 此刻该干哪一件 ════')
     for x in L:
         print(x)
@@ -757,12 +900,17 @@ def 自测():
     # ⑬之八★1020 X29（淘汰之律）：**码里所印之 Workflow 席，盘上须在**——
     #   一代救章席已彻删，而旧码三判仍印其 scriptPath；照它派，当场取不着那一席（且违 1008 令⛔审改之轮）。
     #   ★回灌：旧码之一行（逐字）灌进同一判，须逮出；今码须零。
+    #   ★X43⑤：其尺⛔自抄——与 囤灰闸.派令之席 同出 囤灰闸.派令之路（剔注、容转义之引号、子目录之路亦认）
+    import importlib.util as _iu
+    _sp = _iu.spec_from_file_location('_囤灰闸', os.path.join(ROOT, '工具', '囤灰闸.py')); _囤 = _iu.module_from_spec(_sp); _sp.loader.exec_module(_囤)
     def _死席(文):
-        return sorted(set(p for p in re.findall(r"scriptPath:\\?'(工具/席/[^'\\]+\.js)", 文)
-                          if not os.path.exists(os.path.join(ROOT, p))))
+        return sorted(p for p in _囤.派令之路([('自走.py', 文)]) if not os.path.exists(os.path.join(ROOT, p)))
     _旧行 = "L.append('     Workflow({scriptPath:\\'工具/席/救章.js\\', args:{章:%d}})' % 末)"
-    R.append(('⑬之八 码里所印之席盘上皆在（X29·救章席已汰）；旧码之行回灌须逮出',
-               _死席(码) == [] and _死席(_旧行) == ['工具/席/救章.js']))
+    _SP = 'scriptPath:' + "'工具/席/"   # 拆写：本档自身亦係派令之文（囤灰闸读之），测之串⛔作真派令
+    _注行 = "x = 1   # 旧派 Workflow({" + _SP + "救章.js'})——已汰\n# L.append(\"Workflow({" + _SP + "救章.js'})\")\n"
+    R.append(('⑬之八 码里所印之席盘上皆在（X29·救章席已汰）；旧码之行回灌须逮出；注里之 scriptPath ⛔算（X43⑤·与囤灰闸一尺）；子目录之死路亦逮',
+               _死席(码) == [] and _死席(_旧行) == ['工具/席/救章.js'] and _死席(_注行) == []
+               and _死席("L.append(\"Workflow({" + _SP + "_旧/无此席.js'})\")") == ['工具/席/_旧/无此席.js']))
     R.append(('⑬之六 分得清左眼右眼（账之事席治不了）',
                '右眼（检察官）报红＝书之事' in 码 and '左眼（跑轮总核）报红＝账之事** → ⛔**席治不了**' in 码))
     R.append(('⑬之七 有拦停旗者当场说明其圈（不叫人白跑一庭）',
@@ -822,6 +970,74 @@ def 自测():
     R.append(('⑨起前问云端有无「章-下」（1022 复核：⛔重写已封之章）',
               'if 云端已封(下):' in 码 and 码.index('if 云端已封(下):') < 码.index("【判】起。第%d章已封版且十一轮过")))
     R.append(('⑨之二 云端已封之判真跑得动（章-401 在云端）', 云端已封(401) is True))
+    # ⑫1027 A2·死锁之治：末章已封而未入主枝 → 先治／候、⛔起下一章；【重派】之会话自章-末起，首务即此
+    _红报 = ('章-410', {'ref': '章-410', 'sha': 'a' * 40, '果': '红', '红': ['✗ 质量三闸  一章一日'], 'run_url': 'u'})
+    _治1 = 前章之治(410, 本封=lambda n: True, 封=lambda n: True, 主=lambda n: False, 坏=lambda n: _红报)
+    _治2 = 前章之治(410, 本封=lambda n: True, 封=lambda n: True, 主=lambda n: False, 坏=lambda n: (_红报[0], dict(_红报[1], 果='拒')))
+    _候 = 前章之治(410, 本封=lambda n: True, 封=lambda n: True, 主=lambda n: False, 坏=lambda n: None)
+    _缺 = 前章之治(410, 本封=lambda n: True, 封=lambda n: False, 主=lambda n: 1 / 0, 坏=lambda n: 1 / 0)
+    R.append(('⑫末章已封未入主：报红 → 【判】治（印其红、末令 推.py）；拒 → --直；报未毕 → 【判】候（--候主）；缺章标 → 【判】治（L0 补碑）；'
+              '已在主、本树未封、读崩 → 无（照常）',
+              _治1 and _治1[0] == '治' and any('✗ 质量三闸  一章一日' in x for x in _治1[1]) and _治1[1][-1].strip().startswith('python3 工具/推.py ')
+              and _治2[1][-1].strip().startswith('python3 工具/推.py --直') and _候[0] == '候' and '--候主 410' in _候[1][-1]
+              and _缺[0] == '治' and any('L0 缺碑自补' in x for x in _缺[1]) and '--候主 410' in _缺[1][-1]
+              and 前章之治(410, 本封=lambda n: True, 封=lambda n: True, 主=lambda n: True, 坏=lambda n: _红报) is None
+              and 前章之治(410, 本封=lambda n: False, 封=lambda n: 1 / 0) is None
+              and 前章之治(410, 本封=lambda n: True, 封=lambda n: 1 / 0) is None
+              and "_治 = 前章之治(末)" in 码 and 码.index("_治 = 前章之治(末)") < 码.index('账限哨.印(ROOT, 末 + 1)')
+              and 码.index("_治 = 前章之治(末)") < 码.index("【判】起。第%d章已封版且十一轮过")))
+    try:   # ★1027 法用之守：【判】起 与「下一条命令」之间印 --开（N≥411）；其印 ≤10 行
+        import 法用之守 as _法
+        _开 = _法.开(411)
+    except Exception:
+        _开 = None
+    R.append(('⑨之四 【判】起 之下印法用之守 --开（N≥411·≤10 行），在「下一条命令」之前',
+              '法用之守.开(下)' in 码 and 码.index("【判】起。第%d章已封版且十一轮过") < 码.index('法用之守.开(下)')
+              < 码.index("── 下一条命令（⛔逐条照抄，序不许换）──") and isinstance(_开, list) and 1 < len(_开) <= 10))
+    import 暂停令 as _停t
+    _旧哨, _旧在, _旧记 = _停t.守书之哨, _停t.在, _停t.守书停记
+    import 重取 as _重t
+    import 法用之守 as _法t
+    _旧印, _旧报 = _重t.印, _法t.报之读
+    _重t.印 = lambda 目=None: ''
+    _法t.报之读 = lambda *a, **k: []         # ⛔网：前哨之报之读另格验之（⑫）
+    try:   # ⑩1024：令已解而守书已停之记仍在 → 前哨红（行首⛔）；令在而未记停 → 停之判印 enabled=false 之参与 --守书已停
+        _停t.守书之哨 = lambda root=ROOT: ['⛔ 守书之巡仍停：x']
+        _红 = 前哨()
+        _重t.印 = lambda 目=None: '⛔ 盘坏：试——照 python3 工具/重取.py 之法重 clone 换目'
+        _红盘 = 前哨()
+        _法t.报之读 = lambda *a, **k: ['⛔ 报·推 章-9 果「红」（试）未消']
+        _红报 = 前哨()
+        _法t.报之读 = lambda *a, **k: []
+        _重t.印 = lambda 目=None: ''
+        _停t.在, _停t.守书停记 = (lambda root=ROOT: (True, '暂停令在（试）')), (lambda root=ROOT: None)
+        _判停, _L停 = 断(印=False)
+        _停t.守书停记 = lambda root=ROOT: {'时': 't'}
+        _判停2, _L停2 = 断(印=False)
+    finally:
+        _停t.守书之哨, _停t.在, _停t.守书停记 = _旧哨, _旧在, _旧记
+        _重t.印, _法t.报之读 = _旧印, _旧报
+    R.append(('⑪盘坏之旗在 → 前哨首行⛔ 盘坏（1024）', _红盘[:1] == ['⛔ 盘坏：试——照 python3 工具/重取.py 之法重 clone 换目']))
+    R.append(('⑫报之读（1027 丝滑主义）：备份/报 未消之坏报 → 前哨⛔（盘坏之後；默印收入「前置诸哨之红」）',
+              _红报 == ['⛔ 盘坏：试——照 python3 工具/重取.py 之法重 clone 换目', '⛔ 守书之巡仍停：x', '⛔ 报·推 章-9 果「红」（试）未消']))
+    R.append(('⑩守书之巡：令解而停记在 → 前哨⛔红且接於报之首；令在未记停 → 停判印 enabled=false 之参与 --守书已停；已记 ⛔复印',
+              _红 == ['⛔ 守书之巡仍停：x'] and 'for _l in 前哨():' in 码.split('def 报():')[1][:80]
+              and _判停 == '停' and any('"enabled": false' in x for x in _L停) and any('--守书已停' in x for x in _L停)
+              and _判停2 == '停' and not any('enabled' in x for x in _L停2)))
+    # ⑬1027 执行之审 #63：残树之检（注入 git 之出）——已并之树／枝计之；在用之树、主树、本枝、未并者⛔计
+    _wl = ('worktree /r\nHEAD a\nbranch refs/heads/main\n\nworktree /r/w1\nHEAD b\nbranch refs/heads/fayong/a\n\n'
+           'worktree /r/w2\nHEAD c\nbranch refs/heads/zx/b\n\nworktree /r/w3\nHEAD d\nbranch refs/heads/未并\n\nworktree /r/w4\nHEAD e\nbranch refs/heads/在用枝\n')
+    _出 = {'rev-parse': '本枝\n', 'worktree': _wl, 'branch': 'main\n本枝\nfayong/a\nzx/b\n在用枝\n旧枝甲\n'}
+    _树, _枝 = 残树(跑=lambda *a: _出[a[0]], 在用=lambda 路: 路 == '/r/w4')
+    _净 = 残树(跑=lambda *a: {'rev-parse': '本枝\n', 'worktree': 'worktree /r\nHEAD a\nbranch refs/heads/本枝\n', 'branch': '本枝\n'}[a[0]])
+    R.append(('⑬残树（#63）：已并之树 2（w1、w2）、枝 1（旧枝甲）→ ⚠；主树、本枝、未并、在用之树⛔计；俱无 → ⛔印（放行之反例）；崩 → 无',
+              _树 == ['/r/w1', '/r/w2'] and _枝 == ['旧枝甲'] and 残树之印((_树, _枝))[0].lstrip().startswith('⚠ 已并而未删之 worktree 2／枝 1')
+              and _净 == ([], []) and 残树之印(_净) == [] and 残树(跑=lambda *a: 1 / 0) == ([], [])
+              and '残树之印()' in 码.split('def 断(')[1]))
+    # ⑭1027 执行之审 #1 #71 #78：卡死之印⛔含「报作者」；账限之欠⛔教无数之「延：」
+    _欠印 = 码[码.index("【判】欠。瑕疵总账之限"):][:200]
+    R.append(('⑭卡死之印⛔含「报作者」（第一律·自决：换法自通、办毕报所为）；账限之欠印「延至 NNN」、⛔教无数之「延：<由>」',
+              '报作者' not in 码 and '换法自通' in 码 and '延至 NNN' in _欠印 and '「延：<由>」' not in _欠印))
     for 名, o in R:
         print(('  ✓ ' if o else '  ⛔ ') + 名)
     print('  自测 %d/%d%s' % (sum(1 for _, o in R if o), len(R), ' 全通' if all(o for _, o in R) else ' 未过'))

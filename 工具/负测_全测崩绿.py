@@ -5,7 +5,8 @@
 ★★其红在哪一行（八路之复现，本坐上磁盘再核）：chk_big_questions／chk_person_ledger／chk_two_ledger／
    chk_grand_audit／chk_huixiu／chk_duiwei／chk_object_roll_all 七项，皆只在印里找「⛔」或某个数——
    ★★★以一段 traceback 灌之，旧式 run()（原样返 stdout＋stderr）之下 **7/7 返 True**。
-★★★★而一份在旧式下也全过的测就是陪跑（令§六③）——**故其要害在①：旧式回灌须 7/7 绿，方证此洞是真的。**
+   ⛔1027：chk_huixiu、chk_duiwei 随回修、对位汰；换入 chk_outside_voice（旧式亦只认其数——今补索其自印之头），今六项。
+★★★★而一份在旧式下也全过的测就是陪跑（令§六③）——**故其要害在①：旧式回灌须六项俱绿，方证此洞是真的。**
 ★★★★★另测第11条：旧式超时以 SIGKILL 杀子进程，子进程之 finally 不跑——负测在真仓库上改的档留在盘上。
 """
 import os as _o, sys as _s
@@ -25,7 +26,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TB = ('Traceback (most recent call last):\n  File "工具/大问表.py", line 1, in <module>\n'
       "    import nothing_here\nModuleNotFoundError: No module named 'nothing_here'\n")
 HOOKS = ('chk_big_questions', 'chk_person_ledger', 'chk_two_ledger', 'chk_grand_audit',
-         'chk_huixiu', 'chk_duiwei', 'chk_object_roll_all')
+         'chk_outside_voice', 'chk_object_roll_all')
+K = len(HOOKS)
 
 
 def _load():
@@ -62,19 +64,19 @@ def run():
         old_green2 = sum(1 for h in HOOKS if getattr(旧, h)()[0])
     else:
         old_green = old_green2 = -1
-    R.append(('①旧式回灌·改前（a73c8836）之全测以 traceback 灌七项，绿 %d/7；以无头之印灌，绿 %d/7（须皆7·证二洞）' % (old_green, old_green2),
-              old_green == 7 and old_green2 == 7))
+    R.append(('①旧式回灌·改前（a73c8836）之全测以 traceback 灌诸项，绿 %d/%d；以无头之印灌，绿 %d/%d（须皆满·证二洞）' % (old_green, K, old_green2, K),
+              old_green == K and old_green2 == K))
 
     # ②新式·run() 遇子进程 traceback 返 None
     q.run = real_run
     r2 = q.run('崩', ['-c', 'raise RuntimeError("boom")'])
     R.append(('②新式·子进程 traceback → run() 返 None', r2 is None))
 
-    # ③新式·run 返 None 时七项须 7/7 红
+    # ③新式·run 返 None 时诸项须俱红
     q.run = lambda *a, **k: None
     new_red = sum(1 for h in HOOKS if not getattr(q, h)()[0])
     q.run = real_run
-    R.append(('③新式·run 返 None，七项红 %d/7（须7）' % new_red, new_red == 7))
+    R.append(('③新式·run 返 None，诸项红 %d/%d（须满）' % (new_red, K), new_red == K))
 
     # ④超时·先 SIGINT，子进程之 finally 得跑（旧式 SIGKILL 下 finally 不跑，档留 MUTATED）
     fd, tmp = tempfile.mkstemp(prefix='zm_crash_', suffix='.txt')
@@ -97,6 +99,17 @@ def run():
     r6 = q.run('返2', ['-c', 'import sys; print("⛔ 查出"); sys.exit(2)'])
     R.append(('⑥不误伤·返码非零而无 traceback 者仍返印', bool(r6) and '查出' in r6))
 
+    # ⑥之二（X43⑥）：_自测之项 看 rc——印「全通」而以 1 退者红；rc=0 而全通者绿；带码之 run 返 (印, rc)
+    _d6 = tempfile.mkdtemp(prefix='自测之项_')
+    _假 = lambda n, 码: io.open(os.path.join(_d6, n), 'w', encoding='utf-8').write(码) and os.path.join(_d6, n)
+    _坏 = _假('坏.py', 'import sys\nprint("自测 3/3 全通")\nsys.exit(1)\n')
+    _好 = _假('好.py', 'print("自测 3/3 全通")\n')
+    _r坏, _r好 = q._自测之项('假·坏', _坏), q._自测之项('假·好', _好)
+    _码 = q.run('返2', ['-c', 'import sys; print("x"); sys.exit(2)'], 带码=True)
+    import shutil as _sh6; _sh6.rmtree(_d6, ignore_errors=True)
+    R.append(('⑥之二·_自测之项看 rc：印「全通」而 rc=1 者红（%s）；rc=0 全通者绿；带码之 run 返 (印, rc)' % _r坏[1][:30].replace('全通', '全·通').replace('/', '／'),
+              _r坏[0] is False and 'rc=1' in _r坏[1] and _r好[0] is True and _码 == ('x\n', 2)))
+
     # ⑦自陈在册·run() 之注写明它只认「崩」，不认「印错」（§一⑤）
     src = io.open(os.path.join(ROOT, '工具', '全测.py'), encoding='utf-8').read()
     R.append(('⑦自陈在册·run() 注明只认「崩」不认「印错」', '本函只认「崩」' in src and '仍须各 hook 自验其项名' in src))
@@ -111,11 +124,11 @@ def run():
     R.append(('⑧留字之查·留一档即报其名（增 %d）；删去归零（%d/%d/%d）' % (len(_增), len(_变2), len(_增2), len(_失2)),
               _增 == ['版本/_负测留字_临时.txt'] and not _变 and not _失 and not (_变2 or _增2 or _失2)))
 
-    # ⑨印错之路（八路·陪跑闸审「治了一半」所指）：器不崩而印错（无其自印之头），七项须 7/7 红——旧式（只索⛔或某数）7/7 绿
+    # ⑨印错之路（八路·陪跑闸审「治了一半」所指）：器不崩而印错（无其自印之头），诸项须俱红——旧式（只索⛔或某数）俱绿
     q.run = lambda *a, **k: '（某器改了标签）一切都好\n'
     bogus_red = sum(1 for h in HOOKS if not getattr(q, h)()[0])
     q.run = real_run
-    R.append(('⑨印错之路·无自印之头之印灌七项，红 %d/7（须7）' % bogus_red, bogus_red == 7))
+    R.append(('⑨印错之路·无自印之头之印灌诸项，红 %d/%d（须满）' % (bogus_red, K), bogus_red == K))
 
     # ⑩⑪⑫ 吞红之路（2026-09-09·307封版席所逮·当日治·见 全测.py::_六检之败）：
     #   ★`开轮六检.py --静` 把当日所有之红以「；」串成**一行**，
@@ -142,13 +155,12 @@ def run():
     旧 = 旧式(实印307, True)
     R.append(('⑩旧式回灌·307之真印（⑨＋⑭同行）灌旧式，得 %d 条（须0·证此洞是真的）' % len(旧),
               len(旧) == 0))
-    新 = q._六检之败(实印307, True)
-    R.append(('⑪新式·同一份印得 %d 条，且为⑨（%s）' % (len(新), (新[0][:12] if 新 else '无')),
-              len(新) == 1 and 新[0].startswith('⑨')))
-    单十四 = q._六检之败(实印307.split('；', 1)[1], True)
-    双 = q._六检之败(实印307, False)
-    R.append(('⑫新式不误伤·⑭独在时得 %d 条（其文内亦有「；」，不许生假条）；不免⑭时得 %d 条（须2）'
-              % (len(单十四), len(双)), len(单十四) == 0 and len(双) == 2))
+    # ★1027：⑭随十三轮汰、「免⑭」之参随去——拆法照旧：断在「；」而其後紧接检号之处
+    新 = q._六检之败(实印307)
+    R.append(('⑪新式·同一份印得 %d 条，首为⑨（%s）、次为⑭' % (len(新), (新[0][:12] if 新 else '无')),
+              len(新) == 2 and 新[0].startswith('⑨') and 新[1].startswith('⑭')))
+    单十四 = q._六检之败(实印307.split('；', 1)[1])
+    R.append(('⑫新式不误伤·⑭独在时得 %d 条（其文内亦有「；」，不许生假条；须1）' % len(单十四), len(单十四) == 1))
 
     bad = [x for x, o in R if not o]
     for x, o in R:

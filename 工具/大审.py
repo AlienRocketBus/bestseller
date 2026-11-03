@@ -163,7 +163,7 @@ def 账():
         #       而其「移末拍」之议会断掉四章之倒数）；②**「留痕·不裁」**——**一席自书「无致命之判」**，
         #       **其身无可裁，而⛔它须入册**（坑㉗所要的正是这一样：交白卷而说得出何以白）。
         #   ★**旧式之下，这两样各算一行「没人收」**，**於是本器逼着填册的人把它们改写成假的「已治」或「判驳」**——
-        #     ⛔**一道闸若逼着人为过它而改判，那道闸就是在教人说谎**（同 `收.py::④之五` 之律）。
+        #     ⛔**一道闸若逼着人为过它而改判，那道闸就是在教人说谎**（④之五之律）。
         #   ⛔**而其口开得极窄**：**只认这两个整词，⛔不认单独一个「治」「驳」「挂」字**
         #     （⛔否则「⛔待裁」之模子里那一行也会被「裁」字放过去·同日负测④在守）。
         收 = len([x for x in _rows
@@ -250,7 +250,7 @@ def 立(n):
         '| # | 判（席·题） | 据（章·拍·原句） | 裁 | 其由 |\n|---|---|---|---|---|\n'
         '| 1 | | | ⛔待裁／已治／判驳／已挂 | |\n\n'
         '## 四·本回之数（器出，非估）\n\n'
-        '〔净重之趋／站账／约到期／大问表逾期之样／看官账未清之数〕\n\n'
+        '〔净重之趋／约到期／大问表逾期之样／看官账未清之数〕\n\n'   # ★1027：站账随一坐之群汰，其数⛔再索
         '## 五·本回之得（一句话）\n\n'
         '〔**这十章合起来，是「慢而深」还是「原地打转」**〕\n')
     print('★大审之册已立：%s' % p)
@@ -415,6 +415,49 @@ def 连带(引):
     return out
 
 
+def 裁之文(x, b):
+    """裁席之一行 → 册三节「裁」格之文。★1024 实踩（408—410 册）：裁席把还账之限写成 408（包之首章），录成「已挂·限408」，
+    册一成即逾限、推闸全红——限⛔早於本册之下一章：≤b 者一律正为 b+1（还账本义即限下一章）。"""
+    裁 = str(x.get('ruling', ''))
+    限 = x.get('limit')
+    try:
+        限 = max(int(限), b + 1) if 限 not in (None, '') else None
+    except (TypeError, ValueError):
+        pass
+    if 裁 == '已挂' and 限:
+        裁 = '已挂·限%s' % 限
+    elif 裁 == '还账':   # 已写章之读者可见致命：一单器施（还账.py），限下一章
+        裁 = '已挂·限%s（还账·器施）' % (限 or b + 1)
+    return 裁
+
+
+拍库 = os.path.join(ROOT, '设定', '叫绝之拍库.md')
+
+
+def 入库(裁果, a, b, 库=None):
+    """★1027（执行之审 #99·法用#拍库随段）：裁席之 beats 录入拍库「## 第{a}段」之节（在「已定未写之标杆」之前；已有其节⛔重录），
+    → 册之行；无 beats 者册写「本段无入库之拍：<由>」——裁席未交其由则书「未交」（⛔代填：421 起法用之守即红，主环面裁）。"""
+    库 = 库 or 拍库
+    bs = [x for x in (裁果.get('beats') or []) if isinstance(x, dict) and str(x.get('quote', '')).strip()]
+    if not bs:
+        由 = str(裁果.get('no_beats_reason') or '').strip()
+        return ['本段无入库之拍：%s' % 由] if len(re.sub(r'\s', '', 由)) >= 4 else ['本段之拍入库：未交（裁席既无 beats、亦无四字以上之由）']
+    行 = ['- %s%s「%s」——%s' % (x.get('ch', ''), (':' + str(x['beat'])) if x.get('beat') else '',
+                               str(x['quote']).replace('\n', ' '), str(x.get('why', '')).replace('\n', ' ')) for x in bs]
+    题 = '## 第%d段（%d—%d·大审入库）' % (a, a, b)
+    try:
+        文 = io.open(库, encoding='utf-8').read()
+    except OSError:
+        文 = ''
+    if 题 not in 文:
+        块 = '%s\n\n%s\n\n' % (题, '\n'.join(行))
+        k = 文.find('## 已定未写之标杆')
+        k = 文.rfind('---', 0, k) if k >= 0 else -1
+        文 = (文[:k] + 块 + 文[k:]) if k >= 0 else (文.rstrip('\n') + '\n\n' + 块)
+        io.open(库, 'w', encoding='utf-8').write(文)
+    return ['入拍库 %d 拍（`设定/叫绝之拍库.md`「第%d段」）：' % (len(bs), a)] + 行
+
+
 def 录(run, a=None, b=None):
     """★1023 X27：自 workflow 之 journal 排册之一、二节（逐席之判）与三节（裁席之裁）——⛔一席抄档（W50 录册一席 $20.96）。"""
     import glob
@@ -473,11 +516,7 @@ def 录(run, a=None, b=None):
         L.append('')
     L += ['## 三·逐笔裁定（丙律·不许只挂）\n', '| # | 判（席·题） | 据（章·拍·原句） | 裁 | 其由 | 连带（器·X46） |', '|---|---|---|---|---|---|']
     for i, x in enumerate(裁果.get('rows') or [], 1):
-        裁 = str(x.get('ruling', ''))
-        if 裁 == '已挂' and x.get('limit'):
-            裁 = '已挂·限%s' % x['limit']
-        elif 裁 == '还账':   # 已写章之读者可见致命：一单器施（还账.py），限下一章
-            裁 = '已挂·限%s（还账·器施）' % (x.get('limit') or b + 1)
+        裁 = 裁之文(x, b)
         if x.get('to_segment'):
             裁 += '（入段案·%s）' % x['to_segment']
         带 = '；'.join(连带(x.get('evidence', ''))[:4]) if x.get('repay') else ''
@@ -494,6 +533,7 @@ def 录(run, a=None, b=None):
     L += ['\n## 四·本回之数（器出，非估）\n', '见 `设定/_草/大审%d/包.md` 甲节（零 token 先行诸器之红）。\n' % b,
           '## 五·本回之得（一句话）\n', str(裁果.get('verdict_line', '〔裁席未交〕')) + '\n',
           '## 六·出口归造（入下一段之剧情庭题与段案）\n'] + ['- %s' % x for x in (裁果.get('to_next_segment') or [])]
+    L += ['\n## 七·叫绝之拍入库（法用#拍库随段）\n'] + 入库(裁果, a, b)
     io.open(p, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
     print('★大审之册已录：%s（席 %d、裁 %d 行、旧笔 %d）' % (os.path.relpath(p, ROOT), len(席果), len(裁果.get('rows') or []), len(cs)))
     return p
@@ -510,6 +550,13 @@ if __name__ == '__main__':
     if '--包' in sys.argv:
         i = sys.argv.index('--包')
         包(int(sys.argv[i + 1]), int(sys.argv[i + 2]))
+        # ★1027（执行之审 #55 #103·线 D 之遗）：段末一回之囤灰普查——只印主环（⛔入包：四席⛔读器之事），候退、档之囤灰由总编辑当段裁（删、修或留由）
+        import subprocess
+        try:
+            r = subprocess.run(['python3', os.path.join(ROOT, '工具', '囤灰闸.py'), '--普查'], cwd=ROOT, capture_output=True, text=True, timeout=120)
+            print('── 主环·段末囤灰普查（零 token；候者当段裁：删、修或留由）──\n' + (r.stdout or r.stderr or '（无出）').strip())
+        except Exception as e:
+            print('⚠ 囤灰普查跑不成：%s' % e)
         raise SystemExit(0)
     if '--录' in sys.argv:
         录(sys.argv[sys.argv.index('--录') + 1])

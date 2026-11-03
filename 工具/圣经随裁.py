@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """圣经随裁（0927·作者令「圣经不是一成不变的，要随时更新；机制必须跑起来」）：
-凡 0927 以後之裁（设定/裁_MMDD_*.md，MMDD≥0927）与剧情庭之裁（设定/剧情庭_*.md），
+凡 0927 以後之裁（设定/裁_MMDD_*.md，MMDD≥0927；1027 起新裁书 裁_YYYYMMDD_*.md，俱验）与剧情庭之裁（设定/剧情庭_*.md），
 须已落进圣经——圣经（设定/00_镇冢秘术_唯一总圣经.md）里须有该档之名（作「据」），
 或该档自书「圣经无改」并写其由（如守原）。缺即红：做了的决定，不许只躺在裁档里。
 用法：python3 工具/圣经随裁.py ｜ --自测
@@ -26,8 +26,9 @@ def 查(root=ROOT):
     红 = []
     档 = []
     for f in glob.glob(os.path.join(root, '设定', '裁_*.md')):
-        m = re.match(r'裁_(\d{4})_', os.path.basename(f))
-        if m and m.group(1) >= '0927':
+        m = re.match(r'裁_(\d{8}|\d{4})_', os.path.basename(f))
+        if m and (len(m.group(1)) == 8 or m.group(1) >= '0927' or m.group(1) < '0913'):   # ★1027 治跨年：YYYYMMDD 俱验；旧式 MMDD < 0913 即跨年之後
+
             档.append(f)
     档 += glob.glob(os.path.join(root, '设定', '剧情庭_*.md'))
     for f in sorted(档):
@@ -53,8 +54,11 @@ def 自测():
         共 += 1; ok += (查(t) == [])
         open(os.path.join(t, '设定', '裁_0930_某.md'), 'w').write('裁：守原。圣经无改（由：现文已是最好）')
         共 += 1; ok += (查(t) == [])
-        open(os.path.join(t, '设定', '裁_0901_旧.md'), 'w').write('旧裁')
+        open(os.path.join(t, '设定', '裁_0920_旧.md'), 'w').write('旧裁')
         共 += 1; ok += (查(t) == [])                        # 0927 前之旧裁不查
+        open(os.path.join(t, '设定', '裁_0105_跨年.md'), 'w').write('裁：改丙')
+        open(os.path.join(t, '设定', '裁_20270105_新式.md'), 'w').write('裁：改丁')
+        共 += 1; ok += (查(t) == ['裁_0105_跨年', '裁_20270105_新式'])   # ★1027 治跨年：旧式 MMDD < 0913 与 YYYYMMDD 俱查（⛔当旧裁漏）
     finally:
         shutil.rmtree(t)
     print('圣经随裁·自测 %d/%d' % (ok, 共))

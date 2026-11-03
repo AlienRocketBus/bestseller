@@ -431,7 +431,7 @@ const 出 = []
     }
     const 案 = n => ({ name: n, plan: 'p', why_better: 'w', soundness: 's' })
     const agent = async (prompt, o) => {
-      令.push({ label: o.label, prompt, phase: o.phase })
+      令.push({ label: o.label, prompt, phase: o.phase, effort: o.effort })
       if (o.label === '验题·首行') return c.首 || 验(prompt)
       if (o.label.startsWith('出案')) return c.keep ? { current_judgement: 'x', current_appeal: 9, current_sound: 9, keep: true, proposals: [] }
         : { current_judgement: 'x', current_appeal: 7, current_sound: 7, keep: false, proposals: [案('a'), 案('b'), 案('c')] }
@@ -495,6 +495,9 @@ def _庭单之约():
     开 = lambda x, 料='设定/段案/_料_1-10.md': not x['err'] and x['r'] and x['r'].get('料') == 料 and x['r'].get('单') == '设定/_草/W99/剧情庭单.json'
     闭 = lambda x, 句: bool(x['err']) and '⛔式段不开' in x['err'] and 句 in x['err'] and [c['label'] for c in x['令']] == ['验题·首行']
     裁令 = next((c['prompt'] for c in 带引['令'] if c['label'] == '裁'), '')
+    单席 = next((c for c in 带引['令'] if c['label'] == '出单'), {})
+    单令 = 单席.get('prompt', '')
+    案令 = [c['prompt'] for c in 带引['令'] if c['label'].startswith('出案')]
     守令 = next((c['prompt'] for c in 守['令'] if c['label'] == '裁·守原'), '')
     键 = '{%s}' % ','.join('"%s"' % k for k in _键)
     return [
@@ -503,10 +506,16 @@ def _庭单之约():
         ('㉖约·首行之认：带／不带反引号俱开；无料、段料不在、题不在、验题席报路不合俱⛔开且只派验题一席；无 W ⛔开、一席不派',
          开(无引) and 开(带引) and 闭(无料, '首行须写') and 闭(料缺, '段料不在') and 闭(无题, '题档不在') and 闭(错路, '不合')
          and bool(无W['err']) and 'args.W' in 无W['err'] and not 无W['令']),
-        ('㉗约·段裁令：单之四键＝本器之键、自验 --施单、⛔亲改、⛔立改单；旧「须同步更新圣经」「当场」「grep -c -F」⛔见',
-         键 in 裁令 and 'python3 工具/改单.py --施单 设定/_草/W99/剧情庭单.json' in 裁令 and '⛔亲改圣经' in 裁令
-         and '⛔`python3 工具/改单.py --立`' in 裁令 and '须同步更新圣经' not in 裁令 and '当场以' not in 裁令 and '当场改' not in 裁令
+        ('㉗约·段裁令（1103 X69）：裁席只写裁档——末节「改文之条」、⛔写单、⛔亲改、⛔立改单、⛔grep 大档、来回 ≤25；旧「须同步更新圣经」「当场」「grep -c -F」⛔见；单之四键⛔在裁令',
+         '## 改文之条' in 裁令 and '⛔写单' in 裁令 and '⛔亲改圣经' in 裁令 and '⛔`python3 工具/改单.py --立`' in 裁令
+         and '来回 ≤25' in 裁令 and '⛔grep 大档' in 裁令 and 键 not in 裁令
+         and '须同步更新圣经' not in 裁令 and '当场以' not in 裁令 and '当场改' not in 裁令
          and 'grep -c -F' not in 裁令 and '★段料（题档首行所点）：`设定/段案/_料_1-10.md`' in 裁令),
+        ('㉗之二约·出单之席（1103 X69）：effort low、单之四键＝本器之键、自验 --施单、⛔再判剧情、⛔立改单、律⑮；出案二席令带「一读段料·⛔grep 大档·来回 ≤40」',
+         单席.get('effort') == 'low' and 键 in 单令 and 'python3 工具/改单.py --施单 设定/_草/W99/剧情庭单.json' in 单令
+         and '⛔再判剧情' in 单令 and '⛔`python3 工具/改单.py --立`' in 单令 and '律⑮' in 单令 and '## 改文之条' in 单令
+         and len(案令) == 2 and all('【限·X69】' in x and '来回 ≤40' in x and '⛔grep 大档' in x for x in 案令)
+         and 带引['r'] and 带引['r'].get('出单') is not None),
         ('㉘约·式段守原之支：带段料、单写空列 []、返回单与料', '单写空列 `[]`' in 守令 and '★段料（题档首行所点）' in 守令
          and '须同步更新圣经' not in 守令 and 守['r'] and 守['r'].get('结') == '守原' and 守['r'].get('单') == '设定/_草/W99/剧情庭单.json'),
     ]

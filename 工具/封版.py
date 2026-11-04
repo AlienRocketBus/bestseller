@@ -392,7 +392,7 @@ def 前之项(印):
         if m:
             项[m.group(2).strip()] = ['主环' if m.group(1) else '席', m.group(3), l.strip()]; 块 = None
         elif l.startswith('· '):
-            块 = re.split('[：（]', l[2:], 1)[0].strip(); 项[块] = ['席', '·', l]
+            块 = re.split('[：（]', l[2:], maxsplit=1)[0].strip(); 项[块] = ['席', '·', l]
         elif l.startswith('⛔ '):
             项[l[:24]] = ['席', '⛔', l.strip()]; 块 = None
         elif 块 and l.startswith(' '):

@@ -603,7 +603,7 @@ def 法账之新行(root=ROOT, 自=立日):
         if 日 and not re.fullmatch(r'(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])', 日):
             日 = None                        # 「（2610字）」之类非日——⛔误作新行
         if 日 and _日序(日) >= _日序(自):
-            键 = re.split(r'[（(]', 格[0].replace('*', ''), 1)[0].strip()
+            键 = re.split(r'[（(]', 格[0].replace('*', ''), maxsplit=1)[0].strip()
             出.append((键, l))
     return 出
 
@@ -629,7 +629,7 @@ def 总章之条(root=ROOT):
     if t is None:
         return []
     出 = []
-    头 = re.split(r'(?m)^## ', t, 1)[0]
+    头 = re.split(r'(?m)^## ', t, maxsplit=1)[0]
     for m in re.finditer(r'(?m)^\d+\.\s*\*\*(%s)\*\*[：:]\s*(.*)$' % '|'.join(五主), 头):
         出.append(('五大·' + m.group(1), m.group(2)))
     for 节 in re.split(r'(?m)^## ', t)[1:]:

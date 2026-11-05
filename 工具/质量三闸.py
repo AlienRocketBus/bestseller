@@ -464,6 +464,24 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == '--自测':
         sys.exit(自测())
+    if a and a[0] == '--一日' and len(a) >= 2:
+        # ★1105（424 之红·复盘 W93 进化）：①之c 只在封版 --前 方见、到记席才报（424 主环返工三版、记落重核）——
+        #   今供 造式验 之报之器单跑，合稿时即见。他镜之章锁定行未立时，退认 开镜卡「本章之镜：黎东来／霍钧」（⛔误报）。
+        n = int(a[1])
+        _r = ('①之c·暗线章（本格不判日·照 gate1）', True, '暗线章') if is_dark(n) else _一章一日(body(n))
+        if not _r[1]:
+            _镜 = _他镜之日(n)
+            if not _镜:
+                try:
+                    _k = open(os.path.join(ROOT, '版本', '第%d章' % n, '_开镜卡.md'), encoding='utf-8').read()
+                    _m = re.search(r'本章之镜\**[：:]\s*\**(黎东来|霍钧)', _k)
+                    _镜 = (_m.group(1), '开镜卡') if _m else None
+                except Exception:
+                    _镜 = None
+            if _镜:
+                _r = ('①之c·一章一日（他镜）', True, '他镜之章（%s）：白文⛔落日号' % _镜[0])
+        print('%s %s　%s' % ('✓' if _r[1] else '⛔', _r[0], _r[2]))
+        sys.exit(0 if _r[1] else 1)
     if a and a[0] == '--段' and len(a) >= 3:
         sys.exit(run(list(range(int(a[1]), int(a[2]) + 1))))
     elif a:

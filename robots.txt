@@ -1,0 +1,181 @@
+# 《镇冢秘术》robots.txt —— 禁止一切 AI 爬虫抓取本作品
+# robots.txt for "Zhen Zhong Mi Shu": all AI crawlers are disallowed.
+#
+# 本作品著作权所有，保留一切权利；禁止用于任何 AI／机器学习之训练、微调、评测、
+# 检索增强（RAG）与文本数据挖掘。详见同目录 LICENSE。
+# All rights reserved. No use for AI/ML training, fine-tuning, evaluation,
+# retrieval-augmented generation, or text and data mining. See LICENSE.
+#
+# 注：robots.txt 只在「网站根目录」生效（如 https://某域名/robots.txt）。
+#     本仓库若以自有域名或 <用户名>.github.io 发布为网站，此档即起作用；
+#     github.com 上之仓库页面由 GitHub 自家之 robots.txt 管，此档管不到。
+# Note: robots.txt only takes effect at a site root. It applies once this
+#       repository is published at its own domain; github.com pages are
+#       governed by GitHub's own robots.txt.
+#
+# 名单据 ai.robots.txt 项目（2026-11 取）并补国内诸家。
+
+# —— 国外诸家 ——
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: ChatGPT Agent
+User-agent: OAI-SearchBot
+User-agent: OAI-AdsBot
+User-agent: Operator
+User-agent: Codex
+User-agent: ClaudeBot
+User-agent: Claude-Web
+User-agent: Claude-User
+User-agent: Claude-SearchBot
+User-agent: Claude-Agent
+User-agent: Claude-Code
+User-agent: anthropic-ai
+User-agent: Google-Extended
+User-agent: Google-CloudVertexBot
+User-agent: CloudVertexBot
+User-agent: Google-Agent
+User-agent: GoogleAgent-Mariner
+User-agent: GoogleAgent-URLContext
+User-agent: Google-NotebookLM
+User-agent: NotebookLM
+User-agent: Gemini-Deep-Research
+User-agent: Google-Gemini-CLI
+User-agent: Google-Firebase
+User-agent: GoogleOther
+User-agent: GoogleOther-Image
+User-agent: GoogleOther-Video
+User-agent: Applebot-Extended
+User-agent: Meta-ExternalAgent
+User-agent: meta-externalagent
+User-agent: Meta-ExternalFetcher
+User-agent: meta-externalfetcher
+User-agent: meta-webindexer
+User-agent: FacebookBot
+User-agent: Amazonbot
+User-agent: Amzn-SearchBot
+User-agent: Amzn-User
+User-agent: AmazonBuyForMe
+User-agent: amazon-kendra
+User-agent: amazon-QBusiness
+User-agent: bedrockbot
+User-agent: NovaAct
+User-agent: AzureAI-SearchBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: CCBot
+User-agent: cohere-ai
+User-agent: cohere-training-data-crawler
+User-agent: MistralAI-User
+User-agent: MistralAI-User/1.0
+User-agent: MistralAI-Index
+User-agent: MistralAI-Training
+User-agent: xAI-Grok
+User-agent: GrokBot
+User-agent: Grok Bot
+User-agent: GrokAppAndroid
+User-agent: YouBot
+User-agent: PhindBot
+User-agent: DuckAssistBot
+User-agent: Diffbot
+User-agent: Diffbot-User
+User-agent: AI2Bot
+User-agent: AI2Bot-DeepResearchEval
+User-agent: Ai2Bot-Dolma
+User-agent: ImagesiftBot
+User-agent: img2dataset
+User-agent: LAIONDownloader
+User-agent: laion-huggingface-processor
+User-agent: Timpibot
+User-agent: omgili
+User-agent: omgilibot
+User-agent: Webzio-Extended
+User-agent: webzio-extended
+User-agent: Kangaroo Bot
+User-agent: Bravebot
+User-agent: ExaBot
+User-agent: ExaSearchBot
+User-agent: ExaUser
+User-agent: TavilyBot
+User-agent: FirecrawlAgent
+User-agent: Crawl4AI
+User-agent: ApifyBot
+User-agent: ApifyWebsiteContentCrawler
+User-agent: Scrapy
+User-agent: Cloudflare-AutoRAG
+User-agent: CloudflareBrowserRenderingCrawler
+User-agent: Devin
+User-agent: Cursor
+User-agent: Manus-User
+User-agent: LinkupBot
+User-agent: LinerBot
+User-agent: QuillBot
+User-agent: quillbot.com
+User-agent: ElevenlabsBot
+User-agent: ElevenlabsCrawler
+User-agent: Cotoyogi
+User-agent: SBIntuitionsBot
+User-agent: WRTNBot
+User-agent: YandexAdditional
+User-agent: YandexAdditionalBot
+User-agent: Brightbot
+User-agent: Brightbot 1.0
+User-agent: Panscient
+User-agent: panscient.com
+User-agent: ICC-Crawler
+User-agent: Factset_spyderbot
+User-agent: FriendlyCrawler
+User-agent: VelenPublicWebCrawler
+User-agent: AIWebIndex
+User-agent: aiHitBot
+User-agent: AgentDataBot
+User-agent: Andibot
+User-agent: atlassian-bot
+User-agent: bigsur.ai
+User-agent: Channel3Bot
+User-agent: CragCrawler
+User-agent: Crawlspace
+User-agent: Echobot Bot
+User-agent: EchoboxBot
+User-agent: HarkBot
+User-agent: KlaviyoAIBot
+User-agent: Lightpanda
+User-agent: Linguee Bot
+User-agent: MyCentralAIScraperBot
+User-agent: newsai
+User-agent: Poseidon Research Crawler
+User-agent: QualifiedBot
+User-agent: ScryBot
+User-agent: SemrushBot-OCOB
+User-agent: SemrushBot-SWA
+User-agent: ShapBot
+User-agent: Shap-User
+User-agent: Thinkbot
+User-agent: TwinAgent
+User-agent: UseAI
+User-agent: wpbot
+User-agent: ZanistaBot
+# —— 国内诸家 ——
+User-agent: Bytespider
+User-agent: DoubaoBot
+User-agent: TikTokSpider
+User-agent: ERNIEBot
+User-agent: YiyanBot
+User-agent: Hunyuan
+User-agent: QwenBot
+User-agent: TongyiBot
+User-agent: DeepSeekBot
+User-agent: KimiBot
+User-agent: Kimi-Agent
+User-agent: Kimi-SearchBot
+User-agent: Kimi-User
+User-agent: MoonshotBot
+User-agent: ChatGLM-Spider
+User-agent: PanguBot
+User-agent: PetalBot
+User-agent: YiBot
+User-agent: iaskspider
+User-agent: iaskspider/2.0
+User-agent: iAskBot
+User-agent: Trae
+User-agent: qodercli
+Disallow: /

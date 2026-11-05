@@ -1,0 +1,29 @@
+《镇冢秘术》著作权声明与 AI 使用之禁
+
+Copyright © 2026 《镇冢秘术》作者（GitHub：AlienRocketBus）。保留一切权利。
+
+一、本仓库所载之全部内容——正文、设定、人物、大纲、阅读器及其余诸档——俱受《中华人民共和国著作权法》及相关国际公约保护。未经著作权人书面许可，任何人不得复制、转载、改编、汇编、传播。
+
+二、禁止 AI 之用（文本与数据挖掘之权利保留）：未经著作权人书面许可，不得将本仓库任何内容用于：
+  1. 人工智能、机器学习、大语言模型之训练、预训练、微调、蒸馏、评测或基准；
+  2. 检索增强生成（RAG）、向量库、嵌入之建立；
+  3. 文本与数据挖掘（TDM）、语料之采集、汇编、出售或分发。
+本条即依欧盟《数字化单一市场版权指令》（Directive (EU) 2019/790）第 4 条第 3 款所作之明示权利保留，并以本档、根目录 robots.txt 及诸网页之 tdm-reservation 标记为机器可读之表示。
+
+三、公开可见不等於许可：本仓库之公开，仅供阅览；GitHub 服务条款所许平台之内之查看与分叉，不延及上述 AI 之用。
+
+──────────────────────────────
+
+"Zhen Zhong Mi Shu" — Copyright Notice and AI Use Prohibition
+
+Copyright © 2026 the author of "Zhen Zhong Mi Shu" (GitHub: AlienRocketBus). All rights reserved.
+
+1. All content in this repository, including the novel text, settings, characters, outlines, reader pages and all other files, is protected by copyright. No part may be copied, republished, adapted, compiled or distributed without the copyright holder's prior written permission.
+
+2. No AI use (reservation of text and data mining rights). Without the copyright holder's prior written permission, no content in this repository may be used:
+   (a) to train, pre-train, fine-tune, distill, evaluate or benchmark any artificial intelligence, machine learning or large language model;
+   (b) to build retrieval-augmented generation (RAG) indexes, vector stores or embeddings;
+   (c) for text and data mining, or to collect, compile, sell or distribute datasets or corpora.
+This is an express reservation of rights under Article 4(3) of Directive (EU) 2019/790, expressed in machine-readable form by this file, the root robots.txt, and the tdm-reservation tags in the HTML pages.
+
+3. Public visibility is not a licence. This repository is public for reading only. Any viewing or forking permitted within GitHub under its Terms of Service does not extend to the AI uses listed above.

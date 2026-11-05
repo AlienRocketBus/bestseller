@@ -182,13 +182,18 @@ const 键令 = (s, k, 格) => 通 ? s + '\n\n【交之键】诸席共一交卷�
 //   args.承 = {诸稿, 选, 草, 盲, 审, 回写}——已成之段之果（自 journal 取）径用，⛔再派其席；诸稿以其 file 认回执笔之名与路
 const 承 = (args && args.承 && typeof args.承 === 'object') ? args.承 : {}
 phase('造')
+// ★1104 X79（416 执笔·戊·速度、戊·补二回俱拒·$6.13）：N≥420 起——执笔之错因含平台安全之拒（safeguards／AUP／usage policy）者⛔同令补派（必再拒）；
+//   整稿 ≥3 即不补（缺者行家判致命·造式.py 已认）。N≤419 旧行不变
+const 拒因 = {}
+const 安全拒 = 名 => /safeguard|AUP|acceptable use|usage polic|content polic|安全之检|安全分类|分类器/i.test(拒因[名] || '')
 let 诸稿 = 承.诸稿 ? 承.诸稿.map(r => { const x = 执笔们.find(x => r && r.file && r.file.endsWith(蒙档(x.名))); return x ? { ...r, 名: x.名, 路: x.路.k } : null }).filter(Boolean) : (await parallel(执笔们.map(x => () =>
   agent(键令(交缺(执笔令(x)), 'draft'), { phase: '造', label: '执笔·' + x.名 + '·' + x.路.k, schema: 式(稿式), effort: 'max' })
+    .catch(e => { 拒因[x.名] = String((e && e.message) || e); return null })
     .then(r => (r = 取(r, 'draft')) ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean)
 // ★1017 承.补（397 逮：容器重启於执笔之半——三席已交、一席稿半、一席未起；承只认已交者而⛔补派，或 resume 重跑三席）：
 //   承.补 = true 者，承.诸稿 之外缺席之执笔照常另派（label 带「补」）；不传者旧行不变
 // ★1022 W64（403 逮：七宽二席撞安全之器而补派，补之二稿皆未胜、费 $14.5）：N≥404 起，已交 ≥5 稿且段案之魂路俱已交者⛔补——宽已足、所令之路俱在
-const 足 = () => N >= 404 && 诸稿.length >= 5 && 段案路.every(k => 诸稿.some(d => d.路 === k))
+const 足 = () => (N >= 420 && 诸稿.length >= 3) || (N >= 404 && 诸稿.length >= 5 && 段案路.every(k => 诸稿.some(d => d.路 === k)))
 // ★1024 省·查（records③ safeguard②、failures① safeguard⑤）：N≥411 补派整席之前，缺稿之执笔先派一查席（零创作·effort low·同通式共缓存）——
 //   工具/承.py --查 验其盘稿（在、有【本章亮点】、净重过铁底、硬项零）者即收（⛔径派整席·一席 $7—10）；
 //   并留前席之构思之底（起草_X_构思_前.md·⛔承）、零 token 量其拍表、满分之问、①—⑤，记入 版本/第N章/_补前稿账.json（承前之开俟三回实证·⛔改执笔之令）
@@ -205,7 +210,8 @@ if (通 && (!承.诸稿 || 承.补 === true) && 诸稿.length < 宽 && !足()) {
 const 宽足 = 足()
 if (宽足 && 诸稿.length < 宽) log('造：交 ' + 诸稿.length + ' 稿、段案之路俱在——缺席⛔补（1022 W64）')
 if ((!承.诸稿 || 承.补 === true) && 诸稿.length < 宽 && !宽足) {   // 缺稿另派一回（见红才多跑）
-  const 欠 = 执笔们.filter(x => !诸稿.some(d => d.名 === x.名))
+  const 欠 = 执笔们.filter(x => !诸稿.some(d => d.名 === x.名) && !(N >= 420 && 安全拒(x.名)))
+  if (N >= 420 && 执笔们.some(x => 安全拒(x.名))) log('造：执笔·' + 执笔们.filter(x => 安全拒(x.名)).map(x => x.名).join('、') + ' 被平台安全之检拒——⛔同令补派（X79）')
   log('造：执笔·' + 欠.map(x => x.名).join('、') + ' 未交——另派一回')
   诸稿.push(...(await parallel(欠.map(x => () =>
     agent(键令(交缺(执笔令(x)), 'draft'), { phase: '造', label: '执笔·' + x.名 + '·补', schema: 式(稿式), effort: 'max' })

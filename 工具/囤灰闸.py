@@ -10,7 +10,7 @@
 
 【它认哪几样，本书同类共几样（令§六④）】
   甲·器之囤灰：认 `工具/*.py` **全部 118 样**（本书同类即此 118 样，无遗）。
-     判法：自诸真跑口（全测／起草闸／大审／书级体检／跑轮／自走／封版／接棒守；1027 汰一坐、回修、十轮精进、一章到底——其器俱删）
+     判法：自九个真跑口（全测／起草闸／一坐／大审／书级体检／回修／十轮精进／一章到底／跑轮）
      并 `工具/席/*.js` 与 git 钩子起，**逐层展开引用闭包**；闭包之外者即囤灰。
   乙·席之囤灰：认 `工具/席/*.js` **全部**（当场 glob）。判法（1020 X29 改·见 `席之判`）：派令之文（`造章.js`、`自走.py`）以
      `scriptPath:'工具/席/<名>'` 调者即有路（⛔只提其名、注行不算）；余者须在 `工具/席/用法.md`「诸席之位与末用」表有其行
@@ -22,12 +22,8 @@
 【挂账】确有其由而暂不接的，写进 `设定/囤灰挂账.md`，一样一行，**须写明其由与其限（到哪一章之前接上）**。
   挂了账仍印黄，只是不判红——**挂账是欠条，不是赦免**。
 
-【普查（1027·执行之审 #55 #103）】跑得着不等於有用：候修（假红多、慢、败多）、候退（唯自测一路；其名见於「废」而活引寡）、
-  档之囤灰（顶层 设定/*.md 无活引、无 glob 之族、末提交逾三十日）——**只报不拦**，候者交大审之器审与总编辑之裁。
-
 用法：
     python3 工具/囤灰闸.py            # 全查
-    python3 工具/囤灰闸.py --普查      # 候修／候退／档之囤灰（只报）
     python3 工具/囤灰闸.py --自测      # 负测
 """
 import os as _o, sys as _s
@@ -83,8 +79,8 @@ def _造式之段(n=None):
     return m.造式之段(ROOT, n) if m is not None else None
 
 
-真跑口 = ['工具/全测.py', '工具/起草闸.py', '工具/大审.py', '工具/书级体检.py', '工具/跑轮.py',
-          '工具/自走.py', '工具/封版.py', '工具/接棒守.py']      # ★1027：一坐、回修、十轮精进 随十三轮汰；添流之三口
+真跑口 = ['工具/全测.py', '工具/起草闸.py', '工具/一坐.py', '工具/大审.py', '工具/书级体检.py',
+          '工具/回修.py', '工具/十轮精进.py', '工具/跑轮.py']
 
 
 def _读(p):
@@ -249,18 +245,12 @@ def 派令之席(派令之文):
     **子目录之派令**（`工具/席/_旧/X.js`）不算顶层之 X.js 有路（旧取 basename 而混同·W60·X33⑥）。
     ⛔只提其名（「一代在 工具/席/一章.js」之注、自测之串 `工具/席/救章.js`）不是派令——旧式子串之判凭此把已彻删之席判作有路。
     派令之文：一串（片段·二家之注俱认），或诸档之列——其项为串，或 (档名, 文)（照其扩展名定 py／js，逐档剔注）。"""
-    return {p[len('工具/席/'):] for p in 派令之路(派令之文) if '/' not in p[len('工具/席/'):]}
-
-
-def 派令之路(派令之文):
-    """★X43⑤：派令之文里真被调之席之**全路**集（'工具/席/X.js'、子目录者 '工具/席/_旧/Y.js' 亦在）——派令之席（顶层之名）与
-    `自走.py` ⑬之八 `_死席`（盘上不在之路）同出此一尺（⛔两抄：旧 _死席 自抄一正则而不剔注，注里之 scriptPath 亦算派令）。"""
     诸 = [派令之文] if isinstance(派令之文, str) else list(派令之文)
     出 = set()
     for x in 诸:
         名, 文 = x if isinstance(x, tuple) else ('', x)
         语 = 'py' if 名.endswith('.py') else 'js' if 名.endswith('.js') else None
-        出 |= {'工具/席/' + p for p in re.findall(r"scriptPath:\\?'工具/席/([^'\\]+\.js)", _去注(文, 语))}
+        出 |= set(re.findall(r"scriptPath:\\?'工具/席/([^'\\/]+\.js)", _去注(文, 语)))
     return 出
 
 
@@ -328,7 +318,7 @@ def 器之闭包(runners=None):
         #   ★**本闸本已认 `工具/githooks/*`（git 之钩）为真跑口**——
         #     **`.claude` 之钩与它是同一类东西，只是挂在另一个壳上**；**认前者不认後者，是本闸漏了一处，不是那只器囤了灰。**
         #   ⛔**而其限不许放宽半分**：**只添这一个档作起点，一个新豁免也没有开**；
-        #     **凡一件器在诸跑口、诸席、二钩之内一处也提不着者，照旧红**（自测⑥钉死）。
+        #     **凡一件器在九个跑口、诸席、二钩之内一处也提不着者，照旧红**（自测⑥钉死）。
         起 += [f for f in ['.claude/settings.json'] if os.path.isfile(os.path.join(ROOT, f))]
     起 = [p for p in 起 if os.path.isfile(os.path.join(ROOT, p))]
     reach = set(os.path.basename(p) for p in 起 if p.endswith('.py'))
@@ -352,7 +342,7 @@ def 查(印=True):
     灰 = sorted(tools - reach)
     for t in 灰:
         (黄 if t in 账 else 红).append(
-            '甲·器囤灰：工具/%s 自诸真跑口展不到——造了没人跑。%s' %
+            '甲·器囤灰：工具/%s 自九个真跑口展不到——造了没人跑。%s' %
             (t, ('已挂账：' + 账[t]) if t in 账 else '接进某个跑口，或写进 设定/囤灰挂账.md'))
 
     # 乙·席（1020 X29：派令之路＝造章.js、自走.py 之 scriptPath；余者须在 用法.md「诸席之位与末用」表有行、限系於末用且未到——见 席之判）
@@ -502,7 +492,7 @@ def 自测():
       bool(段) and len(段) > len(旧八), '今 %s' % (len(段) if 段 else '?'))
 
     # ⑦席之全集非空（防 glob 写错路而一律绿）
-    T('⑦席读得着', os.path.join(ROOT, '工具', '席', '造章.js') in glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))   # ★409 囤灰四席彻删：⛔以份数为底
+    T('⑦席读得着', len(glob.glob(os.path.join(ROOT, '工具', '席', '*.js'))) >= 4)
 
     # ⑧旧式回灌·席：拿一个派令之文与 用法.md 俱无之席名，须判红（1020 X29：真调 席之判，⛔只验「字不在档里」）
     _派 = _读('工具/席/造章.js') + _读('工具/自走.py')
@@ -528,7 +518,7 @@ def 自测():
     _无路 = [s for s in sorted(os.path.basename(f) for f in glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))
             if s not in _今派]
     T('⑧之七 今仓无派令之路之席（%d 张）逐张在表、各带限；造章／大审／剧情庭 认作派令' % len(_无路),
-      all(s in _实 and _实[s][2] for s in _无路)   # ★409 囤灰四席彻删後无路之席可为零（其判由 ⑧之五、⑧之十 之样本守）
+      bool(_无路) and all(s in _实 and _实[s][2] for s in _无路)
       and {'造章.js', '大审.js', '剧情庭.js'} <= _今派, str(_无路) + '｜派 ' + str(sorted(_今派)))
     # ⑧之九【X29 再治·回灌旧病】旧式「名在派令之文即有路」（子串之判）：已彻删之 救章.js（自走 ⑬之八 自测之串）、
     #   一章.js（造章.js 之注、自走之说明）复立於盘，旧判绿；今须红。另以注、串、注行之 scriptPath 各灌一回。
@@ -644,8 +634,6 @@ def 自测():
         ok += 1
     else:
         bad.append('⑬器之迹之窗、败、重跑')
-    for _名, _合 in _普查之测():          # ⑭—⑯ 普查（1027·#55 #103）
-        T(_名, _合)
     print('── 负测·囤灰闸 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 
@@ -707,234 +695,9 @@ def 迹报(n, 计, 始, 至):
     return '\n'.join(行) + '\n'
 
 
-# ═══ 普查（1027·执行之审 #55 #103：「跑得着」不等於「有用」——候修、候退、档之囤灰；只报不拦） ═══
-# ★其由：默跑只证跑得着（甲·器 215 样，跑得着 215，囤灰 0），从未判「跑得着而无用」——起草庭之对质、检察官七令俱跑得着而无用，闸照绿。
-#   虫洞法典:37、全测之注早书 `--普查`，而器里无此一支（只书无行）。今立之：
-#   候修：假红多（_器之账.json 红史）、慢（秒均 ≥ 慢之界；无账则读 设定/全测均秒.json）、败多（_器之迹.jsonl rc 非 0 过半）；
-#   候退：①唯自测一路——诸活档（工具/*.py、席 js、钩、.claude、.github，⛔注）引其名者唯 全测 之「--自测」之调（负测_* 本即测，⛔列）；
-#         ②其名见於法用册「废」之名而活引 ≤ 2 档（所对质之流程已废，余用待核）；
-#   档之囤灰：顶层 设定/*.md，⛔有 glob 读者之族（回执_*、裁_*、冷轮_* 等，当场自器码取其前缀），活档（器、总章、README、圣经、canon）
-#         无一字面之引，且末提交逾三十日 → 候汰（canon 旧稿汰前先查圣经是否已收其义；删後入法用册「废」·无档）。
-#   ⛔拦：普查只报——候者交大审之器审与总编辑之裁（一席审一席驳），⛔自删。
-慢之界 = 30.0          # 秒均 ≥ 此 → 候修·慢
-红多之界 = 0.5         # 红／跑 ≥ 此（跑 ≥3）→ 候修·红多
-灰之日 = 30            # 档之末提交逾此日 → 档之囤灰
-
-
-def _活档(root):
-    """→ [(相对路, 去注之文)]：工具/*.py、席 js、githooks、.claude/settings.json、.github/workflows。"""
-    出 = []
-    for g in ('工具/*.py', '工具/席/*.js', '工具/githooks/*', '.github/workflows/*.yml'):
-        for f in sorted(glob.glob(os.path.join(root, g))):
-            rel = os.path.relpath(f, root).replace(os.sep, '/')
-            try:
-                文 = open(f, encoding='utf-8', errors='ignore').read()
-            except Exception:
-                continue
-            语 = 'py' if f.endswith('.py') else 'js' if f.endswith('.js') else None
-            出.append((rel, _去注(文, 语) if 语 else 文))
-    for f in ('.claude/settings.json',):
-        if os.path.isfile(os.path.join(root, f)):
-            出.append((f, open(os.path.join(root, f), encoding='utf-8', errors='ignore').read()))
-    return 出
-
-
-def _只自测(行们, 名):
-    """全测 之文中提 名 之行，俱係「--自测」之调（run(…, ['工具/名', '--自测']) 或 _自测之项(…, '工具/名')）否。"""
-    诸 = [l for l in 行们 if 名 in l]
-    return bool(诸) and all('--自测' in l or '_自测之项(' in l for l in 诸)
-
-
-def 候退(root=None, 册=None):
-    """→ [(器, 由)]"""
-    root = root or ROOT
-    活 = _活档(root)
-    册 = 册 if 册 is not None else (json.load(open(os.path.join(root, '设定', '法用册.json'), encoding='utf-8'))
-                                    if os.path.isfile(os.path.join(root, '设定', '法用册.json')) else {})
-    废名 = ['%s %s' % (x.get('名', ''), x.get('id', '')) for x in 册.get('废') or []]
-    出 = []
-    for f in sorted(glob.glob(os.path.join(root, '工具', '*.py'))):
-        名 = os.path.basename(f)
-        干 = 名[:-3]
-        if 名.startswith(('负测_', '_')) or 名 in ('全测.py', '囤灰闸.py'):
-            continue
-        式 = re.compile(r'%s|\bimport %s\b|\bfrom %s import' % (re.escape(名), re.escape(干), re.escape(干)))
-        引 = [rel for rel, 文 in 活 if rel != '工具/' + 名 and 式.search(文)]
-        if 引 == ['工具/全测.py'] and _只自测(dict(活)['工具/全测.py'].split('\n'), 名):
-            出.append((名, '唯自测一路：活档引之者只 全测 之「--自测」——其本职一回未跑（造了只验不用）'))
-            continue
-        废 = [x for x in 废名 if 名 in x]
-        if 废 and len(引) <= 2:
-            出.append((名, '其名见於法用册「废」（%s）而活引只 %d 档（%s）——所对质之流程已废，余用待核' % (废[0][:40], len(引), '、'.join(引) or '无')))
-    return 出
-
-
-def 候修(root=None, 账=None, 均秒=None, 迹行=None):
-    """→ [(名, 由)]：_器之账.json（各格之跑、红、秒均）；无账则 设定/全测均秒.json 只判慢；_器之迹.jsonl 之败多。"""
-    root = root or ROOT
-    if 账 is None:
-        p = os.path.join(root, '_器之账.json')
-        try:
-            账 = json.load(open(p, encoding='utf-8')) if os.path.isfile(p) else {}
-        except Exception:
-            账 = {}
-    if 均秒 is None and not 账:
-        p = os.path.join(root, '设定', '全测均秒.json')
-        try:
-            均秒 = json.load(open(p, encoding='utf-8')) if os.path.isfile(p) else {}
-        except Exception:
-            均秒 = {}
-    出 = []
-    for 名, x in sorted((账 or {}).items()):
-        if not isinstance(x, dict):
-            continue
-        跑, 红 = x.get('跑') or 0, x.get('红') or 0
-        if 跑 >= 3 and 红 / 跑 >= 红多之界:
-            出.append((名, '红多（红 %d／跑 %d）——真红即治其物，假红即治其器' % (红, 跑)))
-        if (x.get('秒均') or 0) >= 慢之界:
-            出.append((名, '慢（秒均 %.1f）——零 token 而慢者先问能否移 GitHub 或缩其域' % x['秒均']))
-    for 名, 秒 in sorted((均秒 or {}).items()):
-        if isinstance(秒, (int, float)) and 秒 >= 慢之界:
-            出.append((名, '慢（种秒 %.1f）' % 秒))
-    if 迹行 is None:
-        p = os.path.join(root, '_器之迹.jsonl')
-        迹行 = open(p, encoding='utf-8', errors='ignore').read().split('\n') if os.path.isfile(p) else []
-    计 = 迹('0000', '9999', root=root, 行们=迹行)
-    for 器, x in sorted(计.items()):
-        if x['跑'] >= 5 and x['败'] * 2 > x['跑']:
-            出.append((器, '败多（迹：败 %d／跑 %d）——%s' % (x['败'], x['跑'], '；'.join(x['败例'][:2]))))
-    return 出
-
-
-def _glob前缀(活):
-    """诸活器码中带「*」之串 → 其档名之前缀（≥2 字）：'回执_*第%d章*.md' → '回执_'。并 startswith('…') 之前缀。"""
-    出 = set()
-    for _, 文 in 活:
-        for s in re.findall(r"['\"]([^'\"\n]{0,80}\*[^'\"\n]{0,40})['\"]", 文):
-            前 = s.split('*')[0].split('/')[-1]
-            if len(前) >= 2:
-                出.add(前)
-        for s in re.findall(r"startswith\(\s*\(?\s*['\"]([^'\"\n]{2,40})['\"]", 文):
-            出.add(s.split('/')[-1])
-    return {x for x in 出 if x}
-
-
-def 档之囤灰(root=None, 今=None, 日=None, 末改=None):
-    """→ [(档, 由)]：顶层 设定/*.md 之候汰。末改：{档: 末提交之 epoch}（自测注之；默一回 git log 取之）。"""
-    import subprocess, time as _t
-    root = root or ROOT
-    今 = 今 or _t.time()
-    日 = 灰之日 if 日 is None else 日
-    活 = _活档(root)
-    前缀 = _glob前缀(活)
-    他 = []
-    for f in ('00_总章.md', 'README.md', '设定/00_镇冢秘术_唯一总圣经.md', '设定/canon事实库.json'):
-        try:
-            他.append(open(os.path.join(root, f), encoding='utf-8', errors='ignore').read())
-        except Exception:
-            pass
-    全文 = '\n'.join([文 for _, 文 in 活] + 他)
-    if 末改 is None:
-        末改 = {}
-        r = subprocess.run(['git', '-c', 'core.quotepath=off', 'log', '--format=@%ct', '--name-only', '--', '设定/'],
-                           cwd=root, capture_output=True, text=True)
-        t = None
-        for l in r.stdout.split('\n'):
-            if l.startswith('@'):
-                t = int(l[1:])
-            elif l.strip() and l not in 末改 and t is not None:
-                末改[l] = t
-    出 = []
-    for f in sorted(glob.glob(os.path.join(root, '设定', '*.md'))):
-        rel = os.path.relpath(f, root).replace(os.sep, '/')
-        名 = os.path.basename(f)
-        if any(名.startswith(p) for p in 前缀):
-            continue
-        干 = 名[:-3]
-        if 名 in 全文 or (len(干) >= 6 and 干 in 全文):
-            continue
-        t = 末改.get(rel)
-        if t is None or (今 - t) < 日 * 86400:
-            continue
-        出.append((rel, '活档无一字面之引、无 glob 之族，末提交距今 %d 日' % int((今 - t) // 86400)))
-    return 出
-
-
-def 普查(root=None, 印=True):
-    """→ {'候修': [...], '候退': [...], '档之囤灰': [...]}；只报不拦。"""
-    果 = {'候修': 候修(root), '候退': 候退(root), '档之囤灰': 档之囤灰(root)}
-    if 印:
-        print('════ 囤灰闸 --普查（只报·⛔拦；候者交大审之器审与总编辑之裁） ════')
-        for k, 顶 in (('候修', 30), ('候退', 30), ('档之囤灰', 25)):
-            print('  %s %d%s' % (k, len(果[k]), '（列其首 %d）' % 顶 if len(果[k]) > 顶 else ''))
-            for 名, 由 in 果[k][:顶]:
-                print('    · %s —— %s' % (名, 由))
-    return 果
-
-
-def _普查之测():
-    """→ [(名, 合否)]：普查之三路，各以坏例证其真红、以反例证其⛔误拦（假仓·git 真提交带日）。"""
-    import tempfile, shutil, subprocess, time as _t
-    R = []
-    t = tempfile.mkdtemp(prefix='囤灰_普查_')
-    try:
-        def 写(p, s):
-            os.makedirs(os.path.dirname(os.path.join(t, p)) or t, exist_ok=True)
-            open(os.path.join(t, p), 'w', encoding='utf-8').write(s)
-        写('工具/全测.py', "def chk_a():\n    out = run('负测·甲', ['工具/甲.py', '--自测'])\n"
-                         "def chk_b():\n    return _自测之项('负测·丙', '工具/负测_丙.py')\n"
-                         "def chk_c():\n    out = run('乙', ['工具/乙.py'])\n"
-                         "def chk_d():\n    out = run('丁', ['工具/丁.py', '--自测'])\n")
-        写('工具/甲.py', '# 只供自测\n')
-        写('工具/乙.py', '# 全测真跑其本职\n')
-        写('工具/丁.py', '# 自走亦调之\n')
-        写('工具/负测_丙.py', '# 测也\n')
-        写('工具/戊.py', '# 其流程已废\n')
-        写('工具/自走.py', "import subprocess\nsubprocess.run(['python3', '工具/丁.py'])\n# 甲.py 只在注里提\n"
-                         "G = glob.glob(os.path.join(ROOT, '设定', '回执_*.md'))\n")
-        写('工具/己.py', "P = '设定/引之档.md'\n")
-        写('设定/法用册.json', json.dumps({'废': [{'id': '旧流', '名': '旧流（工具/戊.py 之对质）'}]}, ensure_ascii=False))
-        for p in ('设定/旧档.md', '设定/新档.md', '设定/引之档.md', '设定/回执_0901_第9章.md'):
-            写(p, '文\n')
-        g = lambda *a, **k: subprocess.run(['git'] + list(a), cwd=t, capture_output=True, text=True, **k)
-        g('init', '-q')
-        for k, v in (('user.name', 't'), ('user.email', 't@t'), ('commit.gpgsign', 'false')):
-            g('config', k, v)
-        今 = int(_t.time())
-        def 提(档们, 前日):
-            g('add', '--', *档们)
-            env = dict(os.environ, GIT_AUTHOR_DATE='@%d +0000' % (今 - 前日 * 86400), GIT_COMMITTER_DATE='@%d +0000' % (今 - 前日 * 86400))
-            g('commit', '-q', '-m', 'x', env=env)
-        提(['工具', '设定/法用册.json', '设定/旧档.md', '设定/引之档.md', '设定/回执_0901_第9章.md'], 40)
-        提(['设定/新档.md'], 2)
-        退 = dict(候退(t))
-        R.append(('⑭普查·候退：唯自测一路者（甲）入列；注里之提⛔算活引', '甲.py' in 退 and '唯自测' in 退['甲.py']))
-        R.append(('⑭之二 放行：全测真跑其本职者（乙）、他器亦调者（丁）、负测_*（丙）俱⛔列',
-                  not any(k in 退 for k in ('乙.py', '丁.py', '负测_丙.py'))))
-        R.append(('⑭之三 其名见於「废」而活引 ≤2 者（戊）入列', '戊.py' in 退 and '废' in 退['戊.py']))
-        修 = dict(候修(t, 账={'快格': {'跑': 5, '红': 0, '秒均': 1.0}, '红格': {'跑': 4, '红': 3, '秒均': 2.0},
-                                 '慢格': {'跑': 3, '红': 0, '秒均': 45.0}, '少跑': {'跑': 2, '红': 2, '秒均': 1.0}},
-                         迹行=[json.dumps({'t': '2026-10-2%dT00:00:00' % i, '器': '败器.py', '参': [], '秒': 1, 'rc': 1 if i < 4 else 0})
-                              for i in range(6)]))
-        R.append(('⑮普查·候修：红多（3／4）、慢（45 秒）、败多（迹 4／6）俱入列', '红格' in 修 and '慢格' in 修 and '败器.py' in 修))
-        R.append(('⑮之二 放行：常格、跑不足三回者⛔列', '快格' not in 修 and '少跑' not in 修))
-        灰 = dict(档之囤灰(t, 今=今))
-        R.append(('⑯档之囤灰：无引而逾三十日者（旧档）入列', '设定/旧档.md' in 灰))
-        R.append(('⑯之二 放行：新改（2 日）、器字面引之、glob 之族（回执_*）俱⛔列',
-                  not any(k in 灰 for k in ('设定/新档.md', '设定/引之档.md', '设定/回执_0901_第9章.md'))))
-    finally:
-        shutil.rmtree(t, ignore_errors=True)
-    真 = dict(档之囤灰())
-    R.append(('⑯之三 真仓：档之囤灰可算（%d 份）、器所读之 瑕疵总账 ⛔在其列' % len(真), '设定/瑕疵总账.md' not in 真))
-    return R
-
-
 if __name__ == '__main__':
     if '--自测' in sys.argv:
         sys.exit(0 if 自测() else 1)
-    if '--普查' in sys.argv:            # 1027·#55 #103：只报不拦
-        普查()
-        sys.exit(0)
     if '--迹' in sys.argv:
         _n = int(sys.argv[sys.argv.index('--迹') + 1])
         _始, _至 = 迹窗(_n)

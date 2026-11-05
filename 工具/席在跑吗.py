@@ -173,20 +173,7 @@ def 流在跑(根=None, 今=None, 界=30 * 60):
     return False
 
 
-守书之号 = ('01HCXDm7LtSf4nECX75WCL3D', '01BFuD1GJM5avGrcaUg1REwV')   # 守书之会话（定时之保·小模型·只查⛔写）；换坐即改此行
-守书之令 = 'trig_01Y4mtqtyshYjTb6wkDGdnzP'   # 唤守书之定时之令（每时 :42）——暂停令·守书之参 取此，⛔另硬写；换令即改此行
-
-
-def 守书开头之判(坐, 守):
-    """⛔纯判（SessionStart 之钩用）：守书之坐方⛔灌总章。1024 实见：总编辑之机之公目里有 10-22 05:32 之 守书.flag
-    （立守书时误立於总编辑之机），单认旗即令总编辑每回开头失其总章——故总编辑之坐（接棒守.总编辑）一律作非守书。"""
-    try:
-        import 接棒守
-        总 = 接棒守.总编辑
-    except Exception:
-        总 = 'session_016Hgfc2SSNvGktFmk2LX825'
-    号 = lambda s: str(s or '').replace('session_', '').replace('cse_', '')
-    return bool(守) and 号(坐) != 号(总)
+守书之号 = ('01BFuD1GJM5avGrcaUg1REwV',)   # 守书之会话（定时之保·小模型·只查⛔写）；换坐即改此行
 
 
 def 守书之坐():
@@ -280,8 +267,8 @@ def main():
         return 0
     if rc == 4:
         print('⛔⛔⛔ 席在跑吗：**本坐已撤锁、交第%s章之棒，而无人接住、本坐亦未候——⛔交了棒不看就收工**（1022）。' % 毕章, file=sys.stderr)
-        print('   跑 `python3 工具/接棒守.py --候 %s`（run_in_background）；候逾时则再跑 `python3 工具/接棒守.py --派令 %s`、'
-              '照其所印 create_trigger 一回，再候。⛔本坐自写（防两坐同写）。' % (毕章, 毕章), file=sys.stderr)
+        print('   跑 `python3 工具/接棒守.py --候 %s`（run_in_background）；候逾时则再发「【派】开第 %s 章之写书会话」入总编辑会话'
+              '（create_trigger，persistent_session_id session_016Hgfc2SSNvGktFmk2LX825）再候。⛔本坐自写（防两坐同写）。' % (毕章, 毕章), file=sys.stderr)
         return 2
     if rc == 3:
         _o = sys.stdout
@@ -290,9 +277,8 @@ def main():
             print('⛔⛔⛔ 席在跑吗：**本坐持第%s章之锁，而手上无席、无後台之活——收了，书就停**（1022·402 封後书停五时半之形）。' % 锁章)
             print('   ①第%s章未写：跑 `cd /home/user/the-novel && python3 工具/自走.py`，照其令派席。' % 锁章)
             print('   ②上一章已封、第%s章该由新会话写（总章三之5 接棒）：' % 锁章)
-            print('      `python3 工具/接棒守.py --候主 %s`（run_in_background；报主枝已含方续）→ `python3 工具/心跳.py --收 %s` → '
-                  '`python3 工具/接棒守.py --派令 %s`、照其所印 create_trigger 一回 → `python3 工具/接棒守.py --候 %s`（run_in_background）。⛔候人。'
-                  % ((锁章 or 1) - 1 if str(锁章).isdigit() else 锁章, 锁章, 锁章, 锁章))
+            print('      `python3 工具/心跳.py --收 %s` → create_trigger 入总编辑会话 session_016Hgfc2SSNvGktFmk2LX825（run_once_at 一分後；'
+                  '令「【派】开第 %s 章之写书会话」）→ `python3 工具/接棒守.py --候 %s`（run_in_background）。⛔候人。' % (锁章, 锁章, 锁章))
         finally:
             sys.stdout = _o
         return 2
@@ -362,18 +348,6 @@ def 自测():
     报('⑰之三 己撤锁而接棒守在候 → 放行', 判路(交棒中=True, 撤锁者='A', 我坐='A', 後台活=True)[0], 0)
     报('⑰之四 己撤锁逾三十分（候已逾时）→ 仍 rc=4（⛔令其自写）', 判路(交棒中=False, 撤锁者='A', 我坐='A')[0], 4)
     报('⑲守书之坐 → 放行（⛔令其写书）', 判路(守书=True)[0], 0)
-    报('⑲之二 开头之判：守书之坐 → 是；总编辑之坐虽有旗 → 否（1024）；非守书 → 否',
-       (守书开头之判('01HCXDm7LtSf4nECX75WCL3D', True), 守书开头之判('016Hgfc2SSNvGktFmk2LX825', True),
-        守书开头之判('cse_016Hgfc2SSNvGktFmk2LX825', True), 守书开头之判('X', False)), (True, False, False, False))
-    try:   # 1024·省审 sessions 二②：SessionStart 印总章之钩加括号之判（A || B && C 实为 (A||B)&&C，⛔裸加）；坐号⛔硬写进 settings
-        _st = open(os.path.join(ROOT, '.claude', 'settings.json'), encoding='utf-8').read()
-        _c = [h.get('command', '') for e in (json.loads(_st).get('hooks') or {}).get('SessionStart', [])
-              for h in e.get('hooks', []) if '00_总章.md' in h.get('command', '')]
-        报('⑲之三 开头之钩：{ 守书之判 ; } || { …cat 总章… ; }、坐号⛔入 settings',
-           (len(_c) == 1 and _c[0].startswith('{ python3 /home/user/the-novel/工具/席在跑吗.py --守书之坐') and ' ; } || { ' in _c[0]
-            and _c[0].rstrip().endswith('; }'), any(x in _st for x in 守书之号)), (True, False))
-    except Exception as e:
-        报('⑲之三 settings 读不出：%s' % e, False, True)
     import json as _jj
     _w = __import__('tempfile').mkdtemp(); _d = os.path.join(_w, 'p', 's', 'subagents', 'workflows', 'wf_1'); os.makedirs(_d)
     open(os.path.join(_d, 'journal.jsonl'), 'w').write(_jj.dumps({'type': 'started'}) + '\n')
@@ -403,6 +377,4 @@ def 自测():
 
 
 if __name__ == '__main__':
-    if '--守书之坐' in sys.argv:   # 1024：SessionStart 之钩用——守书之坐 rc=0（其钩⛔灌总章约 8K 之字）；余 rc=1。⛔把坐号硬写进 settings
-        sys.exit(0 if 守书开头之判(我之坐(), 守书之坐()) else 1)
     sys.exit(自测() if '--自测' in sys.argv else main())

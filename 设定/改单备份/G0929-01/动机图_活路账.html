@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动机图 · 修闸大全 —《镇冢秘术》全书行走引擎</title>
+<style>
+:root{--cloth:#232f3f;--cloth-deep:#182230;--paper:#efe6d3;--paper2:#e7dbc2;--ink:#26221b;--ink-soft:#5f5749;--zhu:#9e3325;--zhu-deep:#7c2318;--lamp:#d9a441;--line:#cabc9e;--ok:#3f5d3a}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--cloth);color:var(--ink);font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;font-size:16px;line-height:1.9}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px}
+header{background:linear-gradient(180deg,var(--cloth-deep),var(--cloth));color:#e8e0cf;padding:52px 0 38px;border-bottom:3px solid var(--zhu)}
+.book{letter-spacing:.35em;font-size:13px;color:#9fb0c4}
+h1{font-family:"Songti SC","STSong","SimSun",serif;font-size:42px;font-weight:900;letter-spacing:.06em;margin:10px 0 6px;color:#f2ead6}
+h1 .dot{color:var(--lamp)}
+.thesis{font-family:"Songti SC","STSong","SimSun",serif;font-size:18.5px;color:#d8cdb4;margin:14px 0 20px;border-left:3px solid var(--zhu);padding-left:14px}
+.stamps{display:flex;flex-wrap:wrap;gap:8px;font-size:12px}
+.stamp{border:1px solid #4a5a70;color:#b9c6d6;padding:3px 10px;border-radius:2px;letter-spacing:.08em}
+.stamp.hot{border-color:var(--zhu);color:#e6b3a4}
+nav{position:sticky;top:0;z-index:9;background:var(--cloth-deep);border-bottom:1px solid #33414f;padding:8px 0}
+nav .wrap{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+nav a{flex:0 0 auto;color:#aeb9c6;text-decoration:none;font-size:13px;padding:4px 11px;border:1px solid #3a4757;border-radius:2px}
+nav a.cur{color:#1c1610;background:var(--lamp);border-color:var(--lamp);font-weight:700}
+main{padding:34px 0 80px}
+section.panel{background:var(--paper);border-radius:3px;box-shadow:0 3px 0 rgba(0,0,0,.35);padding:32px 32px 28px;margin-bottom:32px;position:relative;overflow:hidden}
+section.panel::before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(158,51,37,.045) 46px 47px)}
+h2{font-family:"Songti SC","STSong","SimSun",serif;font-size:26px;font-weight:900;color:var(--zhu-deep);border-bottom:2px solid var(--zhu);padding-bottom:8px;margin-bottom:16px}
+h2 small{font-size:14px;color:var(--ink-soft);font-weight:400;font-family:"PingFang SC",sans-serif;margin-left:10px}
+h3{font-family:"Songti SC","STSong","SimSun",serif;font-size:19px;color:var(--ink);margin:22px 0 8px}
+p{margin:10px 0}
+b,strong{color:var(--zhu-deep)}
+blockquote{font-family:"Songti SC","STSong","SimSun",serif;font-size:17px;background:var(--paper2);border-left:4px solid var(--zhu);padding:12px 16px;margin:14px 0;color:#3c3226}
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:14px 0;background:#f4ecdc}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--paper2);font-family:"Songti SC","STSong","SimSun",serif;color:var(--zhu-deep);white-space:nowrap}
+.tscroll{overflow-x:auto}
+.fig{background:#f6efdf;border:1px solid var(--line);border-radius:2px;padding:10px 10px 4px;margin:14px 0}
+.fig svg{width:100%;height:auto;display:block}
+.legend{font-size:13.5px;color:#463e30;padding:8px 6px 6px;border-top:1px dashed var(--line);margin-top:6px}
+.legend b{color:var(--zhu-deep)}
+.legend li{margin:4px 0 4px 18px}
+.row{display:grid;grid-template-columns:104px 1fr;gap:10px;padding:9px 0;border-top:1px dashed var(--line);font-size:15px}
+.row .k{font-family:"Songti SC","STSong","SimSun",serif;font-weight:800;color:var(--zhu-deep)}
+.rail{position:relative;padding-left:44px}
+.rail::before{content:"";position:absolute;left:15px;top:8px;bottom:8px;width:2px;background:repeating-linear-gradient(180deg,var(--zhu) 0 7px,transparent 7px 13px)}
+.station{position:relative;margin-bottom:28px}
+.station .knot{position:absolute;left:-44px;top:14px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;font-family:"Songti SC",serif}
+.knot.done{background:var(--zhu);box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--zhu)}
+.knot.now{background:var(--lamp);color:#231a08;box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--lamp),0 0 16px 2px rgba(217,164,65,.5)}
+.knot.todo{background:var(--paper);border:2px solid var(--zhu);color:var(--zhu)}
+.knot.core{background:var(--cloth-deep);border:2px solid var(--lamp);color:var(--lamp)}
+.card{background:var(--paper);border-radius:3px;box-shadow:0 3px 0 rgba(0,0,0,.35);padding:22px 24px 18px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(158,51,37,.04) 46px 47px)}
+.eyebrow{font-size:12.5px;letter-spacing:.2em;color:var(--zhu);font-weight:700;margin-bottom:4px}
+.card h2{font-size:22px;border:none;padding:0;margin:0 0 2px}
+.meta{font-size:13px;color:var(--ink-soft);margin-bottom:10px}
+.badge{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:2px;margin-left:8px;vertical-align:2px}
+.badge.done{background:var(--ok);color:#f0ead8}.badge.now{background:var(--lamp);color:#231a08;font-weight:700}.badge.todo{background:transparent;border:1px solid var(--ink-soft);color:var(--ink-soft)}
+.say{font-family:"Songti SC","STSong","SimSun",serif;font-size:17px;background:var(--paper2);border-left:4px solid var(--lamp);padding:10px 14px;margin:10px 0 12px;color:#3c3226}
+.tune{display:inline-block;font-size:11px;border:1px solid var(--lamp);color:#8a6410;padding:0 5px;border-radius:2px;margin:0 2px}
+footer{color:#9aa8b8;text-align:center;font-size:13px;padding:10px 0 60px;line-height:2}
+footer b{color:#d8b98a}
+@media(max-width:640px){h1{font-size:30px}section.panel{padding:22px 16px}.card{padding:18px 14px}.rail{padding-left:36px}.station .knot{left:-36px;width:27px;height:27px;font-size:10px}.row{grid-template-columns:1fr;gap:2px}.row .k{border-left:3px solid var(--zhu);padding-left:8px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="book">《镇冢秘术》· 作者全知手册</div>
+  <h1>动机图 <span class="dot">·</span> 修闸大全</h1>
+  <div class="thesis">九路电，九座被改坏的闸，一个被钉在总闸上两千年的人。<br>主角不走会死；每一站的闸得的病不一样，修法也不一样——本页写到"手"。</div>
+  <div class="stamps"><span class="stamp hot">CANON-ID：ZM-CANON-20260722-101</span><span class="stamp">母本：总圣经 三、6之补 至 6之补四</span><span class="stamp">本页只是阅读版 · 一切以总圣经为准</span></div>
+</div></header>
+<nav><div class="wrap" id="chips">
+  <a href="#gushi">故事</a><a href="#kousi">他怎么被扣死的</a><a href="#bawen">八问八答</a><a href="#jiepou">一座站解剖</a><a href="#bing">四种病</a><a href="#zhen">四样诊具</a><a href="#xiu">四修＋血指印</a><a href="#gongdan">工单七步</a><a href="#jinku">认血＝金库门</a><a href="#bingli">九站病历卡</a><a href="#yike">一词一课</a><a href="#fanpai">反派</a>
+</div></nav>
+<main class="wrap">
+
+<section class="panel" id="gushi">
+  <h2>零 · 偷电的故事<small>三分钟讲完整台引擎 · 电网总类比（作者定版）</small></h2>
+  <p>天下的气运，你就当成<b>电</b>。九州本来有九路电，各供一片地，电各回各家——老天爷的原装电网。两千年前，赵阙借皇帝的手，让公输家的匠人把九路电的老站改了线：<b>九路电不再回各自的地，全并进一条暗拉的总缆，总缆通骊山，供他一个人充。</b></p>
+  <p>启阵那天，传输位上的玄微在电流已上身的关口<b>反悔打断了仪式</b>——机器卡死在"进行中"，<b>赵阙被固定在自己的台子上，除非仪式完成，永远下不来</b>。玄微重伤成活死人（体内那份电＝不腐之因），拖着残躯带人把"还电那一半"拆成零件留给后代：<b>抠玉解半</b>（第九鼎座心原生嵌一枚圆玉，玉上与座面纹路本为一体＝一堆小电线，玉即正中之桥：玉在桥通、玉走路断——整枚抠下、解开本为阴阳两半的合体分藏血脉，两半玉自此分行；不砸一物，鼎天生认血无契者吸不进。座面原位＝凹槽，此座即后世苏衍台。玉＝按钮开关：放回即按"开"、一辈子按一次、按下闭锁＝认位不可逆）、<b>把充电宝那副功能（能吸、能暂存、能定向）封进血脉</b>、<b>留下自己这具过过电的身子当还电台上唯一现成的转换器</b>、九站回流暗线（血锁）、亲笔血图（混着那股电的血画就——图与九鼎同气呼应，望气可读第二层）；两脉家法从此一件事：<b>别让这血醒</b>（爷爷把望气说成"病"，藏的就是这个）。</p>
+  <p>两千年，九座改坏的站没人保养：有的线堵死了，有的漏电，有的疯了见活的就咬（青溪），有的当年就被硬切崩过（楼兰）。守灵夜，先祖鼎能走玉程序（认血＋配型）注入其血——契立连接通、功能激活——从那夜起机器认他：<b>他成了整张网上唯一的活充电宝。</b>九座病站的漏电加上钉着的那人一口没停的吸，全顺着血找他，身上九股拉力，一向一股。</p>
+  <blockquote>他的活路只有一条：沿玄微亲脚走过的次序，到九座站跟前，<b>先诊病、再对症修、最后按血印把玄微留的回流暗线引通</b>——每修好一座：那片地太平、他身上那股断、暗线从死变活。终局"松手"，松的就是这九路通好的线——<b>电各回各家；最后那一下拨错方向，九路电就全充进赵阙。</b></blockquote>
+  <div class="row"><span class="k">两个总角色</span><span><b>苏衍＝充电宝</b>：整张网唯一能承接、暂存、并决定电往哪儿去的活件（那个活接口长在他血里）。<b>玄微＝转换器</b>：总闸升到满负荷那几息，少了他这道缓冲变换，电到不了任何人手里，只会烧穿。</span></div>
+</section>
+
+<section class="panel" id="kousi">
+  <h2>一 · 他怎么被自己的机器扣死的？<small>★作者定版 · 两个人，一台机器</small></h2>
+  <p><b>机器必须两个人：</b>赵阙这个人＝一部极聪明的<b>超级智能手机</b>；<b>他的台子＝总电力调度指挥机器</b>，机器上垂着一根连接线——<b>他往台上一躺＝把手机接上那根线</b>：接通了才够得着调度指挥机器、才能操纵八座鼎把天下的电聚到骊山；下台＝拔线＝<b>断开与调度指挥机器的连接</b>，什么也调不动。<b>可那根连接线是信号线——就像网线：能传信号，充不了电——传命令不传电力</b>。电要进人身得走另一条道：<b>第九鼎＝电源插口</b>；插口与台子之间横着一名活人——<b>苏玄微＝两根线的充电宝</b>：一头插进插口、电先进他的身子、再顺另一根线送到赵阙台上，赵阙把电存进体内，存够＝长生。<b>电全过玄微的手，给多少他说了算</b>——所以赵阙许他"共同永生"，两人合作，仪式开动。<b>【重点】这活缺一不可：先得赵阙把电调来（插口里有电），玄微插上才充得动；网线不传电，没了传输位赵阙守着电山干瞪眼——一个管调来、一个管送进，缺一个都不成。</b></p>
+  <p><b>扣死的那一下：</b>启阵，电流上线、已流进玄微身体——<b>玄微犹豫了：他觉得这样不对，他选择了相信后代——仪式进行中强行打断、从传输位上撤下。</b>机器卡死在"进行中"：电悬着、传输断了、谁也到不了家。<b>赵阙被固定在自己的台子上：动弹不得，也死不了——除非仪式完成。</b>而"完成"从设计上就有两种：电全存进他（永生），或经转换台放归天下（自由供电）——<b>哪一种都解他的钉，只有一种给他永生。</b></p>
+  <p><b>玄微的代价：</b>重伤、活死人、全身瘫痪；打断时已入体的那部分电留在身里——<b>尸身两千年不腐、肉体保持弹性</b>（与"源印＝他本人的气"同指一物）。</p>
+  <div class="row"><span class="k">他能干什么</span><span><b>调度权·大项：把天下的电照常运营了两千年</b>——八鼎＝基站（吸取／放回，各管一方供电），中华大地电力如常靠他这双撒不开的手（网是他的笼，也是他唯一的本钱）。小项：支线加压造异象、顺旧裂缆给霍钧滴电续命、借线递话托梦。无全知，不能逐句遥控人。</span></div>
+<div class="row"><span class="k">催命的钟</span><span><b>调度替代不了维修：</b>八鼎两千年失修、严重老化、已入倒计时——拖到鼎崩＝电泄乱窜失衡＝<b>席卷天下的大天灾</b>（青溪叫魂、楼兰死城＝提前漏出的两滴）。所以他急：仪式必须赶在鼎垮前完成（两种任一）。</span></div>
+  <div class="row"><span class="k">他不能干什么</span><span><b>没使用权：</b>一度电也进不了自己——<b>信号线天生不传电力</b>，这不是惩罚，是他自己台子的设计。</span></div>
+  <div class="row"><span class="k">他怎么"活"了两千年</span><span>被卡在"进行中"的机器吊着——活着，但那不叫活，叫扣着。</span></div>
+  <blockquote>他非要苏衍不可的全部理由：仪式要完成，三样缺一不可——<b>传输位</b>（苏衍台＝第九鼎空座＋凹槽原位＋完整玉合一放回作桥＋这身独承血契的活血：新的充电宝）、<b>转换台</b>（玄微的身体）、<b>九路通好的线</b>。<b>他等的，始终是一个传输位上的人。</b><br><b>【重点】还电的台也必经中间：它底下直连大地九条脉，可进线连在中间充电位上——两座台子谁想得电都得经中间那个位。终局的摆法＝主角坐中间当充电宝、先祖尸身躺还电台当转换器，电经主角→先祖→九条地脉→回网变自由。这就是必须带着先祖尸体走到骊山的全部原因。</b></blockquote>
+</section>
+
+
+<section class="panel" id="bawen">
+<h2>一之补 · 八问八答<small>整台引擎，一问一答说到底——与总圣经三、6之补同文，此处为阅读版</small></h2>
+<p><b>这一节回答的是作者的原问：他们去每一个点的目的是什么？为什么要去？去了做成什么？为什么走完九个点就能活命？是谁在引他走？下面八问八答，每一条只用已锁的零件，不添一件新神秘。</b></p>
+<p><b>⓪ 电网总类比（先把这个比方立住，后面八问全用它讲）</b></p>
+<p><b>把天下想成一张国家电网。这张网两千年前被一个人动过手脚。</b></p>
+<div class="tscroll"><table><tr><th>书里的东西</th><th>电网里的东西</th><th>一句话</th></tr><tr><td>天下气运</td><td>电</td><td>养活地面上一切的那股流</td></tr><tr><td>九脉</td><td>九条主干线路</td><td>九州＝九个供电片区；<b>整个天下都在网上，没有一寸"网外"</b></td></tr><tr><td>九鼎</td><td>九座总闸站</td><td>禹立的枢纽变电站，一州一座，本意是"九个片区是一个整体"的接线盒</td></tr><tr><td>赵阙干的事</td><td>把九座闸站全改成<b>抽电站</b></td><td>九条线的电不再回各自片区，全拐上一条私线送给一个用户——他自己</td></tr><tr><td>赵阙被钉</td><td>私接户被自己的改装电死锁在总站</td><td>人动不了，但<b>他挂在网上的那口"吸"（常引）两千年没断</b></td></tr><tr><td>这一姓的活血</td><td>长在苏家血里的<b>活接口</b></td><td>大电流要走必须有活接口；接口沉睡＝线路空转</td></tr><tr><td>缝里漏的小电</td><td>私接户从裂缝偷的小电</td><td>只够办小事（续霍钧的命、递话），<b>小漏成不了阵</b></td></tr><tr><td>觉醒</td><td>接口通电</td><td>守灵夜起，两千年来头一回，网上有了一个活接口</td></tr><tr><td>九股拉力</td><td>九条失修线路的漏电＋那口常引，全往活接口上窜</td><td>人成了带九股漏电的电线，不处理慢慢烧穿；<b>三档：麻（拉痛）→烫（夜烧雾红）→击穿（见血晕厥反噬）</b></td></tr><tr><td>安点</td><td><b>到站检修</b></td><td>电工拧螺丝必须到场；活接口必须到场——所以不能遥控、不能代走</td></tr><tr><td>失稳外鼎（如青溪）</td><td>失修的闸乱跳、见"活电"就乱咬</td><td>叫魂＝失修闸在乱抽周围活人；<b>它是苏衍、赵阙、黎东来三方共同的敌人</b></td></tr><tr><td>次序爬梯</td><td>电压等级由低到高</td><td>低压站练熟才扛得住高压站；<b>跳级＝拿低压的身子摸高压排＝当场击穿</b>；玄微亲脚按此序走通过一遍，血图那条线就是他试出来的检修顺序</td></tr><tr><td>八枝一根</td><td>八座外站的漏电是支路病；中心那股是<b>有人在主动抽</b></td><td>支路病检修能除；主抽的那家必须去把线剪了（截源）</td></tr><tr><td>安点＝上弦</td><td>检修复位后的闸是"可控"的</td><td><b>可控的闸既能终局把电送回各片区（复流），也能全拨给私接户（成阵）——闸不修好，两条路都走不通。所以赵阙护着他修。</b></td></tr><tr><td>终局四步</td><td>对线→排线→合总闸→松手送电回家</td><td>认位／定向／承流／分流（见 9之补）</td></tr></table></div>
+<p><b>类比只进圣经和动机图，不进正文。正文口径照旧只许身体话：拉、拽、抽着走、烫、火、安、熄（F083、永禁机制词表）。</b></p>
+<p><b>① 他不走，怎么个死法？</b></p>
+<p>赵阙被自己的机器钉在骊山两千年，可他对九脉的那股<b>常引</b>——把天下气运往自己身上拉的那口"吸"——从来没停过（三、3）。常引是死水里的一根吸管：光有吸管不够，<b>得有一条活的、已经睁开的这一姓的活血当通路</b>，流才走得动。两千年里苏家偶尔生出活钥，但樗里和苏家两脉的全部家法就是一件事：<b>把活钥藏成死钥</b>——不让他碰玄微的气，不让他睁眼。爷爷把望气说成"病"、藏了苏衍二十三年（七、爷爷条），藏的就是这个。</p>
+<p>守灵夜，苏衍的手伸进了那个人的掌心（第 1 章原场）。<b>从那一夜起，两千年来头一回，通路活了。</b>九脉的失衡、外鼎漏出的乱流、赵阙那股常引，从此<b>顺着血找他</b>：他身上多出九股细细的拉力，一向一股，对着九个点。不安的点，那一股就一天比一天烫。不走，就是站在原地被九股火慢火煮熟——先是拉着疼，再是夜里烧、雾发红，最后见血、晕厥、望气反噬。<b>具体撑多久，canon 故意不锁日历数（防跟三个钟打架），只锁三档爬梯和"不走单调加重、安一点该向清零"这条规则。</b></p>
+<p>躲呢？<b>躲不掉。九州就是九脉在人间的影子（三、2）——这张图上没有"界外"。</b>跑到哪儿，血还是血，拉力还是九股。跑，只是煮得慢一点，且一寸账都不进。</p>
+<p><b>② 到一个点，具体干什么？</b></p>
+<p>五步，全是民间口径能写的：<b>走近</b>（近到同源气能搭上，第 43 章玉温差那套）→<b>认血</b>（鼎认出这一姓的活血——它两千年就在等这个）→<b>寻回路</b>（望气把这条脉自己的本循环出口摸出来）→<b>安下去</b>（把这座鼎从"漂移乱抽、见活气就咬"校回"安着、可控"）→<b>验熄</b>（身上朝这一向的那股拉力，当场熄）。</p>
+<p><b>得到什么，三样，样样能验：</b>身上少一股火（自己的命）；这一带不再死人（第 61—70 章青溪的"叫魂"就是失稳外鼎在乱抽活人——安下去它就安生，见三、11）；这一姓的活血多吃透一种气性（为下一站爬梯，见④）。</p>
+<p><b>③ 为什么走完九个点就能活？</b></p>
+<p>因为九股拉力有八股是<b>枝</b>、一股是<b>根</b>。八座外鼎的乱流是枝：安一座熄一股，安完八座，枝就全清了。可<b>中心那一股——赵阙本人的常引——不是失衡，是有人在拉</b>。那一股安不掉，只能<b>截断</b>：进骊山，把拉的人解决掉。所以这本账的全文是：<b>安八外鼎＝把火灭到只剩根；入骊山截源＝把根拔了，才是真活。只安八、不入中心，是缓死，不是活。</b>他第 30 章自己说的「我若还要查清并<b>截断</b>它」，说的就是这个根。</p>
+<p><b>④ 为什么必须一站一站、按次序走？</b></p>
+<p>不是仪式，是<b>爬梯</b>。九条脉九种气性，由浅入深（土脉墓气最浅、活气水气愈深、中心最烈——三、12 的气性指纹）。这一姓的活血每安一站，就把这一站的气性<b>吃透</b>一分；吃透了浅的，才咬得住下一站深的。<b>玄微当年亲脚把九站走了一遍才画下这条道（第 13 章原文：「像有人提笔，一站一站，亲脚走过去画的」）——图上那条线不是路线建议，是他试出来的唯一可行爬梯。</b>跳站＝拿吃不透的血去咬更深的气性＝咬不住、安不下，还得挨一口反噬。白走，且伤身。</p>
+<p><b>⑤ 他自己是怎么知道这本账的？（知情四级阶梯）</b></p>
+<p style="margin-left:14px">· <b>一级·身体先给证据（E2 开头落地，见施工表验收线）：</b>柏冢那一站他是<b>不知情</b>走完的（E1 蓝图原话）。离开关中后他发现：九股拉力里，<b>唯独柏冢那一向的一股，熄了</b>。别的股照烧，就它凉了。一个记者最认这种东西——<b>独一份的对照实验，长在自己身上</b>。</p>
+<p style="margin-left:14px">· <b>二级·老头给"怎么做"，不给"为什么"：</b>樗里旧账传下三条规矩（民间口径，落正文时照这个骨架）：<b>一、认上了，退不掉；二、一处安一处，人才松一寸；三、顺着先人画的次序走，乱走白走还挨咬。</b>护栏：<b>老头只知规矩，不知原理</b>——"校准、上弦、复流、常引"这些词他没有，谁问急了他也只有一句"旧账就这么写的"。原理词一个不许提前出口（永禁机制词照旧管正文）。</p>
+<p style="margin-left:14px">· <b>三级·门后那句话有了底：</b>第 21 章那东西说的「往后那条路，你也会自己走完。<b>因为那是你唯一能活的法子</b>」——它没骗他。它比谁都盼他走（见⑥）。</p>
+<p style="margin-left:14px">· <b>四级·卷五图纸给学名：</b>公输图纸到手，他才知道"安点"叫校准、叫上弦，才看见①到④的全部原理——<b>也才看见自己这一路的活命账，同时是赵阙的成阵账。</b>卷五那一下的分量，全靠前面四十多站他"为了活命"的正当性攒出来。</p>
+<p><b>⑥ 是谁在引他走？神秘力量？反派下饵？</b></p>
+<p><b>谁也没引。</b>引擎在他自己血里：<b>倒计时是他的，路书是先人留的。</b>赵阙不下饵——下饵会露；他干的是 F075 钉死的那三样：<b>修路、接线、清障</b>，外加喂真话、护他周全。因为苏衍为活命做的每一次"安点"，恰好就是赵阙成阵要的每一次"上弦"——<b>同一道弦，两个用法</b>。所以全书最狠的一句仍然成立且更狠了：<b>「他以为自己在逃网，实际上一直在被送往阵眼」——而且没有一个人骗过他，他每一步都出于活命的正当理由。</b>这比"被引诱"高一个量级：鱼是被骗上钩的，他是被自己的求生心套上轭的。</p>
+<p><b>⑦ 护栏（硬）</b></p>
+<p>1. <b>禁写神秘感召</b>：任何"冥冥之中""天命召唤""图在呼唤他"式写法一律违 canon——拉力是生理的、可描述的、单调变化的，不是玄音。</p>
+<p>2. <b>禁写反派设饵引诱</b>：黎东来／霍钧／赵阙的动作只能是清障、护送、递真话；谁写"诱他去下一站"谁返工。</p>
+<p>3. <b>安点不减终局代价</b>：承流仍只撑数息，灼烧、白发、失去望气、折寿一分不少（三、9）。安点买的是路上的命，不是终局的命。</p>
+<p>4. <b>拉力的民间口径</b>：正文里只许用"拉、拽、抽着走、烫、火"这类身体话，永禁机制词表照旧。</p>
+<p><b>⑧ 与旧口径的清账</b></p>
+<p>「血图逐段显路」（原第八批半句）<b>作废</b>：它对撞第 13 章原场——那一夜九个暗点<b>全部</b>拍进了屏。现口径：<b>血图一次给全</b>（九点位置＋先后次序＋深浅笔触）；<b>站名</b>靠樗里旧账一站一站给（第 41、59 章原样）；<b>方向</b>靠身上那九股拉力（哪股最烫，下一站就在哪向）；<b>近处落地</b>靠望气＋古玉温差（第 29、43 章原样）。<b>图从头到尾没变过；变的是人——安一点，熄一股。</b>第 13 章"深浅不一"四字留作富矿，不承重，日后启用前须先立条。</p>
+<p><b>⑨ 一站的标准写法（每站开拍简报照此过一遍）</b></p>
+<p><b>动身三证</b>（拉力向＋旧账站名＋现场证据，三样叠合、由苏衍拍板——59 章是范式）→<b>路途</b>（每站的"怎么去"本身要死人，交通即剧情）→<b>到站近核</b>（玉温差／望气把大概落向收成准地方）→<b>本站独有的麻烦</b>（见十二之补二逐站格；麻烦必须挡在"安点"前面，安点是解题不是开锁）→<b>顶着麻烦做五步</b>（走近→认血→寻回路→安下→验熄；每站五步都要按该站气性变形，禁止复制上一站流程）→<b>验熄与清账</b>（该向拉力熄＋五本账各落一笔）→<b>反派侧落一笔</b>（照⑩与十三配额）→<b>下一向接班收章</b>（哪股最烫＋旧账对名，钩下一站）。</p>
+<p><b>⑩ 反派三方在九站里的动作总表（回答"是帮是挡"）</b></p>
+<p>> <b>总纲：九站里没有一站是反派拦路。拦路的只有失修的鼎和天灾人祸。反派的恐怖恰恰在于他们一路陪跑护送——真正的对抗只发生在两处：卷七收网的人质局，终局"定向"那一步。</b></p>
+<div class="tscroll"><table><tr><th>反派</th><th>一路在干什么</th><th>为什么不拦</th><th>逐站要点</th></tr><tr><td><b>黎东来（明线·人间的手）</b></td><td>修路、批钱、清障、递资源；卷四起每卷 1 篇他的流程视角（十三配额）</td><td>他要的东西也在骊山尽头；苏衍走得越顺，"货"到得越快。<b>他拦的从来不是苏衍，是别人抢在他前面</b></td><td>E1 下局送人进站｜E2 查项目露"延寿"之贪｜E3—E5 清障＋流程篇｜E6 与霍钧同框争图｜E7 收网前最后的抢｜E8 收网主使｜C 人质局的资源侧</td></tr><tr><td><b>霍钧（暗线·只露一只手）</b></td><td>处理失稳节点、盯沈鸢的线、执行赵阙的差</td><td>他的命拴在赵阙身上；赵阙要苏衍走完，他就护着走完</td><td>青溪是他 27 年前的旧伤地（暗线篇可写他对这地名的反应，不露名）｜E6 争图｜E8 把叛变的沈鸢"收回"作人质｜C 被老头拖住</td></tr><tr><td><b>赵阙（等的人）</b></td><td>等、护、喂真话；只在已连接者的梦与节点异象里出现（十三铁律，无全知）</td><td><b>苏衍每一次安点保命＝他要的一次上弦。他不需要骗，只需要真话</b></td><td>21 章递第一句真话｜E4 递一句（内容写时定，须过揭秘节奏）｜E6 全书最大一次喂真话｜C 终局唯一一次真出手：拿霍钧作"复活伪证"骗定向（三、10）</td></tr></table></div>
+</section>
+
+<section class="panel" id="jiepou">
+  <h2>二 · 一座站长什么样<small>工程剖面 · 六个部件，编号看图例</small></h2>
+  <div class="fig"><svg viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="一座站剖面">
+    <text x="20" y="30" font-size="16" fill="#7c2318" font-weight="bold" font-family="Songti SC,serif">一座外闸站 · 剖面（编号对下方图例）</text>
+    <path d="M40 90 C 250 70, 610 70, 820 90" stroke="#5b789a" stroke-width="9" fill="none"/>
+    <text x="60" y="70" font-size="14" fill="#3c5473">①</text>
+    <rect x="380" y="120" width="120" height="70" fill="none" stroke="#26221b" stroke-width="4"/>
+    <line x1="380" y1="155" x2="500" y2="155" stroke="#26221b" stroke-width="4" transform="rotate(4 440 155)"/>
+    <text x="508" y="140" font-size="14" fill="#26221b">②</text>
+    <g stroke="#9e3325" stroke-width="3"><path d="M500 132 q22 -8 40 -4"/><path d="M502 176 q24 10 42 8"/></g>
+    <text x="548" y="126" font-size="14" fill="#9e3325">③</text>
+    <path d="M440 190 L 440 300 L 820 300" stroke="#7c2318" stroke-width="7" stroke-dasharray="10 7" fill="none"/>
+    <text x="620" y="292" font-size="14" fill="#7c2318">④</text>
+    <path d="M418 186 C 320 240, 220 252, 130 240 C 90 232, 62 190, 52 100" stroke="#3f5d3a" stroke-width="5" stroke-dasharray="3 7" fill="none"/>
+    <text x="200" y="270" font-size="14" fill="#3f5d3a">⑤</text>
+    <rect x="392" y="196" width="18" height="18" fill="none" stroke="#d9a441" stroke-width="3"/>
+    <text x="368" y="232" font-size="14" fill="#8a6410">⑥</text>
+    <circle cx="440" cy="155" r="6" fill="#9e3325"/>
+  </svg>
+  <div class="legend"><b>图例（六个部件）：</b>
+    <li><b>① 本地那条干线（这条脉）：</b>这一片地的电靠它活。</li>
+    <li><b>② 闸体（鼎）：</b>禹立的老闸、被公输改成了"往私缆拐水"的机构。埋了两千年，肉眼未必看得出鼎形——它长进了山里、城下、水底。<b>望气认它：方圆里所有的雾都往图中红点那个"拧眼"里灌，像池子的漏水眼。</b>图上闸板是歪的——两千年没人保养，卡歪了。</li>
+    <li><b>③ 老缝（病灶）：</b>闸板边、石头裂——<b>堵、漏、咬、崩四种病都从这类地方犯</b>（见"四种病"）。</li>
+    <li><b>④ 私缆（导流）：</b>赵阙的抽电的私缆，通骊山。物理层——墓道走向、城基排布、地下槽——<b>黎东来的人也会修这一层。</b></li>
+    <li><b>⑤ 回流暗线（玄微的后门）：</b>从闸底绕回本地河的一条<b>不在图纸上的沟</b>，修完封死抹平，两千年断着。旧账记半句、图纸记半句，<b>最后一段只有望气看得见那道旧线印子</b>（像墙上撕掉旧对联留下的印）。</li>
+    <li><b>⑥ 锁：</b>暗线的开关只认<b>清醒活人的这一姓血＋这双眼</b>——详见"认血＝金库门"。</li>
+  </div></div>
+</section>
+
+<section class="panel" id="bing">
+  <h2>三 · 闸的病一共就四种<small>每站占一到两样——这就是"每站修法不一样"的病理根据</small></h2>
+  <div class="tscroll"><table>
+    <tr><th>病</th><th>是什么</th><th>地面上长什么样（怪象）</th></tr>
+    <tr><td><b>堵</b></td><td>该走的老道被封土、淤积、塌方封死——水憋着</td><td>一带地气闷死：庄稼不长、井水发浑、牲口蔫</td></tr>
+    <tr><td><b>漏</b></td><td>闸板老缝往外乱滋——水滋到不该去的地方</td><td>一片林子疯长又暴枯、无名地热、白毛霜、风里带哨音</td></tr>
+    <tr><td><b>咬</b></td><td><b>闸疯了，倒着抽活气</b>——分不清水和活物，见活的就当水抽</td><td>叫魂、失踪、狗不叫、"墓来找人"——<b>四病里最凶</b></td></tr>
+    <tr><td><b>崩</b></td><td>导流被硬切、结构垮了——不是病，是伤</td><td>一整片死地（楼兰死城即此）</td></tr>
+  </table></div>
+</section>
+
+<section class="panel" id="zhen">
+  <h2>四 · 到站先开病历：四样诊具<small>灯 · 雾 · 玉 · 针——每人一件家什</small></h2>
+  <div class="fig"><svg viewBox="0 0 860 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="四样诊具">
+    <line x1="225" y1="30" x2="225" y2="200" stroke="#cabc9e"/><line x1="435" y1="30" x2="435" y2="200" stroke="#cabc9e"/><line x1="645" y1="30" x2="645" y2="200" stroke="#cabc9e"/>
+    <rect x="90" y="90" width="34" height="46" rx="6" fill="none" stroke="#26221b" stroke-width="3"/><path d="M107 90 q0 -16 12 -18" stroke="#26221b" stroke-width="3" fill="none"/>
+    <path d="M107 122 q-8 -14 0 -24 q8 10 0 24" fill="#d9a441"/><path d="M107 104 q10 -6 18 -2" stroke="#9e3325" stroke-width="3" fill="none"/>
+    <text x="112" y="180" font-size="15" fill="#26221b" text-anchor="middle" font-family="Songti SC,serif">① 灯</text>
+    <g stroke="#8b93a2" stroke-width="3" fill="none"><path d="M280 110 q30 -18 60 0"/><path d="M285 128 q28 -14 52 0"/><path d="M292 92 q22 -12 42 0"/></g>
+    <circle cx="372" cy="112" r="7" fill="#9e3325"/>
+    <text x="330" y="180" font-size="15" fill="#26221b" text-anchor="middle" font-family="Songti SC,serif">② 雾（他的眼）</text>
+    <path d="M515 88 a20 26 0 1 0 26 0 l-13 34 z" fill="#efe6d3" stroke="#3f5d3a" stroke-width="3"/>
+    <path d="M560 96 q14 6 14 18" stroke="#9e3325" stroke-width="3" fill="none"/>
+    <text x="540" y="180" font-size="15" fill="#26221b" text-anchor="middle" font-family="Songti SC,serif">③ 玉</text>
+    <line x1="740" y1="80" x2="760" y2="140" stroke="#26221b" stroke-width="4"/><circle cx="740" cy="78" r="5" fill="#26221b"/>
+    <path d="M760 140 l14 8" stroke="#26221b" stroke-width="4"/><path d="M700 158 q40 10 120 6" stroke="#5f5749" stroke-width="3" fill="none"/>
+    <text x="752" y="190" font-size="15" fill="#26221b" text-anchor="middle" font-family="Songti SC,serif">④ 听针</text>
+  </svg>
+  <div class="legend"><b>图例：</b>
+    <li><b>① 老头的灯＝电笔：</b>油灯凑近气路——<b>火苗往哪边倒，气往哪边走；火色变青＝死气重（第 3 章原理已写）；暗红倒卷＝在乱抽活气。</b></li>
+    <li><b>② 苏衍的雾＝只有他能看的层：</b>雾往拧眼里灌的股数、快慢、颜色。<b>倒卷＝咬；打旋不走＝堵；四散乱飘＝漏。</b></li>
+    <li><b>③ 玉＝信号表：</b>贴身温差——近气源发温、对着乱流发烫刺手；沿渠走，玉温的起落就是水位。</li>
+    <li><b>④ 钱满的三寸七铜听针＝听诊器：</b>贴地贴石，<b>听地下"水"跑的动静——匀的、断的、疯的，声不一样。</b>他家四辈传下的吃饭家什，从此有了正式岗位：<b>量尺寸的人，负责听。</b></li>
+  </div></div>
+</section>
+
+<section class="panel" id="xiu">
+  <h2>五 · 四病四修 ＋ 血指印手法<small>对着病来 · "引"的动作从此钉死为正文标准</small></h2>
+  <div class="tscroll"><table>
+    <tr><th>病</th><th>修法</th><th>具体动作（谁干）</th><th>为什么管用</th></tr>
+    <tr><td>堵</td><td><b>清道</b></td><td>钱满主刀：撬、挖、卸机关，按公输卸力次序拆封石；苏衍用雾指位——雾在哪儿打旋，堵就在哪一寸</td><td>把老道还给水</td></tr>
+    <tr><td>漏</td><td><b>引正</b></td><td>找到暗线、按血指印把电引回正道（见下）</td><td><b>电有正道走，歪缝自然没电可滋——治本不治标</b></td></tr>
+    <tr><td>咬</td><td><b>先喂后引</b></td><td>老头主刀：把死气（陈年纸钱灰、旧棺木屑之类<span class="tune">可调</span>）撒成一条线——<b>疯闸分不清死活，先扑死气；它咬空那几息＝活人抢进去按血印的窗口</b>。一段喂、一段按；已聚形扑来的，沈鸢的刀＋灯断它</td><td>拿它的病治它：它咬着咬着，顺着血印摆的道回了家</td></tr>
+    <tr><td>崩</td><td><b>接骨</b></td><td>钱满按听针挑"响得对"的料石垫回断口（断骨先对茬），苏衍再按印引通</td><td>茬不对，水一冲又崩</td></tr>
+  </table></div>
+  <h3>★ 血指印手法（"通线"到底是什么动作——全书标准）</h3>
+  <div class="fig"><svg viewBox="0 0 860 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="血指印三步">
+    <line x1="295" y1="30" x2="295" y2="215" stroke="#cabc9e"/><line x1="575" y1="30" x2="575" y2="215" stroke="#cabc9e"/>
+    <path d="M40 150 C 110 120, 200 110, 275 120" stroke="#3f5d3a" stroke-width="5" stroke-dasharray="3 7" fill="none"/>
+    <g fill="#9e3325"><circle cx="70" cy="143" r="5"/><circle cx="110" cy="132" r="5"/><circle cx="150" cy="126" r="5"/><circle cx="190" cy="122" r="5"/><circle cx="232" cy="119" r="5"/></g>
+    <circle cx="60" cy="180" r="11" fill="#efe6d3" stroke="#26221b" stroke-width="3"/>
+    <text x="150" y="205" font-size="15" fill="#26221b" text-anchor="middle" font-family="Songti SC,serif">第一步 · 按印</text>
+    <path d="M320 150 C 390 120, 480 110, 555 120" stroke="#3f5d3a" stroke-width="5" stroke-dasharray="3 7" fill="none"/>
+    <g fill="#9e3325"><circle cx="350" cy="143" r="5"/><circle cx="390" cy="132" r="5"/><circle cx="430" cy="126" r="5"/><circle cx="470" cy="122" r="5"/><circle cx="512" cy="119" r="5"/></g>
+    <circle cx="545" cy="152" r="11" fill="#efe6d3" stroke="#26221b" stroke-width="3"/>
+    <path d="M534 146 q-14 -8 -24 -8" stroke="#26221b" stroke-width="2.5" fill="none"/>
+    <path d="M352 141 q6 -8 14 -6" stroke="#8b93a2" stroke-width="3" fill="none"/>
+    <text x="430" y="205" font-size="15" fill="#26221b" text-anchor="middle" font-family="Songti SC,serif">第二步 · 蹲接口守望</text>
+    <path d="M600 150 C 670 120, 760 110, 835 120" stroke="#5b789a" stroke-width="7" fill="none"/>
+    <text x="700" y="98" font-size="17" fill="#7c2318" font-family="Songti SC,serif">咔</text>
+    <text x="712" y="205" font-size="15" fill="#26221b" text-anchor="middle" font-family="Songti SC,serif">第三步 · 渠活了</text>
+  </svg>
+  <div class="legend"><b>动作全文：</b>
+    <li>他划破左手手指，沿着那道两千年的旧线印子，<b>每隔三五步，在线印上按下一个血指印</b>——从线头一路按到接回干线的口。<b>像给认生的电，在地上摆一排认人的触点。</b></li>
+    <li>按完最后一个，蹲在接口，睁着那双眼盯回线头——<b>等。</b>等第一缕气顺着血印，一个印一个印，试探着爬过来；哪一段爬岔了，只有他看得见，也只有他的眼能当场把它"按"回印上。</li>
+    <li>爬通全程那一刻——<b>"咔"。合闸的声。线活了，后面的电自己会走</b>：乱漏的电改道回老家（怪象当场停）、他身上那股当场断、渠从死变活（弦上上了）。</li>
+    <li><b>为什么必须血：</b>路标得是这一姓的<b>活血</b>，气才认（死血、离身几息的血都不认）。<b>为什么必须眼：</b>半道走岔没人看得见。<b>为什么疼：</b>一站一线几十上百个印＋全程睁眼盯守——<b>鼻血、白头发的账就记在这儿。</b></li>
+    <li><b>变形原则：</b>骨架不变，路标按环境变形——<b>E4 水下血按不住（几息就被水洗散），改用钱满做的蜡封血丸嵌进岩缝，一丸一个路标。</b>E3 咬站一段喂一段抢着按；E6 起照图作业，印距按图给。</li>
+  </div></div>
+</section>
+
+<section class="panel" id="gongdan">
+  <h2>六 · 工单七步<small>每站的正文标准流程——一站一张工单</small></h2>
+  <p><b>①到门口</b>（罗盘＋旧账＋玉温，把"大概在这座山"收成"就在这个口"）→<b>②进跟前</b>（各站的大戏：沙海／雾岭／水下／人城——这一步专门死人）→<b>③开病历</b>（灯雾玉针四诊，定病：堵漏咬崩占几样）→<b>④对症粗修</b>（钱满／老头／沈鸢按上表分工，干物理和掩护的活）→<b>⑤按印引线</b>（苏衍的压轴：血指印＋守望，半个时辰到几个时辰）→<b>⑥"咔"＋三读数</b>（身上那向凉了／玉不烫了／当地邪乎事当场停）→<b>⑦复常记号＋清五本账</b>（命·人·谜·东西·本事各落一笔），收下一向的钩。</p>
+</section>
+
+<section class="panel" id="jinku">
+  <h2>七 · 认血＝金库门三道关<small>"为什么最后一臂只能是他"，一个例子讲透</small></h2>
+  <p>想一扇老银行的金库门，三道关：</p>
+  <div class="row"><span class="k">第一道 铁栅</span><span>蛮力能撬——<b>钱满的活</b>：塌方、机关、封石，都归物理层。</span></div>
+  <div class="row"><span class="k">第二道 看门狗</span><span>打得过就行——<b>沈鸢的活</b>：咬人的、追人的、聚了形扑过来的。</span></div>
+  <div class="row"><span class="k">第三道 密码盘</span><span>密码不是数字，<b>是开锁人手指的温度和血怎么跳</b>——录的是两千年前那一家人的血。<b>把苏衍打晕抬过去按上手？没用</b>——锁听的是"清醒活人血怎么跳"，晕的人血跳法不一样。<b>抽一管血泼上去？没用</b>——离了身子的血几息就"死"，锁不认。</span></div>
+  <blockquote><b>所以：门口谁都能把他送到；最后转那个盘的手，全天下只有一只。</b>楼兰门后那个"等这一姓血"等了两千年的东西，就是这道关在书里的样子。</blockquote>
+</section>
+
+<h2 style="color:#f2ead6;border-color:var(--lamp);margin:42px 0 22px;font-family:'Songti SC','STSong','SimSun',serif;font-size:26px;border-bottom:2px solid var(--lamp);padding-bottom:8px">八 · 九站病历卡 <small style="color:#9fb0c4;font-size:14px;font-weight:400">每站：病→诊→修→为什么管用——写到能照着排戏</small></h2>
+<div class="rail">
+
+<div class="station" id="e1"><span class="knot done">E1</span><div class="card">
+  <div class="eyebrow">开户站 · 病：堵＋漏（最低档）</div>
+  <h2>柏冢／关中 <span class="badge done">1—41 已写</span></h2>
+  <div class="say">「我家地底为什么躺着一个秦朝人？我这双眼，是怎么回事？」</div>
+  <div class="row"><span class="k">病与怪象</span><span>老道被两千年封土憋死（堵），考古强开又震裂新缝（漏）——墓气外滋：灯变青、墓道凶气（已写）。</span></div>
+  <div class="row"><span class="k">怎么诊</span><span>没人诊——瞎撞。他连自己有诊具都不知道。</span></div>
+  <div class="row"><span class="k">怎么修</span><span>没人修——<b>塌方那一下反把最堵的死结震开；他逃生沿暗河走那一遭，把渠"踩"活了</b><span class="tune">可调·待核38—39章</span>。合玉那夜起他的气稀里糊涂顺道走过一遭。</span></div>
+  <div class="row"><span class="k">为什么管用</span><span>瞎猫碰上死耗子：这站病最轻（最低档），乱撞也撞得开。<b>出关中"西北那向凉了"他都不知道为什么——这份"不知道"是全部知情阶梯的第一块砖。</b></span></div>
+  <div class="row"><span class="k">反派</span><span>黎东来修路下局（差事、悬赏、考古队摆成一条线）；赵阙借门后之物递第一句真话（21 章）。</span></div>
+  <div class="row"><span class="k">修完</span><span>柏冢向熄（无人察觉）；<b>西向接班，烧得最凶。</b></span></div>
+</div></div>
+
+<div class="station" id="e2"><span class="knot done">E2</span><div class="card">
+  <div class="eyebrow">教学站也是太平间 · 病：崩（＋死水淤）</div>
+  <h2>楼兰／罗布泊 <span class="badge done">42—60 已写</span></h2>
+  <div class="say">「我这一姓，两千年前到底干了什么？」</div>
+  <div class="row"><span class="k">病与怪象</span><span><b>崩</b>：这站的暗线是玄微当年亲手切崩的——想拿它硬拦，手生，切崩，回压屠了一座城。两千年死水淤积，满城枯骨。</span></div>
+  <div class="row"><span class="k">怎么诊</span><span>玉温差近处复核（43 章原样）；灯一路发青——死气重到头。</span></div>
+  <div class="row"><span class="k">怎么修</span><span><b>接骨</b>：钱满按听针挑"响得对"的料石垫断口（断骨先对茬），苏衍再按印把接好的半截线引通。<span class="tune">手法糙——版本演进，回修不强改；细节待核原文</span></span></div>
+  <div class="row"><span class="k">为什么管用</span><span>茬对上、印带路。<b>但安的是闸，不是城——城救不回来，这一课他在这儿上的。</b></span></div>
+  <div class="row"><span class="k">反派</span><span>黎东来查项目露"延寿"之贪；"师父"令沈鸢建立信任；老头发现死信痕迹。赵阙无动作——死城无障可清，他等。</span></div>
+  <div class="row"><span class="k">修完</span><span>西向熄（头一回亲手验<span class="tune">欠针③</span>）；谜账＝"一城换天下"壮烈版（真相锁死留 E7）；<b>西南向接班。</b></span></div>
+</div></div>
+
+<div class="station" id="e3"><span class="knot now">E3</span><div class="card">
+  <div class="eyebrow">事故站 · 病：咬＋堵 · 全书倒计时起步</div>
+  <h2>青溪／黔东南 <span class="badge now">61—100 · 写到 71</span></h2>
+  <div class="say">「怎么止住，别再死人。」——从这一站起，安点第一次不只是他自己的命。</div>
+  <div class="row"><span class="k">病与怪象</span><span><b>咬</b>：闸疯了，倒抽活气——叫魂（疯闸学舌，拿人最亲的声口骗人过祭道）、黑影（接口探针）、失踪、狗不叫；＋堵：塌方揭开的黑口就是咬的嘴。</span></div>
+  <div class="row"><span class="k">怎么诊</span><span>听针听出"疯跳"；灯苗暗红倒卷；雾倒灌。72 起按硬门槛：黑口性质只许一段段咬合，不许宣布查明。</span></div>
+  <div class="row"><span class="k">怎么修</span><span><b>先喂后引（带电作业）</b>：老头把死气撒成一条线——疯闸先扑死气，<b>咬空那几息＝活人的窗口</b>；窗口里钱满固绳清障、苏衍抢进去按血印一段段推进、沈鸢的刀＋灯断聚形扑来的探针；末段蹲接口守望引通。<span class="tune">过程可调</span></span></div>
+  <div class="row"><span class="k">为什么管用</span><span>疯闸分不清死活气——拿它的病治它；<b>血印一路把"对的道"摆到它嘴边，它咬着咬着，顺道回了家。</b>安下那一刻叫魂当场哑、黑影不再聚（结果不可调）。</span></div>
+  <div class="row"><span class="k">反派</span><span>黎东来清障＋流程篇（把青溪伤亡写成工程变更单）；霍钧——这地名是他 27 年前的旧伤地（暗线篇写反应，不露名）；赵阙借波动感知、不能逐句遥控。<b>三方在此与苏衍同仇：疯闸咬死了钥，三家全完。</b></span></div>
+  <div class="row"><span class="k">修完</span><span>西南熄；一寨人得救（<b>全书第一次"安点救的是别人"</b>）；复常记号＝叫魂当夜哑、第二天狗敢叫了；拿到第一组校准数据＋子母记号；<b>巴蜀向接班。</b></span></div>
+</div></div>
+
+<div class="station" id="e4"><span class="knot todo">E4</span><div class="card">
+  <div class="eyebrow">高压证明站 · 病：漏＋堵（水下）</div>
+  <h2>巴蜀水下 <span class="badge todo">101—145 未写</span></h2>
+  <div class="say">「我爸妈到底怎么死的？」</div>
+  <div class="row"><span class="k">病与怪象</span><span>水底闸被江沙半埋（堵），老缝漏进江里搅浑流（漏）——江面无风翻花、渔汛绝、沉船传说<span class="tune">可调</span>。</span></div>
+  <div class="row"><span class="k">怎么诊</span><span>玉在冷水里失灵半截——<b>全靠钱满的听针贴船底贴岩，加隔水的雾。</b></span></div>
+  <div class="row"><span class="k">怎么修</span><span>分潜多次：<b>血印在水里按不住（几息就被水洗散）——改用钱满做的蜡封血丸嵌进岩缝，一丸一个路标</b>；一潜按一截，上来换气，二进宫接着按。</span></div>
+  <div class="row"><span class="k">为什么管用</span><span>手法骨架不变、路标防水变形——<b>"每站修法都得变形"的样板；爬梯的吃力头一次长在他肺上。</b></span></div>
+  <div class="row"><span class="k">反派</span><span>黎东来流程篇（配额）；霍钧收紧沈鸢的线（<b>只埋不揭</b>）；赵阙递一句真话（内容写时定）。</span></div>
+  <div class="row"><span class="k">修完</span><span>谜账＝"苏家那一夜"表层版；本事＝水气档（没有这站，读者不信他 E7 能在海底看全复流）；<b>贺兰向接班。</b></span></div>
+</div></div>
+
+<div class="station" id="e5"><span class="knot todo">E5</span><div class="card">
+  <div class="eyebrow">认知翻转站 · 病：漏成筛子</div>
+  <h2>贺兰无墓 <span class="badge todo">146—165 未写</span></h2>
+  <div class="say">「没有墓，那鼎长什么样？」</div>
+  <div class="row"><span class="k">病与怪象</span><span>风蚀把闸体表层剥了，<b>百十道小缝乱滋（漏成筛子）</b>——风里带哨音、草木一圈疯长一圈暴枯。</span></div>
+  <div class="row"><span class="k">怎么诊</span><span>风大，灯用不成——夜里靠玉温＋雾；听针贴岩。</span></div>
+  <div class="row"><span class="k">怎么修</span><span><b>不堵缝（堵不完）</b>——在一整片裸露乱石里认出那道两千年的旧线印（大海捞针），找到总口，一次引通。</span></div>
+  <div class="row"><span class="k">为什么管用</span><span><b>治本不治标：水有正道走，百十道歪缝自然没电可滋。</b>这站练出的眼力，E6 才看得懂图纸。</span></div>
+  <div class="row"><span class="k">反派</span><span>照配额；钱满线正式启动——凭黑市子母记号去找保图人。</span></div>
+  <div class="row"><span class="k">修完</span><span>E6 向接班——<b>下一站的名字旧账里没有，是子母记号牵出来的</b>（旧账开始"断页"<span class="tune">可调</span>）。</span></div>
+</div></div>
+
+<div class="station" id="e6"><span class="knot todo">E6</span><div class="card">
+  <div class="eyebrow">图纸站 · ★转折站 · 病在"人"</div>
+  <h2>公输维护节点／保图线 <span class="badge todo">166—185 未写</span></h2>
+  <div class="say">进站：「我得看懂我到底在干什么。」出站：「原来我每一步都在替他干活。——那也得走完。」</div>
+  <div class="row"><span class="k">病与怪象</span><span>站本身<b>没大病</b>——公输后人两千年守着维护。<b>病在人：图不全，谁也不敢动；保图人不信祖训不肯给；赵阙霍钧也来抢。</b></span></div>
+  <div class="row"><span class="k">怎么诊</span><span>三套图纸（结构·材料·校准）互校＝这一站的"诊"——图纸必须与这座节点的实物对得上才算真。</span></div>
+  <div class="row"><span class="k">怎么修</span><span>拿到图后<b>照图做一次标准作业</b>：印距、次序、参数全按图给——头一回全懂的修。<b>"苏衍的罪"在此下手</b>（假线索的路交给沈鸢引开追兵；她重伤归来，只看了他一眼——已锁，不许爱情洗白）。</span></div>
+  <div class="row"><span class="k">为什么管用</span><span>图是原厂的。<b>懂了再修和摸黑修是两门手艺——而看懂的代价，是再也不能装不知道</b>（他在这儿看见：自己的活命账＝赵阙的成阵账）。</span></div>
+  <div class="row"><span class="k">反派</span><span>黎东来与霍钧同框争图；赵阙全书最大一次喂真话。</span></div>
+  <div class="row"><span class="k">修完</span><span>三套图纸＋运尸匣方案＋骊山进入方案；九鼎出身、子母记号谜底落地；<b>罪账开户；东海向接班。</b></span></div>
+</div></div>
+
+<div class="station" id="e7"><span class="knot todo">E7</span><div class="card">
+  <div class="eyebrow">样机站 · 没病——它自己会翻</div>
+  <h2>东海潮汐节点 <span class="badge todo">186—220 未写</span></h2>
+  <div class="say">进站：「亲眼看一遍，我才敢在骊山做。」出站：「先人也会错。图我照走，但从今天起，每一步我自己核。」</div>
+  <div class="row"><span class="k">病与怪象</span><span><b>没病</b>——它跟着潮汐自己一涨一落，是全网唯一自己会把"抽"翻成"放"的闸。怪象＝涨落之间整条气路翻向。</span></div>
+  <div class="row"><span class="k">怎么诊／修</span><span><b>不通线，只"对时"</b>：蹲满一个潮汐周期把"翻"的全过程看全，在翻向那一瞬把闸扣在"放"的位上——这就是 E7 那道弦的上法。</span></div>
+  <div class="row"><span class="k">为什么管用</span><span>它是复流的活样机。<b>看全它，终局才敢对其余七座做同样的事——终局"松手"的现场教学。</b></span></div>
+  <div class="row"><span class="k">反派</span><span>黎东来收网前最后的抢<span class="tune">可调</span>。副线：老头拿到霍钧三桩罪证仍暂压；运尸匣制成，玄微余温进入倒计时；卷末秘返老宅装匣。</span></div>
+  <div class="row"><span class="k">修完</span><span><b>谜账大爆发：楼兰真相在此揭破</b>——壮烈版塌了：玄微当时还不会、手生害死一城。他对图的信任从此带裂缝——<b>这道裂缝是终局"定向"他敢自己拿主意的种子。都市向接班。</b></span></div>
+</div></div>
+
+<div class="station" id="e8"><span class="knot todo">E8</span><div class="card">
+  <div class="eyebrow">倒数第二闸＋人局站 · 病：被"错修"</div>
+  <h2>都市地下 <span class="badge todo">221—260 未写</span></h2>
+  <div class="say">「只差一座了。」</div>
+  <div class="row"><span class="k">病与怪象</span><span><b>被"错修"</b>：黎东来的现代工程把物理渠接得崭新——接的却是"抽"的方向。怪象＝地铁里"谁坐谁病"的一段<span class="tune">可调</span>。</span></div>
+  <div class="row"><span class="k">怎么诊</span><span>在别人崭新的图纸底下，用雾＋听针找两千年的旧印——敌人第一次不是鬼，是人（监控、封控、追捕、认脸）。</span></div>
+  <div class="row"><span class="k">怎么修</span><span><b>借收网的乱局</b>，在崭新的错线印上下找旧暗线、按印引通——第八次、也是最深一档的血指印。</span></div>
+  <div class="row"><span class="k">为什么管用</span><span><b>物理的线随他们接；气走谁的道，认的是血印。</b>接线替不了这一姓活血的指纹——最后一道校准仍须他亲手（已锁）。</span></div>
+  <div class="row"><span class="k">反派</span><span>明线总收网、身份崩塌；<b>沈鸢得知师父杀了父母、倒向他，随即被霍钧收回作人质</b>；运尸队遭袭；钱满备份账本。<b>收网收的是人和筹码，不是拦路——收完网，所有人都在把他往骊山送。</b></span></div>
+  <div class="row"><span class="k">修完</span><span>八枝全清——<b>身上第一次"安静"：只剩根子那一股，日夜指着骊山。全书最吓人的一次安静。中心向独存。</b></span></div>
+</div></div>
+
+<div class="station" id="c9"><span class="knot core">C</span><div class="card">
+  <div class="eyebrow">总站 · 不是修，是前八次的总和</div>
+  <h2>骊山三台 <span class="badge todo">261—300 终卷</span></h2>
+  <div class="say">「把根拔了。」</div>
+  <div class="row"><span class="k">四步</span><span>对线（他号过的九种跳法此刻全用上）→排线（九道渠一根根从"默认全给赵阙"手里夺回本家——<b>沈鸢人质局全压在这一步</b>）→合闸（总流过身，只撑数息）→<b>松手（八道通好的暗线一齐开，电各回各家）</b>。</span></div>
+  <div class="row"><span class="k">反派终局</span><span>赵阙唯一一次真出手＝拿仍能行动的霍钧作"复活伪证"骗定向；霍钧被老头拖住；黎东来的人间结局由钱满的账本收。</span></div>
+  <div class="row"><span class="k">收束</span><span>每个人都在用自己认为正确的方式，毁掉最想保护的东西。前八站的每一个血印，都是给这几口气打的底。</span></div>
+</div></div>
+</div>
+
+<section class="panel" id="yike" style="margin-top:34px">
+  <h2>九 · 一词一课（修订版）<small>看不懂哪个词，来这儿上课——课文与圣经 6之补三同文</small></h2>
+  <h3>常引</h3><p>他被钉着的两千年里，<b>从没松过的那口"朝自己吸"的劲</b>。人废了，那口劲没废——好比被压在墙下的人，唯一还能动的是嘴里含着的那根吸管。平时吸到什么？见"他怎么被扣死的"一节：小阀门够得着，嘴边永远没有碗。苏衍一觉醒，这口劲两千年来头一回"咬上了活物"——他身上正中间那根最深的拉力，就是它。正文叫"中心那一股""根子"。</p>
+  <h3>觉醒改变了什么（重写）</h3><p>那夜之前，机器不认任何活人：九座病闸的乱流四散乱淌，中心那口吸对着空。那夜他的手伸进那人掌心，血里那个活接口活了——<b>机器上两千年来第一次出现一个"它认得的人"。</b>门没开（总闸真开是终局那一下），但从此：九处乱流有了去处（顺血找他，九股拉力），中心那口吸有了对象（根子）。<b>一句话：不是水多了，是水认人了——而它认的那个人，是他。</b></p>
+  <h3>认血</h3><p>见"七 · 认血＝金库门三道关"——三道关、两个"没用"（打晕没用、抽血没用）、一句结论：门口谁都能送到，最后转盘的手全天下只有一只。</p>
+  <h3>其余各词</h3><p>拉力（九根皮筋，三档：麻→烫→击穿；不安单调加重、安一处当场清零）｜号脉（老大夫搭脉，搭够时辰才知浮沉迟数；不号清，终局面前是一锅浑汤，分不出＝分不了流＝全堵死烧毁）｜暗线（玄微趁施工偷修的不在图纸上的回水沟，两千年断着）｜上弦（通好的线＝拉满的弓：松回家＝复流，拨给赵阙＝成阵，差别只在"定向"）｜失稳（闸疯了见活的就咬）——全文见圣经 6之补三。</p>
+</section>
+
+<section class="panel" id="fanpai">
+  <h2>十 · 反派是帮还是挡<small>总纲：九站无一站反派拦路——对抗只在卷七人质局与终局定向</small></h2>
+  <div class="tscroll"><table>
+    <tr><th>反派</th><th>一路在干什么</th><th>为什么不拦</th></tr>
+    <tr><td><b>黎东来</b>（明线·人间的手）</td><td>修路、批钱、清障、递资源；卷四起每卷 1 篇流程视角——看他怎么把一次灭口写成一份工程变更单。E8 转收网主使</td><td>他要的东西也在骊山尽头；苏衍走得越顺，"货"到得越快。<b>他拦的从来不是苏衍，是别人抢在他前面</b></td></tr>
+    <tr><td><b>霍钧</b>（暗线·只露一只手）</td><td>处理失稳节点、盯沈鸢的线；青溪是他 27 年前旧伤地；E6 争图；E8 收沈鸢为人质；C 被老头拖住</td><td>他的命拴在赵阙身上；赵阙要苏衍走完，他就护着走完</td></tr>
+    <tr><td><b>赵阙</b>（等的人）</td><td>等、护、喂真话；只在已连接者的梦与节点异象里出现，无全知；C 唯一一次真出手＝拿霍钧作"复活伪证"骗定向</td><td><b>苏衍每修好一座闸＝替他把一道弦上满。他不需要骗，只需要真话</b></td></tr>
+  </table></div>
+</section>
+
+</main>
+<footer><b>护栏：</b>病历卡内标【可调】处写章时定，未标处为账；手法版本演进（瞎撞→手糙→标准→照图）本身是剧情，禁止把 E1/E2 回修成一开始就会标准手法；<br>揭秘节奏（楼兰真相 E7 · 霍钧露名节奏 · 黎东来配额 · 原理词卷五）任何一站不得提前。<br>本页为《镇冢秘术》总圣经（CANON-ID：ZM-CANON-20260722-101）三、6之补 至 6之补四 的阅读版 · <b>一切以总圣经为准</b></footer>
+<script>
+(function(){var links=document.querySelectorAll('#chips a');var map={};links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a});
+var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.remove('cur')});var a=map[e.target.id];if(a){a.classList.add('cur');a.scrollIntoView({block:'nearest',inline:'nearest'})}}})},{rootMargin:'-25% 0px -65% 0px'});
+document.querySelectorAll('section.panel, .station').forEach(function(s){obs.observe(s)})})();
+</script>
+</body>
+</html>

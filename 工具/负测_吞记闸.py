@@ -42,7 +42,7 @@ def run():
     rc, out = _run(['--存版', '291', '--记', '第N轮·某庭'])
     R.append(('③真红·--存版 …--记 …拦停(rc=%d，须2)' % rc, rc == 2))
     R.append(('④其印须指出所吞之文（不许只说「写错了」）', '你本来要写的是' in out and '第N轮·某庭' in out))
-    R.append(('⑤其印须给正确写法（造式二代之说明）', '正确：' in out and '"造式二代·' in out))
+    R.append(('⑤其印须给正确写法', '正确：' in out and '"第N轮' in out))
     R.append(('⑥拦停之版不落台账（印中无「存版 v」）', '███ 存版 v' not in out))
 
     # ⑦同形之他旗亦拦（不是只认「--记」这四个字）
@@ -70,9 +70,12 @@ def run():
     #   ★★而新式对同一入参须拦——二者对同一入参判得不一样，此闸方才不是陪跑
     R.append(('⑨之b·新式对同一入参拦停（与旧式判得不同）', rc == 2))
 
-    # ⑩其害之实证在账上：v15、v16 之说明曾被吞（今已回填；旧⑪「R0013 在可逆库」随可逆库 1027 汰，其复原凭版本史）
+    # ⑩其害之实证在账上：v15、v16 之说明曾被吞（今已回填，且其回填有 R0013 可复原）
     tz = io.open(os.path.join(ROOT, '版本', '第291章', '_台账.json'), encoding='utf-8').read()
     R.append(('⑩台账已回填·v15/v16 之说明不复为「--记」', '"--记"' not in tz and '"--记·补存"' not in tz))
+    lib = os.path.join(ROOT, '版本', '_可逆库')
+    R.append(('⑪其回填可复原·R0013 在可逆库',
+              any(x.startswith('R0013') for x in (os.listdir(lib) if os.path.isdir(lib) else []))))
 
     bad = [x for x, o in R if not o]
     for x, o in R:

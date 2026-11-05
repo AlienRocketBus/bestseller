@@ -15,15 +15,12 @@
 
 ★★**故本环四层，每层皆作「查 → 自修 → 验自修 → 修不了才报 → 报了就挂账」**：
   **L0 保命**（云端有没有这本书）——**会自己存、自己打标、自己验**；
-  **L1 发布**（主枝落後多少）——**会自己推；同一原因连两回不变即判「卡死」——换法自通（另一合规之路）、记由入裁档、办毕报所为**（1027 第一律·自决：⛔停工候作者）；
+  **L1 发布**（主枝落後多少）——**会自己推；同一原因连两回不变即判「卡死」，当面报作者**；
   **L2 自纠**（尺之校＋自省哨）——**把「该疑那把尺」「写了没人读」摆出来**；
   **L3 自进化**（病族账）——**一族病逮到第二回而无器管它，即红**；
     **每一个器立起来，都要登是为哪一族病立的**——⛔**不许只治这一回，要治这一族。**
 ★★★**并有一层管这一环自己**：**每跑一回落一行 `设定/自进化环.log`**；
   **逾两个钟头没跑过，即是这一环自己停了**——⛔**一个会停而没人知道的环，就是又一道祝福。**
-  ★1027 A2：其日志入 .gitignore（旧随踪：自走每跑一行、树恒脏、自 10-13 起三十一提交），存底强塞之（存底.强塞之档）；
-    挂账照随踪（跨坐之卡死之计係其职），而文同即⛔写（回至卡死之回即止、末见只记日）。
-    L0 缺碑推封版#N 之提交（⛔HEAD）；L1「已有推在跑」取 推.py 之锁（推.在推·⛔pgrep）。
 ════════════════════════════════════════════════════════════════════
 
 用法：
@@ -48,8 +45,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # ⛔诸限写死，⛔不随今日之数挪（今日之教：一个会随今日之数挪的限，等於没有限）
 存底之限分 = 30        # 存底枝逾此分钟未更新 → 自修（存一回）
 主枝之限笔 = 3         # 主枝落後逾此笔 → 自修（推一回）
-卡死之回 = 2           # 同一原因连此回不变 → 判卡死：换法自通、记由入裁档、办毕报所为（⛔停工候作者）
-陈之日 = 7             # ★1027 执行之审 #117：首见逾此日而只见一回（回=1）之挂 → 自销（其因一去不返，⛔永挂）
+卡死之回 = 2           # 同一原因连此回不变 → 判卡死，当面报作者
 环停之限时 = 2         # 本环逾此钟头没跑过 → 本环自己停了
 推之间隔分 = 50        # L1 两回发起推之最短间隔（⛔每回推跑一整套全测约二十分钟）
 
@@ -85,24 +81,15 @@ def _读挂():
 
 
 def _写挂(d):
-    """★1027 A2：文同即⛔写——挂账随踪（跨坐之卡死之计係其职，⛔入 .gitignore），旧每跑必写（回与末见之分秒），树恒脏、提交恒多。"""
-    新 = json.dumps(d, ensure_ascii=False, indent=1)
-    try:
-        if io.open(挂账, encoding='utf-8').read() == 新:
-            return
-    except Exception:
-        pass
-    io.open(挂账, 'w', encoding='utf-8').write(新)
+    io.open(挂账, 'w', encoding='utf-8').write(json.dumps(d, ensure_ascii=False, indent=1))
 
 
 本回所报之层 = set()
-本回所见 = set()   # ★0924：本回报过挂之层；其旧因本回未再见者即销（因之文一变，旧笔永挂不销——卡死 6 处五处是陈账）
-                    # ★1027 A2：以本回所见之键判陈（⛔以末见之时比：末见今只记日）
+本回之始 = ''   # ★0924：本回报过挂之层；其旧因本回未再见者即销（因之文一变，旧笔永挂不销——卡死 6 处五处是陈账）
 
 
 def 挂(层, 因, 修得了):
-    """★同一「层＋因」连着出现几回？——**连 `卡死之回` 回不变，即判卡死**。
-    ★1027 A2：回至卡死之回即止（其後不增：卡死之判已成，再数只令挂账每跑一变）；末见只记日——同日同态之跑⛔改其档。"""
+    """★同一「层＋因」连着出现几回？——**连 `卡死之回` 回不变，即判卡死**。"""
     d = _读挂()
     k = '%s｜%s' % (层, 因[:60])
     if 修得了:
@@ -110,10 +97,9 @@ def 挂(层, 因, 修得了):
         _写挂(d)
         return 0
     本回所报之层.add(层)
-    本回所见.add(k)
-    x = dict(d.get(k) or {'首见': time.strftime('%Y-%m-%d %H:%M'), '回': 0})
-    x['回'] = min(x['回'] + 1, 卡死之回)
-    x['末见'] = time.strftime('%Y-%m-%d')
+    x = d.get(k) or {'首见': time.strftime('%Y-%m-%d %H:%M'), '回': 0}
+    x['回'] += 1
+    x['末见'] = time.strftime('%Y-%m-%d %H:%M')
     d[k] = x
     _写挂(d)
     return x['回']
@@ -162,21 +148,13 @@ def L0(自修=True):
     #   ★**其族係「封版之序有一步没人管」**——故 L0 自己查、自己补，⛔不再靠有人想起来。
     缺碑 = _缺碑()
     if 缺碑 and 自修:
-        # ★1027 A2：补碑推「封版#N」之提交（⛔HEAD——HEAD 或已远在其後：以任意之树触 autopush 而充 章-N）；寻不着即只报
-        封 = _器('封版')
-        补, 无封 = [], []
+        底2 = 底
+        补 = []
         for n in 缺碑:
-            sha = 封.封之笔(n, ROOT)
-            if not sha:
-                无封.append(n)
-                continue
-            rc, msg = 底.标(n, sha)
+            rc, msg = 底2.标(n)
             if rc == 0:
                 补.append(n)
-        语.append('  ★已自修：补碑 %d 块（%s）——各推其封版#N 之提交' % (len(补), '、'.join(str(x) for x in 补)))
-        if 无封:
-            语.append('  ⚠ 寻不着封版#N 之提交（%s）——⛔以 HEAD 充碑；查其封版之笔、人手 `python3 工具/存底.py --标 N`（HEAD 须即其封版之提交）'
-                     % '、'.join(str(x) for x in 无封))
+        语.append('  ★已自修：补碑 %d 块（%s）' % (len(补), '、'.join(str(x) for x in 补)))
         缺碑 = [n for n in 缺碑 if n not in 补]
     if 缺碑:
         语.append('⚠L0 保命：已封版而无碑 %d 章：%s' % (len(缺碑), 缺碑[:10]))
@@ -231,11 +209,7 @@ def L1(自修=True):
     #   ⛔**几回全测叠在一起抢机器，并互相撞「负测留字」**（通例六九）。
     #   ★**故加二闸**：①**已有一回推在跑，不再起**；②**距上一回发起不足 `推之间隔分` 分钟，不再起**。
     记 = os.path.join(ROOT, '设定', '_自进化环_推.out')
-    # ★1027 A2：「已有推在跑」取 推.py 自己之锁之态（推.在推）——旧以进程名猜（'git push -u origin'）认不着本层今所起之 推.py（交治枝）
-    try:
-        在跑 = _器('推').在推(ROOT)
-    except Exception:
-        在跑 = False
+    在跑 = _跑('pgrep', '-f', 'git push -u origin').stdout.strip()
     try:
         上回分 = (time.time() - os.path.getmtime(记)) / 60.0
     except Exception:
@@ -245,14 +219,12 @@ def L1(自修=True):
     elif 上回分 < 推之间隔分:
         语.append('  ★上一回推发起於 %.0f 分钟前（限 %d）——⛔不再起' % (上回分, 推之间隔分))
     else:
-        # ★1027 坑51：自修之推交 GitHub——`推.py` 默推「治-<sha>」，GitHub 分片而闸（坑54）、绿即并入主枝（果入 备份/报）；
-        #   ⛔沙盒直推主枝（本地再跑十余分之全测，且与 autopush 抢主枝、令其 non-fast-forward 而败）。
         try:
-            subprocess.Popen('"%s" "%s" > "%s" 2>&1' % (sys.executable, os.path.join(ROOT, '工具', '推.py'), 记),
+            subprocess.Popen('git push -u origin %s > "%s" 2>&1' % (主枝, 记),
                              cwd=ROOT, shell=True, start_new_session=True,
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                              stdin=subprocess.DEVNULL)
-            语.append('  ★已自修：交 GitHub 一回（後台·推.py 默推治枝、GitHub 闸而并·其印落 设定/_自进化环_推.out）')
+            语.append('  ★已自修：发起一回推（後台·走闸不绕·其印落 设定/_自进化环_推.out）')
         except Exception as e:
             语.append('  ⛔发起推不成：%s' % e)
     # ★上一回推之果：若仍被拦，读出其「点名之红」作因
@@ -330,11 +302,7 @@ def L3():
         return 3 if '书之族' in x['器'] else 2
     无器 = [x for x in 族 if _无器(x) and x['例'] >= _限(x)]
     器不在 = []
-    # ★1027：随汰之族（「〔随汰·…`工具/<器>` 已彻删〕」而其器真不在）退役——⛔作「器不在」；判借 进化链.随汰（一处判，⛔两份码；器仍在即⛔认）
-    _汰 = _器('进化链').随汰
     for x in 族:
-        if _汰(x['器'], ROOT):
-            continue
         for f in re.findall(r'`([^`]+\.py)`', x['器']):
             if not os.path.exists(os.path.join(ROOT, '工具', os.path.basename(f))):
                 器不在.append('%s→%s' % (x['名'], f))
@@ -433,28 +401,10 @@ def 记脉(标):
         pass
 
 
-def 陈账(d, 跑过, 所见, 今=None):
-    """→ (陈, 旧)：陈＝其层本回跑过而其因本回未见；旧＝首见逾 陈之日 而回=1（只见一回）、本回未见者（#117）。"""
-    import datetime as _dt
-    今 = 今 or _dt.datetime.now()
-    陈 = [k for k in d if k.split('｜')[0] in 跑过 and k not in 所见]
-    旧 = []
-    for k, v in d.items():
-        if k in 陈 or k in 所见 or v.get('回', 0) != 1:
-            continue
-        try:
-            首 = _dt.datetime.strptime(str(v.get('首见', ''))[:16], '%Y-%m-%d %H:%M')
-        except ValueError:
-            continue
-        if (今 - 首).days >= 陈之日:
-            旧.append(k)
-    return 陈, 旧
-
-
 def 跑(自修=True):
     print('════ 自进化环 · 查 → 自修 → 验自修 → 修不了才报，报了就挂账 ════')
-    本回所见.clear()
-    本回所报之层.clear()
+    global 本回之始
+    本回之始 = time.strftime('%Y-%m-%d %H:%M')
     时 = 环之脉()
     if 时 is not None and 时 > 环停之限时:
         print('  ⛔**本环上一回跑在 %.1f 钟头前（限 %d）——这一环自己停过**；'
@@ -471,19 +421,14 @@ def 跑(自修=True):
         for l in 语:
             print('  ' + l)
     # ★0924·销陈账：本回报过之层，其挂账里本回未再见之因即销（⛔只销报过之层，免一层跳过而误清）
-    # ★1027 执行之审 #98：旧只销「本回报过之层」——一层全好、本回不报，其陈账永不销（L0、L1 四笔陈账挂至 1027）；
-    #   今以「本回跑过之层」判：报过之层，或跑毕而全好（ok）之层；跑不起来（崩）之层⛔销（免一层跳过而误清）
-    _跑过 = 本回所报之层 | {名 for 名, ok in 诸 if ok}
+    _本回 = time.strftime('%Y-%m-%d %H:%M')
     _d = _读挂()
-    _陈, _旧 = 陈账(_d, _跑过, 本回所见)
-    for k in _陈 + _旧:
+    _陈 = [k for k, v in _d.items() if k.split('｜')[0] in 本回所报之层 and v.get('末见', '') < 本回之始]
+    for k in _陈:
         _d.pop(k, None)
-    if _陈 or _旧:
-        _写挂(_d)
     if _陈:
-        print('  ✓销陈账 %d 笔（其层本回跑过而其因已不见）：%s' % (len(_陈), '；'.join(x[:40] for x in _陈)))
-    if _旧:
-        print('  ✓自销旧挂 %d 笔（首见逾 %d 日而只见一回）：%s' % (len(_旧), 陈之日, '；'.join(x[:40] for x in _旧)))
+        _写挂(_d)
+        print('  ✓销陈账 %d 笔（其因本回已不见）：%s' % (len(_陈), '；'.join(x[:40] for x in _陈)))
     卡 = [(k, v) for k, v in _读挂().items() if v.get('回', 0) >= 卡死之回]
     if 卡:
         print('  ' + '═' * 60)
@@ -505,52 +450,19 @@ def 自测():
     R = []
     R.append(('①诸限写死（30分／3笔／2回／2时／推间50分）',
               (存底之限分, 主枝之限笔, 卡死之回, 环停之限时, 推之间隔分) == (30, 3, 2, 2, 50)))
-    _L1码 = io.open(__file__, encoding='utf-8').read().split('def L1')[1].split('def L2')[0]
-    R.append(('①之二·⛔L1 已有推在跑即不再起（免全测叠跑·0924 逐层计时所逮）——其判取 推.py 之锁之态（1027 A2：⛔pgrep 猜进程名）',
-              "_器('推').在推(ROOT)" in _L1码 and "'pgrep'" not in _L1码 and hasattr(_器('推'), '在推')))
-    # ②⛔挂账：同一因连两回即卡死，修好即销（★1027 A2：於临时之档验——⛔动盘上之挂账）
-    global 挂账
-    import tempfile as _tf
-    _真挂 = 挂账
-    _目 = _tf.mkdtemp(prefix='自进化环挂_')
+    R.append(('①之二·⛔L1 已有推在跑即不再起（免全测叠跑·0924 逐层计时所逮）',
+              "pgrep', '-f', 'git push -u origin'" in io.open(__file__, encoding='utf-8').read()))
+    # ②⛔挂账：同一因连两回即卡死，修好即销
+    老 = dict(_读挂())
     try:
-        挂账 = os.path.join(_目, '挂.json')
         _写挂({})
         a = 挂('测', '造局之因', False)
         b = 挂('测', '造局之因', False)
         R.append(('②⛔同一因连两回即计 2（≥卡死之回）', (a, b) == (1, 2)))
-        _文 = io.open(挂账, encoding='utf-8').read()
-        os.utime(挂账, (1, 1))
-        c = 挂('测', '造局之因', False)
-        R.append(('②之三·回至卡死之回即止、末见只记日——同日同态再跑⛔改其档（1027 A2：旧每跑必写、树恒脏）',
-                  c == 2 and io.open(挂账, encoding='utf-8').read() == _文 and os.path.getmtime(挂账) == 1
-                  and re.fullmatch(r'\d{4}-\d\d-\d\d', _读挂()['测｜造局之因']['末见']) is not None))
         挂('测', '造局之因', True)
         R.append(('②之二·修好即销（⛔不许留一笔已好了的卡死）', '测｜造局之因' not in _读挂()))
     finally:
-        挂账 = _真挂
-        import shutil as _sh
-        _sh.rmtree(_目, ignore_errors=True)
-    _L0码 = io.open(__file__, encoding='utf-8').read().split('def L0')[1].split('def L1')[0]
-    R.append(('⑨L0 缺碑之补推封版#N 之提交（封版.封之笔·同一把尺），⛔HEAD；寻不着即只报（1027 A2）',
-              "封.封之笔(n, ROOT)" in _L0码 and '底.标(n, sha)' in _L0码 and '底2.标(n)' not in _L0码 and '底.标(n)' not in _L0码))
-    R.append(('⑩销陈账以本回所见之键（⛔以末见之时比：末见今只记日）', 'k not in 所见' in io.open(__file__, encoding='utf-8').read()))
-    # ⑪⑫1027 执行之审 #98 #117：层全好（本回跑过而未报）时旧挂即销；跑不起来之层⛔销；首见逾七日而回=1 自销、回=2（卡死）⛔自销
-    import datetime as _dt
-    _今 = _dt.datetime(2026, 10, 27, 12, 0)
-    _d = {'L0｜存底枝 85 分钟未更新（限 30）': {'首见': '2026-10-26 15:45', '回': 1},
-          'L1｜某因': {'首见': '2026-10-27 08:00', '回': 1},
-          'L2｜本回又见': {'首见': '2026-09-01 08:00', '回': 1},
-          'L3｜崩层之挂': {'首见': '2026-10-27 08:00', '回': 2},
-          'L3｜卡死久矣': {'首见': '2026-09-01 08:00', '回': 2},
-          'L2｜旧而只一回': {'首见': '2026-10-10 08:00', '回': 1}}
-    _陈, _旧 = 陈账(_d, {'L0', 'L1', 'L2'}, {'L2｜本回又见'}, _今)
-    R.append(('⑪层全好（L0、L1 本回跑过而未报）→ 其旧挂即销；本回又见者、崩层（L3）之挂⛔销（#98）',
-              sorted(_陈) == ['L0｜存底枝 85 分钟未更新（限 30）', 'L1｜某因', 'L2｜旧而只一回'] and 'L3｜崩层之挂' not in _陈))
-    _陈2, _旧2 = 陈账(_d, set(), {'L2｜本回又见'}, _今)
-    R.append(('⑫首见逾七日而回=1、本回未见 → 自销；回=2（卡死）、本回又见、未逾七日者⛔自销（#117）',
-              sorted(_旧2) == ['L2｜旧而只一回'] and _陈2 == []))
-    R.append(('⑬卡死之印⛔含「报作者」（1027 第一律·自决：换法自通、办毕报所为）', '报作者' not in io.open(__file__, encoding='utf-8').read().split('def 自测')[0]))
+        _写挂(老)
     # ③病族账读得出，且其式认「无」为无器
     族 = 读病族()
     R.append(('③病族账读得出（今 %d 族）' % len(族), len(族) >= 5))
@@ -561,9 +473,6 @@ def 自测():
     R.append(('⑥⛔L1 之推走闸不绕（码里无 --no-verify／ZM_SKIP_HOOK）',
               all(w not in io.open(__file__, encoding='utf-8').read().split('def L1')[1]
                   .split('def L2')[0] for w in ('--no-verify', 'ZM_SKIP_HOOK'))))
-    _L1 = io.open(__file__, encoding='utf-8').read().split('def L1')[1].split('def L2')[0]
-    R.append(('⑥之二·L1 之自修交 GitHub（推.py 默推治枝），⛔沙盒直推主枝（坑51）',
-              "'工具', '推.py'" in _L1 and 'git push -u origin %s' not in _L1))
     R.append(('⑦本环每跑一回落一行日志（本环之脉）', '日志' in io.open(__file__, encoding='utf-8').read()))
     R.append(('⑧封版中之章（回执在而未提交）⛔算已封——⛔自红其缺碑；已提交者照算',
               _封之章(['设定/回执_1_第390章封版席.md', '设定/回执_1_第391章封版席.md'], {'设定/回执_1_第390章封版席.md'}) == {390}))

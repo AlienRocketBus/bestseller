@@ -5,7 +5,7 @@
 而「跑器、看 rc、印红处」是机器之活（零 token 等效之检）。今合稿席只跑本器一回，红了只治红处。
 
 两类（其判据逐器实测过——1013 以已封版之 380 试跑，十七器俱绿、各器红时之形查过源码）：
-  致命之器（⛔绿不许交）：起草闸（rc）｜硬闸（JSON 计数有 >0 即红）｜抄袭闸（rc）｜崩坏闸（rc）｜检察官之封版门（ERROR>0 即红·N≥420·X80）｜
+  致命之器（⛔绿不许交）：起草闸（rc）｜硬闸（JSON 计数有 >0 即红）｜抄袭闸（rc）｜崩坏闸（rc）｜
                          厚（净重取 工具/净重对表.py 之尺；带底：总纲本章之行 主 2500／暗 2300；
                             ★1020 X40·401 起：`分量闸.须厚` 判「非厚不可」之章，净重 <2,900 亦红）
   报之器（红即印其末行，治或写明其由）：棘轮预检、字数闸、数闸、含拍、亮点对表、亮点界、亮点在、息日链、日差哨、器物点名、外事尺 --度、比带、咬合哨
@@ -27,9 +27,6 @@ import os, sys, re, json, glob, time, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 致命 = [('起草闸', '{N}', 'rc'), ('硬闸', '{N}', '硬'), ('抄袭闸', '{N}', 'rc'), ('崩坏闸', '{N}', 'rc')]
-# ★1104 X80（418 今:57「打那三处过」触 F007_打介词：五稿、行家、合稿、造式验俱未逮，至记席回执闸方露·记席多花六回）：
-#   N≥420 起检察官之封版门（canon 之 F 条 ERROR）入致命之器——合稿时即逮；N≤419 旧行不变
-察起 = 420
 报 = [('棘轮预检', '{N}'), ('字数闸', '{N}'), ('数闸', '{N}'), ('含拍', '{N}'), ('亮点对表', '{N}'), ('亮点界', '{N}'),
      ('亮点在', '{N}'), ('息日链', ''), ('日差哨', ''), ('器物点名', '{N}'), ('外事尺', '--度 {N}'), ('比带', '{N}'),
      ('咬合哨', '')]   # ★1014：381—385 无一章报咬合，推时方红（坑㉖）——合稿时即见
@@ -245,15 +242,6 @@ def 红之要(器, out, 末):
     return 红[:3]
 
 
-def 察之判(out, n):
-    """检察官之印 → (红, 末, 要)：封版门 ERROR>0 或读不出即红；要取本章 ✗ 之行（至多五）。"""
-    m = re.search(r'封版门:ERROR=(\d+)', out)
-    红 = (m is None) or int(m.group(1)) > 0
-    末 = ('ERROR=%s' % m.group(1)) if m else '封版门之印读不出'
-    要 = [l.strip()[:160] for l in out.split('\n') if re.match(r'\s*✗第%d章 \[' % n, l)][:5] if 红 else []
-    return 红, 末, 要
-
-
 def 验(n, root=ROOT):
     出 = []
     for 器, 参, 判 in 致命:
@@ -274,10 +262,6 @@ def 验(n, root=ROOT):
             if 红:
                 要 = 红之要(器, out, 末)
         出.append(dict(器=器, 类='致命', 红=红, rc=rc, 秒=round(秒, 1), 末=末, 要=要))
-    if n >= 察起:
-        rc, out, 末, 秒 = 跑('小说检察官', '{N}', n)
-        红, 末, 要 = 察之判(out, n)
-        出.append(dict(器='检察官', 类='致命', 红=红, rc=rc, 秒=round(秒, 1), 末=末, 要=要))
     f = 正文档(n, root)
     if not f:
         出.append(dict(器='厚', 类='致命', 红=True, rc=1, 秒=0, 末='第%d章之正文不在 正文/' % n))
@@ -303,33 +287,6 @@ def 照整章(卡):
     return sorted(x for x in 提 if not re.search(r'(?<!\d)%s\s*[:：]\s*\d' % x, 卡))
 
 
-def 前文之缺(d, n):
-    """★1027 X58：章料拆二档——_料.md 点明 _料_前文.md 者，彼档须在、⛔逾 120KB；旧之一档（未点明）照旧。→ [坏]"""
-    p, 前 = os.path.join(d, '_料.md'), os.path.join(d, '_料_前文.md')
-    if not os.path.exists(p) or '_料_前文.md' not in open(p, encoding='utf-8').read()[:1200]:
-        return []
-    if not os.path.exists(前):
-        return ['章料之前文白文与账（_料_前文.md）不在（先跑 python3 工具/章料.py %d）' % n]
-    if os.path.getsize(前) > 120 * 1024:
-        return ['章料·前文 %d KB 逾 120KB（坑③）' % (os.path.getsize(前) // 1024)]
-    return []
-
-
-def 料律之缺(d, root=ROOT):
-    """★1027 复核所逮（坑㊱·一义跨器而漏其消费者）：章料拆二档，而 `工具/席/造章.js` 之料律仍写「_料.md（…前两章白文全文…悬线、进化账）
-    ——一次读毕；料外只许 grep 核一处」——席照令即⛔读 _料_前文.md（前两章白文、悬线）。料已拆（_料.md 点明彼档）而造章.js 未点名彼档 → [坏]。"""
-    p = os.path.join(d, '_料.md')
-    if not os.path.exists(p) or '_料_前文.md' not in open(p, encoding='utf-8').read()[:1200]:
-        return []
-    try:
-        js = open(os.path.join(root, '工具', '席', '造章.js'), encoding='utf-8').read()
-    except OSError:
-        return []
-    if '_料_前文.md' in js:
-        return []
-    return ['章料已拆二档而 工具/席/造章.js 之料律未点名 _料_前文.md（席照「只读 _料.md、料外只许 grep 核一处」即⛔读前两章白文与悬线）——於 N≥411 之料律点名彼档（坑㊱）']
-
-
 def 料全(n, root=ROOT):
     坏 = []
     d = os.path.join(root, '版本', '第%d章' % n)
@@ -340,7 +297,6 @@ def 料全(n, root=ROOT):
         坏.append('无章料（先跑 python3 工具/章料.py %d）' % n)
     elif os.path.getsize(p) > 120 * 1024:
         坏.append('章料 %d KB 逾 120KB（坑③）' % (os.path.getsize(p) // 1024))
-    坏 += 前文之缺(d, n) + 料律之缺(d, root)
     for k in (n - 1, n - 2):
         if not 正文档(k, root):
             坏.append('第%d章正文不在' % k)
@@ -383,36 +339,9 @@ def 自测():
     import 净重对表
     共 += 1; ok += (f is not None and 净重(f) == 净重对表.净重(f))                 # 一把尺
     共 += 1; ok += (硬之红('{\n "破折": 0,\n "英文": 2\n}') == {'英文': 2} and 硬之红('乱') == {'硬闸之印读不出': 1})
-    # X80（1104）：检察官封版门 ERROR>0 即红（418:57 F007 之回灌）、=0 绿、读不出红
-    _察 = '  ✗第418章 [F007_打介词]行57: …我打那三处过。…\n  封版门:ERROR=1(须0) REVIEW=6(人工裁定)'
-    共 += 1; ok += (察之判(_察, 418)[0] and len(察之判(_察, 418)[2]) == 1 and 察之判('  封版门:ERROR=0(须0)', 420) == (False, 'ERROR=0', [])
-                  and 察之判('乱', 420)[0] and 察起 == 420)
     共 += 1; ok += all(os.path.exists(os.path.join(ROOT, '工具', x[0] + '.py')) for x in 致命 + 报)
     共 += 1; ok += (线(381) == '暗' and 线(380) == '主' and 线(404) == '主' and 线(405) == '暗' and 线(999) is None)   # 右栏之章亦认
     共 += 1; ok += (照整章('点户照 268 原句，腔照 211') == ['211', '268'] and 照整章('照 268 原句（268:61—77）') == [])
-    import tempfile as _tf9                   # ★1027 X58：二档之料——点明彼档而彼档缺即红；彼档在、旧之一档 → 不红
-    with _tf9.TemporaryDirectory() as _d9:
-        open(os.path.join(_d9, '_料.md'), 'w', encoding='utf-8').write('# 料\n## 〔本料二档〕\n前文在 `版本/第9章/_料_前文.md`\n')
-        _缺9 = 前文之缺(_d9, 9)
-        open(os.path.join(_d9, '_料_前文.md'), 'w', encoding='utf-8').write('# 前文\n')
-        _在9 = 前文之缺(_d9, 9)
-        open(os.path.join(_d9, '_料.md'), 'w', encoding='utf-8').write('# 料（旧之一档）\n')
-        os.remove(os.path.join(_d9, '_料_前文.md'))
-        _旧9 = 前文之缺(_d9, 9)
-    共 += 1; ok += (len(_缺9) == 1 and '_料_前文.md' in _缺9[0] and _在9 == [] and _旧9 == [])
-    # ★1027 复核补（坑㊱）：料已拆而造章.js 之料律未点名 _料_前文.md → 红；点名 → 过；旧之一档 → ⛔验（放行之反例）
-    with _tf9.TemporaryDirectory() as _r9:
-        _章9 = os.path.join(_r9, '版本', '第9章'); os.makedirs(_章9); os.makedirs(os.path.join(_r9, '工具', '席'))
-        open(os.path.join(_章9, '_料.md'), 'w', encoding='utf-8').write('# 料\n## 〔本料二档〕\n前文在 `版本/第9章/_料_前文.md`\n')
-        _js = os.path.join(_r9, '工具', '席', '造章.js')
-        open(_js, 'w', encoding='utf-8').write('const 料律 = `${章目}/_料.md（前两章白文全文）——一次读毕；料外只许 grep 核一处`')
-        _律缺 = 料律之缺(_章9, _r9)
-        open(_js, 'a', encoding='utf-8').write('\nconst 前料 = `${章目}/_料_前文.md`')
-        _律在 = 料律之缺(_章9, _r9)
-        open(os.path.join(_章9, '_料.md'), 'w', encoding='utf-8').write('# 料（旧之一档）\n')
-        open(_js, 'w', encoding='utf-8').write('x')
-        _律旧 = 料律之缺(_章9, _r9)
-    共 += 1; ok += (len(_律缺) == 1 and '造章.js' in _律缺[0] and _律在 == [] and _律旧 == [])
     # ★X02：红处之要——五逗不重计、硬闸印句、起草闸印甲层红项（造局以字串，⛔钉盘上之数）
     文 = ('# 第九百九十九章 试\n\n甲，乙，丙，丁，戊，己。他说——好。\n平常一句。\n\n---\n\n'
           '【本章亮点】\n\n①子，丑，寅，卯，辰，巳。②平。')

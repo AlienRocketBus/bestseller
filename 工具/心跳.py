@@ -114,39 +114,6 @@ def 他持(d, 我, 今=None):
     return (bool(他) and 他 != 我 and 鲜), 他
 
 
-停锁 = {'章': '暂停', '时': 4102444800, '坐': '暂停令'}   # 1022：作者暂停之锁——时在远後，诸判俱作「有人在写」，守书⛔派、新坐⛔跳
-
-
-def 立停():
-    """作者暂停令在而有人欲开写书之会话时立之（会话之守）：守书每时之巡见锁新鲜即止，⛔每时空派。"""
-    在, d = _远()
-    if 在 and isinstance(d, dict) and d.get('坐') == '暂停令':
-        return 0, '停锁已在'
-    return _写(dict(停锁))
-
-
-def 解停(下):
-    """暂停令解：停锁换作空锁（交第「下」章之棒），守书三十分後见停写即派。⛔动他坐之锁。"""
-    _守书之参(True)   # 1024：先印复开守书之巡之原样参（锁之换成否皆印——巡停则书断流）
-    在, d = _远()
-    if not (在 and isinstance(d, dict) and d.get('坐') == '暂停令'):
-        return 0, '锁非停锁，⛔动'
-    return _写({'章': None, '毕': int(下), '时': int(time.time()), '坐': '暂停令'})
-
-
-def _守书之参(开):
-    """1024·省审 sessions 四：印 update_trigger 之原样参（号取 席在跑吗.守书之令·⛔另硬写），并印调毕记之之令。"""
-    try:
-        import 暂停令
-        if not 开 and 暂停令.守书停记():
-            print('  守书之巡已记停（%s）' % 暂停令.守书停记().get('时', ''))
-            return
-        print('  守书之巡%s：%s；调毕 python3 工具/暂停令.py %s'
-              % ('复开' if 开 else '停（停锁之下每唤只判「止」·白耗）', 暂停令.守书之参(开), '--守书已开' if 开 else '--守书已停'))
-    except Exception as e:
-        print('  ⚠ 守书之参印不出（%s）' % e)
-
-
 def 跳(n):
     """报到：把 {章, 时, 坐} 写进仓根之心跳档并推。
     1022：他坐持鲜锁即⛔报（旧无主之查，两坐各跳各的、後跳者覆前者之锁，同写一章）。"""
@@ -323,10 +290,6 @@ def 自测():
       and 可收(394, [{'章': 395, '时': 300}, {'章': None, '时': 200}])[0] is False
       and 可收(394, [{'章': 395, '时': 'x'}, {'章': None, '时': 5}])[0] is True)
     T('⑧之二 收先问可收，而後写', '可收(' in s.split('def 收(')[1].split('_写(')[0])
-    全 = open(os.path.join(ROOT, '工具', '心跳.py'), encoding='utf-8').read()
-    T('⑰解停先印复开守书之参、--立停印停之参（1024·号⛔硬写於本器）',
-      '_守书之参(True)' in s.split('def 解停(')[1].split('\ndef ')[0]
-      and '_守书之参(False)' in 全.split("if '--立停' in a:")[-1][:300] and 'trig_' not in s)
     for 名, 条 in _防夺之测():
         T(名, 条)
     print('── 负测·心跳 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
@@ -339,11 +302,6 @@ if __name__ == '__main__':
         sys.exit(0 if 自测() else 1)
     if '--跳' in a:
         sys.exit(跳(a[a.index('--跳') + 1]))
-    if '--立停' in a:                     # 1023：作者暂停令生效即立（自走印之）；解令时 暂停令.解 自换空锁
-        rc, m = 立停()
-        print('✓停锁已立' if rc == 0 and not m else (m or '⛔停锁未推'))
-        _守书之参(False)
-        sys.exit(rc)
     if '--收' in a:
         i = a.index('--收')
         sys.exit(收(a[i + 1] if len(a) > i + 1 and a[i + 1].isdigit() else None))

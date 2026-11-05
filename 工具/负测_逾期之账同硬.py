@@ -84,12 +84,11 @@ def 跑():
     # ⛔最末之章取自**正文**，⛔不取自 `版本/` 之目录——
     #   ★本负测头一版取的是後者，而盘上有一个 `版本/第999章`（局用之桩），
     #     **最末遂被判作 999，一切 open 皆成逾期**——**尺拿错了，判的就不是这件事**。
-    #   ★1027：旧借 核轮.F（核轮随十三轮汰）；今取 全测._末章（末一有正文之章，同此尺）
     import importlib.util as _u2
-    _s2 = _u2.spec_from_file_location('_全测_末章', os.path.join(ROOT, '工具', '全测.py'))
+    _s2 = _u2.spec_from_file_location('核轮', os.path.join(ROOT, '工具', '核轮.py'))
     _m2 = _u2.module_from_spec(_s2)
     _s2.loader.exec_module(_m2)
-    最末 = _m2._末章()
+    最末 = max(_m2.F)
     逾 = [x for x in ops if isinstance(x.get('到期章'), int) and x['到期章'] < 最末]
     R.append(('⑦真盘·今日 open %d 笔，其中逾期者 0 笔（⛔故此改不回头红已封之章）'
               % len(ops), not 逾))

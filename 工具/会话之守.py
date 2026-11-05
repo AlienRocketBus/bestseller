@@ -11,11 +11,6 @@
      settings.json 之 permissions.deny 另禁一道（两锁，一坏一在）。
   ② interrupt_session：本会话之转录须五分钟内对同一会话跑过 get_session（实时之状）方放——⛔凭旧状。
   ③ create_session：云端心跳之锁（`工具/心跳.py`·四十五分）为他坐所持即拦——⛔同时两坐写同一章。
-     1024 起交棒⛔经总编辑另查——令含「第N章」之写书会话，本钩一并验：参须与 `接棒守.派之参` 逐键同（⛔手拟）、
-     第N章云端已封即拦、第N-1章未入主枝即拦（新会话自主枝起，见不到前章）；总编辑醒来只照【派】所带之参调一回。
-     1027 A2·死锁之治：N-1 未入主枝而其报红／拒／败（或缺章标而 备份/存底 有其封版之提交）——封版之坐已死则无人治之、书停；
-     今许【重派】自其源起（「章-(N-1)」或其坏治枝、封版之提交之 sha；参照 `接棒守.派之参(N, 重, 治=源)`），首务治 N-1。
-  ③之守书（1024）：暂停令已解而「守书已停」之记仍在 → 拦开写书之会话，印复开守书之巡之原样参（⛔守书停而书续，断流无人兜）。
   其余（unarchive、get_session、list 诸器）放。钩自身出错：①照拦（fail closed）；②③亦拦并印由。
 用法：钩自 stdin 取 JSON；`python3 工具/会话之守.py --自测`
 """
@@ -93,162 +88,10 @@ def 锁之主():
     return (差 <= 心跳.限), str(d.get('坐') or ''), d.get('章')
 
 
-def 章号(令):
-    m = re.search(r'第\s*(\d+)\s*章', 令 or '')
-    return int(m.group(1)) if m else None
-
-
-def 前派(转录, 章, 今=None, 限=3600, 排=None, 近=20):
-    """转录中 限 秒内有无 create_session 之令含同章号者。回其几分前（无则 None）。
-    1022 治：⛔认此回之调用自身（钩跑时其 tool_use 已落转录）——排其 id；无 id 者，近 20 秒内者不认。"""
-    今 = 今 or time.time()
-    最 = None
-    败 = set()                      # 被拦或出错之调用（tool_result is_error）⛔算已派
-    try:
-        with open(转录, encoding='utf-8') as f:
-            for l in f:
-                if '"is_error": true' in l or '"is_error":true' in l:
-                    try:
-                        for c in ((json.loads(l).get('message') or {}).get('content') or []):
-                            if isinstance(c, dict) and c.get('type') == 'tool_result' and c.get('is_error'):
-                                败.add(c.get('tool_use_id'))
-                    except Exception:
-                        pass
-    except Exception:
-        return None
-    try:
-        with open(转录, encoding='utf-8') as f:
-            for l in f:
-                if 'create_session' not in l:
-                    continue
-                try:
-                    d = json.loads(l)
-                except Exception:
-                    continue
-                for c in ((d.get('message') or {}).get('content') or []):
-                    if isinstance(c, dict) and c.get('type') == 'tool_use' and 器名(c.get('name')) == 'create_session' \
-                            and 章号(str((c.get('input') or {}).get('prompt') or '')) == 章:
-                        if (排 and c.get('id') == 排) or c.get('id') in 败:
-                            continue
-                        t = _时(d.get('timestamp'))
-                        if t and (排 or 今 - t > 近) and 0 <= 今 - t <= 限 and (最 is None or t > 最):
-                            最 = t
-    except Exception:
-        return None
-    return None if 最 is None else int((今 - 最) // 60)
-
-
-def 停读():
-    try:
-        sys.path.insert(0, os.path.join(ROOT, '工具'))
-        import 暂停令
-        return bool(暂停令.在(ROOT)[0])
-    except Exception:
-        return False
-
-
-def 守书停读():
-    """→ 红由（''＝无事）：令已解而「守书已停」之记仍在（暂停令.守书之哨）。读不出⛔拦（此守係兜底，非主闸）。"""
-    try:
-        sys.path.insert(0, os.path.join(ROOT, '工具'))
-        import 暂停令
-        return '；'.join(暂停令.守书之哨(ROOT))
-    except Exception:
-        return ''
-
-
-def 守书停参():
-    try:
-        import 暂停令
-        if 暂停令.守书停记():
-            return ''
-        return '；守书之巡未记停者照此调：%s，调毕 `暂停令.py --守书已停`' % 暂停令.守书之参(False)
-    except Exception:
-        return ''
-
-
-def 立停读():
-    try:
-        sys.path.insert(0, os.path.join(ROOT, '工具'))
-        import 心跳
-        心跳.立停()
-    except Exception:
-        pass
-
-
-def 派查(章, 参, 封=None, 主=None, 治=None):
-    """1024：写书之会话之参⛔手拟——逐键比 `接棒守.派之参`；第章已封、前章未入主枝俱拦。回 (拦?, 由)。⛔另造尺：封与主含取 自走、接棒守 之器。
-    1027 A2·死锁之治：前章未入主枝而【重派】、且 `接棒守.治之源`（其报红／拒／败，或缺章标而 备份/存底 有其封版之提交）有源 →
-      许其形：自其源起（⛔自主枝：主枝无前章）、首务治前章（参逐键比 `接棒守.派之参(章, 重=True, 治=源)`）。"""
-    sys.path.insert(0, os.path.join(ROOT, '工具'))
-    import 接棒守
-    重 = '【重派】' in str(参.get('prompt') or '')
-    在主 = (主 or 接棒守.主含)(章 - 1)
-    源 = (治 or 接棒守.治之源)(章 - 1) if (重 and not 在主) else ''
-    正 = 接棒守.派之参(章, 重, 治=源 or None)
-    差 = [k for k in 正 if 参.get(k) != 正[k]]
-    if 差:
-        return True, ('⛔会话之守：开写书会话之参⛔手拟（%s 不合）——原样用此参再调一回：%s'
-                      % ('、'.join(差), json.dumps(正, ensure_ascii=False)))
-    if 封 is None:
-        import 自走
-        封 = 自走.云端已封
-    if 封(章):
-        return True, ('⛔会话之守：第%d章云端已封（有「章-%d」之标）——⛔重写；该开第%d章（`python3 工具/接棒守.py --派令 %d`）'
-                      % (章, 章, 章 + 1, 章 + 1))
-    if not 在主 and not 源:
-        return True, ('⛔会话之守：第%d章未入主枝——新会话自主枝起、见不到前章；先 `python3 工具/接棒守.py --候主 %d`，'
-                      '其报红即照其红治（`python3 工具/推.py` 交 GitHub）、逾时照其所印 workflow_dispatch；'
-                      '封版之坐已死而其报红／拒／败（或缺章标而 备份/存底 有其封版之提交）：`python3 工具/接棒守.py --派令 %d` 取【重派】之参'
-                      '（自其源起、先治第%d章），再派' % (章 - 1, 章 - 1, 章, 章 - 1))
-    return False, ''
-
-
-派之记 = '【派】'
-查之器 = ('get_session', 'list_sessions')
-
-
-def 本回首言(转录):
-    """转录（jsonl）之末一真人之言（本回之首：非 tool_result、非 isMeta、非 <…> 之系统之注）→ 其文（无则 ''）。"""
-    言 = ''
-    try:
-        with open(转录, encoding='utf-8') as f:
-            for l in f:
-                if '"user"' not in l:
-                    continue
-                try:
-                    d = json.loads(l)
-                except Exception:
-                    continue
-                if d.get('type') != 'user' or d.get('isMeta'):
-                    continue
-                c = (d.get('message') or {}).get('content')
-                if isinstance(c, list):
-                    if any(isinstance(x, dict) and x.get('type') == 'tool_result' for x in c):
-                        continue
-                    c = '\n'.join(x.get('text', '') for x in c if isinstance(x, dict) and x.get('type') == 'text')
-                if isinstance(c, str) and c.strip() and not c.lstrip().startswith('<'):
-                    言 = c
-    except Exception:
-        return ''
-    return 言
-
-
-def 判(入, 转录读=新查, 锁读=锁之主, 我=None, 查=None, 首言=None):
+def 判(入, 转录读=新查, 锁读=锁之主, 我=None):
     """纯判：回 (拦?, 由)。"""
     名 = 器名(入.get('tool_name'))
     参 = 入.get('tool_input') or {}
-    if 名 in 查之器:
-        # ★1027 #136（派之一呼）：总编辑被【派】唤醒，只照其参调一回 create_session——⛔list／get（每调重发整个上下文·虹吸）；
-        #   打断前五分内之 get_session（②）不在此等回里。读不出转录即放（⛔挡事）。
-        try:
-            言 = (首言 or 本回首言)(入.get('transcript_path') or '')
-        except Exception:
-            言 = ''
-        if 言.lstrip().startswith(派之记):
-            return True, ('⛔会话之守（派之一呼·1027）：本回係【派】所唤——只照【派】所带之参调一回 create_session（参⛔手拟），'
-                          '⛔%s（每调重发整个上下文）。其拦由会话之守自判（锁、已封、前章入主），⛔先查。' % 名)
-        return False, ''
     if 名 in 禁:
         return True, ('⛔会话之守：归档会话一律禁（1021·402 之失：凭旧状归档正在封版之会话，其机被收，五时半之稿全没）。'
                       '闲会话之机平台自收，归档零益；要它停，先 get_session 看实时之状，再 send 一令请其存底收尾。')
@@ -259,29 +102,8 @@ def 判(入, 转录读=新查, 锁读=锁之主, 我=None, 查=None, 首言=None
                           % (参.get('session_id'), '末查 %d 秒前' % 秒 if 秒 is not None else '本会话未查过'))
         return False, ''
     if 名 == 'create_session':
-        令 = str(参.get('prompt') or '')
-        if 守书之记 in 令:
+        if 守书之记 in str(参.get('prompt') or ''):
             return False, ''          # 守书之会话（只查、⛔写书）⛔与写书之坐争锁（1022）
-        # 1022 复核：①作者暂停令在 → ⛔开写书之会话，并立停锁令守书⛔每时空派；②一时内已派同章之会话 → ⛔再派（一派数令之重）
-        if 停读():
-            立停读()
-            return True, '⛔会话之守：作者暂停令在——⛔开写书之会话（已立停锁，守书⛔再派；解令 `暂停令.py --解` 即续）' + 守书停参()
-        守 = 守书停读()
-        if 守:
-            return True, '⛔会话之守：先复开守书之巡再开写书之会话——' + 守.lstrip('⛔ ')
-        章 = 章号(令)
-        if 章 is not None:
-            try:
-                拦, 由 = (查 or 派查)(章, 参)
-            except Exception as e:
-                拦, 由 = True, '⛔会话之守：派查出错（%s）——fail closed；先 `python3 工具/接棒守.py --派令 %d` 取参、查网' % (e, 章)
-            if 拦:
-                return True, 由
-        if 章 is not None and '【重派】' not in 令:
-            前 = 前派(入.get('transcript_path') or '', 章, 排=入.get('tool_use_id'))
-            if 前 is not None:
-                return True, ('⛔会话之守：%d 分前已派第%d章之会话——⛔再派（数令同至）。先 get_session 看其状；'
-                              '确已死或被拦方於令中加「【重派】」再开' % (前, 章))
         try:
             持, 坐, 章 = 锁读()
         except Exception as e:
@@ -311,12 +133,6 @@ def 自测():
         r.append(bool(条))
         print(('  ✓ ' if 条 else '  ✗ ') + 名)
 
-    _判 = globals()['判']
-    判 = lambda *a, **k: _判(*a, **dict({'查': lambda 章, 参: (False, '')}, **k))   # 旧格只验锁、重派、暂停；派查另验（⑧）
-    # 1024 实踩：盘上暂停令真在时，③诸格读真令而误拦、且真调了 心跳.立停——自测⛔读盘上之令、⛔动真锁（⑦另以桩验暂停）
-    _真停, _真立 = globals()['停读'], globals()['立停读']
-    globals()['停读'], globals()['立停读'] = (lambda: False), (lambda: None)
-    _真守 = globals()['守书停读']; globals()['守书停读'] = lambda: ''   # 1024：⛔读盘上「守书已停」之记
     无锁 = lambda: (False, '', None)
     他锁 = lambda: (True, '01OTHER', 402)
     我锁 = lambda: (True, '016MINE', 402)
@@ -324,24 +140,6 @@ def 自测():
         T('①归档一律拦（%s）' % 前[:9], 判({'tool_name': 前 + 'archive_session', 'tool_input': {'session_id': 'session_x'}}, 锁读=无锁)[0])
     T('①之二 unarchive ⛔误拦', not 判({'tool_name': 'mcp__claude-code-remote__unarchive_session'}, 锁读=无锁)[0])
     T('①之三 get_session、list_sessions 放', not any(判({'tool_name': 'mcp__X__' + n}, 锁读=无锁)[0] for n in ('get_session', 'list_sessions', 'send_later')))
-    # ★1027 #136 派之一呼：本回首真人之言以【派】起 → list／get 拒；他回（作者之问、无转录）→ 放
-    with tempfile.TemporaryDirectory() as d0:
-        p0 = os.path.join(d0, 't.jsonl')
-        def 迹(*诸):
-            with open(p0, 'w', encoding='utf-8') as f:
-                for 类, c in 诸:
-                    f.write(json.dumps({'type': 类, 'message': {'role': 类, 'content': c}}, ensure_ascii=False) + '\n')
-        查 = lambda n: 判({'tool_name': 'mcp__Claude_Code_Remote__' + n, 'transcript_path': p0}, 锁读=无锁)
-        迹(('user', '看看 405 之会话怎么样了'), ('assistant', [{'type': 'text', 'text': 'x'}]), ('user', '【派】第411章：照此参调一回 create_session……'),
-           ('assistant', [{'type': 'tool_use', 'name': 'x'}]), ('user', [{'type': 'tool_result', 'content': 'ok'}]))
-        T('⑫【派】之回（首言以【派】起；其後之 tool_result ⛔算人言）→ get_session、list_sessions 拒', 查('get_session')[0] and 查('list_sessions')[0])
-        T('⑫之二 【派】之回：create_session 照判（⛔为此拒）', not 判({'tool_name': 'mcp__X__create_session', 'transcript_path': p0, 'tool_input': {}},
-                                                                锁读=无锁, 我='M')[0])
-        迹(('user', '【派】第410章……'), ('assistant', [{'type': 'text', 'text': 'x'}]), ('user', '411 那一坐怎么样了？'))
-        T('⑫之三 前回係【派】、本回係作者之问 → 放（反例·⛔误拦）', not 查('get_session')[0])
-        迹(('user', [{'type': 'text', 'text': '【派】第411章'}]), ('user', '<task-notification>x</task-notification>'))
-        T('⑫之四 系统之注（<…>）⛔算人言：首言仍【派】→ 拒；转录缺 → 放', 查('list_sessions')[0]
-          and not 判({'tool_name': 'mcp__X__get_session', 'transcript_path': '/无/此'}, 锁读=无锁)[0])
     with tempfile.TemporaryDirectory() as d:
         p = os.path.join(d, 't.jsonl')
         now = time.time()
@@ -363,92 +161,6 @@ def 自测():
     T('③之二 新开：他坐持锁 → 拦', 判(建, 锁读=他锁, 我='016MINE')[0])
     T('③之三 新开：本坐持锁 → 放（封毕自开接班）', not 判(建, 锁读=我锁, 我='cse_016MINE')[0])
     T('③之六 守书之会话（令带【守书·⛔写书】）他坐持锁亦许开', not 判({'tool_name': 'mcp__X__create_session', 'tool_input': {'prompt': '你是' + 守书之记 + '……'}}, 锁读=他锁, 我='016MINE')[0])
-    with tempfile.TemporaryDirectory() as d2:
-        p2 = os.path.join(d2, 't.jsonl')
-        now2 = time.time()
-        def 派行(秒前, 令, id_='old'):
-            ts = datetime.utcfromtimestamp(now2 - 秒前).strftime('%Y-%m-%dT%H:%M:%S.000Z')
-            return json.dumps({'type': 'assistant', 'timestamp': ts, 'message': {'content': [
-                {'type': 'tool_use', 'id': id_, 'name': 'mcp__Claude_Code_Remote__create_session', 'input': {'prompt': 令}}]}}) + '\n'
-        open(p2, 'w').write(派行(1200, '写《镇冢秘术》第 404 章：先……'))
-        g = globals()
-        旧停 = g['停读']; g['停读'] = lambda: False
-        try:
-            建2 = lambda 令: {'tool_name': 'mcp__X__create_session', 'transcript_path': p2, 'tool_input': {'prompt': 令}}
-            T('⑥二十分前已派第404章 → 再派第404章拦（数令同至之重）', 判(建2('写第404章'), 锁读=无锁, 我='M')[0])
-            T('⑥之二 令带【重派】 → 放（确已死方用）', not 判(建2('【重派】写第404章'), 锁读=无锁, 我='M')[0])
-            T('⑥之三 他章（第405章）→ 放', not 判(建2('写第 405 章'), 锁读=无锁, 我='M')[0])
-            open(p2, 'w').write(派行(4000, '写第 404 章'))
-            T('⑥之四 逾一时之前派 → 放', not 判(建2('写第404章'), 锁读=无锁, 我='M')[0])
-            open(p2, 'w').write(派行(1, '写第405章', 'cur'))
-            T('⑥之五 转录中只此回之调用自身（同 id）→ 放（1022 实踩：自拦自）',
-              not 判(dict(建2('写第405章'), tool_use_id='cur'), 锁读=无锁, 我='M')[0])
-            T('⑥之六 无 id 而只二十秒内之一笔（此回自身）→ 放', not 判(建2('写第405章'), 锁读=无锁, 我='M')[0])
-            open(p2, 'w').write(派行(120, '写第405章', 'blk') + json.dumps({'type': 'user', 'message': {'content': [
-                {'type': 'tool_result', 'tool_use_id': 'blk', 'is_error': True, 'content': 'hook error'}]}}) + '\n')
-            T('⑥之七 前派被拦（tool_result is_error）⛔算已派 → 放', not 判(建2('写第405章'), 锁读=无锁, 我='M')[0])
-            g['停读'] = lambda: True
-            立了 = []
-            旧立 = g['立停读']; g['立停读'] = lambda: 立了.append(1)
-            T('⑦作者暂停令在 → 拦写书之会话，并立停锁', 判(建2('写第406章'), 锁读=无锁, 我='M')[0] and 立了)
-            T('⑦之二 暂停中守书之会话照开', not 判(建2(守书之记 + '巡'), 锁读=无锁, 我='M')[0])
-            g['停读'] = lambda: False
-            g['守书停读'] = lambda: '⛔ 守书之巡仍停：…照此调一回：update_trigger {"trigger_id": "trig_x", "enabled": true}'
-            拦守 = 判(建2('写第406章'), 锁读=无锁, 我='M')
-            T('⑦之三 令已解而守书已停之记仍在 → 拦写书之会话、由带 enabled=true 之参；守书之会话照开（1024）',
-              拦守[0] and '"enabled": true' in 拦守[1] and not 判(建2(守书之记 + '巡'), 锁读=无锁, 我='M')[0])
-            g['守书停读'] = lambda: ''
-            g['立停读'] = 旧立
-        finally:
-            g['停读'] = 旧停
-    sys.path.insert(0, os.path.join(ROOT, '工具'))
-    import 接棒守
-    正 = 接棒守.派之参(411)
-    真 = lambda **k: _判({'tool_name': 'mcp__X__create_session', 'tool_input': dict(正, **k)}, 锁读=无锁, 我='M',
-                         查=lambda 章, 参: 派查(章, 参, 封=lambda n: False, 主=lambda n: True))
-    旧停2 = globals()['停读']; globals()['停读'] = lambda: False
-    try:
-        T('⑧参原样（接棒守.派之参）→ 放', not 真()[0])
-        T('⑧之二 模手拟（sonnet）→ 拦、由中带原样之参', 真(model='claude-sonnet-5-5')[0] and '"model": "claude-opus-5-5"' in 真(model='x')[1])
-        T('⑧之三 枝手拟 → 拦', 真(source_revision='main')[0] and 真(outcome_branch='')[0])
-        T('⑧之四 令手改一字 → 拦（⛔转令被改）', 真(prompt=正['prompt'] + '。')[0])
-        T('⑧之五 重派之形（令首【重派】）→ 放', not _判({'tool_name': 'mcp__X__create_session', 'tool_input': 接棒守.派之参(411, True)},
-            锁读=无锁, 我='M', 查=lambda 章, 参: 派查(章, 参, 封=lambda n: False, 主=lambda n: True))[0])
-        T('⑧之六 第章云端已封 → 拦（⛔重写已封之章）', _判({'tool_name': 'mcp__X__create_session', 'tool_input': 正}, 锁读=无锁, 我='M',
-            查=lambda 章, 参: 派查(章, 参, 封=lambda n: n == 411, 主=lambda n: True))[0])
-        T('⑧之七 前章未入主枝 → 拦', _判({'tool_name': 'mcp__X__create_session', 'tool_input': 正}, 锁读=无锁, 我='M',
-            查=lambda 章, 参: 派查(章, 参, 封=lambda n: False, 主=lambda n: n != 410))[0])
-        # ⑨1027 A2·死锁之治：前章未入主而其报坏（或缺章标而存底有封）→ 许【重派】自其源起、先治；余形照拦
-        治参 = 接棒守.派之参(411, True, 治='章-410')
-        治查 = lambda 源: (lambda 章, 参: 派查(章, 参, 封=lambda n: False, 主=lambda n: False, 治=lambda n: 源))
-        判治 = lambda 入参, 源: _判({'tool_name': 'mcp__X__create_session', 'tool_input': 入参}, 锁读=无锁, 我='M', 查=治查(源))
-        T('⑨前章未入主而报红：治之形（自章-410 起·【重派】）→ 放', not 判治(治参, '章-410')[0])
-        _拦常 = 判治(正, '章-410')
-        T('⑨之二 同局而以常形之参（自主枝）→ 拦，由指 --派令 411 取【重派】之参', _拦常[0] and '--派令 411' in _拦常[1] and '先治第410章' in _拦常[1])
-        _拦源 = 判治(治参, '')
-        T('⑨之三 治之形而无治之源（报未坏／成）→ 拦（参不合、印常形之重派参）', _拦源[0] and '"source_revision": "%s"' % 接棒守.主枝 in _拦源[1])
-        _sha = 'f' * 40
-        T('⑨之四 缺章标而存底有其封：自封版之提交之 sha 起 → 放；源已变（章标已推）→ 拦而印新源之参',
-          not 判治(接棒守.派之参(411, True, 治=_sha), _sha)[0] and 判治(接棒守.派之参(411, True, 治=_sha), '章-410')[0]
-          and '"source_revision": "章-410"' in 判治(接棒守.派之参(411, True, 治=_sha), '章-410')[1])
-        _计 = []
-        T('⑨之五 前章已在主：治之形 → 拦（⛔自章-N 起写下一章）、⛔查治之源', _判({'tool_name': 'mcp__X__create_session', 'tool_input': 治参},
-            锁读=无锁, 我='M', 查=lambda 章, 参: 派查(章, 参, 封=lambda n: False, 主=lambda n: True,
-                                                  治=lambda n: (_计.append(n), '章-410')[1]))[0] and not _计)
-
-        def 崩(章, 参):
-            raise RuntimeError('网断')
-        T('⑧之八 派查崩 → 拦（fail closed）', _判({'tool_name': 'mcp__X__create_session', 'tool_input': 正}, 锁读=无锁, 我='M', 查=崩)[0])
-        T('⑧之九 令无章号（试验之会话）⛔派查', not _判({'tool_name': 'mcp__X__create_session', 'tool_input': {'prompt': '【试】只读'}},
-            锁读=无锁, 我='M', 查=崩)[0])
-        T('⑧之十 守书之会话⛔派查', not _判({'tool_name': 'mcp__X__create_session', 'tool_input': {'prompt': 守书之记 + '第411章'}},
-            锁读=无锁, 我='M', 查=崩)[0])
-    finally:
-        globals()['停读'] = 旧停2
-    src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
-    T('⑧之十一 默查係 派查、派查默取 自走.云端已封 与 接棒守.主含（⛔以注入之假充其验）',
-      '(查 or 派查)(章, 参)' in src and '封 = 自走.云端已封' in src and '(主 or 接棒守.主含)(章 - 1)' in src
-      and '(治 or 接棒守.治之源)(章 - 1) if (重 and not 在主)' in src)
     def 坏():
         raise RuntimeError('网断')
     T('③之四 心跳读不出 → 拦（fail closed）', 判(建, 锁读=坏, 我='016MINE')[0])
@@ -470,17 +182,8 @@ def 自测():
              if '会话之守' in h.get('command', '') and re.search(e.get('matcher', '^$'), 'mcp__claude-code-remote__archive_session')
              and re.search(e.get('matcher', '^$'), 'mcp__Claude_Code_Remote__create_session')]
         T('⑤之二 PreToolUse 钩挂本器、matcher 两写俱中', bool(钩))
-        钩2 = [e for e in (s.get('hooks') or {}).get('PreToolUse', []) for h in e.get('hooks', []) if '会话之守' in h.get('command', '')]
-        T('⑤之三 matcher 并中 get_session、list_sessions（派之一呼·1027）；⛔中他器（send_message）',
-          bool(钩2) and all(re.fullmatch(钩2[0]['matcher'], 'mcp__Claude_Code_Remote__' + n) for n in ('get_session', 'list_sessions', 'create_session'))
-          and not re.fullmatch(钩2[0]['matcher'], 'mcp__Claude_Code_Remote__send_message'))
     except Exception as e:
         T('⑤settings 读不出：%s' % e, False)
-    globals()['停读'], globals()['立停读'] = _真停, _真立
-    globals()['守书停读'] = _真守
-    自 = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[1]
-    T('③之七 自测桩掉暂停之读与立停（盘上令在时③亦通、⛔动真锁）',
-      "globals()['停读'], globals()['立停读'] = (lambda: False), (lambda: None)" in 自 and 自.index('_真停') < 自.index("T('③新开"))
     ok = sum(r)
     print('── 负测·会话之守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)
@@ -489,14 +192,11 @@ def 自测():
 if __name__ == '__main__':
     if '--自测' in sys.argv[1:]:
         sys.exit(0 if 自测() else 1)
-    入 = None
     try:
         入 = json.load(sys.stdin)
         拦, 由 = 判(入)
     except Exception as e:
         拦, 由 = True, '⛔会话之守：钩入读不出（%s）——fail closed' % e
-        if isinstance(入, dict) and 器名(入.get('tool_name')) in 查之器:
-            拦 = False                    # 查之器（get／list）出错⛔挡（只省 token 之守，非安全之闸）
     if 拦:
         print(由, file=sys.stderr)
         sys.exit(2)

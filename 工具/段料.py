@@ -2,9 +2,7 @@
 """段料（1013 立·造式二代 §四：段案之料，零 token）——每十章一份段案之前，机器先把料汇齐，设计席只读此档。
 
 汇：余章总案 §二之裁｜§四 本段诸章之行｜§五 收线表涉本段之行｜§七 之种（若涉）｜悬线钉在本段之行｜
-    canon 有界之卡（only_ch／from_ch 落本段）｜全员之账（章料.全员，坑⑬）｜总纲本段逐章之日｜前两章白文｜叫绝之拍库全文｜段案之格｜
-    ★1027 X47：剧情庭之守令（本段之势「守令」一节全文·置料首）——段案 398—400 立席未逮守令首条「⛔回信」、驳席方逮（复盘 1020_W54），
-    立令未把守令逐条摆出；今料首即列，立席首回即守。
+    canon 有界之卡（only_ch／from_ch 落本段）｜全员之账（章料.全员，坑⑬）｜总纲本段逐章之日｜前两章白文｜叫绝之拍库全文｜段案之格。
 限：≤150KB（坑③：档要短）。
 
 用法：
@@ -45,27 +43,11 @@ def 总纲之日(纲, a, b):
     return {int(m.group(1)): m.group(2) for m in re.finditer(r'\|\s*(\d{3})\s*\|\s*([主暗]·\d+)\s*\|', 纲) if a <= int(m.group(1)) <= b}
 
 
-def 段首(n):
-    return 381 + (n - 381) // 10 * 10
-
-
-def 守令(a, root=ROOT):
-    """★1027 X47：本段剧情庭之势（设定/剧情庭_势_第S段.md）之「守令」一节（###…守令… 至下一 ### 或 ##）→ (档, 文)；无势或无其节 → (档, '')。"""
-    档 = os.path.join('设定', '剧情庭_势_第%d段.md' % 段首(a))
-    p = os.path.join(root, 档)
-    t = open(p, encoding='utf-8').read() if os.path.exists(p) else ''
-    m = re.search(r'^(###[^\n]*守令[^\n]*\n.*?)(?=^##[# ]|\Z)', t, re.M | re.S)
-    return 档, (m.group(1).strip() if m else '')
-
-
 def 汇(a, b, root=ROOT, 出=None, 顶=限):
     读 = lambda p: open(os.path.join(root, p), encoding='utf-8').read() if os.path.exists(os.path.join(root, p)) else ''
     案 = 读('设定/剧情庭题/余章总案.md')
     纲 = 读('设定/02_余章之势_总纲.md')
     段 = []
-    令档, 令 = 守令(a, root)
-    段.append(('剧情庭之守令（%s·立席首回逐条守之；段案诸⛔之上加之）' % 令档,
-              令 or '（本段之势未立或无「守令」一节——先开剧情庭（段序之守：上段大审 → 剧情庭 → 段料）；⛔无守令而立段案）'))
     段.append(('余章总案·解歧之裁', 章料.节(案, '## 二、')))
     段.append(('余章总案·§四 本段诸章之行（%d—%d）' % (a, b), '\n'.join(行於(章料.节(案, '## 四、'), a, b))))
     段.append(('余章总案·§五 收线表涉本段之行', '\n'.join(行於(章料.节(案, '## 五、'), a, b))))
@@ -129,15 +111,6 @@ def 自测():
         纲 = open(os.path.join(ROOT, '设定', '02_余章之势_总纲.md'), encoding='utf-8').read()
         日 = 总纲之日(纲, 381, 405)
         共 += 1; ok += (日.get(381) == '暗·142' and 日.get(404) == '主·160' and 日.get(405) == '暗·154' and len(日) == 25)   # 右栏之章亦认
-        # ★1027 X47：守令置料首——398—400（391 段）之料首节即「⛔「回信」」之守令（W54 立席所漏）；401 段之守令取其段之势；无势之段印「先开剧情庭」
-        _档, _令 = 守令(398)
-        _档2, _令2 = 守令(405)
-        with contextlib.redirect_stdout(io.StringIO()):
-            r = 汇(398, 400, ROOT, os.path.join(t, 'z.md'), 顶=None)
-        z = open(r, encoding='utf-8').read() if r else ''
-        共 += 1; ok += (_档.endswith('剧情庭_势_第391段.md') and '⛔「回信」' in _令 and '## 二、' not in _令
-                       and '二线律' in _令2 and z.split('\n## 〔')[1].startswith('剧情庭之守令') and '⛔「回信」' in z.split('〔余章总案·解歧之裁〕')[0]
-                       and 守令(9991)[1] == '' and 段首(411) == 411 and 段首(420) == 411)
     finally:
         shutil.rmtree(t)
     print('段料·自测 %d/%d' % (ok, 共))

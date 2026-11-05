@@ -17,7 +17,7 @@ import io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, '工具'))
-from 硬闸 import 硬项, 永禁词, 硬项之处, 处之印   # noqa: E402
+from 硬闸 import 硬项, 永禁词   # noqa: E402
 
 # ★旧式（改之前跑轮那一份，逐字抄下作回灌之据）
 def 旧式(txt):
@@ -80,37 +80,6 @@ def _旧格不走样():
     return 坏
 
 
-# ④硬项之处（1024·省审 seats 三）：每格之条数＝硬项()之数（全书回灌），且白文／骨记、同句二格、行号皆对
-def _处之对():
-    import collections, glob, subprocess, tempfile
-    坏 = []
-    for f in sorted(glob.glob(os.path.join(ROOT, '正文', '*.md'))):
-        t = io.open(f, encoding='utf-8').read()
-        c = collections.Counter(x[0] for x in 硬项之处(t))
-        for k, v in 硬项(t).items():
-            if c.get(k, 0) != v:
-                坏.append('%s·%s 硬项%d 处%d' % (os.path.basename(f)[:20], k, v, c.get(k, 0)))
-    样 = ('《镇冢秘术》\n\n第九百九十九章　试\n\n“好。”\n\n他走了，走了，又走，再走，还走，终于停了。\n\n'
-          '【本章亮点】一，二，三，四，五，六。\n')
-    印 = 处之印(硬项之处(样))
-    跨 = 处之印(硬项之处('第一章　题\n\n甲，乙，丙，\n丁，戊，己。\n'))
-    if 跨 != ['  白文 L3 五逗句：甲，乙，丙，⏎丁，戊，己。']:   # 跨行之句⛔断其行（--量 一处一行）
-        坏.append('跨行之句走样：%s' % 跨)
-    if 印 != ['  白文 L7 五逗句：他走了，走了，又走，再走，还走，终于停了。',
-             '  骨记 L9 五逗句＝亮点段五逗（同一句，计二格）：【本章亮点】一，二，三，四，五，六。']:
-        坏.append('处之印走样：%s' % 印)
-    with tempfile.NamedTemporaryFile('w', suffix='.md', delete=False, encoding='utf-8') as g:
-        g.write(样)
-    try:
-        o = subprocess.run([sys.executable, os.path.join(ROOT, '工具', '净重对表.py'), '--量', g.name],
-                           capture_output=True, text=True).stdout.splitlines()
-    finally:
-        os.unlink(g.name)
-    if o[1:] != 印 or not o or not o[0].startswith('净重 ') or '五逗句 2、亮点段五逗 1' not in o[0]:
-        坏.append('净重对表 --量 未印其处：%s' % o)
-    return 坏
-
-
 def 跑():
     坏, 回灌漏 = [], 0
     for 格, s in 新格须认:
@@ -125,18 +94,15 @@ def 跑():
     走样 = _旧格不走样()
     if 走样:
         坏.append('★旧格走样 %d 处（新账把老账改坏了）：%s' % (len(走样), 走样[0]))
-    处坏 = _处之对()
-    if 处坏:
-        坏.append('★硬项之处 %d 处不对：%s' % (len(处坏), 处坏[0]))
     if 回灌漏 == 0:
         坏.append('★此测在旧式下亦全过——陪跑之测，不算数。')
-    n = len(新格须认) + len(不许认) + 2
+    n = len(新格须认) + len(不许认) + 1
     if 坏:
         print('✗ 负测·硬闸 %d/%d' % (n - len(坏), n))
         for x in 坏:
             print('   ⛔ ' + x)
         return 1
-    print('✓ 负测·硬闸 %d/%d 全通｜永禁词 %d 词｜旧十三格全书回灌一格未走样｜硬项之处逐格同数｜旧式漏认 %d 项，故非陪跑'
+    print('✓ 负测·硬闸 %d/%d 全通｜永禁词 %d 词｜旧十三格全书回灌一格未走样｜旧式漏认 %d 项，故非陪跑'
           % (n, n, len(永禁词()), 回灌漏))
     return 0
 

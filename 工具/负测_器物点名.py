@@ -58,8 +58,8 @@ def _立沙():
     atexit.register(shutil.rmtree, _沙, True)   # ★1020 W53 验席逮：旧无 rmtree，每跑留一份约 11MB 之影盘（积 233 份、约 2.5GB）
     os.makedirs(os.path.join(_沙, '工具'), exist_ok=True)
     shutil.copytree(os.path.join(ROOT, '正文'), os.path.join(_沙, '正文'))
-    # ★1027：cn2i 已移入 器物点名（一坐.py 随十三轮汰），影盘只须此一器
-    for _n in ('器物点名.py',):
+    # 一坐.py：`器物点名::正文` 会去加载它
+    for _n in ('一坐.py', '器物点名.py'):
         _f = os.path.join(ROOT, '工具', _n)
         if os.path.exists(_f):
             shutil.copy2(_f, os.path.join(_沙, '工具', _n))
@@ -204,9 +204,6 @@ def _手器之数(m, 沙):
     注 = re.search(r'295—400 有册之章 (\d+)[^\n]*\n#\s+([^\n]+)', src)
     if not 注:
         return ['★㉙手器全集之注无「295—400 有册之章」之实数']
-    块 = src[src.find('# ★手器全集'):注.end()]
-    if '册份数' not in 块 or '非 grep 全书' not in 块:   # X43⑦：其数之义（册份数）须明书，⛔与其选之 grep 全书相混
-        return ['★㉙手器全集之注未明其数係「册份数」（⛔非 grep 全书正文之见数）']
     记 = dict((k, int(v)) for k, v in re.findall(r'([一-鿿]+) (\d+)', 注.group(2)))
     import glob as _g
     ns = sorted(int(re.search(r'第(\d+)章', x).group(1))

@@ -31,9 +31,9 @@ import 费审
     ('等待·轮询', False, lambda n, c: n == 'Bash' and (费审.是等({'type': 'tool_use', 'name': 'Bash', 'input': {'command': c}}) or re.search(r'(^|[;&|]\s*)ps\s', c))),
     ('通知·任务之管', False, lambda n, c: n in ('ReadNotifications', 'TaskStop', 'TaskOutput', 'TaskGet', 'TaskList', 'TaskCreate', 'TaskUpdate', 'Monitor') or re.search(r'\.claude/projects|/tasks/', c or '')),   # 翻席之转录看进度亦是看任务
     ('定时·接力', False, lambda n, c: 'trigger' in n or 'send_later' in n or re.search(r'自走|接力|心跳', c or '')),
-    ('推送·存底', False, lambda n, c: re.search(r'推\.py|存底|git\s+(push|fetch|pull)', c or '')),
+    ('推送·存底', False, lambda n, c: re.search(r'推\.py|存底|git\s+(push|fetch|pull)|云端验', c or '')),
     ('提交', False, lambda n, c: re.search(r'git\s+(commit|add)\b', c or '')),
-    ('封版·回执', False, lambda n, c: re.search(r'封版\.py|回执对账|同步全本阅读器|净重对表', c or '')),
+    ('封版·回执', False, lambda n, c: re.search(r'封版\.py|回执对账|同步全本阅读器|净重对表|收\.py', c or '')),
     ('全测·诸闸', False, lambda n, c: re.search(r'全测|囤灰闸|对位|小说检察官|起草闸|硬闸|开轮六检|负测_|--自测|造式验|段案验', c or '')),
     ('记账·复盘', False, lambda n, c: re.search(r'费审|复盘|费账|对拍|工作流账|方案\.py|方法坑账|总编辑复核|暂停令|机械账', c or '')),
     ('看状态', False, lambda n, c: re.search(r'git\s+(status|log|diff|show|rev-parse|branch)', c or '')),

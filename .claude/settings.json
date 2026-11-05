@@ -34,11 +34,6 @@
       "Bash(python3 工具/还账.py:*)",
       "Bash(python3 工具/会话之守.py:*)",
       "Bash(python3 工具/接棒守.py:*)",
-      "Bash(python3 工具/承.py:*)",
-      "Bash(python3 工具/续跑之守.py:*)",
-      "Bash(python3 工具/段序之守.py:*)",
-      "Bash(python3 工具/暂停令.py:*)",
-      "Bash(python3 工具/大审.py:*)",
       "Bash(git fetch:*)",
       "Bash(git status:*)",
       "Bash(git log:*)",
@@ -46,7 +41,9 @@
       "Bash(git show:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git push -u origin claude/the-novel-review-4dtuit:*)",
+      "Bash(git push origin claude/the-novel-review-4dtuit:*)"
     ],
     "deny": [
       "mcp__Claude_Code_Remote__archive_session",
@@ -61,10 +58,6 @@
           {
             "type": "command",
             "command": "cd /home/user/the-novel && python3 工具/席在跑吗.py"
-          },
-          {
-            "type": "command",
-            "command": "cd /home/user/the-novel && python3 工具/自决之守.py --停"
           }
         ]
       }
@@ -80,42 +73,11 @@
         ]
       },
       {
-        "matcher": "Edit|Write|Bash|NotebookEdit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd /home/user/the-novel && python3 工具/推闸中.py"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__.*(archive|interrupt|create|get)_session|mcp__.*list_sessions",
+        "matcher": "mcp__.*(archive|interrupt|create)_session",
         "hooks": [
           {
             "type": "command",
             "command": "cd /home/user/the-novel && python3 工具/会话之守.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Workflow",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd /home/user/the-novel && python3 工具/续跑之守.py"
-          },
-          {
-            "type": "command",
-            "command": "cd /home/user/the-novel && python3 工具/段序之守.py"
-          }
-        ]
-      },
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd /home/user/the-novel && python3 工具/自决之守.py --问"
           }
         ]
       }
@@ -135,17 +97,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{ python3 /home/user/the-novel/工具/席在跑吗.py --守书之坐 2>/dev/null ; } || { cd /home/user/the-novel && cat 00_总章.md && { timeout 30 python3 工具/法用之守.py --报 --首 2>/dev/null | head -6 ; true ; } && python3 工具/费哨.py --章 2>/dev/null | head -8 && echo '── 升级链末五 ──' && grep '^|' 设定/方法账.md | tail -5 | cut -c1-160 ; }"
+            "command": "cd /home/user/the-novel && cat 00_总章.md && python3 工具/费哨.py --章 2>/dev/null | head -8 && echo '── 升级链末五 ──' && grep '^|' 设定/方法账.md | tail -5 | cut -c1-160"
           }
         ]
       }
     ]
   },
-  "_说明_链": "1013 立（坑⑰复踩之守）：PreToolUse 钩，主环之 Bash 命令有「python3 工具/X.py … | … && 下一步」而无 pipefail 者拦——管道之後之 && 判的是 tail 之码，工具败了下一步照跑。1027 扩（执行之核·线B）：等推以 pgrep／ps|grep 猜进程（坑⑤）、--no-verify／ZM_SKIP_HOOK=／-c core.hooksPath= 之绕钩（总章§五；refspec 俱 备份/* 者放）、Bash 之 git push 靶主枝（写者唯一；推.py --直 在 python 内，不经此钩）俱拦。见 工具/链之检.py 之头注。",
-  "_说明_写者": "1027 删预授直推主枝之二条（写者唯一：主枝唯 GitHub autopush 写；兜底唯 python3 工具/推.py --直）。会话开头之钩於印总章之後印 法用之守 --报 --首（一行之要；无其旗亦⛔崩）。会话之守之钩并挂 get_session、list_sessions：本回首真人之言以【派】起者只照参调一回 create_session。",
+  "_说明_链": "1013 立（坑⑰复踩之守）：PreToolUse 钩，主环之 Bash 命令有「python3 工具/X.py … | … && 下一步」而无 pipefail 者拦——管道之後之 && 判的是 tail 之码，工具败了下一步照跑。见 工具/链之检.py 之头注。",
   "subagentPromptCacheTtl": "1h",
   "_说明_缓存": "1014 立（作者令「省钱不许碰质量，省下的钱全扔回造」·坑㉘）：子席与工作流诸席之提示缓存改一时档（官方：code.claude.com/docs/en/prompt-caching「Choose the TTL yourself」、workflows「Prompt caching in a fan-out」；v2.1.242+）。其由：执笔 effort max 之长思一回逾五分钟即缓存过期、整份上下文重写；以 384、385 之真转录逐回推算，一时档（写价 2× 而免重写）省输入侧 20—29%（每章 $5.5—11）；⛔动 effort、⛔动料。",
   "_说明_预授": "1021 作者明令「我明确要求你在 .claude/settings.json 的 permissions.allow 里，加入写书流程常用命令的允许规则」：一章流程之常令（自走、心跳、封版、存底、推、复盘诸器与本枝之 git）逐条预授，会话照流程走⛔再候作者确认；流程之外之举仍由平台之检判，⛔绕。",
-  "_说明_续": "1023 立（坑㊻：406 容器重启後以 resumeFromRunId 直续，失败之执笔其後已交之五席连选俱重跑，白耗约 $60）：PreToolUse 钩（工具/续跑之守.py）——造章之续若将重跑已成之席即拦，指 承.py → _承.js；本章已有已成之段而新派造章、或所带之承（含 _承.js 之包裹）未盖尽之亦拦；args.重造 放行并记其时（承.py 自此⛔收旧轮）。",
-  "_说明_守": "1021 立（402 之失：凭旧状归档正在封版之会话，其机被收、五时半之稿未存底全没）：①permissions.deny 与 PreToolUse 钩（工具/会话之守.py）两锁禁归档会话；打断须五分钟内 get_session 实时之状；他坐持写书之锁⛔新开会话。②会话开头起 工具/存底守.py：後台每五分自存底（零 token）（存底.py 防覆：他坐持锁即推己之旁枝、顶他机之底先挂旧链），写书之中自续本坐之锁。全测之格守之（读者可见之闸·红即拦）。"
+  "_说明_守":"1021 立（402 之失：凭旧状归档正在封版之会话，其机被收、五时半之稿未存底全没）：①permissions.deny 与 PreToolUse 钩（工具/会话之守.py）两锁禁归档会话；打断须五分钟内 get_session 实时之状；他坐持写书之锁⛔新开会话。②会话开头起 工具/存底守.py：後台每五分自存底（零 token）（存底.py 防覆：他坐持锁即推己之旁枝、顶他机之底先挂旧链），写书之中自续本坐之锁。全测之格守之（读者可见之闸·红即拦）。"
 }

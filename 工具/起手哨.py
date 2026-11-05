@@ -37,7 +37,7 @@ def _库():
     s = u.spec_from_file_location('日差哨', os.path.join(ROOT, '工具', '日差哨.py'))
     m = u.module_from_spec(s)
     s.loader.exec_module(m)
-    return {r[0]: r[1] for r in m.读库()}   # 读库 之行 (章, 文, …)——420 起添第三格（骨日），只取前二
+    return dict(m.读库())
 
 
 def 首句(t):

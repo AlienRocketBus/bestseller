@@ -197,6 +197,12 @@ def 收(n, 诸路, root=ROOT, 再=False, 界=None):
     return 承, 来
 
 
+def 读误只余(审):
+    """X82：审只犯读误（misread 真、hard 空）——再回写无效之形（419：窗外前情之读误，回写逐回只收一环）。"""
+    审 = 审 or {}
+    return bool(审.get('misread')) and str(审.get('misread')).lower() not in ('false', '否', '0', '') and not 审.get('hard')
+
+
 def 量构思(文):
     """前席构思之零 token 之量（failures① safeguard⑤：先三回实证其落全否，再议承前）。"""
     行 = 文.split('\n')
@@ -365,6 +371,8 @@ def 自测():
         承2, _ = 收(9, [j1, j2, j3, j4], root=t, 再=True, 界=0)
         a2 = 造(9, 承2, 旧={'重': '中', '魂路': ['物证'], '承': {'回写': True}}, 再=True)
         R.append(('⑦再回写：盲读·2 作盲、回写⛔承（新旧俱去）', 承2.get('盲') == {'x': 1} and '回写' not in a2['承']))
+        R.append(('⑦之二 X82：只余读误（无硬崩）→ 读误只余；有硬崩、或无读误 → 否', 读误只余({'misread': True, 'hard': [], 'misread_fix': 'x'})
+                  and not 读误只余({'misread': True, 'hard': [{'kind': 'x'}]}) and not 读误只余({'misread': False}) and not 读误只余(None)))
         # 1023 坑㊻之审所逮
         j5 = os.path.join(t, 'j5.jsonl')
         写(j5, [{'type': 'started', 'key': 'p', 'label': '执笔·甲·物证'}, {'type': 'result', 'key': 'p', 'result': {'file': f('稿一'), 'words': 9}},
@@ -513,6 +521,12 @@ def main():
     承, 来 = 收(n, glob.glob(诸journal之式), 再=再)
     if 再 and not (承.get('审') or {}).get('misread') and not (承.get('审') or {}).get('hard'):
         print('  ⚠ --再回写：所收之审无读误亦无硬崩——再回写无的，照常续（去 --再回写）即可')
+    # ★1105 X82（419 逮：读误只余而再回写二回 $7.36、逐回只收一环）：N≥421 回写一回後只余读误（无硬崩）→ ⛔再回写，总编辑照 misread_fix 原字亲治一句、存版，`--裁` 续记
+    if 再 and n >= 421 and 读误只余(承.get('审')):
+        print('  ⛔ --再回写（X82）：回写一回後只余读误、无硬崩——⛔再回写；照审之 misread_fix 亲治一句：%s\n'
+              '     治毕 `python3 工具/跑轮.py --存 %d "总编辑亲治读误"` → `python3 工具/承.py %d --裁 "已亲治读误：<一句>"`'
+              % (str((承.get('审') or {}).get('misread_fix') or '（审未交 misread_fix——读 _轮记 之逻辑审·2 节）')[:200], n, n))
+        sys.exit(3)
     章目 = os.path.join(ROOT, '版本', '第%d章' % n)
     旧路 = os.path.join(章目, '_承.json')
     旧 = json.load(open(旧路, encoding='utf-8')) if os.path.exists(旧路) else None

@@ -55,7 +55,7 @@ def 末章():
 
 
 def 有回执(n):
-    # ⛔认三种，不只认作业单（限360·其详在 全测.py::_已封版）
+    # ⛔认三种，不只认作业单（限360·其详在 负测_封版之凭.py 之头；全测之 _已封版 1027 汰，本函今即其判）
     return any(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章%s.md' % (n, k)))
                for k in ('作业单', '封版席'))  # ⛔0924 收回「案席」·见上注
 
@@ -94,14 +94,29 @@ def 续跑末步():
         return None
 
 
+_末锁坐 = ''
+
+
 def 心跳():
-    """返 (有人在跑?, 第几章, 几秒前报到)。★自本地之心跳档读——
-    ★★**本器不 fetch 远端**：它只在本坐跑，而本坐若有席在跑，其心跳正是本坐续的。"""
-    p = os.path.join(ROOT, '_心跳.json')
+    """返 (有人在跑?, 第几章, 几秒前报到)。
+    ★1022 改：先取云端之锁——旧「本器不 fetch 远端：它只在本坐跑」已不成立（一章一会话，写书之坐在他机；
+      总编辑之机推时，本机之 `_心跳.json` 陈而判「无人在跑」，接力遂恒报假断流）。云端读不出方退本地之档。"""
+    global _末锁坐
+    d = None
     try:
-        d = json.load(open(p, encoding='utf-8'))
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import 心跳 as _hb
+        在, d = _hb._远()
+        d = d if (在 and isinstance(d, dict)) else None
     except Exception:
-        return False, None, None
+        d = None
+    if d is None:
+        p = os.path.join(ROOT, '_心跳.json')
+        try:
+            d = json.load(open(p, encoding='utf-8'))
+        except Exception:
+            return False, None, None
+    _末锁坐 = str(d.get('坐') or '')
     if d.get('章') is None:
         return False, None, None
     差 = int(time.time()) - int(d.get('时', 0))
@@ -132,8 +147,15 @@ def 查(印=True, now=None, 末=None, 回执=None, 动=_未注, 跳=None, 续跑
     停在, 停由 = 停 if 停 is not None else 暂停()
     坏, 黄 = [], []
 
-    # 乙·空转：锁在手而那一章不动
-    if 有人 and 章:
+    # 乙·空转：锁在手而那一章不动（1022：锁为他机之坐所持者⛔判——本机无其版本目录，判之即假）
+    他机 = False
+    if 跳 is None and _末锁坐:
+        try:
+            import 心跳 as _hb
+            他机 = _末锁坐 != _hb.坐()
+        except Exception:
+            他机 = False
+    if 有人 and 章 and not 他机:
         t本 = 动 if (动 is not _未注 and 章 == 下) else 新动(int(章))
         # ★取二者之晚者：版本目录只答得出後半程，前半程是续跑在记
         t续 = 续跑 if 续跑 is not _未注 else 续跑末步()
@@ -182,7 +204,7 @@ def 查(印=True, now=None, 末=None, 回执=None, 动=_未注, 跳=None, 续跑
         print('     （它只答「此刻该干哪一件」，并印出那一条可照抄之命令；跑完再跑一回它。）')
         print('  ── 不停之律（`设定/00_作者常令_不停之律.md`·⛔每次接手当面印）──')
         print('     ①一章写完接着下一章，⛔不为请示而停。')
-        print('     ②⛔「派完席就回话」不算干活——**席在跑时手上须同时有另一件真活**。')
+        print('     ②派完席、候即止：⛔为候找活、⛔看进度（旧「候不是停·须同时有另一件真活」1027 汰·总章 §二.5、§三.2）。')
         print('     ③⛔回合末须有正在跑的席，或已排好的唤醒；两样都没有＝停了。')
         print('     ④⛔先干活再看闸；活干完闸还红→闸错了，改它并同日立负测。')
         print('     ⑤⛔而权再大也不许的一样：把闸放松以让自己这一章过。')
@@ -324,6 +346,11 @@ def 自测():
     finally:
         ROOT = _根
 
+    _src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
+    _段 = _src.split('def 心跳():')[1].split('\ndef ')[0]
+    T('㉔心跳先取云端之锁、读不出方退本地（1022：写书之坐在他机，本机之档陈即假断流）',
+      '_hb._远()' in _段 and _段.index('_hb._远()') < _段.index("'_心跳.json'"))
+    T('㉕锁为他机之坐所持⛔判空转（本机无其版本目录）', 'if 有人 and 章 and not 他机:' in _src)
     print('── 负测·接力 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 

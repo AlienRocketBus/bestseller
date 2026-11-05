@@ -1,0 +1,158 @@
+# 分片之闸（1027 坑54）——autopush 与 演练 同用（workflow_call）：备候 → N 片（三或四，LPT）各跑 全测 --片。
+#   旧（坑51 之 autopush）一 job 串跑全测（二核之机 722—1140 秒），关键路上主枝候之十余分；今诸片并跑，闸仍恰一（每格恰在一片、诸片同验一候之树）。
+#   备候：并主枝於本枝 → 候（merge 之提交）；推之式（mode 推）：已在主枝即免闸、改 .github/workflows 即拒（GITHUB_TOKEN 推不得，⛔白跑闸）；
+#     候以 git bundle 交诸片（⛔推临时之枝：免权与清理）；秒表取 备份/报 之 报/均秒.json（GitHub 实测），缺即仓中之种 设定/全测均秒.json。
+#   诸片：同一候之树、同一秒表 → 同一分；每片之果落 shard-<k>（if: always()，逾时亦交已跑者）。
+#   判（并判·推闸同策：工具/全测.py --并果）与其後之行（推主枝／报）在调者之末一 job；本档⛔写云端（permissions 只读）。
+name: gate
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+      sha:
+        type: string
+        required: false
+        default: ''
+      mode:
+        type: string
+        required: true
+    outputs:
+      go:
+        value: ${{ jobs.prepare.outputs.go }}
+      guo:
+        value: ${{ jobs.prepare.outputs.guo }}
+      yin:
+        value: ${{ jobs.prepare.outputs.yin }}
+      base:
+        value: ${{ jobs.prepare.outputs.base }}
+      sha:
+        value: ${{ jobs.prepare.outputs.sha }}
+      cand:
+        value: ${{ jobs.prepare.outputs.cand }}
+      n:
+        value: ${{ jobs.prepare.outputs.n }}
+permissions:
+  contents: read
+env:
+  MAIN: claude/the-novel-review-4dtuit
+  REPORT: 备份/报
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      go: ${{ steps.p.outputs.go }}
+      guo: ${{ steps.p.outputs.guo }}
+      yin: ${{ steps.p.outputs.yin }}
+      base: ${{ steps.p.outputs.base }}
+      sha: ${{ steps.p.outputs.sha }}
+      cand: ${{ steps.p.outputs.cand }}
+      n: ${{ steps.p.outputs.n }}
+      ks: ${{ steps.p.outputs.ks }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || inputs.ref }}
+          fetch-depth: 0
+      - name: 备候（并主枝·已在／拒·出候之包）
+        id: p
+        shell: bash
+        env:
+          R: ${{ inputs.ref }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          set +e
+          git config user.name autopush
+          git config user.email autopush@users.noreply.github.com
+          D="$RUNNER_TEMP/cand"; mkdir -p "$D"
+          GUO=; YIN=; GO=0; C=; N=; KS='[1]'
+          T="$(git rev-parse --verify -q 'HEAD^{commit}')"
+          if ! git fetch -q origin "+refs/heads/$MAIN:refs/remotes/origin/$MAIN"; then GUO=败; YIN=fetch; fi
+          B0="$(git rev-parse --verify -q "origin/$MAIN")"
+          if [ -z "$GUO" ] && [ "$MODE" = 推 ] && git merge-base --is-ancestor "$T" "origin/$MAIN"; then
+            GUO=已在; echo "✓已在：$R（${T:0:12}）已为主枝之祖——免闸"
+          fi
+          if [ -z "$GUO" ]; then
+            git checkout -q --detach "$B0"
+            if ! git merge --no-edit -m "autopush：并入 $R" "$T"; then git merge --abort; GUO=败; YIN=merge; fi
+          fi
+          if [ -z "$GUO" ] && [ "$MODE" = 推 ] && [ -n "$(git diff --name-only "$B0" HEAD -- .github/workflows)" ]; then
+            GUO=拒; YIN=workflow
+            echo "⛔拒：所并之树改 .github/workflows——GITHUB_TOKEN 无 workflows 之权、推必被拒（⛔白跑闸）；沙盒兜底 python3 工具/推.py --直"
+          fi
+          if [ -z "$GUO" ]; then
+            C="$(git rev-parse HEAD)"
+            if [ "$C" != "$T" ] && [ "$C" != "$B0" ]; then
+              git branch -f 候 "$C" && git bundle create -q "$D/cand.bundle" 候 --not "$B0" "$T" || { GUO=败; YIN=bundle; }
+            fi
+          fi
+          if [ -z "$GUO" ]; then
+            if git fetch -q origin "+refs/heads/$REPORT:refs/remotes/origin/$REPORT" 2>/dev/null \
+               && git show "origin/$REPORT:报/均秒.json" > "$D/secs.json" 2>/dev/null; then :; else cp 设定/全测均秒.json "$D/secs.json"; fi
+            N="$(python3 工具/全测.py --片数 --秒表 "$D/secs.json")"
+            if [ "${N:-0}" -ge 1 ] 2>/dev/null; then GO=1; KS="[$(seq -s, 1 "$N")]"; else GUO=败; YIN=片数; N=; fi
+          fi
+          {
+            echo "go=$GO"; echo "guo=$GUO"; echo "yin=$YIN"; echo "base=$B0"; echo "sha=$T"; echo "cand=$C"; echo "n=$N"; echo "ks=$KS"
+          } >> "$GITHUB_OUTPUT"
+          echo "· 候 ${C:0:12}（主 ${B0:0:12} ＋ $R ${T:0:12}）｜片 ${N:-—}｜${GUO:-入闸}"
+      - uses: actions/upload-artifact@v4
+        if: steps.p.outputs.go == '1'
+        with:
+          name: cand
+          path: ${{ runner.temp }}/cand
+          retention-days: 1
+  shard:
+    name: 片 ${{ matrix.k }}/${{ needs.prepare.outputs.n }}
+    needs: prepare
+    if: needs.prepare.outputs.go == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # 片红（器红亦然）即此 job 败；⛔令其败及全 workflow_call——被调之流一败，调者之 needs.gate.outputs 或空（actions/runner#2495），
+    #   advance 即见 go 空而误报「备候不成」、主枝永不进（1027 丝滑·B 验所指）。诸片之果恒落 shard-<k>，判归 advance 之 --并果（片缺、未毕即败）。
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        k: ${{ fromJSON(needs.prepare.outputs.ks) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/download-artifact@v4
+        with:
+          name: cand
+          path: ${{ runner.temp }}/cand
+      - name: 片闸（全测 --片 k/N·候之树）
+        timeout-minutes: 40
+        shell: bash
+        env:
+          K: ${{ matrix.k }}
+          N: ${{ needs.prepare.outputs.n }}
+          CAND: ${{ needs.prepare.outputs.cand }}
+        run: |
+          set +e
+          git config user.name autopush
+          git config user.email autopush@users.noreply.github.com
+          D="$RUNNER_TEMP/cand"; O="$RUNNER_TEMP/shard"; mkdir -p "$O"
+          if [ -f "$D/cand.bundle" ]; then git bundle unbundle "$D/cand.bundle" > /dev/null || exit 2; fi
+          git checkout -q -B "$MAIN" "$CAND" || exit 2
+          if [ "$(git rev-parse HEAD)" != "$CAND" ]; then echo "⛔片之树非候"; exit 2; fi
+          git config core.hooksPath 工具/githooks
+          python3 工具/全测.py --片 "$K/$N" --秒表 "$D/secs.json" --出 "$O/shard$K.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shard-${{ matrix.k }}
+          path: ${{ runner.temp }}/shard
+          retention-days: 1
+          if-no-files-found: ignore

@@ -4,15 +4,22 @@
 为何立：一代之案席与封版席两席（380：$19.65＋$31.88，来回 414 回）大半在跑器、核数、提交、备份——机器之活。
 二代拆开（零 token 之检）：
   · 读懂了才写得出之档（回执之文、锁定行逐拍、创作记录、全书记忆、状态册、open_brief、下一章开镜卡）——记席（造章.js 之末席）；
-  · 其余——存版对表、造式之实、锁定行之数、坑账之单、诸闸、第十一轮、全测、提交、双备份、存底包、撤锁——本器。
+  · 其余——存版对表、造式之实、锁定行之数、坑账之单、诸闸、第十一轮、读者可见之快格、医生、末章硬闸、提交、存底、推「章-N」、撤锁——本器。
 
 用法：
-  python3 工具/封版.py N --前        # 记席先跑：对表（正文≠末版即存一版）、造式之实、锁定行之数、坑账之单、冷轮之担、前章回执与锁定行之样
-  python3 工具/封版.py N --後        # 记席毕、主环跑：验记席之档俱在 → 诸闸 → 第十一轮 → 全测 → 提交 → 存底与存底包 → 撤锁（红即停、⛔提交）
-  python3 工具/封版.py N --後 --试   # 只跑诸闸与第十一轮之验，⛔写、⛔提交、⛔存底（演练用）
+  python3 工具/封版.py N --前        # 记席先跑：对表（正文≠末版即存一版）、造式之实、锁定行之数、坑账之单、约到期（N≥411）、前章回执与锁定行之样
+  python3 工具/封版.py N --前 --红   # 复跑只印红：⛔ 项（新红／变）、较上回之变、上回红今已绿，末行「✓ 余 N 项俱绿」（上回之印存 .cache/封版前/；首跑全印）
+  python3 工具/封版.py N --後        # 记席毕、--前 绿、复盘与交接已写：验记席之档俱在 → 同步（README、总站、人物册之阶段句随之）→ 诸闸（囤灰闸、
+                                      #   质量三闸、席令之禁、圣经随裁、器物点名 N〔1027 左移之拦〕、第十一轮、读者可见之快格、医生、末章硬闸）
+                                      #   → 活态之报 → 提交（封版#N 一提交载本章之一切）→ 存底 → 推「章-N」（一章唯此一推）→ 撤锁（红即停、⛔提交）
+  python3 工具/封版.py N --後 --试   # 演练（丝滑主义·改流程先演於真料）：取第N章封版之提交为底，於临时之副本以今之器重跑同步与诸闸
+                                      #   （⛔提交、⛔推、⛔存底），同步之档逐字比於封版之提交、诸闸之判比於其实，果入 设定/演练账.json
   python3 工具/封版.py --自测         # 以已封版之 380 之真料核诸数（与其锁定行亲核之数逐个同）
-次序之据：开轮六检於第十一轮之前跑——十一轮一过、回执在，章即「已封版」，开轮六检⑭即判「封版之章不得再跑十轮」（1013 实测）。
-推送：本器⛔推；跑毕主环 `python3 工具/推.py`（後台）。
+次序之据：开轮六检於第十一轮之前跑（旧⑭「封版之章不得再跑十轮」1027 汰——其防移 续跑之守：已封之 N ⛔再派造章）。
+一章之序（1027 A2·Variant S）：记席毕 → `--前 --红` 绿 → `复盘.py W … --简 --平台 $X` 与交接现状（写而⛔另提交）→ `--後`——
+  封版#N 一提交载回执、记席诸档、复盘、交接；其末 `存底 --标` 推「章-N」即触 GitHub autopush（分片而闸、绿即并入主枝、果入 备份/报）；
+  沙盒⛔跑全闸、⛔推主枝；跑毕主环 `python3 工具/接棒守.py --候主 N`（run_in_background、零 token：主枝含即快进返 0、坏报即返其红——
+  红者照其行治、提交、`推.py`（交「治-<sha>」）；`推.py --直` 只作审计之兜底：报「拒」或 GitHub 停摆）。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -20,12 +27,13 @@ try:
     import _账
 except Exception:
     pass
-import os, sys, re, json, glob, time, hashlib, subprocess
+import os, sys, re, json, glob, time, shutil, hashlib, tempfile, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 施工表 = os.path.join('设定', '01_镇冢秘术_逐章施工与伏笔回收表.md')
 总纲 = os.path.join('设定', '02_余章之势_总纲.md')
-尾 = 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016Hgfc2SSNvGktFmk2LX825'
+_坐 = re.sub(r'^(session_|cse_)', '', os.environ.get('CLAUDE_CODE_REMOTE_SESSION_ID', '').strip())   # 1027 执行之核：封版之提交之坐取本会话（旧写死总编辑之坐，法用#换会话 之坐异读之即空验）
+尾 = 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>' + ('\nClaude-Session: https://claude.ai/code/session_%s' % _坐 if _坐 else '')
 
 
 def 正文档(n, root=ROOT):
@@ -202,6 +210,11 @@ def 骨引之印(核):
     return s
 
 
+def 对白之行(L):
+    """白文之行们 → [(行号, 行)]：对白之行（坑⑩·机械之证③）；记落.py 之「‹器:对白›」同此一把尺。"""
+    return [(k + 1, l) for k, l in enumerate(L) if '“' in l or re.search(r'「[^」]{1,40}」[，。！？]?(?:他|她|我|钱满|刘二|东头|老头)?说', l)]
+
+
 def 机械之证(n, root=ROOT):
     """★1015 W33 之改（390 之试：记席 58 工具里翻查 32——坑账之答所须之据由模型逐条 grep）：
     据之可机算者器先算——①骨记引句逐条核於所引之章（坑㉕；★W60 X37：含区间、本章、远引——远引无原句者印所引之行）②卡之⛔字在白文之数（坑⑱）③对白之行（坑⑩）④日词（坑⑫）⑤数词之行（坑㉘）
@@ -223,7 +236,7 @@ def 机械之证(n, root=ROOT):
         禁 = sorted(set(re.findall(r'⛔\s*「([^」]{1,8})」', kt) + re.findall(r'「([^」]{1,8})」\s*⛔', kt)))
     出.append('②卡之⛔字在白文之数：' + ('｜'.join('「%s」%d' % (w, 白.count(w)) for w in 禁[:30]) or '（卡无⛔「字」之式）'))
     # ③对白之行
-    对 = [(k + 1, l) for k, l in enumerate(L) if '“' in l or re.search(r'「[^」]{1,40}」[，。！？]?(?:他|她|我|钱满|刘二|东头|老头)?说', l)]
+    对 = 对白之行(L)
     出.append('③对白之行 %d：%s' % (len(对), '、'.join(':%d' % k for k, _ in 对[:40])))
     # ④日词
     日 = [(k + 1, m) for k, l in enumerate(L) for m in re.findall(r'第[零〇一二三四五六七八九十百]+[天日]|昨天|前天|今天|明天|後半夜|天亮|天黑|晌午|後晌|日落', l)]
@@ -302,19 +315,17 @@ def 前(n, root=ROOT):
         print('    %s：%s' % (k, d.get(k)))
     for v in d.get('诸版', []):
         print('    版：' + v)
-    rc, out, _ = 跑([器('层census.py'), str(n)], root)
-    print('· 层（层census.py %d）：\n%s' % (n, '\n'.join('    ' + l for l in out.strip().split('\n')[-8:])))
     rc, out, _ = 跑([器('坑账.py'), '--逐章', str(n)], root)
     print('· 坑账之单（逐条答进回执「坑账之答」）：\n' + '\n'.join('    ' + l for l in out.strip().split('\n')))
     try:
         print('· 坑账之机械之证（器先算·记席照此答、⛔再逐条 grep——W33 之治：390 记席翻查 32 回多在此）：\n' + '\n'.join('    ' + l for l in 机械之证(n, root)))
     except Exception as _e:
         print('· 坑账之机械之证：⛔算不出（%s）——记席照旧手查' % _e)
-    try:                                                     # ★1013：开轮十六检（除⑭）——384 记席未写「承前之判」（⑮），封版·後 方红；今於 --前 即印其红
+    try:                                                     # ★1013：开轮十六检——384 记席未写「承前之判」（⑮），封版·後 方红；今於 --前 即印其红
         rc6, out6, _ = 慢['开轮六检'].result()
         import 全测 as _全测
-        余6 = _全测._六检之败(out6, True)
-        print('· 开轮十六检（除⑭）：%s' % ('✓ 俱过' if not 余6 else '⛔ ' + '；'.join(余6)[:600] + '——记席须治（承前之判写进轮记，逐样点名落判：认／翻／搁下）'))
+        余6 = _全测._六检之败(out6)
+        print('· 开轮十六检：%s' % ('✓ 俱过' if not 余6 else '⛔ ' + '；'.join(余6)[:600] + '——记席须治（承前之判写进轮记，逐样点名落判：认／翻／搁下）'))
     except Exception as _e:
         print('· 开轮十六检：⛔判不出（%s）' % _e)
     try:                                                     # ★1017：回执闸（小说检察官._receipt_ok）——397 记席之回执缺「到期账」一词，封版·後之全测·快（检察官自测·末章硬闸）方红；今於 --前 即印所缺之键
@@ -328,10 +339,20 @@ def 前(n, root=ROOT):
         r = subprocess.run([sys.executable, 器('器物点名.py'), str(n)], cwd=root, capture_output=True, text=True)
         _红 = [l.strip() for l in r.stdout.split('\n') if '⛔ ★' in l]
         print('· 器物册（器物点名 %d）：%s' % (n, ('⛔ ' + '｜'.join(_红[:3]) + '——改册之拍号照白文亲数') if (_红 or '⛔' in r.stdout) else '✓ 拍号俱对'))
-    for _名, _令 in (('囤灰闸', ['囤灰闸.py']), ('跑账', ['跑账.py']), ('圣经随裁', ['圣经随裁.py'])):   # ★1020 坑㉟：400 封版三回——新器未接未跑、新裁未书圣经之随，至 --後 之全测·快（十分钟後）方红；此三闸各一秒，左移於此
+    主环 = []                                               # ★1024 省 token 之审 records 二·④：N≥411 越职三闸（囤灰闸、跑账、席令之禁）入「主环之职」一栏；质量三闸（含①之e 六问）留记席之栏
+    for _名, _令 in (('囤灰闸', ['囤灰闸.py']), ('跑账', ['跑账.py']), ('圣经随裁', ['圣经随裁.py']),
+                     ('质量三闸', ['质量三闸.py']), ('席令之禁', ['席令之禁.py'])):   # ★1023 坑㉟复踩：408 新立大审.js 缺律⑮⑳，至 --後 之全测·快（六分）方红——一秒之器左移於此   # ★1022 坑㊹：404 封毕而推闸之质量三闸①之c（一章一日）方红——与推闸同一器左移於 --前   # ★1020 坑㉟：400 封版三回——新器未接未跑、新裁未书圣经之随，至 --後 之全测·快（十分钟後）方红；此三闸各一秒，左移於此
         _r = subprocess.run([sys.executable, 器(_令[0])] + _令[1:], cwd=root, capture_output=True, text=True)
         _红 = [l.strip() for l in _r.stdout.split('\n') if l.strip().startswith('⛔')][:3]   # ⛔取行中之「⛔」：挂账之由文里亦有⛔字
-        print('· %s：%s' % (_名, '✓' if _r.returncode == 0 else '⛔ ' + ('；'.join(_红) or 'rc=%d' % _r.returncode)[:400] + '——治後再跑 --前'))
+        _行 = '· %s：%s' % (_名, '✓' if _r.returncode == 0 else '⛔ ' + ('；'.join(_红) or 'rc=%d' % _r.returncode)[:400] + '——治後再跑 --前')
+        if n >= 分栏之始 and _名 in 主环之闸:
+            主环.append('    ' + _行.replace('——治後再跑 --前', '——主环治'))
+        else:
+            print(_行)
+    if n >= 分栏之始:          # ★1027 法用之守：已取之法本章真用上了没有（--前：记席之後方有之证免）——主环之职，--後 照拦
+        _r = subprocess.run([sys.executable, 器('法用之守.py'), '--验', str(n), '--前'], cwd=root, capture_output=True, text=True)
+        _红 = [l.strip() for l in _r.stdout.split('\n') if l.strip().startswith('⛔')][:3]
+        主环.append('    · 法用之守：%s' % ('✓' if _r.returncode == 0 else '⛔ ' + ('；'.join(_红) or 'rc=%d' % _r.returncode)[:400] + '——主环治'))
     r = 慢['检察官'].result()   # ★1020：398 亮点 5+逗 至封版·後之全测·快（十一分钟後）方红——检察官之末章硬闸单跑左移於此（W60 X39：已於上并起）
     _病 = 末章之病(r.stdout) if r.returncode else []
     print('· 末章硬闸（检察官）：%s' % ('✓ 通过' + ('（第十一轮归 --後）' if r.returncode else '') if not _病 else '⛔ ' + '；'.join(_病)[:600] + '——治後再跑 --前'))
@@ -341,14 +362,113 @@ def 前(n, root=ROOT):
         print('· 六问：%s %s%s' % ('✓' if _过 else '⛔', _语, '' if _过 else '——记席须於轮记之首答六条（造章.js 记令 2之二）'))
     except Exception as _e:
         print('· 六问：⛔判不出（%s）' % _e)
-    冷 = glob.glob(os.path.join(root, '设定', '冷轮_COLD*_於%d补执.md' % n))
-    print('· 冷轮之担：%s' % ('、'.join(os.path.relpath(x, root) for x in 冷) or '无'))
+    if n >= 分栏之始:          # ★1027 A2：约到期之实跑（正文自陈之约到期而未看）——旧唯一坐调之（已汰），全测只跑其负测；记席之栏（记席尚能答），--後 之读者之快格照拦
+        _r = subprocess.run([sys.executable, 器('约到期.py'), '--闸'], cwd=root, capture_output=True, text=True)
+        _红 = [l.strip() for l in _r.stdout.split('\n') if l.strip().startswith('⛔')][:3]
+        print('· 约到期：%s' % ('✓ 无到期而未看之约' if _r.returncode == 0 else '⛔ ' + ('；'.join(_红) or 'rc=%d' % _r.returncode)[:400]
+                                + '——记席治：到期之章让其物在手上再出现一回，或於轮记写「约-NNN·本章未兑：<由>」'))
     回 = sorted(glob.glob(os.path.join(root, '设定', '回执_*_第%d章封版席.md' % (n - 1))))
     print('· 前章回执之样：%s' % (os.path.relpath(回[-1], root) if 回 else '（无）'))
     t = open(os.path.join(root, 施工表), encoding='utf-8').read()
     样 = [l[:120] + '…' for l in t.split('\n') if l.startswith('| %d | 锁定 |' % (n - 1)) or l.startswith('| %d | 悬账 |' % (n - 1))]
     print('· 前章锁定行与悬账行之样（施工表）：\n' + '\n'.join('    ' + x for x in 样))
+    if 主环:
+        print('· 主环之职（记席⛔治；封版 --後 照拦）：\n' + '\n'.join(主环))
     return True
+
+
+分栏之始 = 411                                   # ★N≤410 之 --前 之印一字不变
+主环之闸 = ('囤灰闸', '跑账', '席令之禁')        # 越记席之职（409 回执 §十四·3 自注）；--後 之囤灰闸、全测·快照拦
+_项式 = re.compile(r'^(    )?· ([^：]+)：[ \t]*(✓|⛔)')
+
+
+def 前之项(印):
+    """--前 之印 → {名: [栏, 态, 文]}：栏 席／主环；态 ✓／⛔／·（无态之印，文＝其块之全文，供较上回之变）。"""
+    项, 块 = {}, None
+    for l in 印.split('\n'):
+        m = _项式.match(l)
+        if m:
+            项[m.group(2).strip()] = ['主环' if m.group(1) else '席', m.group(3), l.strip()]; 块 = None
+        elif l.startswith('· '):
+            块 = re.split('[：（]', l[2:], maxsplit=1)[0].strip(); 项[块] = ['席', '·', l]
+        elif l.startswith('⛔ '):
+            项[l[:24]] = ['席', '⛔', l.strip()]; 块 = None
+        elif 块 and l.startswith(' '):
+            项[块][2] += '\n' + l
+    return 项
+
+
+def _锁之数(文):
+    return dict(re.findall(r'(?m)^    ([^：\n]+)：(.*)$', 文))
+
+
+def 红印(n, 今, 上, 时=''):
+    """--前 --红 之印：席栏之 ⛔（新红／变）、较上回之变、上回红今已绿、主环之职之红；末行「✓ 余 N 项俱绿」。"""
+    出, 绿 = ['════ 封版·前·红（第%d章；较上回 %s）════' % (n, 时 or '?')], 0
+    for 名, (栏, 态, 文) in 今.items():
+        旧 = 上.get(名)
+        if 态 == '✓':
+            绿 += 1
+        elif 态 == '⛔' and 栏 == '席':
+            出.append(文 + ('' if 旧 and 旧[1] == '⛔' and 旧[2] == 文 else '（变）' if 旧 and 旧[1] == '⛔' else '（新红）'))
+        elif 态 == '·' and 旧 and 旧[2] != 文:
+            if 名 == '锁定行之数':
+                a, b = _锁之数(旧[2]), _锁之数(文)
+                出.append('· 变·锁定行之数：' + '；'.join('%s %s→%s' % (k, a.get(k, '（无）'), b.get(k, '（无）')) for k in b if a.get(k) != b.get(k)))
+            else:
+                出.append('· 变·%s（其印已异於上回；全印：python3 工具/封版.py %d --前）' % (名, n))
+    已 = [名 for 名, x in 上.items() if x[1] == '⛔' and (今.get(名) or [0, '✓'])[1] != '⛔']
+    if 已:
+        出.append('· 上回红今已绿：' + '、'.join(已))
+    环 = [x[2] for x in 今.values() if x[0] == '主环' and x[1] == '⛔']
+    if 环:
+        出.append('· 主环之职（记席⛔治；封版 --後 照拦）：\n' + '\n'.join('    ' + x for x in 环))
+    出.append('✓ 余 %d 项俱绿' % 绿)
+    return '\n'.join(出)
+
+
+def 上回之档(n, root=ROOT):
+    return os.path.join(root, '.cache', '封版前', '第%d章.json' % n)     # ⛔存 版本/（免 --後 提交、惹囤灰闸、档肿哨）
+
+
+class _分流:
+    """印之二路：存其文、且（显）照印於终端——--前 跑约二分，⛔候毕方印。"""
+    def __init__(self, 显, 原):
+        self.显, self.原, self.文 = 显, 原, []
+
+    def write(self, x):
+        self.文.append(x)
+        if self.显:
+            self.原.write(x)
+        return len(x)
+
+    def flush(self):
+        self.原.flush()
+
+
+def 前印(n, 红=False, root=ROOT):
+    """--前（与 --前 --红）之跑口：印之同时存其项於 .cache；红且有上回者只印 红印()，无上回者全印（首跑）。"""
+    档 = 上回之档(n, root)
+    try:
+        上 = json.load(open(档, encoding='utf-8'))
+    except Exception:
+        上 = None
+    原 = sys.stdout
+    流 = _分流(not (红 and 上), 原)
+    sys.stdout = 流
+    try:
+        ok = 前(n, root)
+    finally:
+        sys.stdout = 原
+    今 = 前之项(''.join(流.文))
+    if 红 and 上:
+        print(红印(n, 今, 上.get('项', {}), 上.get('时', '')))
+    try:
+        os.makedirs(os.path.dirname(档), exist_ok=True)
+        json.dump({'时': time.strftime('%m-%d %H:%M:%S'), '项': 今}, open(档, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
+    except Exception as e:
+        print('· 上回之印存不得（%s）——下回 --红 照全印' % e)
+    return ok
 
 
 def 记之缺(n, root=ROOT):
@@ -359,21 +479,21 @@ def 记之缺(n, root=ROOT):
          ('全书记忆·章详记', os.path.exists(os.path.join(root, '设定', '全书记忆', '第%d章.md' % n))),
          ('下一章开镜卡', os.path.exists(os.path.join(root, '版本', '第%d章' % (n + 1), '_开镜卡.md'))),
          ('席记', os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_席记.json')))]
+    if n >= 分栏之始:          # ★1024 验席：记席留「‹器:键›」而未跑 记落.py 即交，器格成空壳入封——--後 拦之（N≤410 无此项）
+        import 记落
+        项 += [('占位未填·%s（跑 python3 工具/记落.py %d）' % (名, n), False) for 名, p in 记落.档们(n, root) + [('检察官', 记落.检察官)]
+               if '‹器:' in (记落.读(p, root) or '')]
     return [k for k, ok in 项 if not ok]
 
 
 def 可提交(n, 路们):
     """只收本章所及之处（⛔git add -A）：正文／本章与下一章之版本目录／设定／根之 .md 与 .html。"""
-    # ★1013：记席按令改 工具/ 下二档（小说检察官之 OPEN_BRIEF_CARD_SCHEMA[N+1]、提示词系统之「--开拍 N+1」）——旧只收 设定/ 等，此二档永留未提交（381 实逮）
-    前缀 = ('正文/', '版本/第%d章/' % n, '版本/第%d章/' % (n + 1), '设定/', '工具/小说检察官.py', '工具/镇冢秘术_防前后矛盾提示词系统.md',
+    # ★1013：记席按令改 工具/小说检察官.py 之 OPEN_BRIEF_CARD_SCHEMA[N+1]——旧只收 设定/ 等，此档永留未提交（381 实逮）
+    #   ⛔1027：提示词系统之「--开拍 N+1」随十三轮之旧令汰（阶段之数⛔再改之），其档⛔收
+    前缀 = ('正文/', '版本/第%d章/' % n, '版本/第%d章/' % (n + 1), '设定/', '工具/小说检察官.py',
           '阅读器/镇冢秘术_全本阅读器.html')        # ★1013：阅读器由本器同步，旧不收——381 实逮「不在本章所及之处」
     收 = [p for p in 路们 if p.startswith(前缀) or ('/' not in p and p.endswith(('.md', '.html')))]
     return 收, [p for p in 路们 if p not in 收]
-
-
-def 十一轮已过(n, root=ROOT):
-    """首回封版已跑过第十一轮（`版本/第N章/_十一轮.json` 在）——本器重跑之认据。"""
-    return os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_十一轮.json'))
 
 
 def 末章之病(out):
@@ -391,26 +511,107 @@ def 红行(out, 顶=15):
     return 出[:顶]
 
 
-def 後之闸(n):
+def 後之闸(n, root=ROOT):
     """席记写毕之後、提交之前之序：→ [(名, 命令)]（红即停）。
     ★1020 X21：⛔於此跳心跳 N+1——N+1 无席而锁在（空锁：自走判候、席在跑吗放行、全测之留字降黄；W53 验席所逮）。
-      封版之全测撞断流之治在接力：其静自交棒之刻（本表第十一轮所产之 `_十一轮.json`）起算。"""
-    return [('囤灰闸', [器('囤灰闸.py')]), ('第十一轮', [器('小说检察官.py'), '--十一轮', str(n)]), ('全测·快', [器('全测.py'), '--快'])]
+      封版之活态之报撞断流之治在接力：其静自交棒之刻（本表第十一轮所产之 `_十一轮.json`）起算。
+    ★1027 法用之守（N≥411）：已取之法本章无证即红、⛔提交（其验之末行入席记「法用」，下一章以之为前章已验之凭）。
+    ★1027 A2（Variant S·flow／tools 二审之裁）：旧「全测·快」（405 实测 338 秒：跑轮负测 213、检察官自测 39、医生 38）→ 三闸俱拦：
+      读者之快（全测 --快 --只 读者可见之快格·一秒余）、医生（检察官 --doctor：圣经之约、canon open_brief N+1、施工表、
+      README 阶段与 CANON-ID、阅读器之同——记席与本器之同步所写）、末章硬闸（检察官 --末章 N）；医生与末章硬闸并起（後之并）。
+      器之自测（跑轮负测、检察官自测……）归 GitHub autopush 之全闸一回（分等·器红入账）——⛔沙盒与 GitHub 同树二跑。
+    ★1027 执行之核（线B·#44·坑㉞㉟㊹：左移之检只印不拦）：--前 所印之 质量三闸、席令之禁、圣经随裁、器物点名 N（各约一秒）
+      於 --後 照拦（红即⛔提交）——旧只於 --前 印、记席若未治即封毕方於 GitHub 之闸红。器物点名唯本章有 _器物.md 方跑。"""
+    闸 = [('囤灰闸', [器('囤灰闸.py')])]
+    if n >= 分栏之始:
+        闸.append(('法用之守', [器('法用之守.py'), '--验', str(n)]))
+    闸 += [(名, [器(档)] + 参) for 名, 档, 参 in 左移之拦]
+    if os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_器物.md')):
+        闸.append(('器物点名', [器('器物点名.py'), str(n)]))
+    return 闸 + [('第十一轮', [器('小说检察官.py'), '--十一轮', str(n)]),
+                ('读者之快', [器('全测.py'), '--快', '--只', ','.join(读者之快)]),
+                ('医生', [器('小说检察官.py'), '--doctor']), ('末章硬闸', [器('小说检察官.py'), '--末章', str(n)])]
+
+
+左移之拦 = (('质量三闸', '质量三闸.py', []), ('席令之禁', '席令之禁.py', []), ('圣经随裁', '圣经随裁.py', []))   # 1027 #44：--前 印、--後 拦
+
+
+读者之快 = ('改单', '圣经引号', '坑账', '暂停令', '钩子挂载', '约到期闸')   # 全测·快之读者可见之格（俱在 全测.读者可见之闸）——红即拦
+後之并 = ('医生', '末章硬闸')                 # 各载检察官约三十秒：并起
+活态之格 = ('接力', '跑账', '负测·自进化环')    # 全测并.活态 之余三（钩子挂载在 读者之快）：GitHub 之机读之皆空而假绿——封时於沙盒跑，只报、入器红账
 
 
 def 後之存(n):
-    """提交之後之序：→ [(名, 命令)]（红只报⚠）。末步撤锁（心跳.可收 守：心跳已属 N+1 者⛔清）。"""
+    """提交之後之序：→ [(名, 命令)]（红只报⚠）。末步撤锁（心跳.可收 守：心跳已属 N+1 者⛔清）。
+    ★1027 A2：一章唯一推——`存底 --标 N`（章-N）；云端验（主枝未进即恒红·已删）、存底 --演（章-N 之克隆归 autopush 之 章-* 之取）、
+      存底包（打了⛔送·接棒守 --候主 之非成之返方印）、跑账（--前 主环之职与活态之报已跑）俱去。"""
     return [('存底 --存', [器('存底.py'), '--存', '第%d章封版' % n]), ('存底 --标', [器('存底.py'), '--标', str(n)]),
-            ('存底 --演', [器('存底.py'), '--演', str(n)]), ('云端验', [器('云端验.py')]), ('跑账', [器('跑账.py')]),
-            ('存底包', [器('存底包.py')]), ('撤锁', [器('心跳.py'), '--收', str(n)])]
+            ('撤锁', [器('心跳.py'), '--收', str(n)])]
+
+
+def 并起(诸, root=ROOT, 隔=0.5):
+    """★1027 A2：医生与末章硬闸各载检察官约三十秒——并起（错开半秒：诸器一载 `_账` 即读改写 `_跑账.json`，无锁）。
+    → {名: future→(rc, 印, 秒)}（与 跑() 同）。"""
+    from concurrent.futures import ThreadPoolExecutor
+    池 = ThreadPoolExecutor(max_workers=max(1, len(诸)))
+    出 = {}
+    for k, (名, a) in enumerate(诸):
+        if k:
+            time.sleep(隔)
+        出[名] = 池.submit(跑, a, root)
+    池.shutdown(wait=False)
+    return 出
+
+
+def 活态之报(n, root=ROOT):
+    """★1027 A2：全测并.活态 读沙盒之现场（跑账、心跳、自进化环之脉、钩之挂载），GitHub 之机读之皆空而假绿
+    （410 之 GitHub 之印：跑账「此刻无凭」作 ✓）——封时於沙盒跑其三：只报⚠、⛔拦；红入器红账（本地并云端·限三章治），
+    绿者销其笔、余格之笔⛔动（全测._器红入账 之「跑过」：与 GitHub 之并判同一 器红之判，⛔另一份）。→ 红之名们"""
+    d = tempfile.mkdtemp(prefix='封版活态_')
+    try:
+        出 = os.path.join(d, '果.json')
+        rc, out, 秒 = 跑([器('全测.py'), '--只', ','.join(活态之格), '--出', 出], root)
+        try:
+            果 = json.load(open(出, encoding='utf-8')).get('果') or []
+        except Exception:
+            果 = []
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    已 = {x[0]: x for x in 果}
+    红 = [k for k in 活态之格 if k not in 已 or not 已[k][1]]
+    逾 = []
+    try:
+        import 全测
+        逾 = 全测._器红入账(红, n, 活态之格)
+    except Exception as e:
+        print('  ⚠ 器红账未并（%s）' % e)
+    print('  %s %-10s rc=%d %5.0fs  %s' % ('✓' if not 红 else '⚠', '活态之报', rc, 秒,
+                                         '%s 俱绿' % '、'.join(活态之格) if not 红 else '器红（只报·入器红账限三章治）：' + '、'.join(红)))
+    for k in 红:
+        print('      ⚠ %s：%s' % (k, str((已.get(k) or [k, False, '未跑出果'])[2])[:150]))
+    if 逾:
+        print('      ⛔ 器红逾限：%s——已逾三章之限，先治（X55）' % '、'.join(逾))
+    return 红
+
+
+def 封毕之语(n):
+    """封毕之下一步（1027 坑51·A2）：章-N 已触 GitHub autopush（一章唯此一推）——主环只候（零 token），⛔直推主枝、⛔沙盒再跑全闸。"""
+    return ('✓ 封版毕（封版#%d 一提交、「章-%d」一推）。下一步（主环）：python3 工具/接棒守.py --候主 %d（run_in_background；零 token——'
+            '「章-%d」已触 GitHub autopush，分片而闸、绿即并入主枝；坏报即早返其红：红者照其行治、提交、推.py 交治枝；逾限印 workflow_dispatch 之兜底）'
+            % (n, n, n, n))
 
 
 def 阶段之数(n, root=ROOT):
-    """★X53·1021：README 阶段句与提示词系统:20「--开拍 N+1」随封版自改（零 token；旧由记席／主环手改，401 漏之即红於全测·快）。"""
+    """★X53·1021：README 阶段句随封版自改（零 token；旧由记席／主环手改，401 漏之即红於全测·快）。
+    ⛔1027：提示词系统（十三轮之旧令，无一席读之）之「--开拍 N+1」⛔再改——其检（检察官医生之提示词系统一支）同日汰。
+    ★1027 执行之核（线B·#60）：总站、人物册之「现状」一栏（「已写 1—N 章」）同法自改（旧停在 379·各站之细待 W11 一次重写，⛔追）。"""
     改 = []
+    站式, 站新 = r'已写 <b>1—\d+ 章</b>（初稿号）；\d+ 起待写', '已写 <b>1—%d 章</b>（初稿号）；%d 起待写' % (n, n + 1)
     for 档, 式, 新 in (('README.md', r'第 1—\d+ 章已经同步封版；第 \d+ 章开写前', '第 1—%d 章已经同步封版；第 %d 章开写前' % (n, n + 1)),
-                       ('工具/镇冢秘术_防前后矛盾提示词系统.md', '(?m)^' + re.escape('python3 工具/小说检察官.py --开拍 ') + r'\d+$', 'python3 工具/小说检察官.py --开拍 %d' % (n + 1))):
+                     ('镇冢秘术_总站.html', 站式, 站新), ('人物册_总纲_九站.html', 站式, 站新)):
         fp = os.path.join(root, 档)
+        if not os.path.exists(fp):
+            continue
         t = open(fp, encoding='utf-8').read()
         t2 = re.sub(式, 新, t, count=1)
         if t2 != t:
@@ -418,53 +619,52 @@ def 阶段之数(n, root=ROOT):
     return 改
 
 
-def 後(n, 试=False, root=ROOT):
-    print('════ 封版·後（第%d章）%s════' % (n, '·试（⛔写、⛔提交）' if 试 else ''))
+def 後(n, 演=False, root=ROOT):
+    if 演 and not os.path.exists(os.path.join(root, 演之记)):
+        print('⛔ --演 只於 --试 所立之临时副本里跑（%s 不在）——⛔在真仓同步而不提交' % 演之记); return False
+    print('════ 封版·後（第%d章）%s════' % (n, '·演（临时之副本：⛔席记、⛔提交、⛔推）' if 演 else ''))
     缺 = 记之缺(n, root)
-    if 缺 and not 试:
+    if 缺:
         print('⛔ 记席之档未齐：%s——回记席补（⛔本器代写）' % '、'.join(缺)); return False
-    步 = []
-    if not 试:
-        print('  ✓ 阶段之数    %s' % ('、'.join(阶段之数(n, root)) or '已是 %d／%d' % (n, n + 1)))
-        步 += [('净重对表 --补', [器('净重对表.py'), '--补'], False), ('同步全本阅读器', [器('同步全本阅读器.py')], False),
-              ('剧情链', [器('剧情链.py')], False),          # ★1015 作者令：每章精读之详记串成从头到尾之链，封版即重生、随提交上 GitHub
-              ('人物链', [器('人物链.py'), '--并记'], False),   # ★1015 作者议：每人从头到尾之链与每两人之关系——自记席之「在场之人」零 token 重并（虹吸）
-              ('器之迹', [器('囤灰闸.py'), '--迹', str(n), '--写'], False)]   # ★1015 作者议：每章从头到尾用了哪些器、每器之表现（败、慢、重跑）——自 _器之迹.jsonl 零 token
+    print('  ✓ 阶段之数    %s' % ('、'.join(阶段之数(n, root)) or '已是 %d／%d' % (n, n + 1)))
+    步 = [('净重对表 --补', [器('净重对表.py'), '--补'], False), ('同步全本阅读器', [器('同步全本阅读器.py')], False),
+         ('全书记忆随', [器('全书记忆.py'), '--随'], False),   # ★1024 实踩（410）：亮点添注而白文未动，详记之 sha 器随（零 token）
+         ('剧情链', [器('剧情链.py')], False),          # ★1015 作者令：每章精读之详记串成从头到尾之链，封版即重生、随提交上 GitHub
+         ('人物链', [器('人物链.py'), '--并记'], False),   # ★1015 作者议：每人从头到尾之链与每两人之关系——自记席之「在场之人」零 token 重并（虹吸）
+         ('器之迹', [器('囤灰闸.py'), '--迹', str(n), '--写'], False)]   # ★1015 作者议：每章从头到尾用了哪些器、每器之表现（败、慢、重跑）——自 _器之迹.jsonl 零 token
     步 += [('回执对账', [器('回执对账.py')], True), ('开轮六检', [器('开轮六检.py'), str(n)], True),
           ('第零轮开镜庭', [器('第零轮开镜庭.py')], True), ('造式之实', [器('造式.py'), str(n)], True)]
     for 名, a, 必 in 步:
         rc, out, 秒 = 跑(a, root)
         末 = [l for l in out.split('\n') if l.strip()][-1:] or ['']
-        if 名 == '开轮六检' and rc != 0 and 十一轮已过(n, root):
-            # ★1013 重跑之实：首回已过第十一轮（_十一轮.json 在），章即「已封版」，⑭必红——那不是伤，是本器重跑；
-            #   只免⑭，余检照判（拆法与全测同一把尺：全测._六检之败，⛔另写）
-            import 全测
-            r2, o2, _ = 跑([器('开轮六检.py'), str(n), '--静'], root)
-            余 = 全测._六检之败(o2, True)
-            if not 余:
-                rc, 末 = 0, ['重跑：第十一轮已过，⑭（已封版）免；余检俱过']
-            else:
-                末 = ['；'.join(余)]
         print('  %s %-10s rc=%d %5.0fs  %s' % ('✓' if rc == 0 else '⛔', 名, rc, 秒, 末[0].strip()[:150]))
         if 必 and rc != 0:
             print('⛔ 停：%s 红——⛔提交；照其印治（记席之档或交总编辑）' % 名); return False
-    if not 试:
+    if not 演:
         p = os.path.join(root, '版本', '第%d章' % n, '_席记.json')
         j = json.load(open(p, encoding='utf-8'))
-        j.setdefault('段', {})['封版'] = '封版.py：净重对表补、阅读器同步、回执对账、开轮六检、开镜庭、造式之实、囤灰闸、第十一轮、全测俱过；提交、存底、撤锁（%s）' % time.strftime('%Y-%m-%d', time.gmtime())
+        j.setdefault('段', {})['封版'] = ('封版.py：净重对表补、阅读器同步、回执对账、开轮六检、开镜庭、造式之实、囤灰闸、第十一轮、读者可见之快格、医生、末章硬闸俱过；'
+                                       '提交（复盘、交接同载）、存底、推章-%d（全闸交 GitHub autopush）、撤锁（%s）' % (n, time.strftime('%Y-%m-%d', time.gmtime())))
         json.dump(j, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-    for 名, a in 後之闸(n):
-        if 试 and 名 == '第十一轮' and os.path.exists(os.path.join(root, '版本', '第%d章' % n, '_十一轮.json')):
-            print('  · 第十一轮：试·已有凭据（⛔重写）——其 mtime 即接力之交棒之刻，试不新之：全测·快之接力若报断流，真跑重写凭据即新（演练与真跑唯此一异）'); continue
-        rc, out, 秒 = 跑(a, root)
+    闸, 并 = 後之闸(n, root), {}
+    for i, (名, a) in enumerate(闸):
+        if 名 in 後之并 and 名 not in 并:          # ★1027 A2：医生与末章硬闸至其位方并起（第十一轮之後：末章硬闸须其凭）
+            并.update(并起([x for x in 闸[i:] if x[0] in 後之并], root))
+        rc, out, 秒 = 并[名].result() if 名 in 并 else 跑(a, root)
         末 = [l for l in out.split('\n') if l.strip()][-1:] or ['']
         print('  %s %-10s rc=%d %5.0fs  %s' % ('✓' if rc == 0 else '⛔', 名, rc, 秒, 末[0].strip()[:150]))
         if rc != 0:
-            for l in 红行(out):      # ★1020 398 封版：全测·快红而只印末一行，须另跑十一分钟方知何项——红则当面印其诸红项
+            for l in 红行(out):      # ★1020 398 封版：红而只印末一行，须另跑方知何项——红则当面印其诸红项
                 print('      ' + l)
             print('⛔ 停：%s 红——⛔提交' % 名); return False
-    if 试:
-        print('✓ 试毕：诸闸俱过（⛔提交、⛔存底）'); return True
+        if 名 == '法用之守' and not 演:      # ★1027：其验入席记（随本章之提交上云；下一章之法用之守以此为前章已验之凭）
+            _p = os.path.join(root, '版本', '第%d章' % n, '_席记.json')
+            _j = json.load(open(_p, encoding='utf-8'))
+            _j['法用'] = 末[0].strip()[:200]
+            json.dump(_j, open(_p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    活态之报(n, root)
+    if 演:
+        print('✓ 演毕：诸闸俱过（⛔席记、⛔提交、⛔推）'); return True
     st = subprocess.run(['git', '-c', 'core.quotepath=off', 'status', '--porcelain', '-uall'], cwd=root, capture_output=True, text=True).stdout
     路们 = [l[3:].strip().strip('"') for l in st.split('\n') if l.strip()]
     收, 弃 = 可提交(n, 路们)
@@ -473,17 +673,291 @@ def 後(n, 试=False, root=ROOT):
     名 = re.sub(r'^.*?第.+?章_?', '', os.path.basename(正文档(n, root) or ''))[:-3]
     subprocess.run(['git', 'add', '--'] + 收, cwd=root, check=True)
     # ★1013：说明须标「封版#N」——改单闸认之为「新章封版之追记（係添不係改）」；缺之则推时改单红（381 实逮）
-    msg = '第%d章《%s》封版（造式二代·封版#%d）：诸闸、第十一轮、全测俱过——记席之档（回执、锁定行、创作记录、全书记忆、状态册、open_brief、第%d章开镜卡）\n\n%s' % (n, 名, n, n + 1, 尾)
+    msg = ('第%d章《%s》封版（造式二代·封版#%d）：诸闸、第十一轮、读者可见之快格、医生、末章硬闸俱过（全闸交 GitHub autopush）——'
+           '记席之档（回执、锁定行、创作记录、全书记忆、状态册、open_brief、第%d章开镜卡）、复盘、交接\n\n%s' % (n, 名, n, n + 1, 尾))
     r = subprocess.run(['git', 'commit', '-q', '-m', msg], cwd=root, capture_output=True, text=True)
     print('  %s 提交 %s' % ('✓' if r.returncode == 0 else '⛔', subprocess.run(['git', 'log', '--oneline', '-1'], cwd=root, capture_output=True, text=True).stdout.strip()[:100]))
     if r.returncode != 0:
         print(r.stdout + r.stderr); return False
+    标败 = None
     for 名, a in 後之存(n):
         rc, out, 秒 = 跑(a, root)
         末 = [l for l in out.split('\n') if l.strip()][-1:] or ['']
         print('  %s %-8s rc=%d %5.0fs  %s' % ('✓' if rc == 0 else '⚠', 名, rc, 秒, 末[0].strip()[:150]))
-    print('✓ 封版毕。下一步（主环）：python3 工具/推.py（後台）')
+        if 名 == '存底 --标' and rc != 0:
+            标败 = 末[0].strip()[:150]
+    if 标败 is not None:   # ★1027 A2 验：一章唯此一推——败而仍印「封版毕」，主环 --候主 白候九十分（无章-N 即无 autopush、无报），逾限之 workflow_dispatch 亦无其枝
+        print(标推未成之语(n, 标败)); return False
+    print(封毕之语(n))
     return True
+
+
+def 标推未成之语(n, 由=''):
+    """封版之提交已成而「章-N」未推上（1027 A2 验：一章唯此一推，败即当场红、⛔候主）。"""
+    return ('⛔ 封版#%d 之提交已成而「章-%d」未推上（%s）——autopush 未触、⛔候主：先 `python3 工具/存底.py --标 %d`'
+            '（HEAD 即封版#%d 之提交；或 `python3 工具/自进化环.py` 之 L0 缺碑自补），成後 `python3 工具/接棒守.py --候主 %d`'
+            % (n, n, 由 or '推败', n, n, n))
+
+
+# ═══ 演练（1027 A2·丝滑主义：改流程之器先演於真料、⛔径上线）═══
+演之记 = '.封版之演'      # --试 所立临时副本之记（其文＝底之提交）；--演 见之方跑——⛔在真仓同步而不提交
+纯同步之档 = ('README.md', '镇冢秘术_总站.html', '人物册_总纲_九站.html', '阅读器/镇冢秘术_全本阅读器.html',
+            '设定/全书记忆/剧情链.md', '设定/全书记忆/人物链/')   # 唯本器之同步所写（⛔记席所写）：演时复其前之样，令同步真重生之
+活迹之档 = ('版本/第%d章/_器之迹.md',)   # 记沙盒当时之器迹（_器之迹.jsonl 与「料成→封」之窗）——⛔可重放，只注不比
+时戳之凭 = ('_十一轮.json', '_总核.json')   # 第十一轮重跑即新其「时」与「流」（跑者之号·跑轮._stream_id）——余键须同（左眼、右眼、软项、版数……）
+跑者之键 = ('时', '流')
+器生之档 = ('设定/进化链.md',)   # 进化链.py 自盘上诸器重写（活态之报之 负测·自进化环 → L3）：随今之器（叠器）而变，⛔同步之档——只注其摘
+章之料档 = {'工具/小说检察官.py': r'(?ms)^OPEN_BRIEF_CARD_SCHEMA = \{\n.*?^\}\n'}   # 器档而载章之料（记席所写之块）：叠今之器时码随今、其块随底
+演练账 = os.path.join('设定', '演练账.json')
+
+
+_定库之变 = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
+
+
+def _g(a, root, 字=True, **k):
+    """⛔承外之 GIT_DIR 诸变（钩中跑自测即带之）——库只由 root 定（同 推报._git）。"""
+    e = {x: v for x, v in os.environ.items() if x not in _定库之变}
+    return subprocess.run(['git', '-c', 'core.quotepath=off'] + a, cwd=root, capture_output=True, text=字, env=e, **k)
+
+
+def 封之笔(n, root=ROOT, 范=None):
+    """第 n 章封版之提交——其信带「（造式二代·封版#n）」「（封版#n）」「（封版#n·改单#…）」之类（⛔误认 #n0、⛔认「封版#n 之後」之笔）。
+    范：所寻之引们（默 HEAD 之史、无则 --all）。无即 None。
+    （封版之演、自进化环 L0 缺碑、自走 本树已封、接棒守 存底之封 同此一把尺——⛔各写一份）"""
+    式 = re.compile(r'[（·]封版#%d[）·]' % int(n))
+    for 引 in ([list(范)] if 范 else [['HEAD'], ['--all']]):
+        r = _g(['log', '--format=%H%x09%s', '-F', '--grep=封版#%d' % int(n)] + 引, root)
+        for l in (r.stdout or '').split('\n'):
+            h, _, s = l.partition('\t')
+            if h and 式.search(s):
+                return h
+    return None
+
+
+def 叠器(root, 仓, 底):
+    """今之器（工具／.claude／.github：已提交、未提交、新增、已删）叠於副本→ 所叠之路们。
+    章之料档（器档而载章之料，如检察官之 OPEN_BRIEF_CARD_SCHEMA）：码随今之器、其块随底（1027 合流之演：旧式整档留底，
+    底之检察官犹调已汰之器——开轮六检之 _cold_done、提示词系统之档——末章硬闸、医生假红）；两边俱寻不着其块即⛔叠（整档留底）。"""
+    改 = _g(['diff', '--name-only', 底, '--', '工具', '.claude', '.github'], root).stdout.split('\n')
+    新 = _g(['ls-files', '--others', '--exclude-standard', '--', '工具', '.claude', '.github'], root).stdout.split('\n')
+    叠 = []
+    for p in sorted(set(x.strip() for x in 改 + 新 if x.strip())):
+        源, 去 = os.path.join(root, p), os.path.join(仓, p)
+        if p in 章之料档:
+            式 = re.compile(章之料档[p])
+            try:
+                今, 旧 = open(源, encoding='utf-8').read(), open(去, encoding='utf-8').read()
+            except OSError:
+                continue
+            m今, m旧 = 式.search(今), 式.search(旧)
+            if not (m今 and m旧):
+                continue
+            open(去, 'w', encoding='utf-8').write(今[:m今.start()] + m旧.group(0) + 今[m今.end():])
+            叠.append(p)
+            continue
+        if os.path.exists(源):
+            os.makedirs(os.path.dirname(去), exist_ok=True)
+            shutil.copy2(源, 去)
+        elif os.path.exists(去):
+            os.remove(去)
+        叠.append(p)
+    return 叠
+
+
+def 复同步(仓, 底):
+    """底（封版之提交）所改之纯同步之档复其前（底^）之样——同步须真重生之，⛔因已在而空过。→ 所复之路们"""
+    前, 复 = 底 + '^', []
+    for p in [x.strip() for x in _g(['diff', '--name-only', 前, 底], 仓).stdout.split('\n') if x.strip()]:
+        if p in 纯同步之档 or any(q.endswith('/') and p.startswith(q) for q in 纯同步之档):
+            if _g(['cat-file', '-e', '%s:%s' % (前, p)], 仓).returncode == 0:
+                _g(['checkout', 前, '--', p], 仓)
+            elif os.path.exists(os.path.join(仓, p)):
+                os.remove(os.path.join(仓, p))
+            复.append(p)
+    return 复
+
+
+def _块(root, 版, p):
+    r = _g(['show', '%s:%s' % (版, p)], root, 字=False)
+    return r.stdout if r.returncode == 0 else None
+
+
+def 演之比(仓, 底, n, 叠, root=ROOT):
+    """副本跑毕 → (差, 注)：凡异於底之档（叠器与演之记除外）——活迹只注；十一轮之凭唯「时」新者注；余俱入差，
+    并寻真仓之史里底之後此档之他版，逐字同者注其「後治」（例：410 之详记 sha 封後方由坑㊾之治随之）。"""
+    差, 注 = [], []
+    变 = [x for x in _g(['diff', '--name-only', 底], 仓).stdout.split('\n') if x.strip()]
+    新 = [x for x in _g(['ls-files', '--others', '--exclude-standard'], 仓).stdout.split('\n') if x.strip()]
+    活 = [x % n for x in 活迹之档]
+
+    def 摘(p):          # 所异之行（至多四行·各截百字）——账里自明其异在何处
+        L = _g(['diff', '-U0', 底, '--', p], 仓).stdout.split('\n')
+        return [l[:100] for l in L if l.startswith(('+', '-')) and not l.startswith(('+++', '---'))][:4]
+    for p in sorted(set(变 + 新)):
+        if p in 叠 or p == 演之记:
+            continue
+        if p in 活:
+            注.append({'档': p, '因': '活迹：记沙盒当时之器迹（_器之迹.jsonl 与料成至封之窗），⛔可重放——只注不比'}); continue
+        if os.path.basename(p) in 时戳之凭 and p in 变:
+            try:
+                甲 = json.loads(_块(仓, 底, p).decode('utf-8')); 乙 = json.load(open(os.path.join(仓, p), encoding='utf-8'))
+                if {k: v for k, v in 甲.items() if k not in 跑者之键} == {k: v for k, v in 乙.items() if k not in 跑者之键}:
+                    注.append({'档': p, '因': '第十一轮之凭：唯「时」「流」（跑之时、跑者之号）新——重跑即新，余键俱同'}); continue
+            except Exception:
+                pass
+        if p in 器生之档:
+            注.append({'档': p, '因': '器生：进化链.py 自盘上诸器重写（负测·自进化环 → L3）——随叠器（今之器）而变，非同步之档', '摘': 摘(p)}); continue
+        今 = open(os.path.join(仓, p), 'rb').read() if os.path.exists(os.path.join(仓, p)) else None
+        後治 = ''
+        for h in _g(['log', '--format=%H', '%s..HEAD' % 底, '--', p], root).stdout.split():
+            if 今 is not None and _块(root, h, p) == 今:
+                後治 = '%s %s' % (h[:12], _g(['log', '-1', '--format=%s', h], root).stdout.strip()[:80]); break
+        d = {'档': p, '何': ('与封版之提交不同' if p in 变 else '封版之提交无此档') if 今 is not None else '副本里无之'}
+        if 後治:
+            d['後治'] = '与其後之笔逐字同：' + 後治
+        if p in 变:
+            d['摘'] = 摘(p)
+        差.append(d)
+    return 差, 注
+
+
+_判行 = re.compile(r'^\s+(✓|⛔|⚠)\s+(\S+(?: --\S+)?)\s+rc=(-?\d+)')   # 名可带一参（「净重对表 --补」）
+
+
+def 诸闸之判(印):
+    """--後 之印 → {名: ✓／⛔／⚠}（同步、诸检、诸闸、活态之报之行）。"""
+    return {m.group(2): m.group(1) for m in (_判行.match(l) for l in 印.split('\n')) if m}
+
+
+def 写演练账(录, root=ROOT):
+    p = os.path.join(root, 演练账)
+    try:
+        账 = json.load(open(p, encoding='utf-8'))
+        账 = 账 if isinstance(账, list) else []
+    except Exception:
+        账 = []
+    账.append(录)
+    with open(p, 'w', encoding='utf-8') as f:
+        json.dump(账, f, ensure_ascii=False, indent=1)
+        f.write('\n')
+
+
+def 演练(n, root=ROOT, 记=True):
+    """--後 --试：取第 n 章封版之提交为底，立临时之副本（clone --shared，己之 config：钩子挂载之自愈⛔动真仓）、叠今之器、
+    复纯同步之档於其前，於副本里跑 `封版.py n --後 --演`（同步、诸检、诸闸、活态之报；⛔席记、⛔提交、⛔推、⛔存底），
+    比同步之档於底（逐字）、比诸闸之判於其实（底在＝其时诸闸俱过）。果入 设定/演练账.json（id、何、料、底、果、差、注、闸、判、秒、时）。"""
+    t0 = time.time()
+    print('════ 封版·後·试（第%d章·演於真料）════' % n)
+    底 = 封之笔(n, root)
+    if not 底:
+        print('⛔ 第%d章封版之提交（造式二代·封版#%d）寻不着——⛔演' % (n, n)); return False
+    目 = tempfile.mkdtemp(prefix='封版演_')
+    仓 = os.path.join(目, '仓')
+    try:
+        r = _g(['clone', '-q', '--shared', '--no-checkout', root, 仓], 目)
+        if r.returncode == 0:
+            r = _g(['checkout', '-q', '--detach', 底], 仓)
+        if r.returncode != 0:
+            print('⛔ 副本立不成：%s' % (r.stderr or r.stdout).strip()[:200]); return False
+        叠 = 叠器(root, 仓, 底)
+        复 = 复同步(仓, 底)
+        open(os.path.join(仓, 演之记), 'w').write(底 + '\n')
+        print('  · 底 %s｜叠今之器 %d 档｜纯同步之档复其前 %d：%s' % (底[:12], len(叠), len(复), '、'.join(复) or '无'))
+        p = subprocess.run([sys.executable, os.path.join(仓, '工具', '封版.py'), str(n), '--後', '--演'], cwd=仓,
+                           capture_output=True, text=True, timeout=3600)
+        印 = p.stdout + p.stderr
+        print('\n'.join('  │ ' + l for l in 印.rstrip().split('\n')))
+        闸 = 诸闸之判(印)
+        差, 注 = 演之比(仓, 底, n, 叠, root)
+    finally:
+        shutil.rmtree(目, ignore_errors=True)
+    if 闸.get('活态之报') == '⚠':
+        _活红 = [l.strip()[1:].strip()[:60] for l in 印.split('\n') if l.strip().startswith('⚠ ') and ' rc=' not in l]
+        注.append({'档': '（活态之报）', '因': '活态之格读沙盒之现场（存底枝、心跳、跑账、自进化环之脉）——临时之副本无之而红，只报（⛔计判）：'
+                   + '｜'.join(_活红)[:300]})
+    演判 = '过' if p.returncode == 0 and 闸 and all(v != '⛔' for v in 闸.values()) else '拦'
+    果 = '同' if (not 差 and 演判 == '过') else '异'
+    # 结：异之性——唯「後治」之异（副本与封版之提交异、而与其後真仓所落之治逐字同：今之序於封时即治其旧红）与「未解之异」分说
+    结 = ('同：同步之档逐字同、诸闸之判同' if 果 == '同' else
+          '唯後治之异：%s 异於封版之提交而与其後之治逐字同（今之序於封时即治其旧红）；诸闸之判同（过）' % '、'.join(d['档'] for d in 差)
+          if 演判 == '过' and all(d.get('後治') for d in 差) else
+          '未解之异：%s；诸闸之判 演%s／实过' % ('、'.join(d['档'] for d in 差 if not d.get('後治')) or '（无）', 演判))
+    录 = {'id': '封版後演·%d·%s' % (n, time.strftime('%Y%m%dT%H%M', time.gmtime())),
+          '何': '封版 --後 之新闸（1027 A2·Variant S：读者之快、医生、末章硬闸代全测·快；後之存去云端验、存底 --演、存底包、跑账）於真料重放',
+          '料': '第%d章' % n, '底': 底[:12], '果': 果, '结': 结, '差': 差, '注': 注, '复': 复, '闸': 闸,
+          '判': {'实': '过（封版之提交在＝其时诸闸俱过）', '演': 演判}, '秒': int(time.time() - t0),
+          '时': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
+    for d in 差:
+        print('  ⛔ 差：%s（%s）%s' % (d['档'], d['何'], ('｜' + d['後治']) if d.get('後治') else ''))
+    for d in 注:
+        print('  · 注：%s——%s' % (d['档'], d['因']))
+    print('  %s 演练：果「%s」｜诸闸之判 演%s／实过｜同步之档异 %d｜%d 秒' % ('✓' if 果 == '同' else '⛔', 果, 演判, len(差), 录['秒']))
+    print('  · 结：' + 结)
+    if 记:
+        写演练账(录, root)
+        print('  · 已入 %s（id %s）' % (演练账, 录['id']))
+    return 果 == '同'
+
+
+def _封之笔之局():
+    """演练诸器之局（临时之二仓·⛔钉真仓之史：浅克隆亦通）：封之笔认「封版#9」⛔误认「封版#90」；复同步复纯同步之档於底^；
+    演之比：叠器⛔比、活迹只注、十一轮之凭唯时新只注、余入差（其後之笔逐字同者注後治）、新增之档入差；
+    叠器：删者删、改者叠；章之料档码随今、其块随底。"""
+    d = tempfile.mkdtemp(prefix='封版演局_')
+    env = dict({k: v for k, v in os.environ.items() if not k.startswith('GIT_')}, GIT_CONFIG_GLOBAL=os.devnull,
+               GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+    阅 = '阅读器/镇冢秘术_全本阅读器.html'
+
+    def 写(根, 档们):
+        for p, t in 档们.items():
+            os.makedirs(os.path.dirname(os.path.join(根, p)), exist_ok=True)
+            open(os.path.join(根, p), 'w', encoding='utf-8').write(t)
+
+    def 提(根, 档们, 信):
+        写(根, 档们)
+        subprocess.run(['git', 'add', '-A'], cwd=根, env=env, capture_output=True)
+        subprocess.run(['git', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 信], cwd=根, env=env, capture_output=True)
+        return subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=根, env=env, capture_output=True, text=True).stdout.strip()
+    try:
+        源, 仓 = os.path.join(d, '源'), os.path.join(d, '仓')
+        subprocess.run(['git', 'init', '-q', 源], env=env, capture_output=True)
+        旧式 = 提(源, {阅: '旧', '设定/s.md': '甲', '工具/q.py': 'x', '设定/进化链.md': '链1'}, '第8章《丙》封版（封版#8·改单#G1）：旧式之信')
+        底 = 提(源, {阅: '新', '版本/第9章/_十一轮.json': '{"时": "1", "流": "S1", "左眼": "过"}', '版本/第9章/_器之迹.md': '迹1',
+                     '版本/第9章/_总核.json': '{"时": "1", "版数": 5}'},
+               '第9章《甲》封版（造式二代·封版#9）：诸闸')
+        提(源, {'设定/u.md': '戊'}, '封版#9 之後：回修案之格')
+        後 = 提(源, {'设定/s.md': '乙'}, '後治：s')
+        提(源, {'设定/t.md': '丙'}, '第90章《乙》封版（造式二代·封版#90）：诸闸')
+        subprocess.run(['git', 'clone', '-q', 源, 仓], env=env, capture_output=True)
+        subprocess.run(['git', 'checkout', '-q', '--detach', 底], cwd=仓, env=env, capture_output=True)
+        复 = 复同步(仓, 底)
+        复了 = open(os.path.join(仓, 阅), encoding='utf-8').read() == '旧'
+        写(仓, {阅: '新', '版本/第9章/_十一轮.json': '{"时": "2", "流": "S2", "左眼": "过"}', '版本/第9章/_器之迹.md': '迹2',
+               '版本/第9章/_总核.json': '{"时": "2", "版数": 6}',
+               '设定/s.md': '乙', '设定/新.md': '丁', '工具/q.py': 'y', '设定/进化链.md': '链2'})
+        差, 注 = 演之比(仓, 底, 9, ['工具/q.py'], 源)
+        # 叠器：删者删、改者叠；章之料档（检察官）码随今、OPEN_BRIEF_CARD_SCHEMA 之块随底（回灌：整档留底即旧码调已汰之器）
+        叠源, 叠仓 = os.path.join(d, '叠源'), os.path.join(d, '叠仓')
+        subprocess.run(['git', 'init', '-q', 叠源], env=env, capture_output=True)
+        叠底 = 提(叠源, {'工具/小说检察官.py': "import 旧器\nOPEN_BRIEF_CARD_SCHEMA = {\n    9: '底之卡',\n}\nX = 1\n", '工具/汰.py': 'x', '工具/留.py': '1'}, 'c')
+        subprocess.run(['git', 'clone', '-q', 叠源, 叠仓], env=env, capture_output=True)
+        os.remove(os.path.join(叠源, '工具', '汰.py'))
+        写(叠源, {'工具/小说检察官.py': "import 新器\nOPEN_BRIEF_CARD_SCHEMA = {\n    9: '底之卡',\n    10: '後之卡',\n}\nX = 2\n", '工具/留.py': '2'})
+        叠 = 叠器(叠源, 叠仓, 叠底)
+        叠了 = (sorted(叠) == ['工具/小说检察官.py', '工具/汰.py', '工具/留.py'] and not os.path.exists(os.path.join(叠仓, '工具', '汰.py'))
+               and open(os.path.join(叠仓, '工具', '留.py')).read() == '2'
+               and open(os.path.join(叠仓, '工具', '小说检察官.py'), encoding='utf-8').read()
+               == "import 新器\nOPEN_BRIEF_CARD_SCHEMA = {\n    9: '底之卡',\n}\nX = 2\n")
+        return (叠了 and 封之笔(9, 源) == 底 and 封之笔(90, 源) not in (None, 底) and 封之笔(8, 源) == 旧式 and 封之笔(7, 源) is None
+                and 封之笔(9, 源, ['HEAD~4']) is None and 封之笔(9, 源, ['HEAD~3']) == 底
+                and 复 == [阅] and 复了 and [x['档'] for x in 注] == ['版本/第9章/_十一轮.json', '版本/第9章/_器之迹.md', '设定/进化链.md']
+                and 注[2]['摘'] == ['-链1', '+链2'] and 差[1].get('摘') == ['-甲', '+乙']
+                and [(x['档'], x['何']) for x in 差] == [('版本/第9章/_总核.json', '与封版之提交不同'), ('设定/s.md', '与封版之提交不同'), ('设定/新.md', '封版之提交无此档')]
+                and 差[1].get('後治', '').startswith('与其後之笔逐字同：' + 後[:12]) and '後治' not in 差[2] and '後治' not in 差[0])
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
 
 
 def 自测():
@@ -522,6 +996,13 @@ def 自测():
         and '12:99「甲乙丙丁戊」行逾其白文（6 行）' in _印 and '｜不足四字不核 1' in _印
         and '①之二·骨记远引（章:行 而无「原句」）3 处：骨记之文四字以上逐字在所引之行·±1 者 1/3（13:2「尾巴没有往上走」）；余 2 处' in _印
         and '\n        13:3「上头一张是复印的悬赏。」 ← 骨「j 背冲街坐‖ 悬赏在身」' in _印)
+    # ★X43③：±1 之界之内亦钉（旧只测外界 :1→:4 差三）——差一（上下）合、差二⛔；区间之止＋1、起－1 合，止＋2 ⛔；远引同窗
+    _界 = 骨引之核('【本章亮点】a 12:3「己庚辛壬癸」。b 12:5「己庚辛壬癸」。c 12:2「己庚辛壬癸」。d 12:6「己庚辛壬癸」。'
+                  'e 12:2至3「己庚辛壬癸」。f 12:5至6「甲乙丙丁戊」。g 12:2至3「天地玄黄宇宙」。h （12：5 己庚辛壬癸之翻）。i （12：6 己庚辛壬癸之翻）。',
+                  900, 白们=_白们)
+    共 += 1; ok += ([(x['起'], x['止'], 类, 合) for x, 类, 合, _, _ in _界] == [
+        (3, 3, '原句', True), (5, 5, '原句', True), (2, 2, '原句', False), (6, 6, '原句', False),
+        (2, 3, '原句', True), (5, 6, '原句', False), (2, 3, '原句', False), (5, 5, '远引', True), (6, 6, '远引', False)])
     # 回灌：旧式（一式之正则＋人物链.核句 只核句首 24 字）——认Ｄ6 为章、漏区间／逾四十字／本章／续引，且放过 e 之错尾
     import 人物链
     _旧 = [(a, b) for a, b, _ in re.findall(r'(\d{1,3})[:：](\d{1,4})(?:[—–-]\d+)?\s*「([^」]{4,40})」', _骨)]
@@ -542,15 +1023,82 @@ def 自测():
     收, 弃 = 可提交(381, ['正文/a.md', '版本/第381章/x', '版本/第382章/_开镜卡.md', '设定/y.json', 'README.md', '工具/z.py', '版本/第379章/v.md'])
     共 += 1; ok += (弃 == ['工具/z.py', '版本/第379章/v.md'] and len(收) == 5)
     共 += 1; ok += (记之缺(380) == [] and '下一章开镜卡' not in 记之缺(380))
+    # ★1024 验席：N≥411 之占位未填 --後 拦（施工表留 ‹器:sha1›）；N≤410 照旧不认
+    import tempfile as _tf0, shutil as _sh0
+    _目0 = _tf0.mkdtemp(prefix='封版占_')
+    try:
+        os.makedirs(os.path.join(_目0, os.path.dirname(施工表)))
+        open(os.path.join(_目0, 施工表), 'w', encoding='utf-8').write('| 410 | 锁定 | ‹器:sha1› |\n| 411 | 锁定 | ‹器:sha1› |\n')
+        共 += 1; ok += (any(x.startswith('占位未填·施工表') for x in 记之缺(411, _目0)) and not any(x.startswith('占位未填') for x in 记之缺(410, _目0)))
+    finally:
+        _sh0.rmtree(_目0, ignore_errors=True)
     # ★1020 X21（W53 验席之治法 a）：①⛔跳 N+1（空锁）、撤锁为提交後之末步；後() 真走此两表（⛔内联另一份——验席之七）；
     #   ②封版之全测⛔撞断流：接力之静自交棒（_十一轮.json）起算；③撤 N 之锁⛔清 N+1 之心跳（取本地与远端之新者——验席之十）。
     #   回灌：旧表（心跳 N+1 於全测前、⛔撤锁）、後() 内联旧表、接力只看下一章之新动、可收不比新旧——各即红。
     #   （接力、心跳二器之自测不在全测，借此格入快测）
     _体 = open(__file__, encoding='utf-8').read().split('\ndef 後(')[1].split('\ndef ')[0]
-    共 += 1; ok += ([x[0] for x in 後之闸(400)] == ['囤灰闸', '第十一轮', '全测·快']
-                   and not any('心跳.py' in x for _, a in 後之闸(400) for x in a)
+    # ★1027 A2（Variant S·坑㊹㊾之格）：後之闸 ＝ 囤灰闸、第十一轮、读者之快、医生、末章硬闸——旧「全测·快」（338 秒，九成係器之自测）去。
+    #   其守之意不变：记席与本器於 --前 之後所写之档（同步诸档、检察官之 schema、圣经之锚、亮点之注），医生（圣经之约、open_brief N+1、
+    #   施工表、README 阶段、阅读器之同）、末章硬闸、读者可见之快格（改单、圣经引号、坑账、暂停令、钩子挂载、约到期闸）仍於提交之前拦——
+    #   ⛔候 GitHub 之全闸於提交之後方逮（彼时 章-N 已不可改，治须治枝再一闸）；器之自测归 GitHub autopush 之全闸一回（⛔同树二跑）。
+    #   後之存：一章唯一推（存底 --标·章-N）；云端验、存底 --演、存底包、跑账去。
+    #   回灌：旧表（含「全测·快」）、去医生或末章硬闸、读者之快缺一格或含非读者可见之格、後之存复旧——各即红。
+    _闸 = 後之闸(400, '/无此根')
+    _闸d = dict(_闸)
+    import 全测 as _全, 全测并 as _并
+    _快表, _全表 = dict(_全.诸项(True)), dict(_全.诸项(False))
+    共 += 1; ok += ([x[0] for x in _闸] == ['囤灰闸', '质量三闸', '席令之禁', '圣经随裁', '第十一轮', '读者之快', '医生', '末章硬闸']
+                   and _闸d['读者之快'][1:] == ['--快', '--只', '改单,圣经引号,坑账,暂停令,钩子挂载,约到期闸']
+                   and _闸d['医生'][1:] == ['--doctor'] and _闸d['末章硬闸'][1:] == ['--末章', '400'] and set(後之并) <= set(x[0] for x in _闸)
+                   and all(k in _快表 and k in _全.读者可见之闸 for k in 读者之快) and '跑轮负测' not in _快表 and '跑轮负测' in _全表
+                   and set(活态之格) | {'钩子挂载'} == set(_并.活态) and all(k in _全表 for k in 活态之格)
+                   and not any('心跳.py' in x for _, a in _闸 for x in a)
+                   and [x[0] for x in 後之存(400)] == ['存底 --存', '存底 --标', '撤锁']
                    and 後之存(400)[-1] == ('撤锁', [器('心跳.py'), '--收', '400'])
-                   and 'in 後之闸(n):' in _体 and 'in 後之存(n):' in _体)
+                   and '闸, 并 = 後之闸(n, root), {}' in _体 and 'in 後之存(n):' in _体 and '活态之报(n, root)' in _体
+                   and _体.index('活态之报(n, root)') < _体.index("'commit', '-q'")
+                   # ★1027 A2 验：章-N 一推败 → 当场 ⛔、返非零、⛔印「封版毕」（回灌：旧之只印 ⚠ 而续印封毕之语即红）
+                   and "if 名 == '存底 --标' and rc != 0:" in _体 and 'print(标推未成之语(n, 标败)); return False' in _体
+                   and _体.index('标推未成之语(n, 标败)') < _体.index('print(封毕之语(n))')
+                   and '存底.py --标 411' in 标推未成之语(411, 'x') and '--候主 411' in 标推未成之语(411) and '封版毕' not in 标推未成之语(411))
+    # ★1027 A2：--演 只於 --试 所立之副本里跑（无演之记即止，⛔在真仓同步而不提交）；诸闸之判自其印取；医生与末章硬闸并起
+    import io as _io0, contextlib as _cl0
+    _目1 = tempfile.mkdtemp(prefix='封版演记_')
+    try:
+        with _cl0.redirect_stdout(_io0.StringIO()) as _o1:
+            _r1 = 後(400, 演=True, root=_目1)
+    finally:
+        shutil.rmtree(_目1, ignore_errors=True)
+    # 并否以栅（二者俱至方过；相继即首者候五秒而栅破）判、⛔以墙钟（GitHub 之机忙时秒数抖，读者可见之格⛔可抖·1027 丝滑）
+    import threading as _th1
+    _记1, _原跑1, _栅1 = [], globals()['跑'], _th1.Barrier(2, timeout=5)
+
+    def _假跑1(a, root=ROOT, 限=900):
+        _记1.append((time.time(), a[-1]))
+        try:
+            _栅1.wait()
+        except _th1.BrokenBarrierError:
+            return 1, '相继', 0
+        return 0, '', 0.3
+    try:
+        globals()['跑'] = _假跑1
+        _f1 = 并起([('医生', ['x', '--doctor']), ('末章硬闸', ['x', '410'])], ROOT, 隔=0.05)
+        _rr1 = [_f1[k].result() for k in ('医生', '末章硬闸')]
+    finally:
+        globals()['跑'] = _原跑1
+    共 += 1; ok += (_r1 is False and '⛔ --演 只於 --试' in _o1.getvalue() and '阶段之数' not in _o1.getvalue()
+                   and _rr1 == [(0, '', 0.3)] * 2 and len(_记1) == 2
+                   and 诸闸之判('  ✓ 囤灰闸     rc=0     1s  ✓\n  ⛔ 医生       rc=1    37s  ERROR=1\n  ⚠ 活态之报   rc=1     4s  x\nx  ✓ 甲 rc=0\n  ✓ 净重对表 --补   rc=0     0s  共改 0 行。')
+                   == {'囤灰闸': '✓', '医生': '⛔', '活态之报': '⚠', '净重对表 --补': '✓'}
+                   and _封之笔之局())
+    # ★1027 A2（合流：同功一处）：活态之报之器红只并所跑之三格（红入、首见留；绿销）——他格之笔⛔动（回灌：⛔跑过即误销「他格」）；
+    #   判借 全测.器红之判（GitHub 之并判同用），⛔另写一份并账
+    _账2, _逾2 = _全.器红之判(['跑账', '负测·自进化环'], 410,
+                             {'他格': {'首见': 400, '限': 403}, '跑账': {'首见': 405, '限': 408}, '接力': {'首见': 409, '限': 412}}, 活态之格)
+    _误2, _ = _全.器红之判(['跑账'], 410, {'他格': {'首见': 400, '限': 403}})
+    共 += 1; ok += (_逾2 == ['跑账'] and set(_账2) == {'他格', '跑账', '负测·自进化环'} and _账2['跑账']['首见'] == 405
+                   and _账2['负测·自进化环'] == {'首见': 410, '末见': 410, '限': 413} and '他格' not in _误2
+                   and '全测._器红入账(红, n, 活态之格)' in open(__file__, encoding='utf-8').read().split('\ndef 活态之报(')[1].split('\ndef ')[0])
     try:
         import 接力 as _接, 心跳 as _跳
         _t = 1e9
@@ -560,48 +1108,113 @@ def 自测():
                        and _跳.可收(400, [{'章': 401, '时': 1}, {'章': None, '毕': 400, '时': 2}])[0] is True)
     except Exception:
         共 += 1
+    # ★1027 坑51：封毕之下一步係 接棒守 --候主 N（後台·零 token），⛔推.py（沙盒直推抢先、GitHub 之推恒败）；後() 只经 封毕之语 印之
+    _毕 = 封毕之语(411)
+    共 += 1; ok += ('python3 工具/接棒守.py --候主 411' in _毕 and '推.py（' not in _毕 and 'print(封毕之语(n))' in _体
+                   and 'python3 工具/推.py（後台）' not in open(__file__, encoding='utf-8').read().split('def 自测')[0])
     共 += 1; ok += 红行('x\n  ✗ 负测·甲  坏\n⛔⛔ 永远的痛·D6\n  ✓ 乙\n⛔ 停') == ['✗ 负测·甲  坏', '⛔ 停']   # ★1020：红则印诸红项、⛔D6 之训
     _印 = '  ✗第9章《甲》:\n      第十一轮未过:未见 x\n  末章硬闸·第9章：失败'
     共 += 1; ok += 末章之病(_印) == [] and 末章之病(_印.replace('      第十一轮', '      5+逗:甲\n      第十一轮')) == ['5+逗:甲']   # ★1020：--前 免第十一轮（其归 --後）、余病照报
     # ★W60 X39：--前 之二慢检并起——①二检之命令与旧一字不差（检察官 --末章 N 以 subprocess.run、开轮六检 N --静 以 跑）；
-    #   ②并起：二检各耗 0.4 秒，候齐二果之时 < 相继之时（0.9 秒）；③前() 只经 慢检并起 起此二检（⛔另跑一回、⛔删一检）
-    import subprocess as _sp
-    _记 = []
+    #   ②并起：二检俱至一栅方过（相继即首者候五秒而栅破、返非零）——⛔以墙钟判（GitHub 之机忙时抖·1027 丝滑）；③前() 只经 慢检并起 起此二检（⛔另跑一回、⛔删一检）
+    import subprocess as _sp, threading as _th
+    _记, _栅 = [], _th.Barrier(2, timeout=5)
     _原run, _原跑 = _sp.run, globals()['跑']
 
+    def _过栅():
+        try:
+            _栅.wait(); return 0
+        except _th.BrokenBarrierError:
+            return 1
+
     def _假run(a, **k):
-        _记.append(('run', a[1:], k.get('cwd'))); time.sleep(0.4); return _sp.CompletedProcess(a, 0, '', '')
+        _记.append(('run', a[1:], k.get('cwd'))); return _sp.CompletedProcess(a, _过栅(), '', '')
 
     def _假跑(a, root=ROOT, 限=900):
-        _记.append(('跑', a, root)); time.sleep(0.4); return 0, '', 0.4
+        _记.append(('跑', a, root)); return _过栅(), '', 0.4
     try:
         _sp.run = _假run; globals()['跑'] = _假跑
-        _t = time.time(); _慢 = 慢检并起(400, ROOT, 隔=0.05)
-        _r1, _r2 = _慢['检察官'].result(), _慢['开轮六检'].result(); _秒 = time.time() - _t
+        _慢 = 慢检并起(400, ROOT, 隔=0.05)
+        _r1, _r2 = _慢['检察官'].result(), _慢['开轮六检'].result()
     finally:
         _sp.run = _原run; globals()['跑'] = _原跑
     _前体 = open(__file__, encoding='utf-8').read().split('\ndef 前(')[1].split('\ndef ')[0]
     共 += 1; ok += (sorted(_记) == sorted([('run', [器('小说检察官.py'), '--末章', '400'], ROOT), ('跑', [器('开轮六检.py'), '400', '--静'], ROOT)])
-                   and _秒 < 0.75 and _r1.returncode == 0 and _r2[0] == 0
+                   and _r1.returncode == 0 and _r2[0] == 0
                    and "慢['开轮六检'].result()" in _前体 and "慢['检察官'].result()" in _前体 and _前体.count('慢检并起(') == 1
                    and '开轮六检.py' not in _前体 and '小说检察官.py' not in _前体)
-    # ★W60 X39：检察官之 _auto_cold 同局只算一回（旧式 --末章 一跑算两回·400 各约 45 秒）；换判之函（负测沙盘之式）、盘之印一异即另算；
-    #   _cold_six 同档只载一回。回灌：去其缓则 _n2 == 6（第二回又逐章判一遍）
-    import 小说检察官 as _检
-    _计 = []
-    _真done, _真印 = _检._cold_done, _检._冷轮之印
+    _前 = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
+    共 += 1; ok += ("('质量三闸', ['质量三闸.py'])" in _前)        # ★1022 坑㊹：--前 跑与推闸同一之质量三闸（一章一日等）
+    共 += 1; ok += ("('席令之禁', ['席令之禁.py'])" in _前)        # ★1023 坑㉟复踩：--前 跑席令之禁（新席缺律⑮⑳）
+    # ★1027 A2：约到期之实跑入 --前（N≥411·记席之栏，其项名可为 --红 所认）；--後 之读者之快以 约到期闸 照拦
+    共 += 1; ok += ("器('约到期.py'), '--闸']" in _前体 and _前体.index('# ★1027 A2：约到期') > _前体.index("_名, _过, _语 = 质量三闸.gate1e(n)[0]")
+                   and 前之项('· 约到期：⛔ ⛔欠约 约-001：第291章拍139立「甲」——记席治\n')['约到期'][:2] == ['席', '⛔'] and '约到期闸' in 读者之快)
+    共 += 1; ok += ("('全书记忆随', [器('全书记忆.py'), '--随']" in _前 and _前.index('全书记忆随') < _前.index("('剧情链', [器('剧情链.py')]"))   # ★1024 坑㊾：--後 先随详记之 sha、後生剧情链
+    # ★1027 执行之核（#44）：--前 所印之 质量三闸、席令之禁、圣经随裁、器物点名 N 於 --後 照拦（器物点名唯有 _器物.md 之章）；
+    #   （#60）阶段之数并改 总站、人物册之「已写 1—N 章」（回灌：旧之 README 一档之表 → 站之现状停在 379 即红）
+    _器物有 = os.path.exists(os.path.join(ROOT, '版本', '第410章', '_器物.md'))
+    _410 = dict(後之闸(410))
+    共 += 1; ok += ((not _器物有 or _410.get('器物点名', [None, None])[1:] == ['410'])
+                   and '器物点名' not in dict(後之闸(410, '/无此根'))
+                   and all(_410[k][0].endswith(k + '.py') for k in ('质量三闸', '席令之禁', '圣经随裁')))
+    import tempfile as _tf6, shutil as _sh6
+    _站 = _tf6.mkdtemp(prefix='封版站_')
     try:
-        _检._cold_done = lambda k: (_计.append(k), _真done(k))[1]
-        _a1 = _检._auto_cold([398, 399, 400]); _n1 = len(_计)
-        _a2 = _检._auto_cold([398, 399, 400]); _n2 = len(_计)
-        _检._cold_done = lambda k: (_计.append(k), _真done(k))[1]
-        _检._auto_cold([398, 399, 400]); _n3 = len(_计)
-        _检._冷轮之印 = lambda: ('盘动',)
-        _检._auto_cold([398, 399, 400]); _n4 = len(_计)
+        _行 = '<span>已写 <b>1—379 章</b>（初稿号）；380 起待写。本页下文……</span>'
+        open(os.path.join(_站, 'README.md'), 'w', encoding='utf-8').write('第 1—409 章已经同步封版；第 410 章开写前\n')
+        open(os.path.join(_站, '镇冢秘术_总站.html'), 'w', encoding='utf-8').write(_行)
+        open(os.path.join(_站, '人物册_总纲_九站.html'), 'w', encoding='utf-8').write(_行)
+        _改1 = 阶段之数(410, _站)
+        _改2 = 阶段之数(410, _站)
+        _站文 = open(os.path.join(_站, '镇冢秘术_总站.html'), encoding='utf-8').read()
     finally:
-        _检._cold_done, _检._冷轮之印 = _真done, _真印
-    共 += 1; ok += (_a1 == _a2 and (_n1, _n2, _n3, _n4) == (3, 3, 6, 9) and _检._cold_six() is _检._cold_six() is not None)
-    print('封版·自测 %d/%d' % (ok, 共))
+        _sh6.rmtree(_站, ignore_errors=True)
+    共 += 1; ok += (sorted(_改1) == ['README.md', '人物册_总纲_九站.html', '镇冢秘术_总站.html'] and _改2 == []
+                   and '已写 <b>1—410 章</b>（初稿号）；411 起待写' in _站文 and '镇冢秘术_总站.html' in 纯同步之档)
+    # ★1024 省 token 之审 records 二：--前 --红 与「主环之职」之栏
+    #   ①分栏只走 N≥411、只移三闸（质量三闸＝六问之所出，留记席栏）；N≤410 之印照旧（print(_行) 一路）；--後 之囤灰闸照拦
+    共 += 1; ok += (分栏之始 == 411 and 主环之闸 == ('囤灰闸', '跑账', '席令之禁') and 'if n >= 分栏之始 and _名 in 主环之闸' in _前体
+                   and "闸 = [('囤灰闸', [器('囤灰闸.py')])]" in _前)
+    # ★1027 法用之守：--前 於 N≥411 带 --前 跑之、入主环之职栏；--後 之闸 N≥411 含之（红即停、⛔提交）而 N≤410 无之；其验之末行入席记「法用」
+    共 += 1; ok += ([x[0] for x in 後之闸(411, '/无此根')] == ['囤灰闸', '法用之守', '质量三闸', '席令之禁', '圣经随裁', '第十一轮', '读者之快', '医生', '末章硬闸']
+                   and 後之闸(411, '/无此根')[1][1][1:] == ['--验', '411']
+                   and [x[0] for x in 後之闸(410, '/无此根')] == ['囤灰闸', '质量三闸', '席令之禁', '圣经随裁', '第十一轮', '读者之快', '医生', '末章硬闸']
+                   and "if n >= 分栏之始:          # ★1027 法用之守" in _前体 and "'法用之守.py'), '--验', str(n), '--前']" in _前体
+                   and "主环.append('    · 法用之守：" in _前体 and "_j['法用'] = 末[0]" in _体
+                   and 前之项('· 主环之职（记席⛔治；封版 --後 照拦）：\n    · 法用之守：⛔ 甲——主环治\n')['法用之守'][:2] == ['主环', '⛔'])
+    _上 = ('· 造式之实：✓ 二代\n· 锁定行之数（取此，⛔凭空写）：\n    净重：3004\n    sha1：aaaaaaaaaaaa\n'
+          '· 坑账之机械之证（器先算·记席照此答、⛔再逐条 grep）：\n    ①甲\n· 开轮十六检：⛔ ⑮未答——记席须治\n'
+          '· 回执闸：⛔ 回执缺键：到期账——记席照式补\n· 六问：✓ 已答\n· 器物册（器物点名 411）：✓ 拍号俱对\n'
+          '· 主环之职（记席⛔治；封版 --後 照拦）：\n    · 囤灰闸：✓\n    · 跑账：⛔ 甲器从没跑过——主环治\n    · 席令之禁：✓\n')
+    _今 = (_上.replace('⛔ ⑮未答——记席须治', '✓ 俱过').replace('回执缺键：到期账', '回执缺键：病历').replace('aaaaaaaaaaaa', 'bbbbbbbbbbbb')
+           .replace('    ①甲\n', '    ①乙\n') + '· 末章硬闸（检察官）：⛔ 5+逗:甲——治後再跑 --前\n')
+    _项上, _项今 = 前之项(_上), 前之项(_今)
+    _印 = 红印(411, _项今, _项上, '10-24 00:00:00')
+    _L = _印.split('\n')
+    共 += 1; ok += (_项上['跑账'][:2] == ['主环', '⛔'] and _项上['开轮十六检'][:2] == ['席', '⛔'] and _项上['锁定行之数'][1] == '·'
+                   and '· 回执闸：⛔ 回执缺键：病历——记席照式补（变）' in _L and '· 末章硬闸（检察官）：⛔ 5+逗:甲——治後再跑 --前（新红）' in _L
+                   and '· 上回红今已绿：开轮十六检' in _L and '· 变·锁定行之数：sha1 aaaaaaaaaaaa→bbbbbbbbbbbb' in _L
+                   and any(l.startswith('· 变·坑账之机械之证') for l in _L) and '    · 跑账：⛔ 甲器从没跑过——主环治' in _L
+                   and _L[-1] == '✓ 余 6 项俱绿' and not any('造式之实' in l or '六问' in l or '器物册' in l for l in _L))
+    # ②前印：上回之印存 .cache（⛔版本/）；首跑全印、其後 --红 只印红；同印再跑 → 只余末行与题
+    import tempfile as _tf, io as _io
+    _目 = _tf.mkdtemp(prefix='封版红_')
+    _原前 = globals()['前']
+    try:
+        globals()['前'] = lambda n, root=ROOT: (print(_上, end=''), True)[1]
+        _o1 = _io.StringIO(); _s.stdout, _原 = _o1, _s.stdout
+        try:
+            _r1 = 前印(411, True, _目); _r2 = 前印(411, True, _目)
+        finally:
+            _s.stdout = _原
+        _存 = 上回之档(411, _目)
+        共 += 1; ok += (_r1 and _r2 and _o1.getvalue().startswith(_上) and _o1.getvalue().count('════ 封版·前·红') == 1
+                       and _o1.getvalue().rstrip().endswith('✓ 余 5 项俱绿') and os.path.exists(_存)
+                       and '/.cache/封版前/' in _存.replace(os.sep, '/') and '版本' not in os.path.relpath(_存, _目))
+    finally:
+        globals()['前'] = _原前
+        import shutil as _sh; _sh.rmtree(_目, ignore_errors=True)
+    print('封版·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' 未过'))
     return ok == 共
 
 
@@ -611,5 +1224,5 @@ if __name__ == '__main__':
         sys.exit(0 if 自测() else 1)
     if len(a) >= 2 and a[0].isdigit() and a[1] in ('--前', '--後'):
         n = int(a[0])
-        sys.exit(0 if (前(n) if a[1] == '--前' else 後(n, '--试' in a)) else 1)
+        sys.exit(0 if (前印(n, '--红' in a) if a[1] == '--前' else 演练(n) if '--试' in a else 後(n, '--演' in a)) else 1)
     print(__doc__); sys.exit(2)

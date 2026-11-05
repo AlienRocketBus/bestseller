@@ -41,6 +41,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 式行 = '式：虫洞（造式·1008）'          # 造式之章之 `_式.md` 所书之一行（合稿席落、封版席验）
 _式之认 = re.compile(r'^\s*式\s*[：:]\s*虫洞（造式', re.M)
 三稿 = ('稿一', '稿二', '稿三')
+诸稿 = ('稿一', '稿二', '稿三', '稿四', '稿五', '稿六', '稿七')   # 二代之宽至七
 实文之界 = 120                          # 与 小说检察官::_rounds_full、跑轮::zonghe 之「有实文」同界
 稿之界 = 1000                           # 铁底 2000 之半：只防空档、残稿
 
@@ -88,13 +89,23 @@ def 实之缺(n, root=ROOT):
     """造式之实所缺（空列即齐）。⛔不问是不是造式——那是 是造式() 的事。"""
     d = 章目(n, root)
     缺 = []
-    # ①三稿
-    for k in 三稿:
+    # ①三稿（★1104·416：二代之宽 5／7——蒙名稿一至稿七，整稿 ≥3 即齐；一席被平台之检拒而缺档者，行家判致命、余稿足三即⛔拦；
+    #   残稿充数照红、宽 3 之章缺一照红——效不减）
+    整 = []
+    for k in 诸稿:
         t = _读(os.path.join(d, '起草_%s.md' % k))
         if t is None:
-            缺.append('起草_%s.md 不在（造式三位执笔各写整章）' % k)
-        elif _净(t) < 稿之界:
+            continue
+        if _净(t) < 稿之界:
             缺.append('起草_%s.md 仅 %d 字（<%d·非整章）' % (k, _净(t), 稿之界))
+        else:
+            整.append(k)
+    if len(整) < 3:
+        for k in 三稿:
+            if k not in 整 and _读(os.path.join(d, '起草_%s.md' % k)) is None:
+                缺.append('起草_%s.md 不在（造式三位执笔各写整章）' % k)
+        if not any('不在' in x or '非整章' in x for x in 缺):
+            缺.append('整稿仅 %d 份（<3·造式三位执笔各写整章）' % len(整))
     # ②三构思
     for 名 in '甲乙丙':
         if _读(os.path.join(d, '起草_%s_构思.md' % 名)) is None:
@@ -248,6 +259,13 @@ def 自测():
         造一局(tmp, n)
         open(os.path.join(章目(n, tmp), '起草_稿三.md'), 'w', encoding='utf-8').write('# 第四百章 测\n残稿\n')
         T('⑥残稿（<%d 字）充数者红' % 稿之界, any('非整章' in x for x in 判(n, tmp)[1]))
+        # ⑥之二 宽五而稿一缺档（平台之检拒）、稿二至稿四俱整 → 绿；只余二整稿 → 红
+        n = 453
+        造一局(tmp, n, 缺=('起草_稿一.md',))
+        open(os.path.join(章目(n, tmp), '起草_稿四.md'), 'w', encoding='utf-8').write(open(os.path.join(章目(n, tmp), '起草_稿二.md'), encoding='utf-8').read())
+        T('⑥之二 宽五缺稿一而整稿三者绿', 判(n, tmp) == (True, []))
+        os.remove(os.path.join(章目(n, tmp), '起草_稿四.md')); os.remove(os.path.join(章目(n, tmp), '起草_稿三.md'))
+        T('⑥之三 整稿只二者红', any('稿' in x for x in 判(n, tmp)[1]))
         # ⑦式行须认得其形；别的字样不认（「式：常」不是造式）
         n = 452
         造一局(tmp, n)

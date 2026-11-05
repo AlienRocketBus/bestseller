@@ -51,6 +51,39 @@ def 查(root=ROOT):
     return 红
 
 
+def 白文(t):
+    """【本章亮点】以前之文——详记所记者只此；亮点之注改而白文未动，记忆不算过期。"""
+    i = t.find('\n【本章亮点】')
+    return t if i < 0 else t[:i]
+
+
+def 随(root=ROOT):
+    """1024 实踩（410）：记席照 v03 记 sha，封版之 v05 只在亮点添一注、白文一字未动，详记即红。
+    过期之章：於 版本/第N章/ 找所记 sha 之稿，其白文与现正文同 → 器改 sha（零 token）；不同 → 留红（真过期，须重记）。回所随之章。"""
+    d = os.path.join(root, '设定', '全书记忆')
+    随了 = []
+    for n, p in sorted(诸章(root).items()):
+        f = os.path.join(d, '第%d章.md' % n)
+        if not os.path.exists(f):
+            continue
+        现 = open(p, 'rb').read()
+        h = hashlib.sha1(现).hexdigest()[:12]
+        记 = open(f, encoding='utf-8', errors='replace').read()
+        if h in 记:
+            continue
+        m = re.search(r'sha1：([0-9a-f]{12})', 记)
+        if not m:
+            continue
+        for v in glob.glob(os.path.join(root, '版本', '第%d章' % n, '*.md')):
+            b = open(v, 'rb').read()
+            if hashlib.sha1(b).hexdigest()[:12] == m.group(1):
+                if 白文(b.decode('utf-8', 'replace')) == 白文(现.decode('utf-8', 'replace')):
+                    open(f, 'w', encoding='utf-8').write(记.replace('sha1：' + m.group(1), 'sha1：' + h, 1))
+                    随了.append(n)
+                break
+    return 随了
+
+
 def 自测():
     ok = 共 = 0
     t = tempfile.mkdtemp()
@@ -65,6 +98,18 @@ def 自测():
         共 += 1; ok += (查(t) == [])
         open(p, 'w').write('正文乙')
         共 += 1; ok += (len(查(t)) == 1 and '过期' in 查(t)[0])   # 正文改而记未随 → 红
+        # 随：白文改了（正文甲→乙）而稿中无其 sha → ⛔随、仍红
+        共 += 1; ok += (随(t) == [] and len(查(t)) == 1)
+        # 随：记照 v03（白文＋亮点甲），正文只改亮点 → 器随 sha、转绿
+        v = os.path.join(t, '版本', '第107章'); os.makedirs(v)
+        稿 = '白文一行\n【本章亮点】\n甲'.encode('utf-8'); open(os.path.join(v, 'v03.md'), 'wb').write(稿)
+        open(os.path.join(t, '设定', '全书记忆', '第107章.md'), 'w').write('sha1：' + hashlib.sha1(稿).hexdigest()[:12])
+        open(p, 'w', encoding='utf-8').write('白文一行\n【本章亮点】\n甲；总编辑之注')
+        共 += 1; ok += (随(t) == [107] and 查(t) == [])
+        # 随：白文亦改 → ⛔随（真过期）
+        open(os.path.join(t, '设定', '全书记忆', '第107章.md'), 'w').write('sha1：' + hashlib.sha1(稿).hexdigest()[:12])
+        open(p, 'w', encoding='utf-8').write('白文改了\n【本章亮点】\n甲')
+        共 += 1; ok += (随(t) == [] and len(查(t)) == 1)
         共 += 1; ok += (汉转('三百七十九') == 379 and 汉转('十一') == 11 and 汉转('一百一十七') == 117)
     finally:
         shutil.rmtree(t)
@@ -75,6 +120,9 @@ def 自测():
 if __name__ == '__main__':
     if sys.argv[1:] == ['--自测']:
         sys.exit(0 if 自测() else 1)
+    if sys.argv[1:] == ['--随']:
+        了 = 随()
+        print('✓ 全书记忆·随：%s' % ('、'.join('第%d章' % n for n in 了) + ' 之 sha 随正文（白文未动、只亮点改）' if 了 else '无可随'))
     红 = 查()
     if 红 is None:
         print('ℹ 全书记忆：总览未立，闸未启')

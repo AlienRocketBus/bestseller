@@ -313,11 +313,18 @@ def 通知之数(rid, 档们=None):
             if rid not in l or 'subagent_tokens' not in l:
                 continue
             for blk in re.findall(r'<task-notification>.*?</task-notification>', l, re.S):
-                if rid in blk:
+                if 本之通知(rid, blk):
                     m = re.search(r'<subagent_tokens>(\d+)</subagent_tokens>', blk)
                     if m:
                         数 = int(m.group(1))
     return 数
+
+
+def 本之通知(rid, blk):
+    """★1027（执行之审 #22 补记四 Run 时逮：四 Run 之「示」俱为 2628141）：一通知之文可引他 Run 之号（令中列前诸 wf）——
+    带 resumeFromRunId 之通知只认其所续之号即本 Run；无此记者照旧认「号在其文」。"""
+    k = re.findall(r"resumeFromRunId: ?\\?'(wf_[0-9a-f]{8}-[0-9a-f]{3})", blk)
+    return (rid in k) if k else (rid in blk)
 
 
 def 合(行):
@@ -435,6 +442,9 @@ def 记(键, 名, 行, 示=None, root=ROOT, 时=None):
 
 def 自测():
     ok = 共 = 0
+    共 += 1; ok += (本之通知('wf_aaaaaaaa-aaa', "<task-notification>令：前 wf_aaaaaaaa-aaa 已记…resumeFromRunId: 'wf_bbbbbbbb-bbb'})</task-notification>") is False
+                   and 本之通知('wf_bbbbbbbb-bbb', "resumeFromRunId: 'wf_bbbbbbbb-bbb'}) <subagent_tokens>1</subagent_tokens>") is True
+                   and 本之通知('wf_aaaaaaaa-aaa', '<task-notification>wf_aaaaaaaa-aaa 毕</task-notification>') is True)   # 1027：他 Run 之通知引本号⛔认
     t = tempfile.mkdtemp()
     try:
         def 写(i, meta, 回们):

@@ -33,8 +33,9 @@
     python3 工具/存底.py --存 "在写第310章·三庭毕"   # 秒级，随时可跑
     python3 工具/存底.py --标 309                    # 封版之章打一个不动的标
     python3 工具/存底.py --验                        # 自云端取回来数一遍
-    python3 工具/存底.py --演 309                    # ★真克隆下来比一遍（15秒·每收一章跑一回）
+    python3 工具/存底.py --演 309                    # ★真克隆下来比一遍（约三十秒·人手之演：1027 A2 出封版之每章之序——章-N 之克隆归 GitHub autopush 之取）
     python3 工具/存底.py --自测
+    python3 工具/存底.py --演章 309 [--源 URL]       # 只演章标一半（1027 坑54：GitHub autopush 於章-* 每章跑之、判入报之「演」）
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -60,7 +61,14 @@ def _跑(*a, env=None, cwd=None):
     e = dict(os.environ)
     if env:
         e.update(env)
-    return subprocess.run(a, cwd=cwd or ROOT, capture_output=True, text=True, env=e)
+    r = subprocess.run(a, cwd=cwd or ROOT, capture_output=True, text=True, env=e)
+    if r.returncode != 0:   # 1024 盘坏之哨：诸 git 之调俱经此——遇 Input/output error／signal 7 即立 <git 公目>/盘坏.flag（零 token）
+        try:
+            import 重取
+            重取.查迹(r.returncode, r.stderr or '', ' '.join(str(x) for x in a[:3]))
+        except Exception:
+            pass
+    return r
 
 
 def _档肿哨():
@@ -173,22 +181,24 @@ def 存旧(sha, 信=''):
 
 
 末树档 = os.path.join(ROOT, '.git', '存底.末树')
+# 强塞之档：.gitignore 之诸账（主枝⛔脏），存底须带之。1027 A2：设定/自进化环.log（自走每跑落一行·旧随踪而树恒脏、每回一提交）入此
+强塞之档 = ('_跑账.json', '_任务流.json', '_器之账.json', '_器之迹.jsonl', '设定/自进化环.log')
 
 
 def 存(说明='', 续心跳=True, 跳同=False):
     """★其法之要：另用一份临时索引，故**工作区、索引、HEAD 三样一样不碰**。
     1021 添防覆（402 之失）：推前取云端之底与心跳之锁，照 `判底` 推往主枝或己之旁枝；顶他机之底前先挂进 旧链；
-    主枝之推带 lease（他坐抢先一步即重判，⛔盲覆）。跳同：此树与上回所推者同即不推（存底守之定时用）。"""
-    _档肿哨()
+    主枝之推带 lease（他坐抢先一步即重判，⛔盲覆）。跳同：此树与上回所推者同即不推（存底守之定时用）。
+    1027 A2：档肿哨只於树已变（异於上回所推之树）方跑——旧每回先跑（五分一回、一章四十七至百一十回、CPU 一百五十至四百八十秒），树未变者其肿已於上回见过。"""
     idx = tempfile.mktemp(prefix='存底idx_')
     try:
         env = {'GIT_INDEX_FILE': idx}
         r = _跑('git', 'add', '-A', env=env)
         # 跳同只比诸账之外之树：存底一跑，跑账即添一行——以全树比，则五分一回之存底守回回自见「有改」而空推（1021）
         t0 = _跑('git', 'write-tree', env=env).stdout.strip()
-        # ★两本账在 .gitignore 里（免得主枝永远是脏的），故须**强塞**进这一份临时索引——
+        # ★诸账在 .gitignore 里（免得主枝永远是脏的），故须**强塞**进这一份临时索引——
         #   **存底枝要是没有它们，续跑之账就断了**（东西保住而进度丢了，仍是断）。
-        for _档 in ('_跑账.json', '_任务流.json', '_器之账.json', '_器之迹.jsonl'):
+        for _档 in 强塞之档:
             if os.path.exists(os.path.join(ROOT, _档)):
                 _跑('git', 'add', '-f', _档, env=env)
         if r.returncode != 0:
@@ -196,12 +206,14 @@ def 存(说明='', 续心跳=True, 跳同=False):
         t = _跑('git', 'write-tree', env=env).stdout.strip()
         if not t:
             return 2, 'write-tree 无果'
-        if 跳同:
-            try:
-                if open(末树档).read().strip() == t0:
-                    return 0, '无改·不推'
-            except Exception:
-                pass
+        try:
+            同 = open(末树档).read().strip() == t0
+        except Exception:
+            同 = False
+        if 跳同 and 同:
+            return 0, '无改·不推'
+        if not 同:
+            _档肿哨()                          # 树已变方跑（其职「再肿是在存底之前看见」照旧：推之前）
         我坐, 我机 = _坐(), _机()
         msg = '存底 %s｜%s｜坐 %s｜机 %s' % (time.strftime('%m-%d %H:%M:%S', time.gmtime()), 说明 or '', 我坐, 我机)
         c = _跑('git', 'commit-tree', t, '-p', 'HEAD', '-m', msg).stdout.strip()
@@ -261,10 +273,11 @@ def 存(说明='', 续心跳=True, 跳同=False):
             os.remove(idx)
 
 
-def 标(n):
-    """一章封版即打一个**不动的**标。滚动之枝可被覆盖，标不可。"""
+def 标(n, sha=None):
+    """一章封版即打一个**不动的**标。滚动之枝可被覆盖，标不可。
+    sha：所推之提交（1027 A2：自进化环 L0 缺碑推封版#N 之提交，⛔HEAD——HEAD 或已远在其後）；缺则 HEAD（封版之末推：HEAD 即封版之提交）。"""
     名 = '章-%d' % int(n)
-    c = _跑('git', 'rev-parse', 'HEAD').stdout.strip()
+    c = sha or _跑('git', 'rev-parse', 'HEAD').stdout.strip()
     # ★本仓之远端拒推 tag（HTTP 403），推 refs/heads 则成——故「不动的那一层」
     #   落在**不许强推的枝**上：不快进即被拒，一样覆不掉。
     p = _跑('git', 'push', '--no-verify', '-q', 'origin',
@@ -330,20 +343,41 @@ def 演(章=None):
                                            os.path.getsize(os.path.join(ROOT, '正文', x))))
         if 差:
             坏.append('正文有 %d 档对不上：%s' % (len(差), '、'.join(差[:3])))
-        # 乙·章标
+        # 乙·章标（1027 坑54：每章之演归 GitHub autopush——章-* 之跑以同一 演章 真克隆其标、判入报之「演」）
         if 章 is not None:
-            d2 = os.path.join(tmp, '乙')
-            r2 = _跑('git', 'clone', '-q', '--depth', '1', '--branch', '章-%d' % int(章), url, d2)
-            if r2.returncode != 0:
-                坏.append('章标 章-%s 克隆不下来' % 章)
-            else:
-                缺 = [x for x in ('正文', '设定', '工具') if not os.path.isdir(os.path.join(d2, x))]
-                if 缺:
-                    坏.append('章标 章-%s 里缺 %s——**它不是一份跑得动的仓**' % (章, '、'.join(缺)))
+            rc2, m2 = 演章(章, url)
+            if rc2 != 0:
+                坏.append(m2)
         if 坏:
             return 2, '；'.join(坏)
         return 0, '存底枝克隆下来 %d 章，逐档与本地同（含正在写而未提交的那一章）%s' % (
             len(章们), ('｜章标 章-%s 亦是一份跑得动的仓' % 章) if 章 is not None else '')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+可跑之档 = ('正文', '设定', '工具')
+
+
+def 仓缺(d):
+    """一份克隆下来的仓缺哪几样（正文、设定、工具）——缺一即「跑不动」。"""
+    return [x for x in 可跑之档 if not os.path.isdir(os.path.join(d, x))]
+
+
+def 演章(章, url=None):
+    """乙·章标之演：真克隆「章-N」（--depth 1），看它是不是一份跑得动的仓。→ (rc, 语)
+    1027 坑54：每章之演归 GitHub autopush（章-* 之跑·报之「演」，演之效全同：只克隆云端之标）——沙盒 --演 N 亦经此一函（⛔两份）。"""
+    url = url or _跑('git', 'remote', 'get-url', 'origin').stdout.strip()
+    tmp = tempfile.mkdtemp(prefix='演章_')
+    try:
+        d = os.path.join(tmp, '乙')
+        r = _跑('git', 'clone', '-q', '--depth', '1', '--branch', '章-%d' % int(章), url, d)
+        if r.returncode != 0:
+            return 2, '章标 章-%s 克隆不下来：%s' % (章, (r.stderr or '').strip()[:120])
+        缺 = 仓缺(d)
+        if 缺:
+            return 2, '章标 章-%s 里缺 %s——**它不是一份跑得动的仓**' % (章, '、'.join(缺))
+        return 0, '章标 章-%s 真克隆下来是一份跑得动的仓（%s 俱在）' % (章, '、'.join(可跑之档))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -368,7 +402,8 @@ def 防覆之演():
         open(os.path.join(工, '.gitignore'), 'w').write('_跑账.json\n_任务流.json\n')   # 同真仓：诸账⛔入主枝
         subprocess.run(['git', '-C', 工, 'add', '-A'], check=True)
         subprocess.run(['git', '-C', 工, 'commit', '-q', '-m', 'c0'], check=True)
-        g['ROOT'], g['末树档'], g['_档肿哨'] = 工, os.path.join(d, '末树'), (lambda: None)
+        肿计 = []
+        g['ROOT'], g['末树档'], g['_档肿哨'] = 工, os.path.join(d, '末树'), (lambda: 肿计.append(1))
         g['_锁'] = lambda: 状['锁']
         sys.modules['心跳'] = types.SimpleNamespace(坐=lambda: 状['坐'], _写=lambda x: 写们.append(x), 限=2700,
                                                   _远=lambda: (False, None), 查=lambda 印=False: (False, None, None))
@@ -402,11 +437,13 @@ def 防覆之演():
         n = len(写们); 状['锁'] = (False, 'SIDA', 402)
         写('乙四'); rc, m = 存('t')
         果.append(('⑭之二 逾期之锁⛔复活', rc == 0 and len(写们) == n))
+        肿前 = len(肿计)
         rc, m = 存('t', 跳同=True)
         果.append(('⑮跳同：树未改即不推', rc == 0 and '无改' in m))
         open(os.path.join(工, '_跑账.json'), 'w').write('[1]')
         rc, m = 存('t', 跳同=True)
         果.append(('⑮之二 跳同：只诸账（跑账）有改 → 仍不推（⛔五分一回空推）', rc == 0 and '无改' in m))
+        果.append(('⑱档肿哨只於树已变方跑（1027 A2：树未改之定时⛔跑；树已变之存照跑）', 肿前 >= 6 and len(肿计) == 肿前))
         真远底, 次 = _远底, [0]
         def 旧影():
             次[0] += 1
@@ -488,8 +525,37 @@ def 自测():
       "续心跳=True" in s and "ZM_存底不续心跳" in s)
     T('⑧两本账虽在 .gitignore，存底仍强塞进临时索引（少了它们续跑之账就断）',
       "'add', '-f'" in s and '_跑账.json' in s and '_任务流.json' in s)
+    try:
+        忽 = open(os.path.join(ROOT, '.gitignore'), encoding='utf-8').read().split('\n')
+    except Exception:
+        忽 = []
+    T('⑧之二 设定/自进化环.log 已入 .gitignore 而强塞入存底（1027 A2：旧随踪，自走每跑一行、树恒脏）',
+      '设定/自进化环.log' in 强塞之档 and '设定/自进化环.log' in 忽 and 'for _档 in 强塞之档:' in s)
+    段存 = s.split('def 存(')[1].split('\ndef ')[0]
+    T('⑱之二 档肿哨在跳同之判之後（⛔先跑）', 段存.index('if 跳同 and 同:') < 段存.index('_档肿哨()'))
+    段标2 = s.split('def 标(')[1].split('\ndef ')[0]
+    T('⑲标可指定所推之提交（自进化环 L0 缺碑：推封版#N 之提交，⛔HEAD）；默仍 HEAD（封版之末推）',
+      'def 标(n, sha=None)' in s and "sha or _跑('git', 'rev-parse', 'HEAD')" in 段标2)
+    段跑 = s.split('def _跑(')[1].split('\ndef ')[0]
+    T('⑰诸 git 之调（_跑）败即问盘坏之迹（1024：add 每回败而只入日志，无人见）', '重取.查迹(r.returncode, r.stderr' in 段跑)
     T('⑦每存一回，顺手记一步续跑（东西保住而进度丢了仍是断）',
       'import 续跑' in s and '续跑.记(' in s)
+    # ⑳1027 坑54：演章（GitHub 之 autopush 每章所跑）——临时之裸库真克隆：全者过、缺工具者红、无此标者红
+    with tempfile.TemporaryDirectory() as _t:
+        _e = dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+        _裸, _工 = os.path.join(_t, 'o.git'), os.path.join(_t, 'w')
+        subprocess.run(['git', 'init', '-q', '--bare', _裸], check=True, env=_e)
+        subprocess.run(['git', 'init', '-q', _工], check=True, env=_e)
+        for _x in 可跑之档:
+            os.makedirs(os.path.join(_工, _x))
+            open(os.path.join(_工, _x, 'a'), 'w').write('1')
+        for _c in (['add', '-A'], ['commit', '-qm', 'a'], ['push', '-q', _裸, 'HEAD:refs/heads/章-1'], ['rm', '-rq', '工具'], ['commit', '-qm', 'b'],
+                   ['push', '-q', _裸, 'HEAD:refs/heads/章-2']):
+            subprocess.run(['git'] + _c, cwd=_工, check=True, env=_e, capture_output=True)
+        _u = 'file://' + _裸
+        T('⑳演章：真克隆章标——全者过、缺工具者红、无此标者红（GitHub 每章之演同此一函）',
+          演章(1, _u)[0] == 0 and 演章(2, _u)[0] == 2 and '工具' in 演章(2, _u)[1] and 演章(3, _u)[0] == 2
+          and '演章(章, url)' in 段演)
     # ⑩—⑯·1021 防覆（402 之失）：真起一个临时之远端与工作仓，两机一锁，逐形跑一遍（⛔只看字样）
     for 名, 条 in 防覆之演():
         T(名, 条)
@@ -512,6 +578,11 @@ if __name__ == '__main__':
         i = a.index('--标')
         rc, m = 标(a[i + 1])
         print('✓章标：%s' % m if rc == 0 else '⛔打标未成：%s' % m)
+        sys.exit(rc)
+    if '--演章' in a:
+        i = a.index('--演章')
+        rc, m = 演章(a[i + 1], a[a.index('--源') + 1] if '--源' in a and a.index('--源') + 1 < len(a) else None)
+        print('✓演章：%s' % m if rc == 0 else '⛔演章不过：%s' % m)
         sys.exit(rc)
     if '--演' in a:
         i = a.index('--演')

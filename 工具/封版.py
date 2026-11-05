@@ -36,6 +36,9 @@ _坐 = re.sub(r'^(session_|cse_)', '', os.environ.get('CLAUDE_CODE_REMOTE_SESSIO
 尾 = 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>' + ('\nClaude-Session: https://claude.ai/code/session_%s' % _坐 if _坐 else '')
 
 
+回执闸之键 = ('五钩', '伏笔', '新锚', '病历', '清单', '原场', '到期账', '章魂', '生死检', '改动闸', '本章之失')   # 小说检察官._receipt_ok 於 N≥351 所索（记料【一】同印·X83）
+
+
 def 正文档(n, root=ROOT):
     from 对账预筛 import 章号
     for f in glob.glob(os.path.join(root, '正文', '*.md')):
@@ -106,6 +109,8 @@ def _净(s):
 def 骨引(骨, n):
     """骨记之诸引 → [{章, 起, 止, 句, 前文, 後文, 原}]。句＝紧随之「原句」（无则 None＝远引）；前文／後文＝其引所在小句之文（供远引之核）。
     ⛔认：字母之後之号（Ｄ6：164、W33:）、跨章之区间；「总纲：325」之类（冒号前无章号、亦非「（：」）非章之引。"""
+    from 对账预筛 import 汉章行
+    骨 = 汉章行(骨)                     # ★X84（1105）：骨记以汉字写章行（「四百一十二：五十三」）——器内换作数字再认（⛔改骨记）
     出 = []; 前章 = None
     for m in _引式.finditer(骨):
         if m.group(1):
@@ -331,7 +336,7 @@ def 前(n, root=ROOT):
     try:                                                     # ★1017：回执闸（小说检察官._receipt_ok）——397 记席之回执缺「到期账」一词，封版·後之全测·快（检察官自测·末章硬闸）方红；今於 --前 即印所缺之键
         import 小说检察官 as _检
         _文 = ''.join(open(_f, encoding='utf-8').read() for _f in _检._receipt_files(n))
-        _缺 = [k for k in ('五钩', '伏笔', '新锚', '病历', '清单', '原场', '到期账', '章魂', '生死检', '改动闸', '本章之失') if k not in _文]
+        _缺 = [k for k in 回执闸之键 if k not in _文]
         print('· 回执闸：%s' % ('✓ 键俱在' if _检._receipt_ok(n) else '⛔ 回执（设定/回执_*第%d章*.md）缺键：%s——记席照 396 回执之式补其节（到期账：本章动没动 设定/到期账.json、哨与限）' % (n, '、'.join(_缺) or '（档名不认本章）')))
     except Exception as _e:
         print('· 回执闸：⛔判不出（%s）' % _e)
@@ -670,6 +675,9 @@ def 後(n, 演=False, root=ROOT):
     收, 弃 = 可提交(n, 路们)
     if 弃:
         print('  · 不在本章所及之处、⛔提交：%s' % '、'.join(弃))
+    件 = 章之件标成(n, root)          # ★X86（1105·425 还账）：本章之 W 於封版 --後 即标已成（其账随封版#N 一提交）——⛔待下坐之开补
+    if 件 and '设定/工作流账.json' not in 收:
+        收.append('设定/工作流账.json')
     名 = re.sub(r'^.*?第.+?章_?', '', os.path.basename(正文档(n, root) or ''))[:-3]
     subprocess.run(['git', 'add', '--'] + 收, cwd=root, check=True)
     # ★1013：说明须标「封版#N」——改单闸认之为「新章封版之追记（係添不係改）」；缺之则推时改单红（381 实逮）
@@ -690,6 +698,23 @@ def 後(n, 演=False, root=ROOT):
         print(标推未成之语(n, 标败)); return False
     print(封毕之语(n))
     return True
+
+
+def 章之件标成(n, root=ROOT):
+    """X86：工作流账中名起「第N章」之件（一章一 W）未成者 → 工作流账.标(已成)（其自核照旧；拒即⚠、⛔拦封——下坐之开仍补）。回所标之 id 或 None。"""
+    try:
+        import 工作流账 as 账
+        p = os.path.join(root, 账.账档)
+        件们 = [x for x in json.load(open(p, encoding='utf-8'))['件'] if str(x.get('名', '')).startswith('第%d章' % n)]
+        if not 件们 or 件们[-1].get('状态') == '已成':
+            return None
+        i = 件们[-1]['id']
+        if 账.标(i, '已成', root):
+            print('  ✓ 工作流账    %s 已成（随封版#%d 之提交·X86）' % (i, n)); return i
+        print('  ⚠ 工作流账    %s 拒标已成（照其由治；下坐之开仍补）' % i)
+    except Exception as e:
+        print('  ⚠ 工作流账    未标：%s' % str(e)[:120])
+    return None
 
 
 def 标推未成之语(n, 由=''):
@@ -1214,6 +1239,29 @@ def 自测():
     finally:
         globals()['前'] = _原前
         import shutil as _sh; _sh.rmtree(_目, ignore_errors=True)
+    import inspect as _ins
+    # ★X83（1105）：回执闸之键一表——与小说检察官._receipt_ok 所索者同（多一少一俱红）
+    import 小说检察官 as _检k
+    _源k = _ins.getsource(_检k._receipt_ok)
+    共 += 1; ok += (set(re.findall(r"'([^'\s]{2,4})' in tx", _源k)) == set(回执闸之键))
+    # ★X84（1105）：骨引认汉字之章行（420 骨记之真形）
+    _汉引 = 骨引('是四百一十二：五十三「那一截空」，取四百一十三：五、七', 420)
+    共 += 1; ok += ([(x['章'], x['起'], x['句']) for x in _汉引] == [(412, 53, '那一截空'), (413, 5, None), (413, 7, None)])
+    # ★X86（1105）：章之件标成——名起「第N章」之未成件即标（桩 标）；已成、无件、名不起其章者⛔动；⛔拦封（标拒仍回 None）
+    import tempfile as _tf, 工作流账 as _账
+    _t = _tf.mkdtemp(); os.makedirs(os.path.join(_t, '设定'))
+    json.dump({'件': [{'id': 'W8', '名': '第8章（甲）', '状态': '已成'}, {'id': 'W9', '名': '第9章（乙）', '状态': '进行'},
+                      {'id': 'W10', '名': '剧情庭·第9章之段', '状态': '进行'}]}, open(os.path.join(_t, _账.账档), 'w', encoding='utf-8'))
+    _原标, _标们 = _账.标, []
+    _账.标 = lambda i, 态, root=None: (_标们.append((i, 态)) or i != 'W9x')
+    _o2 = _io.StringIO(); _s.stdout, _原 = _o2, _s.stdout
+    try:
+        _k = (章之件标成(9, _t), 章之件标成(8, _t), 章之件标成(7, _t))
+    finally:
+        _s.stdout = _原; _账.标 = _原标; _sh.rmtree(_t, ignore_errors=True)
+    共 += 1; ok += (_k == ('W9', None, None) and _标们 == [('W9', '已成')])
+    _段後 = open(__file__, encoding='utf-8').read().split('\ndef 後(')[1].split('\ndef ')[0]
+    共 += 1; ok += ('章之件标成(n, root)' in _段後 and _段後.index('章之件标成(n, root)') < _段後.index("'git', 'commit'"))
     print('封版·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' 未过'))
     return ok == 共
 

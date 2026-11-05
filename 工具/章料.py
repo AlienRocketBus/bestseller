@@ -26,7 +26,7 @@ except Exception:
 import os, sys, re, json, glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-from 对账预筛 import 章号  # 汉字章号 → int
+from 对账预筛 import 章号, 汉章行  # 汉字章号 → int；汉字之章行 → 数字（X84）
 
 
 def 读(p):
@@ -230,7 +230,7 @@ def 稿之引(路们, root=ROOT, 字限=24 * 1024):
         名 = os.path.basename(p)
         if '【本章亮点】' not in t:
             出.append('- %s：%s' % (名, '缺档' if not t else '无【本章亮点】')); continue
-        亮 = t[t.index('【本章亮点】'):]
+        亮 = 汉章行(t[t.index('【本章亮点】'):])     # ★X84（1105）：汉字之章行（「四百一十二：五十三」）器内换作数字再认
         号 = list(dict.fromkeys(m.group(0) for m in _稿引式.finditer(亮)))
         出.append('- %s：%s' % (名, '、'.join(号) if 号 else '无章:行之引'))
         合.append(亮)

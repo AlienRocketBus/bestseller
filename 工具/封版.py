@@ -315,8 +315,6 @@ def 前(n, root=ROOT):
         print('    %s：%s' % (k, d.get(k)))
     for v in d.get('诸版', []):
         print('    版：' + v)
-    rc, out, _ = 跑([器('层census.py'), str(n)], root)
-    print('· 层（层census.py %d）：\n%s' % (n, '\n'.join('    ' + l for l in out.strip().split('\n')[-8:])))
     rc, out, _ = 跑([器('坑账.py'), '--逐章', str(n)], root)
     print('· 坑账之单（逐条答进回执「坑账之答」）：\n' + '\n'.join('    ' + l for l in out.strip().split('\n')))
     try:

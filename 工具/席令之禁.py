@@ -24,8 +24,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 标 = '律⑮·动盘之禁'
 标20 = '律⑳·总编辑之权'
 五样 = ('git checkout', 'git stash', 'git reset --hard', 'git clean', 'git add -A', 'git commit', 'git push')   # 1027 #84：添 commit、push（名仍「五样」·⛔改其引）
-标五大 = '【五大主义'
-五主 = ('虫洞', '虹吸', '完美', '丝滑', '执行')
+标五大 = '【六大主义'   # 1106：进化主义入（六大主义·六行）
+五主 = ('虫洞', '虹吸', '完美', '丝滑', '执行', '进化')
 旧笔 = 'db52f247'          # 1027 #84 #33 之前之树：剧情庭.js、大审.js 之禁文缺 commit／push、三份俱无五大主义——回灌须红
 
 
@@ -54,12 +54,12 @@ def 查文(t):
         坏.append('无律⑳·总编辑之权')
     # ★1027 #33：五大主义之段（五行·五名俱在）
     if 标五大 not in t:
-        坏.append('无五大主义之段')
+        坏.append('无六大主义之段')
     else:
-        段五 = t[t.index(标五大):t.index(标五大) + 400]
+        段五 = t[t.index(标五大):t.index(标五大) + 520]
         缺五 = [x for x in 五主 if x not in 段五]
-        if 缺五 or len(re.findall(r'(?m)^[1-5]\.\s*\S', 段五)) < 5:
-            坏.append('五大主义之段不全：' + ('缺' + '、'.join(缺五) if 缺五 else '不足五行'))
+        if 缺五 or len(re.findall(r'(?m)^[1-6]\.\s*\S', 段五)) < 6:
+            坏.append('六大主义之段不全：' + ('缺' + '、'.join(缺五) if 缺五 else '不足六行'))
     # ★1027 #84（复核补）：席令⛔令席提交——禁文写「⛔ git commit」而令文又令「git add 并 commit（末两行：Co-Authored-By…）」，
     #   席照令文即 git 写（剧情庭.js 式新、式改、式验之裁旧如此）。提交之尾、「并 commit」在席令即红；「⛔不提交（主环提交）」放。
     if re.search(r'Co-Authored-By|Claude-Session:|并\s*commit', t):
@@ -73,7 +73,7 @@ def 报():
     if 坏:
         print('⛔ 席令之禁：%d 处不合：%s' % (len(坏), '；'.join('%s（%s）' % x for x in 坏)))
         return False
-    print('✓ 席令之禁：%d 份席令逐份带着禁令（七样命令一样不少）、律⑳、五大主义之段' % len(档们))
+    print('✓ 席令之禁：%d 份席令逐份带着禁令（七样命令一样不少）、律⑳、六大主义之段' % len(档们))
     return True
 
 
@@ -111,7 +111,7 @@ def 自测():
         四 = os.path.join(d, '四.js')         # 五大主义之段缺一名（丝滑）
         io.open(四, 'w', encoding='utf-8').write(五大段.replace('丝滑', '某某') + '`%s：%s`\n%s\n' % (标, '／'.join('\\`%s\\`' % x for x in 五样), 标20))
         R.append(('⑤之二·无五大主义之段者红；段缺一名（丝滑）者红（1027 #33）',
-                  any('无五大主义' in x[1] for x in 查([无五])) and any('缺丝滑' in x[1] for x in 查([四]))))
+                  any('无六大主义' in x[1] for x in 查([无五])) and any('缺丝滑' in x[1] for x in 查([四]))))
         令提 = os.path.join(d, '令提.js')     # 1027 #84 复核补：禁文俱在而令文又令席提交
         io.open(令提, 'w', encoding='utf-8').write(io.open(全, encoding='utf-8').read()
                                                 + '把该档 git add（明路径）并 commit（末两行：\nCo-Authored-By: x\nClaude-Session: y），⛔不推。\n')
@@ -130,7 +130,7 @@ def 自测():
     if 旧红:
         R.append(('⑥回灌 %s（改前之树）：剧情庭、大审之禁文缺 git commit／push、三份俱无五大主义 → 俱红' % 旧笔,
                   all(any('git commit' in x for x in 旧红[k]) for k in ('剧情庭.js', '大审.js') if k in 旧红)
-                  and all(any('无五大主义' in x for x in v) for v in 旧红.values())
+                  and all(any('无六大主义' in x for x in v) for v in 旧红.values())
                   and not any('git commit' in x for x in 旧红.get('造章.js', []))))
         R.append(('⑥之二 回灌 %s：剧情庭.js 令裁席 git add 并 commit → 红；大审.js、造章.js 无此令 → ⛔红（放行）' % 旧笔,
                   any('令席提交' in x for x in 旧红.get('剧情庭.js', []))

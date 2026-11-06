@@ -1,22 +1,14 @@
 {
  "ref": "治-3e558ef33024",
  "sha": "3e558ef33024925604f193e650c4b9d051aa9a73",
- "果": "成",
+ "果": "已在",
  "红": [],
- "main_after": "3e558ef33024925604f193e650c4b9d051aa9a73",
- "时": "2026-11-03T06:37:35Z",
- "run_url": "https://github.com/AlienRocketBus/the-novel/actions/runs/41590654796",
- "因": "",
+ "main_after": "8c44e81e3507d831b0d7f55653d9d632d4ccd9ce",
+ "时": "2026-11-06T15:37:38Z",
+ "run_url": "https://github.com/AlienRocketBus/the-novel/actions/runs/42244638290",
+ "因": "gate",
  "试": 0,
  "器红": [],
  "逾": [],
- "候": "3e558ef33024925604f193e650c4b9d051aa9a73",
- "片": {
-  "数": 3,
-  "秒": {
-   "1": 73.54,
-   "2": 88.46,
-   "3": 79.37
-  }
- }
+ "候": ""
 }

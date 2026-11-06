@@ -333,6 +333,12 @@ def 前(n, root=ROOT):
         print('· 开轮十六检：%s' % ('✓ 俱过' if not 余6 else '⛔ ' + '；'.join(余6)[:600] + '——记席须治（承前之判写进轮记，逐样点名落判：认／翻／搁下）'))
     except Exception as _e:
         print('· 开轮十六检：⛔判不出（%s）' % _e)
+    try:                                                     # ★1106（425 实踩：大审 #29 限425 未裁，封版 --前 绿而 GitHub 推闸「负测·大审挂限」红）：大审之闸於 --前 即印
+        _r = subprocess.run([sys.executable, 器('大审.py'), '--闸'], cwd=root, capture_output=True, text=True, timeout=120)
+        _逾 = [l.strip() for l in _r.stdout.split('\n') if l.strip().startswith('⛔')]
+        print('· 大审之闸：%s' % ('✓ 无逾限之挂' if not _逾 else '⛔ ' + '；'.join(_逾)[:500] + '——主环当场裁（已治／判驳／改限·⛔静静顺延）'))
+    except Exception as _e:
+        print('· 大审之闸：⛔判不出（%s）' % _e)
     try:                                                     # ★1017：回执闸（小说检察官._receipt_ok）——397 记席之回执缺「到期账」一词，封版·後之全测·快（检察官自测·末章硬闸）方红；今於 --前 即印所缺之键
         import 小说检察官 as _检
         _文 = ''.join(open(_f, encoding='utf-8').read() for _f in _检._receipt_files(n))

@@ -2945,7 +2945,8 @@
    "停止线": "定稿交回、主环落盘诸器俱绿即止；逾 2 时或逾 $70 即停",
    "换法": "席败以 resumeFromRunId 续一回，再败主环亲办",
    "有效之据": "零token之检：canon 与正文之冲由主环跑 工具/小说检察官.py、grep 正文、圣经引号、裁之生效（归脚本）；人设之创与取舍、戏剧之判非模型不可（机器判不了好看）；三席独立设计＋两核；坑之检见 设定/方案/W901.md「## 坑之检」",
-   "预估": "约 80 分、$46（据 wf_738e0482-47b $39.8、wf_f1c1e71b-e2f $45.9）"
+   "预估": "约 80 分、$46（据 wf_738e0482-47b $39.8、wf_f1c1e71b-e2f $45.9）",
+   "续之令": "Run wf_ed250e62-f9c（1106 派·赵阙人设升华·args W W901）；断则 Workflow({scriptPath:'/root/.claude/projects/-home-user-the-novel/2f785fc3-f03f-5b56-ad3f-32a68833152c/workflows/scripts/zhaoque-redesign-wf_50eb4caa-d8f.js', resumeFromRunId:'wf_ed250e62-f9c'})；定稿交回後主环落盘：裁_20261106_赵阙之升华.md、圣经 §七.7／§三.0、canon、动机图"
   },
   {
    "id": "W902",
@@ -2970,7 +2971,8 @@
    "停止线": "改之单施毕、诸器俱绿即止；逾 2 时或逾 $60 即停",
    "换法": "席败以 resumeFromRunId 续一回，再败主环亲核",
    "有效之据": "零token之检：证之逐字核以 grep、施改以 工具/改单.py --施单（恰一见之验）、诸闸以脚本（圣经引号、裁之生效、检察官）；反驳与取舍非模型不可；坑之检见 设定/方案/W902.md「## 坑之检」",
-   "预估": "约 65 分、$42（据 wf_738e0482-47b $39.8、wf_f1c1e71b-e2f $45.9；余类末五均 $40.3）"
+   "预估": "约 65 分、$42（据 wf_738e0482-47b $39.8、wf_f1c1e71b-e2f $45.9；余类末五均 $40.3）",
+   "续之令": "Run wf_2be80908-4d2（1106 派·全盘之审反驳验·args W W902）；断则 Workflow({scriptPath:'/root/.claude/projects/-home-user-the-novel/2f785fc3-f03f-5b56-ad3f-32a68833152c/workflows/scripts/audit-verify-apply-plan-wf_2be80908-4d2.js', resumeFromRunId:'wf_2be80908-4d2'})；果之 edits 存 设定/_草/全盘之审_1106/改之单.json，以 改单.py --施单 施"
   }
  ]
 }

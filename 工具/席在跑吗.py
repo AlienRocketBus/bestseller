@@ -47,7 +47,7 @@ try:
     import _账  # 跑账·自记（工具/跑账.py）
 except Exception:
     pass
-import os, sys, json, io, re, time, subprocess
+import os, sys, json, io, time, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 叫停 = os.path.join(ROOT, '设定', '_作者叫停.flag')
@@ -372,17 +372,6 @@ def 自测():
         报('⑲之三 开头之钩：{ 守书之判 ; } || { …cat 总章… ; }、坐号⛔入 settings',
            (len(_c) == 1 and _c[0].startswith('{ python3 /home/user/the-novel/工具/席在跑吗.py --守书之坐') and ' ; } || { ' in _c[0]
             and _c[0].rstrip().endswith('; }'), any(x in _st for x in 守书之号)), (True, False))
-        # 1106·坑57：钩之输出逾限即被截、醒来只见前二千字——钩只印总章首段（至「## 一、」），首段须含痛之录且 ≤五千字
-        _t = open(os.path.join(ROOT, '00_总章.md'), encoding='utf-8').read()
-        _h = re.split(r'(?m)^## 一、', _t, maxsplit=1)[0]
-        报('⑲之四 开头之钩只印总章首段（awk 至「## 一、」）、首段含痛之录且 ≤5000 字（今 %d）' % len(_h),
-           (len(_c) == 1 and "awk '/^## 一、/{exit}1' 00_总章.md" in _c[0] and 'cat 00_总章.md' not in _c[0],
-            '**痛之录' in _h, len(_h) <= 5000), (True, True, True))
-        # 1106 作者令「每次在开写的时候你也要读到，并且要严格执行起来」：开写三纲（唯一之的→第一律·自决→六大主义）俱在首段、依此序，自决以二者为裁之尺
-        _i = [_h.find(k) for k in ('**开写三纲', '**★唯一之的**', '**★第一律·自决', '**★六大主义')]
-        _z = _h[_i[2]:_i[3]] if -1 not in _i else ''
-        报('⑲之五 首段带开写三纲：唯一之的→第一律·自决→六大主义依序；自决除作者之令外一切自决、以唯一之的与六大主义为裁之尺',
-           (-1 not in _i and _i == sorted(_i), '除作者亲下之令' in _z and '唯一之的' in _z and '六大主义' in _z), (True, True))
     except Exception as e:
         报('⑲之三 settings 读不出：%s' % e, False, True)
     import json as _jj

@@ -135,7 +135,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{ python3 /home/user/the-novel/工具/席在跑吗.py --守书之坐 2>/dev/null ; } || { cd /home/user/the-novel && awk '/^## 一、/{exit}1' 00_总章.md && { timeout 30 python3 工具/法用之守.py --报 --首 2>/dev/null | head -6 ; true ; } && python3 工具/费哨.py --章 2>/dev/null | head -8 && echo '── 升级链末五 ──' && grep '^|' 设定/方法账.md | tail -5 | cut -c1-160 ; }"
+            "command": "{ python3 /home/user/the-novel/工具/席在跑吗.py --守书之坐 2>/dev/null ; } || { cd /home/user/the-novel && cat 00_总章.md && { timeout 30 python3 工具/法用之守.py --报 --首 2>/dev/null | head -6 ; true ; } && python3 工具/费哨.py --章 2>/dev/null | head -8 && echo '── 升级链末五 ──' && grep '^|' 设定/方法账.md | tail -5 | cut -c1-160 ; }"
           }
         ]
       }

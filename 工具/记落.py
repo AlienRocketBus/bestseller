@@ -26,6 +26,7 @@
 用法：
   python3 工具/记落.py N          # 代填、直落、代核；红则逐条「⛔ 节名：语」、退 1；绿则一行 ✓（只理 N≥411）
   python3 工具/记落.py N --试     # 只印诸键之值与 diff，⛔写（N≤410 亦可试：其档已封，只供看）
+  python3 工具/记落.py N --重填   # X83：已填之格末版改後重填（以 _记落值.json 之席时之值为旧、现版为新，逐格换；後照常落与核）
   python3 工具/记落.py --自测     # 以 405—410 之真料回放（各取其封版之提交），器格与已封之档逐字比；并验代填、⛔写、负例
 """
 import os as _o, sys as _s
@@ -351,11 +352,52 @@ def 落(n, root=ROOT, 试=False, 印=print):
             印('\n'.join(l[:300] for l in 差[:60]) + ('\n    ……（diff 余 %d 行）' % (len(差) - 60) if len(差) > 60 else ''))
         else:
             open(os.path.join(root, p), 'w', encoding='utf-8').write(新)
+    if not 试:                                   # ★X83：席时之值留档——末版改後 --重填 以之为旧
+        json.dump(v, open(os.path.join(root, 值档 % n), 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
     for 节, 语 in 红:
         印('⛔ %s：%s' % (节, 语))
     if not 红:
         印('✓ 记落 %d%s：代填 %d 格、落 %d 档（%s），核俱合' % (n, '·试（⛔写）' if 试 else '', 填, len(改), '、'.join(x[0] for x in 改) or '无改'))
     return 红
+
+
+值档 = os.path.join('版本', '第%d章', '_记落值.json')
+
+
+def 换值(t, 对, js=False):
+    """→ (新文, 换数)：对＝[(旧, 新)]，长者先换（复合之格含短者）；js 则换其 JSON 转义之形。"""
+    k = 0
+    for 旧, 新 in sorted(对, key=lambda x: -len(x[0])):
+        a, b = (json.dumps(旧, ensure_ascii=False)[1:-1], json.dumps(新, ensure_ascii=False)[1:-1]) if js else (旧, 新)
+        k += t.count(a); t = t.replace(a, b)
+    return t, k
+
+
+def 可换(旧):
+    """旧值须独有方许逐字换：长 ≥6 且非纯数（sha1、六数、回执之数、终稿、星行、拍界、对白、诸版……）。
+    纯数之短格（白文止、亮点行、净重……）⛔单换（「107」处处有）——其值俱在复合之格内随之换；余者 代核 照红。"""
+    return len(旧) >= 6 and not re.fullmatch(r'[\d,，.]+', 旧)
+
+
+def 重填(n, root=ROOT, 印=print):
+    """X83（418 记席六回手改）：已填之格末版改後重填——以 _记落值.json（席时之值）为旧、现版之值为新，诸档逐格换；後照常 落（代填、直落、代核）。"""
+    p = os.path.join(root, 值档 % n)
+    if not os.path.exists(p):
+        印('⛔ 重填：无席时之值（%s）——记落未曾真落；照常 `记落.py %d`' % (值档 % n, n)); return [('重填', '无席时之值')]
+    旧 = json.load(open(p, encoding='utf-8'))
+    新, _ = 值们(n, root)
+    对 = [(旧[k], 新[k]) for k in 新 if k in 旧 and 旧[k] != 新[k] and 可换(旧[k])]
+    共 = 0
+    for 名, q in 档们(n, root):
+        t = 读(q, root)
+        if t is None:
+            continue
+        x, k = 换值(t, 对, js=q.endswith('.json'))
+        if k:
+            open(os.path.join(root, q), 'w', encoding='utf-8').write(x); 共 += k
+            印('  · %s：换 %d 处' % (名, k))
+    印('· 重填 %d：变之格 %d（%s）、换 %d 处' % (n, len(对), '、'.join(k for k in 新 if k in 旧 and 旧[k] != 新[k]) or '无', 共))
+    return 落(n, root, 印=印)
 
 
 # ── 回放（--自测）──
@@ -514,6 +556,24 @@ def 自测():
         验('负例·大审之笔截半句', (not 笔) or any(x[0] == '开镜卡问七' for x in 落(410, 目, 试=True, 印=lambda s: None)))
         open(os.path.join(目, 圣经), 'a', encoding='utf-8').write('\n**第 411 章必须从**乙之末那一句（**乙**）接写\n')
         验('负例·411 之锚两个', any(x[0] == '圣经' and '锚 2 个' in x[1] for x in 落(410, 目, 试=True, 印=lambda s: None)))
+        # ★X83：末版改後 --重填——白文改一字（正文与末版同改）→ 试即红（sha1 不合）→ 重填 → 绿、回执载新 sha1、⛔留旧
+        _圣 = 读(圣经, 目).replace('\n**第 411 章必须从**乙之末那一句（**乙**）接写\n', '')     # 先读後写
+        open(os.path.join(目, 圣经), 'w', encoding='utf-8').write(_圣)
+        open(卡, 'w', encoding='utf-8').write(t)
+        落(410, 目, 印=lambda s: None)
+        旧v = json.load(open(os.path.join(目, 值档 % 410), encoding='utf-8'))
+        import 封版 as _封
+        _d = _封.数(410, 目)
+        for q in {_d['正文'], os.path.join('版本', '第410章', '%s.md' % _d['末版'])}:
+            _t = 读(q, 目); _i = _t.index('。', 200)
+            open(os.path.join(目, q), 'w', encoding='utf-8').write(_t[:_i] + '，' + _t[_i + 1:])
+        验('重填·改後未重填即红', any('sha1' in x[1] for x in 落(410, 目, 试=True, 印=lambda s: None)))
+        _红 = 重填(410, 目, 印=lambda s: None)
+        _新v = json.load(open(os.path.join(目, 值档 % 410), encoding='utf-8'))
+        验('重填·绿而回执载新 sha1、⛔留旧', _红 == [] and _新v['sha1'] != 旧v['sha1'] and _新v['sha1'] in 读(回, 目) and 旧v['sha1'] not in 读(回, 目), str(_红)[:300])
+        验('重填·纯数短格⛔单换', not 可换('107') and not 可换('2,629') and 可换(旧v['sha1']) and 换值('a107b', [('107', '9')]) == ('a9b', 1))
+        os.remove(os.path.join(目, 值档 % 410))
+        验('重填·无席时之值即红', 重填(410, 目, 印=lambda s: None) == [('重填', '无席时之值')])
         验('N≤410 ⛔写', subprocess.run([sys.executable, os.path.abspath(__file__), '410'], capture_output=True, text=True).returncode == 2)
     finally:
         shutil.rmtree(目, ignore_errors=True); shutil.rmtree(父, ignore_errors=True)
@@ -525,6 +585,13 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a == ['--自测']:
         sys.exit(0 if 自测() else 1)
+    if a and a[0].isdigit() and a[1:] == ['--重填']:
+        if int(a[0]) < 起:
+            print('⛔ 记落：只理 N≥%d' % 起); sys.exit(2)
+        try:
+            sys.exit(1 if 重填(int(a[0])) else 0)
+        except Exception as e:
+            print('⛔ 记落·重填：器格算不出（%s）' % e); sys.exit(1)
     if a and a[0].isdigit() and set(a[1:]) <= {'--试'}:
         N, 试 = int(a[0]), '--试' in a
         if N < 起 and not 试:

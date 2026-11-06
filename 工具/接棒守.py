@@ -495,9 +495,36 @@ def 自测():
       'd<=2700' in 守书之判式 and 心跳.限 == 2700 and 'd<1800' in 守书之判式 and 交棒之宽分 * 60 == 1800
       and 'try' not in 守书之判式 and '\\n' not in 守书之判式 and 守书之判令.endswith('| ' + 守书之判式)
       and 'git show origin/%s:_心跳.json' % 心跳.枝 in 守书之判令)
+    _起们 = []
+    _原迹存 = os.environ.pop('ZM_TRACE_SAVE', None)
+    try:
+        迹存('t', 起=lambda a, **k: _起们.append((a, k)))
+    finally:
+        if _原迹存 is not None:
+            os.environ['ZM_TRACE_SAVE'] = _原迹存
+    _段主 = open(os.path.abspath(__file__), encoding='utf-8').read().split("\nif __name__ == '__main__':")[1]
+    T('X86 --候主／--派令 之末起後台之存（脱离、候三秒、⛔续心跳），迹先落而後存',
+               len(_起们) == 1 and _起们[0][1].get('start_new_session') is True and 'sleep 3;' in _起们[0][0][2]
+               and '--不续心跳 --存' in _起们[0][0][2] and '存底.py' in _起们[0][0][2]
+               and _段主.split("'--派令' in a")[1].split('sys.exit')[0].count('迹存(') == 1
+               and _段主.split("'--候主' in a")[1].split('sys.exit')[0].count('迹存(') == 1)
     ok = sum(r)
     print('── 负测·接棒守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)
+
+
+def 迹存(说, 起=None):
+    """X86（1105·425 还账）：--候主／--派令 之迹於本器退出时方由 _账 追入 _器之迹.jsonl，而其时锁已收、存底守已停——新坐承云端之迹即缺。
+    故於二令之末起一後台之存（脱离本器、候三秒令本器先退而迹先落），零 token；⛔续心跳（锁已收：⛔复活）。ZM_TRACE_SAVE=0 即免（自测）。"""
+    if os.environ.get('ZM_TRACE_SAVE') == '0':
+        return None
+    令 = 'sleep 3; %s %s --不续心跳 --存 %s >/dev/null 2>&1' % (
+        sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), '存底.py'), json.dumps('交棒之迹·' + 说, ensure_ascii=False))
+    try:
+        return (起 or subprocess.Popen)(['sh', '-c', 令], cwd=_仓目(), start_new_session=True,
+                                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        return None
 
 
 if __name__ == '__main__':
@@ -520,10 +547,13 @@ if __name__ == '__main__':
             print('⛔ 第%d章未入主枝而须治（源「%s」）——派【重派】之会话自其源起、先治之（会话之守认此形）' % (int(a[i + 1]) - 1, 治))
         print('照下参调 create_trigger 一回（⛔改）：')
         print(json.dumps(令, ensure_ascii=False, indent=1))
+        迹存('--派令 %s' % a[i + 1])
         sys.exit(0)
     if '--候主' in a:
         i = a.index('--候主')
-        sys.exit(候主(int(a[i + 1]), int(a[i + 2]) if len(a) > i + 2 and a[i + 2].isdigit() else 90))
+        _rc = 候主(int(a[i + 1]), int(a[i + 2]) if len(a) > i + 2 and a[i + 2].isdigit() else 90)
+        迹存('--候主 %s rc=%s' % (a[i + 1], _rc))
+        sys.exit(_rc)
     if '--哨' in a:
         sys.exit(哨())
     if '--在候' in a:

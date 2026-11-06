@@ -173,7 +173,7 @@ def 流在跑(根=None, 今=None, 界=30 * 60):
     return False
 
 
-守书之号 = ('01HCXDm7LtSf4nECX75WCL3D', '01BFuD1GJM5avGrcaUg1REwV')   # 守书之会话（定时之保·小模型·只查⛔写）；换坐即改此行
+守书之号 = ('018Kg61xyF8y2u7mdzftXb5u', '01HCXDm7LtSf4nECX75WCL3D', '01BFuD1GJM5avGrcaUg1REwV')   # 守书之会话（定时之保·小模型·只查⛔写）；换坐即改此行
 守书之令 = 'trig_01Y4mtqtyshYjTb6wkDGdnzP'   # 唤守书之定时之令（每时 :42）——暂停令·守书之参 取此，⛔另硬写；换令即改此行
 
 
@@ -184,7 +184,7 @@ def 守书开头之判(坐, 守):
         import 接棒守
         总 = 接棒守.总编辑
     except Exception:
-        总 = 'session_016Hgfc2SSNvGktFmk2LX825'
+        总 = 'session_018Kg61wMkRDSZXTWBa5imhH'
     号 = lambda s: str(s or '').replace('session_', '').replace('cse_', '')
     return bool(守) and 号(坐) != 号(总)
 
@@ -363,8 +363,8 @@ def 自测():
     报('⑰之四 己撤锁逾三十分（候已逾时）→ 仍 rc=4（⛔令其自写）', 判路(交棒中=False, 撤锁者='A', 我坐='A')[0], 4)
     报('⑲守书之坐 → 放行（⛔令其写书）', 判路(守书=True)[0], 0)
     报('⑲之二 开头之判：守书之坐 → 是；总编辑之坐虽有旗 → 否（1024）；非守书 → 否',
-       (守书开头之判('01HCXDm7LtSf4nECX75WCL3D', True), 守书开头之判('016Hgfc2SSNvGktFmk2LX825', True),
-        守书开头之判('cse_016Hgfc2SSNvGktFmk2LX825', True), 守书开头之判('X', False)), (True, False, False, False))
+       (守书开头之判('01HCXDm7LtSf4nECX75WCL3D', True), 守书开头之判('018Kg61wMkRDSZXTWBa5imhH', True),
+        守书开头之判('cse_018Kg61wMkRDSZXTWBa5imhH', True), 守书开头之判('X', False)), (True, False, False, False))
     try:   # 1024·省审 sessions 二②：SessionStart 印总章之钩加括号之判（A || B && C 实为 (A||B)&&C，⛔裸加）；坐号⛔硬写进 settings
         _st = open(os.path.join(ROOT, '.claude', 'settings.json'), encoding='utf-8').read()
         _c = [h.get('command', '') for e in (json.loads(_st).get('hooks') or {}).get('SessionStart', [])

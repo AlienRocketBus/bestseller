@@ -86,8 +86,23 @@ def 候(n, 限分=30, 隔=60, 读=None, 我=None, 今=time.time, 睡=time.sleep)
 
 
 主枝 = 'claude/the-novel-review-4dtuit'
-总编辑 = 'session_016Hgfc2SSNvGktFmk2LX825'   # 唯其有 create_session 之器（子会话、定时之令所开之会话俱无——1024 实验）
-源 = 'https://github.com/AlienRocketBus/the-novel'
+总编辑 = 'session_018Kg61wMkRDSZXTWBa5imhH'   # 唯其有 create_session 之器（1106 迁仓：RobotSpa 之迁仓之坐接为总编辑；旧 016Hgfc2）
+def _源():
+    """自 git remote origin 推 https://github.com/<owner>/<repo>（1106 迁仓·虹吸：换号⛔再改）；推不得则用新址。"""
+    import re as _re, subprocess as _sp
+    try:
+        u = _sp.run(['git', 'remote', 'get-url', 'origin'], capture_output=True, text=True, timeout=5,
+                    cwd=os.path.dirname(os.path.abspath(__file__))).stdout.strip()
+        m = _re.search(r'github\.com[:/]+([^/\s]+)/([^/\s]+?)(?:\.git)?/?$', u) or \
+            _re.search(r'/git/([^/\s]+)/([^/\s]+?)(?:\.git)?/?$', u)
+        if m:
+            return 'https://github.com/%s/%s' % (m.group(1), m.group(2))
+    except Exception:
+        pass
+    return 'https://github.com/RobotSpa/the-novel'
+
+
+源 = _源()
 
 
 def 务之名(n, 上审=None, 待至=None):

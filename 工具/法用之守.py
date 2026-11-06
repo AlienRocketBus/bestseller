@@ -238,13 +238,21 @@ class 迹:
             self._账 = None
             self._载()
             rc, o = _git(self.root, 'ls-remote', 'origin', 'refs/heads/备份/存底*')
+            # ★1106（429·法用之守误拦）：他坐之存顶己底时，己底只挂於「存旧」之提交之亲（存底-旧 再被顶即埋二层）——
+            #   只读诸枝之梢即失前坐交棒之迹（428 坐之「交棒之迹·--派令 429」埋於 存底-旧~1^2）。故每枝溯其近八笔（诸亲俱走），迹行去重。
+            见 = set()
             for l in (o.strip().split('\n') if rc == 0 and o.strip() else []):
-                rc2, t = _git(self.root, 'show', '%s:_器之迹.jsonl' % l.split()[0])
-                for x in (t.split('\n') if rc2 == 0 else []):
-                    try:
-                        self._行.append(json.loads(x))
-                    except Exception:
-                        pass
+                rc1, 诸笔 = _git(self.root, 'rev-list', '--max-count=8', l.split()[0])
+                for c in ((诸笔.split() if rc1 == 0 else []) or [l.split()[0]]):
+                    rc2, t = _git(self.root, 'show', '%s:_器之迹.jsonl' % c)
+                    for x in (t.split('\n') if rc2 == 0 else []):
+                        if not x.strip() or x in 见:
+                            continue
+                        见.add(x)
+                        try:
+                            self._行.append(json.loads(x))
+                        except Exception:
+                            pass
             return True
         except Exception:
             return False

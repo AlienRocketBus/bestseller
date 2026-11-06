@@ -60,6 +60,10 @@ def 查文(t):
         缺五 = [x for x in 五主 if x not in 段五]
         if 缺五 or len(re.findall(r'(?m)^[1-6]\.\s*\S', 段五)) < 6:
             坏.append('六大主义之段不全：' + ('缺' + '、'.join(缺五) if 缺五 else '不足六行'))
+        # ★1106 作者令「每次开写也要读到、严格执行」：段首一行须带唯一之的之文与自决（律⑳）——三纲同在缓存之首
+        首行 = 段五.split('\n', 1)[0]
+        if '中国第一' not in 首行 or '自决' not in 首行:
+            坏.append('六大主义之首行缺唯一之的或自决（三纲：唯一之的→自决→六大主义）')
     # ★1027 #84（复核补）：席令⛔令席提交——禁文写「⛔ git commit」而令文又令「git add 并 commit（末两行：Co-Authored-By…）」，
     #   席照令文即 git 写（剧情庭.js 式新、式改、式验之裁旧如此）。提交之尾、「并 commit」在席令即红；「⛔不提交（主环提交）」放。
     if re.search(r'Co-Authored-By|Claude-Session:|并\s*commit', t):
@@ -81,7 +85,7 @@ def 自测():
     import tempfile, shutil
     R = []
     d = tempfile.mkdtemp(prefix='席令_')
-    五大段 = '%s·仅次於唯一之的】\n%s\n' % (标五大, '\n'.join('%d. %s：某' % (i + 1, x) for i, x in enumerate(五主)))
+    五大段 = '%s·仅次於唯一之的「镇冢秘术成中国第一」·遇事自决】\n%s\n' % (标五大, '\n'.join('%d. %s：某' % (i + 1, x) for i, x in enumerate(五主)))
     try:
         旧 = os.path.join(d, '旧.js')
         io.open(旧, 'w', encoding='utf-8').write('const 令 = `工作目录 /home/user/the-novel。动笔。`\n')
@@ -112,6 +116,10 @@ def 自测():
         io.open(四, 'w', encoding='utf-8').write(五大段.replace('丝滑', '某某') + '`%s：%s`\n%s\n' % (标, '／'.join('\\`%s\\`' % x for x in 五样), 标20))
         R.append(('⑤之二·无五大主义之段者红；段缺一名（丝滑）者红（1027 #33）',
                   any('无六大主义' in x[1] for x in 查([无五])) and any('缺丝滑' in x[1] for x in 查([四]))))
+        旧首 = os.path.join(d, '旧首.js')     # 1106 前之首行（只「仅次於唯一之的」、无其文、无自决）
+        io.open(旧首, 'w', encoding='utf-8').write(五大段.replace('「镇冢秘术成中国第一」·遇事自决', '') + '`%s：%s`\n%s\n' % (标, '／'.join('\\`%s\\`' % x for x in 五样), 标20))
+        R.append(('⑤之三·六大主义之首行缺唯一之的之文或自决者红（1106 作者令「每次开写也要读到、严格执行」）',
+                  any('首行缺唯一之的' in x[1] for x in 查([旧首]))))
         令提 = os.path.join(d, '令提.js')     # 1027 #84 复核补：禁文俱在而令文又令席提交
         io.open(令提, 'w', encoding='utf-8').write(io.open(全, encoding='utf-8').read()
                                                 + '把该档 git add（明路径）并 commit（末两行：\nCo-Authored-By: x\nClaude-Session: y），⛔不推。\n')

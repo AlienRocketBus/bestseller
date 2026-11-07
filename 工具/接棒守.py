@@ -99,7 +99,7 @@ def _源():
             return 'https://github.com/%s/%s' % (m.group(1), m.group(2))
     except Exception:
         pass
-    return 'https://github.com/RobotSpa/the-novel'
+    return 'https://github.com/RobotSpa/bestseller'   # 1106 仓改名 the-novel→bestseller（旧名 GitHub 自转）
 
 
 源 = _源()
@@ -483,7 +483,7 @@ def 自测():
     T('⑥之二 主含真查云端：章-N 之标为主枝之祖', all(k in 段主含 for k in ("'merge-base', '--is-ancestor'", "'refs/heads/章-%d'", 'ls-remote')))
     参 = 派之参(411, 名='第411章')
     T('⑦派之参：题、模、源、枝、令俱定形', 参['title'] == '镇冢秘术·第411章' and 参['model'] == 'claude-opus-5-5'
-      and 参['source_revision'] == 参['outcome_branch'] == 主枝 and 'the-novel' in 参['source_url']
+      and 参['source_revision'] == 参['outcome_branch'] == 主枝 and 参['source_url'] == 源 and __import__('re').match(r'^https://github\.com/[^/]+/[^/]+$', 源)
       and '第 411 章' in 参['prompt'] and '--跳 411' in 参['prompt'] and not 参['prompt'].startswith('【重派】'))
     T('⑦之二 重派：令首带【重派】、余同', 派之参(411, True, '第411章')['prompt'] == '【重派】' + 参['prompt'])
     T('⑦之五 题名实务：大审到期即名其段（1024 作者疑「怎么开始写 411」）',

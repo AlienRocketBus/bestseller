@@ -1,0 +1,22 @@
+{
+ "ref": "治-63adbe547a1a",
+ "sha": "63adbe547a1a061abefaec97fb83071dab04bd03",
+ "果": "成",
+ "红": [],
+ "main_after": "63adbe547a1a061abefaec97fb83071dab04bd03",
+ "时": "2026-11-07T04:09:59Z",
+ "run_url": "https://github.com/RobotSpa/bestseller/actions/runs/42336929551",
+ "因": "",
+ "试": 0,
+ "器红": [],
+ "逾": [],
+ "候": "63adbe547a1a061abefaec97fb83071dab04bd03",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 66.64,
+   "2": 53.04,
+   "3": 72.28
+  }
+ }
+}

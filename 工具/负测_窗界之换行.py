@@ -8,12 +8,13 @@
 　**上一段末一个词接下一段头一个词（其间无句号，如段末作「——」「」」「？」），被缝成一句从来没有人写过的话。**
 ★其治：诸窗之界补 `\\n`；内嵌 canon（`_EMBEDDED_LIB`）与 `设定/canon事实库.json` 同笔补，F001／F004／F005 逐条同字。
 
-五局（⛔每局皆带其牙：同一式不跨段者照旧须中）：
+六局（⛔每局皆带其牙：同一式不跨段者照旧须中）：
 　①ANTIPHYS 「胡茬」段末＋「动」段首 → ⛔不许判物理反逻辑；同段者照判
 　②AWKWARD 「胡茬」段末＋「抖」段首 → ⛔不许判文采病；同段者照判
 　③CANON_FORBID 三式跨段 → ⛔不许中；同句者照中
 　④外 canon F001／F004／F005 跨段 → ⛔不许中；同句者照中
 　⑤内嵌 canon 诸 forbid 之窗皆挡换行，且 F001／F004／F005 与外 canon 逐条同字
+　⑥外 canon 诸 forbid 之窗皆挡换行（1106 X70）
 
 用法：python3 工具/负测_窗界之换行.py [检察官.py 之路] [canon事实库.json 之路]
 　（⛔二参供旧码回灌：`git show HEAD:…` 取於 /tmp 之副本验之，须红）
@@ -100,8 +101,13 @@ def 跑(检=None, 库=None):
     局.append(('⑤内嵌 canon 窗皆挡换行（缺 %d）且 F001/F004/F005 与外 canon 同字' % len(缺),
                not 缺 and 同字))
 
+    # ★1106 X70：外 canon 之 forbid 全数之窗亦须挡换行（旧只守 F001／F004／F005 三条，另十八窗不挡）——补後全书命中数前後同（0、6、1 之数逐式比过）
+    外缺 = ['%s#%d' % (f['id'], j) for f in ext.values() for j, p in enumerate(f.get('forbid', []))
+           for c in _窗.findall(p) if '\\n' not in c and '\n' not in c]
+    局.append(('⑥外 canon 诸 forbid 之窗皆挡换行（缺 %d%s）' % (len(外缺), '：' + '、'.join(外缺[:6]) if 外缺 else ''), not 外缺))
+
     红 = 0
-    print('════ 负测 · 窗界之换行（五局）════')
+    print('════ 负测 · 窗界之换行（六局）════')
     for 名, 果 in 局:
         print('  %s %s' % ('✓' if 果 else '⛔', 名))
         红 += 0 if 果 else 1

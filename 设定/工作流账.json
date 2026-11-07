@@ -3153,7 +3153,7 @@
    "依": [
     "W100"
    ],
-   "续之令": "Run 待派（造章.js·args 章 431、重 重、魂路 物证／不说／回声、须厚 true）；断则 python3 工具/承.py 431 → Workflow({scriptPath:'/home/user/the-novel/版本/第431章/_承.js'})（⛔resumeFromRunId 直续·坑㊻）",
+   "续之令": "Run wf_f451ee88-1a0（1107 派（造章.js·args 章 431、重 重、魂路 物证／不说／回声、须厚 true）；断则 python3 工具/承.py 431 → Workflow({scriptPath:'/home/user/the-novel/版本/第431章/_承.js'})（⛔resumeFromRunId 直续·坑㊻）",
    "起": "2026-11-07T00:55Z",
    "时限": 6.0,
    "停止线": "封版#431 且致命 0、盲读想读下一章；逾 5 时未封即裁",

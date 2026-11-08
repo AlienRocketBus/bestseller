@@ -1,0 +1,24 @@
+{
+ "ref": "治-a0365dfbbade",
+ "sha": "a0365dfbbade72483fad368a6ff99e99b14beecf",
+ "果": "成",
+ "红": [],
+ "main_after": "a0365dfbbade72483fad368a6ff99e99b14beecf",
+ "时": "2026-11-08T10:03:21Z",
+ "run_url": "https://github.com/RobotSpa/bestseller/actions/runs/42469246008",
+ "因": "",
+ "试": 0,
+ "器红": [
+  "悬念哨"
+ ],
+ "逾": [],
+ "候": "a0365dfbbade72483fad368a6ff99e99b14beecf",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 82.44,
+   "2": 80.63,
+   "3": 91.51
+  }
+ }
+}

@@ -287,6 +287,7 @@ def 候主(n, 限分=90, 隔=120, 查=None, 报=None, 进=None, 今=time.time, �
                   '`gh workflow run autopush.yml --ref 章-%s`（或 GitHub 之器 actions_run_trigger：workflow autopush.yml、ref 章-%s），'
                   '再 `python3 工具/接棒守.py --候主 %s`；仍无果（GitHub 停摆）方 `python3 工具/推.py --直`（审计之兜底·本地全闸）；治毕再交棒'
                   % (限分, n, n, n, n, n))
+            print('⛔⛔ 报作者（1108 作者令）：GitHub Actions 跑不动了——多半是本月额度（分钟）用光；即告作者「GitHub 跑不动了，多半是本月额度用光，请换号或等下月」。总编辑之坐当场告作者（对话＋推送通知）；写书之坐 create_trigger 入总编辑之会话（接棒守.总编辑）、令以「【报】GitHub 跑不动」起')
             print(存底包之语(n))
             return 2
         睡(隔)

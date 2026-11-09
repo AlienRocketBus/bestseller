@@ -410,6 +410,7 @@ def 候(sha, 限分=90, 隔=60, 查=None, 读=None, 进=None, 取=None, 今=time
             return 3
         if 今() - 始 >= 限分 * 60:
             print('⛔ 候 %d 分主枝未含 %s、亦无其坏报——GitHub 或停摆：python3 工具/推.py --直 兜底' % (限分, 全[:12]))
+            print('⛔⛔ 报作者（1108 作者令）：GitHub Actions 跑不动了——多半是本月额度（分钟）用光；即告作者「GitHub 跑不动了，多半是本月额度用光，请换号或等下月」。总编辑之坐当场告作者（对话＋推送通知）；写书之坐 create_trigger 入总编辑之会话（接棒守.总编辑）、令以「【报】GitHub 跑不动」起')
             return 2
         睡(隔)
 

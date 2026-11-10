@@ -3249,7 +3249,7 @@
    "依": [
     "W104"
    ],
-   "续之令": "Run wf_e7f5a719-f1c（1109 派（造章.js·args 章 435、重 中、魂路 不说／物证／咬合）；断则 python3 工具/承.py 435 → Workflow({scriptPath:'/home/user/the-novel/版本/第435章/_承.js'})（⛔resumeFromRunId 直续·坑㊻）",
+   "续之令": "Run wf_e7f5a719-f1c（周限断·稿二成）→ 承 wf_651be861-b0c（1110；1109 派（造章.js·args 章 435、重 中、魂路 不说／物证／咬合）；断则 python3 工具/承.py 435 → Workflow({scriptPath:'/home/user/the-novel/版本/第435章/_承.js'})（⛔resumeFromRunId 直续·坑㊻）",
    "裁": [],
    "起": "2026-11-09T20:21Z",
    "时限": 5.0,

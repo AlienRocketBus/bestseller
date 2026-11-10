@@ -986,15 +986,11 @@ def _册之见(名, c, 册=None):
         elif any(名 in y for y in 称们):
             含.append(v)
     人们 = 等 or (含 if len(含) == 1 else [])
-    # ★X91②（434）：「末见章」之栏为准——「K态」可立於其人不在场之章（霍钧 431态 而末见 429·433 卡初红一回）；
-    #   末见章缺、或 ≥c（核旧章之卡）方退取「K态」< c 之最大者
     见 = []
     for v in 人们:
         m = re.match(r'\d+', str(v.get('末见章') or ''))
-        if m and 0 < int(m.group()) < c:
-            见.append(int(m.group()))
-        else:
-            见 += [int(k[:-1]) for k in v if re.match(r'\d+态$', k)]
+        见 += [int(m.group())] if m else []
+        见 += [int(k[:-1]) for k in v if re.match(r'\d+态$', k)]
     见 = [k for k in 见 if 0 < k < c]
     return max(见) if 见 else None
 

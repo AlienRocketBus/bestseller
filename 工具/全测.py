@@ -639,7 +639,7 @@ def chk_canon_forbid_neg():
 def chk_win_newline_neg():
     """负测·窗界之换行（1103·X61·见 工具/负测_窗界之换行.py）——
     **守：跨整章找东西之窗（检察官 ANTIPHYS／AWKWARD／CANON_FORBID、内外 canon forbid）须挡换行，跨段⛔缝成一句；同句照中。**"""
-    return _负测四器('负测·窗界之换行', '工具/负测_窗界之换行.py', '5/5')
+    return _负测四器('负测·窗界之换行', '工具/负测_窗界之换行.py', '6/6')
 
 
 def chk_fenliang_neg():

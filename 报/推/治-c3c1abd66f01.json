@@ -1,0 +1,26 @@
+{
+ "ref": "治-c3c1abd66f01",
+ "sha": "c3c1abd66f01b3d9be23eeed7de43e16bc0c3e53",
+ "果": "成",
+ "红": [],
+ "main_after": "c3c1abd66f01b3d9be23eeed7de43e16bc0c3e53",
+ "时": "2026-11-11T01:26:20Z",
+ "run_url": "https://github.com/RobotSpa/bestseller/actions/runs/42938462552",
+ "因": "",
+ "试": 0,
+ "器红": [
+  "大审闸",
+  "日差哨",
+  "负测·日差哨"
+ ],
+ "逾": [],
+ "候": "c3c1abd66f01b3d9be23eeed7de43e16bc0c3e53",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 50.9,
+   "2": 88.16,
+   "3": 91.06
+  }
+ }
+}

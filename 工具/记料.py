@@ -346,8 +346,9 @@ def _满分之段(文):
     return '\n'.join('%d｜%s' % (k + 1, L[k]) for k in range(起, 止)).rstrip()
 
 
-def _满分之问(构思, root=ROOT):
-    """诸构思之「满分之问」全段（带行号）→ [(源, 片)]：三种写法与其比在前（每份一片），拍表（「|」起之行）殿後——截自尾起先截拍表。"""
+def _满分之问(构思, root=ROOT, 表只=None):
+    """诸构思之「满分之问」全段（带行号）→ [(源, 片)]：三种写法与其比在前（每份一片），拍表（「|」起之行）殿後——截自尾起先截拍表。
+    ★X97（446）表只：只此诸档附拍表（胜稿）；嫁大进之稿只给三种写法与其比（所嫁之拍行家评「## 大进」已载）。"""
     文们, 表们 = [], []
     干 = '甲乙丙丁戊己庚辛壬癸'
     for p in sorted(构思, key=lambda p: (干.find((re.search(r'起草_(.)_构思', p) or [None, ''])[1]) % 99, p)):
@@ -360,12 +361,12 @@ def _满分之问(构思, root=ROOT):
         文 = [l for l in L if l not in 表]
         头 = '〔%s:%s—%s·满分之问%s〕\n' % (rp, L[0].split('｜')[0], L[-1].split('｜')[0], '（拍表 %d 行殿後）' % len(表) if 表 else '')
         文们.append((rp, 头 + 行截('\n'.join(文), 800)))
-        if 表:
+        if 表 and (表只 is None or p in 表只):
             表们.append((rp, '〔%s·满分之问之拍表〕\n' % rp + 行截('\n'.join(表), 800)))
     return 文们 + 表们
 
 
-def _胜嫁之构思(构思, 章目, N, root=ROOT):
+def _胜嫁之构思(构思, 章目, N, root=ROOT, 只胜=False):
     """★X95②：胜稿与嫁大进之稿之构思档。蒙号＝稿号[(干序+N) % 宽]（造章.js 蒙号）；行家评认不出胜稿即原样返。"""
     t = 读(os.path.join(章目, '_行家评.md'), root)
     def 节(h):
@@ -375,7 +376,7 @@ def _胜嫁之构思(构思, 章目, N, root=ROOT):
     胜 = re.search('稿([%s])' % 号, 节('名次'))
     if not 胜:
         return 构思
-    要 = {胜.group(1)} | set(re.findall('稿([%s])' % 号, 节('大进')))
+    要 = {胜.group(1)} | (set() if 只胜 else set(re.findall('稿([%s])' % 号, 节('大进'))))
     干 = '甲乙丙丁戊己庚'
     宽 = len(构思)
     出 = [p for p in 构思 if (re.search(r'起草_(.)_构思', p) or [None, ''])[1] in 干
@@ -383,15 +384,25 @@ def _胜嫁之构思(构思, 章目, N, root=ROOT):
     return 出 or 构思
 
 
-def _轮记之审(p, root=ROOT):
-    """★X91③：轮记中「## …盲读…」「## …逻辑审…」之节全文（带行号；至下一「## 」止）→ [(源, 片)]；无者 []。"""
+def _轮记之审(p, root=ROOT, 末回=False):
+    """★X91③：轮记中「## …盲读…」「## …逻辑审…」之节全文（带行号；至下一「## 」止）→ [(源, 片)]；无者 []。
+    ★X97（446）末回=True：同类（盲读／逻辑审）有後回者，前回只留判行（soft／hard／读误／粗体之判·各截 200），全文注 sed -n——
+    445 记席之料【七】二回逻辑审全节约 17KB、後回已复验前回之治。"""
     t = 读(p, root)
     if not t:
         return []
     L = t.split('\n'); 出 = []
     头们 = [i for i, l in enumerate(L) if l.startswith('## ')] + [len(L)]
-    for a, b in zip(头们, 头们[1:]):
-        if re.search('盲读|逻辑审', L[a]):
+    节们 = [(a, b) for a, b in zip(头们, 头们[1:]) if re.search('盲读|逻辑审', L[a])]
+    类 = lambda a: '盲读' if '盲读' in L[a] else '逻辑审'
+    for k, (a, b) in enumerate(节们):
+        前 = 末回 and any(类(a2) == 类(a) for a2, _ in 节们[k + 1:])
+        if 前:
+            判 = [(i, l) for i, l in enumerate(L[a + 1:b], a + 1)
+                  if re.match(r'\s*[-*]?\s*(\*\*|soft|hard|HARD|SOFT|读误|致命|结论|判)', l)]
+            出.append((p, '〔补·%s:%d—%d·%s（前回·只留判行；全文 sed -n %d,%dp）〕\n' % (p, a + 1, b, L[a][3:].strip(), a + 1, b) +
+                       '\n'.join('%d｜%s' % (i + 1, 截(l, 200)) for i, l in 判)))
+        else:
             出.append((p, '〔补·%s:%d—%d·%s〕\n' % (p, a + 1, b, L[a][3:].strip()) +
                        '\n'.join('%d｜%s' % (i + 1, 截(l, 600)) for i, l in enumerate(L[a:b], a) if l.strip())))
     return 出
@@ -648,11 +659,13 @@ def 汇(N, root=ROOT):
          ('\n'.join('%s（%d 字节）' % (os.path.relpath(p, root), os.path.getsize(p)) for p in 构思) or '（无）'))]))
     # ★1020 X36①：诸构思之「满分之问」全段（三种写法与其比在前、拍表殿後）
     # ★X91③（434）：轮记之盲读、逻辑审全节先列（记席据之写回执§四、创作记录——旧只给目，432 记席多一回读 13—95 行）
-    轮 = _轮记之审(os.path.join(章目, '_轮记.md'), root)
+    轮 = _轮记之审(os.path.join(章目, '_轮记.md'), root, 末回=N >= 446)
     # ★X95②（440）：满分之问只给胜稿与嫁大进之稿之构思（行家评「## 名次」首稿＋「## 大进」所引之稿；蒙号照造章.js 之轮转）——
     #   余稿只列档名（〔构思〕已列）；认不出者照旧全给（⛔缺料）
     取 = _胜嫁之构思(构思, 章目, N, root) if (构思 and N >= 440) else 构思
-    满 = _满分之问(取, root) if 取 else []
+    # ★X97（446）：拍表只附胜稿之构思（嫁稿之拍行家评「## 大进」已载）——445【七】拍表三份约 7KB
+    胜们 = _胜嫁之构思(构思, 章目, N, root, 只胜=True) if (构思 and N >= 446) else None
+    满 = _满分之问(取, root, 表只=胜们 if 胜们 and len(胜们) < len(取) else None) if 取 else []
     if 满:
         满[0] = (满[0][0], '〔补·诸构思之「满分之问」全段（%d 份%s；三种写法与其比在前，拍表殿後——截自尾起先截拍表）〕\n' % (
             len(取), '·只胜稿与嫁大进之稿（X95）：余 %d 份只列档名，要时 sed -n' % (len(构思) - len(取)) if len(取) < len(构思) else '') + 满[0][1])
@@ -1067,6 +1080,14 @@ def 自测():
     _c = sorted(glob.glob(os.path.join(ROOT, _目, '起草_*_构思.md')))
     共 += 1; ok += ([os.path.basename(x) for x in _胜嫁之构思(_c, _目, 439)] == ['起草_丁_构思.md', '起草_丙_构思.md']
                    and _胜嫁之构思(_c, os.path.join('版本', '无此章'), 439) == _c) if len(_c) == 5 else 0
+    # ㉗★X97（446）：前回之审只留判行、拍表只附胜稿——钉 445（逻辑审二回、盲读二回；稿二胜＝乙）
+    _轮5 = _轮记之审(os.path.join('版本', '第445章', '_轮记.md'), 末回=True)
+    _c5 = sorted(glob.glob(os.path.join(ROOT, '版本', '第445章', '起草_*_构思.md')))
+    _取5 = _胜嫁之构思(_c5, os.path.join('版本', '第445章'), 445); _胜5 = _胜嫁之构思(_c5, os.path.join('版本', '第445章'), 445, 只胜=True)
+    _满5 = _满分之问(_取5, 表只=_胜5)
+    共 += 1; ok += (len(_轮5) == 4 and sum('前回' in x[1].split('\n')[0] for x in _轮5) == 2
+                    and sum(len(x[1].encode()) for x in _轮5) < sum(len(x[1].encode()) for x in _轮记之审(os.path.join('版本', '第445章', '_轮记.md'))) * 0.75
+                    and len(_胜5) == 1 and sum('拍表〕' in x[1] for x in _满5) == 1) if len(_c5) == 5 else 0
     print('记料·自测 %d/%d（%d 之记料 %d 字节；八倍之章、全册在场 %d 字节·头 %d；399 %d 字节；限 %d）' % (
         ok, 共, 末, len(t末.encode()), 胀, _头(胀文), len(t399.encode()), 限))
     return ok == 共

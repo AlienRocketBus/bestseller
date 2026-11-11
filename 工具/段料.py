@@ -100,6 +100,10 @@ def 汇(a, b, root=ROOT, 出=None, 顶=限):
             段.append(('前文·第%d章白文（全）' % k, open(f, encoding='utf-8').read()))
     段.append(('叫绝之拍库（全）', 读('设定/叫绝之拍库.md')))
     段.append(('段案之格', 格))
+    # ★1111（W111·441 段料 159KB）：逾顶先舍 a-2 章之白文（a-1 章仍全；a-2 章由立席 sed -n 另读其所须之行）——⛔舍诸账
+    if 顶 and sum(len((t or '').encode()) for _, t in 段) > 顶 - 2048:
+        舍名 = '前文·第%d章白文（全）' % (a - 2)
+        段 = [(n, t) if n != 舍名 else ('前文·第%d章白文（逾顶舍之）' % (a - 2), '（段料逾 %d KB·坑③：本章白文舍去；须者 sed -n 另读 %s）' % (顶 // 1024, os.path.relpath(章料.章档(a - 2, root) or '', root))) for n, t in 段]
     文 = ['# 第%d—%d章·段料（工具/段料.py 零 token 汇；设计席只读此档，料外只许 grep 核一处、上下三行）\n' % (a, b)]
     for 名, t in 段:
         文.append('## 〔%s〕\n\n%s\n' % (名, (t or '（无）').strip()))

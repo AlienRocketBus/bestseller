@@ -129,6 +129,21 @@ def _换变(c):
     return re.sub(r'\$\{?([A-Za-z_]\w*)\}?', lambda m: 变.get(m.group(1), m.group(0)), c) if 变 else c
 
 
+def 是写稿(x):
+    """★X96（1111）：一个 tool_use 是否写稿档（起草_<名>.md，⛔_构思.md）——Write 之 file_path 或 Bash 之 > 导向（先剔 heredoc 之体）。"""
+    if not isinstance(x, dict) or x.get('type') != 'tool_use':
+        return False
+    i = x.get('input') or {}
+    if x.get('name') in ('Write', 'Edit', 'MultiEdit'):
+        f = i.get('file_path') or ''
+        return bool(re.search(r'起草_[^/]+\.md$', f)) and not f.endswith('_构思.md')
+    if x.get('name') != 'Bash':
+        return False
+    c = _换变(_剔体(i.get('command') or ''))
+    return bool(re.search(r'>\s*["\']?[^\s"\'<>|;&]*起草_(?:(?!_构思)[^\s/"\'<>|;&])+\.md(?!\S)', c)) and bool(
+        [m for m in re.findall(r'>\s*["\']?([^\s"\'<>|;&]*起草_[^\s/"\'<>|;&]+\.md)', c) if not m.endswith('_构思.md')])
+
+
 def 是建构思(x):
     """★1020 W53·X26：一个 tool_use 是否写构思档（起草_<名>_构思.md）。
     认：Write／Edit／MultiEdit 之 file_path；Bash 之 >／>>／tee（先剔 heredoc 之体：体里之字⛔误认；heredoc 在前、导向在後亦认）、
@@ -173,6 +188,7 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
     起 = 止 = ''
     起全 = None
     构思时们 = []
+    构思稿回 = []
     用, 序, 模, 终, 截 = {}, [], {}, {}, set()
     for l in open(f, encoding='utf-8'):
         try:
@@ -205,6 +221,7 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
                         可见 += len(json.dumps(x.get('input'), ensure_ascii=False))
                         if ts and 是建构思(x):
                             构思时们.append(ts)
+                            构思稿回.append(any(是写稿(y) for y in c))   # ★X96（1111）：此回是否同写稿——最长隔止於稿回＝写稿之思，止於构思回＝排构思之思
                 elif x.get('type') == 'text' and e.get('type') == 'assistant':
                     可见 += len(x.get('text') or '')
                 elif x.get('type') == 'tool_result':
@@ -214,6 +231,9 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
              写5m=sum((u.get('cache_creation') or {}).get('ephemeral_5m_input_tokens', 0) for u in 用.values()),
              构思=_分(起全, 构思时们[0]) if (起全 and 构思时们) else None,
              构思隔=max(_分(a, b) for a, b in zip([起全] + 构思时们, 构思时们)) if (起全 and 构思时们) else None)
+    if 起全 and 构思时们:   # ★X96：最长隔止於哪一回（稿回／构思回）
+        隔们 = [_分(a, b) for a, b in zip([起全] + 构思时们, 构思时们)]
+        r['构思隔止'] = '稿回' if 构思稿回[隔们.index(max(隔们))] else '构思回'
     for k, key in 项:
         r[k] = sum(u.get(key, 0) for u in 用.values())
     r['全'] = r['新'] + r['建'] + r['读'] + r['出']
@@ -357,6 +377,7 @@ def 印(行, rid=None, 档们=None):
     print('  合计：美元 $%.2f｜来回 %d｜全量 %d｜缓存读 %d｜产出 %d｜Σ末回 %d' % (s['金'], s['回'], s['全'], s['读'], s['出'], s['末']))
     # ★1020 W53·X26：执笔令 N≥398「首条消息即建构思档、想定一样追记一样」——首落逾五分、诸写最长隔逾十分即未守
     #   （392—397：首落中位 37.9 分；二十一回撞 128k 回回在首落之前。只量首落者，首回建档首、再想四十分一气写出，仍报✓——故并量最长隔）
+    止 = {r['名']: r.get('构思隔止') for r in 行}
     for 键, 题, 界, 由 in (('构思', '构思首落−席起', 构思之界, '首条消息即建之令未守'),
                          ('构思隔', '构思诸写之最长隔', 构思隔之界, '在思考里排全章——想定一样追记一样之令未守')):
         构 = sorted((r[键], r['名']) for r in 行 if r.get(键) is not None)
@@ -365,7 +386,7 @@ def 印(行, rid=None, 档们=None):
         逾 = [(v, n) for v, n in 构 if v > 界]
         print('  %s（分）：%d 席｜中位 %.1f｜最长 %.1f（%s）%s' % (
             题, len(构), 构[len(构) // 2][0] if len(构) % 2 else (构[len(构) // 2 - 1][0] + 构[len(构) // 2][0]) / 2, 构[-1][0], 构[-1][1],
-            ('｜⛔逾 %d 分 %d 席：%s（%s）' % (界, len(逾), '、'.join('%s %.1f' % (n, v) for v, n in 逾), 由)) if 逾 else '｜✓俱在 %d 分内' % 界))
+            ('｜⛔逾 %d 分 %d 席：%s（%s）' % (界, len(逾), '、'.join('%s %.1f%s' % (n, v, ('·止於' + 止[n]) if 键 == '构思隔' and 止.get(n) else '') for v, n in 逾), 由)) if 逾 else '｜✓俱在 %d 分内' % 界))
     if s['截']:   # ★1020 W53·X26：撞 128k 而截（stop_reason=max_tokens）——392—397 三十四席 21 回、15 席；截下之思即废（每回 128k 产出约 $2.6）
         print('  ⛔撞产出之顶而截（max_tokens）：%d 回／%d 席：%s' % (s['截'], sum(1 for r in 行 if r.get('截')),
               '、'.join('%s %d' % (r['名'], r['截']) for r in 行 if r.get('截'))))
@@ -541,6 +562,10 @@ def 自测():
         丁 = 席('丁', [('2026-10-20T11:00:12Z', [读料, B("cat > 版本/第398章/起草_丁_构思.md <<'EOF'\n# 执笔·丁之构思\nEOF")]),
                        ('2026-10-20T11:40:12Z', 追('丁', '魂：…\n## 满分之问\n…\n| 一 | 到 | 纸 | 句 |'))])
         共 += 1; ok += (丁['构思'] == 0.2 and 丁['构思隔'] == 40.0)               # 验席所逮：首落⛔量得出、隔量得出
+        共 += 1; ok += (丁.get("构思隔止") == "构思回" and 甲.get("构思隔止") == "构思回")
+        辛 = 席('辛', [('2026-10-20T11:00:12Z', 首), ('2026-10-20T11:03:00Z', 追('辛', '| 一 | 到 | 纸 | 句 |')),
+                       ('2026-10-20T11:23:00Z', [B("cat >> 版本/第398章/起草_辛_构思.md <<'EOF'\n③\nEOF && cat > 版本/第398章/起草_稿三.md <<'EOF'\n> 起草_x_构思.md\nEOF")])])
+        共 += 1; ok += (辛['构思隔'] == 20.0 and 辛.get('构思隔止') == '稿回' and not 是写稿(追('辛', '一')) and not 是写稿(读料))   # ★X96：止於稿回认得；只追记构思、读料⛔作稿
         丙 = 席('丙', [('2026-10-20T11:03:00Z', 读料)])
         # 撞顶（max_tokens）之回：同一 id 拆数行只计一回；stop_reason 他值⛔计
         截档 = os.path.join(t2, '截.jsonl')
@@ -605,7 +630,7 @@ def 自测():
         共 += 1; ok += (值('甲') == ('0.2', '5.0') and 值('乙') == ('36.0', '36.0') and 值('丁') == ('0.2', '40.0') and 值('丙') == ('—', '—'))
         汇 = '\n'.join(o)
         共 += 1; ok += ('构思首落−席起（分）：3 席' in 汇 and '⛔逾 5 分 1 席：乙 36.0' in 汇
-                        and '构思诸写之最长隔（分）：3 席' in 汇 and '⛔逾 10 分 2 席：乙 36.0、丁 40.0' in 汇
+                        and '构思诸写之最长隔（分）：3 席' in 汇 and '⛔逾 10 分 2 席：乙 36.0·止於构思回、丁 40.0·止於构思回' in 汇
                         and '⛔撞产出之顶而截（max_tokens）：2 回／1 席：戊 2' in 汇)
     finally:
         shutil.rmtree(t2)

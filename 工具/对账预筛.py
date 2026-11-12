@@ -68,7 +68,15 @@ def 汉章行(s):
             k = re.match(r'(\s*(?:至|—|–|～|~)\s*)(.*)$', 区)
             v = 汉数(k.group(2))
             区 = k.group(1) + str(v) if v else 区
-        续 = re.sub(r'、(%s)' % _汉, lambda x: ('、：%d' % 汉数(x.group(1))) if 汉数(x.group(1)) else x.group(0), m.group(5)) if m.group(5) else ''
+        # ★X100（450 封前）：续列之「、N」若是章号（N≥300 且远逾前行逾一百五十——今章之白文 ≤二百行）即止续、原样留：
+        # 449 骨记「四百零三：三十五、四百四十一、四百四十五之日子」旧析成 403:441、403:445 而印假误
+        续 = ''; 前 = max(行, v if 区 and (v := 汉数(re.match(r'\s*(?:至|—|–|～|~)\s*(.*)$', m.group(4)).group(1))) else 0)
+        for k, x in enumerate(re.findall(r'、(%s)' % _汉, m.group(5) or '')):
+            w = 汉数(x)
+            if w and w >= 300 and w > 前 + 150:
+                续 += ''.join('、' + y for y in re.findall(r'、(%s)' % _汉, m.group(5))[k:]); break
+            续 += ('、：%d' % w) if w else '、' + x
+            前 = max(前, w or 0)
         return '%d%s%d%s%s' % (章, m.group(2), 行, 区, 续)
     s = _汉章行式.sub(换, s)
     # 本章之引「（：三十九）」与续前之引「、：七」（冒号前无章）

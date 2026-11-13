@@ -40,6 +40,32 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 #   ②--料 之验：须厚之章，段案本章「字数」之带不及暗厚即⛔红（其判在 段案验.须厚之带红·与 段案验 同一把）。
 #   ⛔N≤400 之判一格未动（须厚起 401）；⛔另造一把判：须厚之判直取 分量闸.须厚（与推闸同尺）。
 须厚起 = 401
+# ★1113 X105（453:7「潮了一小块」：段案 451-460 头⛔「潮」字，五稿、行家、逻辑审俱未逮，记席方见）：
+#   N≥455 起读本章所在段案之头（首「## NNN」之前）与本章一节之「⛔「X」字」之列，本章白文命中即致命红（合稿时即见）
+禁字起 = 455
+_禁字式 = re.compile(r'⛔「([^」]{1,4})」字')
+
+
+def 段案之禁字(n, root=ROOT):
+    """→ [字]：本章所在段案之头与本章一节所列「⛔「X」字」（去重、依次）。"""
+    for f in sorted(glob.glob(os.path.join(root, '设定', '段案', '[0-9]*-[0-9]*.md'))):
+        t = open(f, encoding='utf-8').read()
+        m = re.search(r'^## %d\s*$(.*?)(?=^## |\Z)' % n, t, re.M | re.S)
+        if m:
+            头 = re.split(r'^## \d+\s*$', t, maxsplit=1, flags=re.M)[0]
+            return list(dict.fromkeys(_禁字式.findall(头 + '\n' + m.group(1))))
+    return []
+
+
+def 禁字之红(白文, 字表):
+    """纯判：→ [(字, 行号, 句)]，白文命中段案所禁之字者。"""
+    出 = []
+    for i, ln in enumerate(白文.split('\n'), 1):
+        for z in 字表:
+            if z in ln:
+                k = ln.find(z)
+                出.append((z, i, ln[max(0, k - 12):k + 12]))
+    return 出
 
 
 def 须厚之料():
@@ -293,6 +319,12 @@ def 验(n, root=ROOT):
                       末='净重 %d｜%s线带底 %s' % (w, l or '?', 底 if 底 else '（总纲无本章之行）') + ('｜' + 厚语 if 厚语 else ''),
                       **({'要': [x.strip().replace('**', '') for x in 须语.split('\n') if x.strip()]} if 厚红 else {})))
         # ★1020 X40·驳席：「要」只於须厚之红时添——N≤400 之厚一行（含 --json）与改前逐字同
+        if n >= 禁字起:
+            字表 = 段案之禁字(n, root)
+            中 = 禁字之红(open(f, encoding='utf-8').read(), 字表)
+            出.append(dict(器='禁字', 类='致命', 红=bool(中), rc=0, 秒=0,
+                          末=('段案所禁「%s」' % '、'.join(字表) if 字表 else '段案无「⛔「X」字」之列') + ('｜命中 %d 处' % len(中) if 中 else '｜零命中'),
+                          要=['「%s」 :%d  …%s…' % x for x in 中[:8]]))
     for 器, 参 in 报:
         rc, out, 末, 秒 = 跑(器, 参, n)
         出.append(dict(器=器, 类='报', 红=rc != 0, rc=rc, 秒=round(秒, 1), 末=末[:200],
@@ -493,6 +525,10 @@ def 自测():
     共 += 1; ok += (a401['红'] and '治在事之择' in a401['末'] and a401.get('要') == ['⛔第401章非厚不可：桩']
                    and not a400['红'] and '须厚' not in a400['末'] and '要' not in a400
                    and len(b401) == 1 and '之底 ＜2900' in b401[0] and b400 == [])
+    # X105（1113）：段案头之禁字——453 v01「潮了一小块」回灌须红、改「湿」须绿；451-460 之列读得出「潮」
+    共 += 1; ok += (禁字之红('鞋帮潮了一小块。\n她没动。', ['潮']) == [('潮', 1, '鞋帮潮了一小块。')]
+                   and 禁字之红('鞋帮湿了一小块。', ['潮']) == [] and 禁字之红('潮', []) == []
+                   and '潮' in 段案之禁字(455) and 段案之禁字(9999) == [])
     print('造式验·自测 %d/%d' % (ok, 共))
     return ok == 共
 

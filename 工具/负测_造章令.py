@@ -73,7 +73,7 @@ const 交通 = (label, prompt) => {
 const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); return N >= 411 ? 交通(o.label, prompt) : 交(o.label) }
 const parallel = async (fs_) => Promise.all(fs_.map(f => f()))
 const AF = Object.getPrototypeOf(async function () {}).constructor
-new AF('args', 'agent', 'parallel', 'phase', 'log', src)(厚 === '厚' ? { 章: N, 重, 须厚: true } : { 章: N, 重 }, agent, parallel, () => {}, () => {})
+new AF('args', 'agent', 'parallel', 'phase', 'log', src)(Object.assign(厚 === '厚' ? { 章: N, 重, 须厚: true } : { 章: N, 重 }, process.env.ZJ_ARGS ? JSON.parse(process.env.ZJ_ARGS) : {}), agent, parallel, () => {}, () => {})
   .then(r => process.stdout.write(JSON.stringify({ 收, 果: r })))
   .catch(e => { process.stderr.write(String(e && e.stack || e)); process.exit(3) })
 """
@@ -111,8 +111,9 @@ _基二 = {"398轻病": "b043bdd206d3a656", "398中净": "73bdff10966a522d", "39
       "b3c8a8460bd40311", "410中病": "0053d64e255a2ba5", "410中病厚": "9d9437e0ddeb2db4", "410重净": "b3c8a8460bd40311"}
 
 
-def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False):
-    o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚, 空], capture_output=True, text=True, cwd=ROOT, timeout=60)
+def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False, 加=None):
+    o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚, 空], capture_output=True, text=True, cwd=ROOT, timeout=60,
+                       env=dict(os.environ, ZJ_ARGS=json.dumps(加, ensure_ascii=False)) if 加 else None)
     if o.returncode:
         raise RuntimeError('造章.js 渲染不起（%d %s %s）：%s' % (n, 重, 病, o.stderr.strip()[:300]))
     d = json.loads(o.stdout)
@@ -397,6 +398,14 @@ def 跑():
         记450 = (_令(渲(器, 450), '记席') or [{'prompt': ''}])[0]['prompt']
         记449 = (_令(渲(器, 449), '记席') or [{'prompt': ''}])[0]['prompt']
         R.append(('X100③·450 记令带「锚之律」；449 ⛔带', '【锚之律·X100③】' in 记450 and bool(记449) and 'X100③】' not in 记449))
+        # ⑫★1112 X101①：N≥452 承回写而 args 带 裁＋销 → ⛔派 盲读·2／逻辑审·2、只跑记席；缺销、或 451 → 照跑
+        def _验席(n, 加):
+            return [c['label'] for c in 渲(器, n, 加=加)]
+        承病 = {'承': {'回写': True}}
+        销452 = _验席(452, dict(承病, 裁='已亲治读误', 销=True))
+        R.append(('X101①·452 回写既承＋裁＋销 → 盲读·2／逻辑审·2 ⛔派、记席照跑；缺销或 451 → 照派',
+                  '盲读·2' not in 销452 and '逻辑审·2' not in 销452 and any(l.startswith('记席') for l in 销452)
+                  and '逻辑审·2' in _验席(452, dict(承病, 裁='已亲治读误')) and '逻辑审·2' in _验席(451, dict(承病, 裁='已亲治读误', 销=True))))
     except Exception as e:
         R.append(('⛔渲染不起：%s' % e, False))
     finally:

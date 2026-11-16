@@ -103,7 +103,7 @@ def _源():
             return 'https://github.com/%s/%s' % (m.group(1), m.group(2))
     except Exception:
         pass
-    return 'https://github.com/AlienRocketBus/bestseller'   # 1116 换号：RobotSpa 被 GitHub 标记（Actions 停、不许转仓）→ 复制至 AlienRocketBus
+    return 'https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml'   # 1116 换号（RobotSpa 被标记→复制至 AlienRocketBus）、同日作者改仓名 bestseller→此
 
 
 源 = _源()

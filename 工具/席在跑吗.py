@@ -370,7 +370,7 @@ def 自测():
         _c = [h.get('command', '') for e in (json.loads(_st).get('hooks') or {}).get('SessionStart', [])
               for h in e.get('hooks', []) if '00_总章.md' in h.get('command', '')]
         报('⑲之三 开头之钩：{ 守书之判 ; } || { …cat 总章… ; }、坐号⛔入 settings',
-           (len(_c) == 1 and _c[0].startswith('{ python3 /home/user/the-novel/工具/席在跑吗.py --守书之坐') and ' ; } || { ' in _c[0]
+           (len(_c) == 1 and _c[0].startswith('{ python3 "${CLAUDE_PROJECT_DIR:-/home/user/the-novel}"/工具/席在跑吗.py --守书之坐') and ' ; } || { ' in _c[0]
             and _c[0].rstrip().endswith('; }'), any(x in _st for x in 守书之号)), (True, False))
         # 1106·坑57：钩之输出逾限即被截、醒来只见前二千字——钩只印总章首段（至「## 一、」），首段须含痛之录且 ≤五千字
         _t = open(os.path.join(ROOT, '00_总章.md'), encoding='utf-8').read()

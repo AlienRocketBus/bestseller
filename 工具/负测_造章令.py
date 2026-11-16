@@ -22,6 +22,8 @@
     合流（B、C 二组之令）：411 执笔之【量】带「硬项只照 --量 所印之处」；记令带 记落.py 之末步、‹器:键› 诸占位、②之锚独立、主环之职栏⛔治；410 二者俱⛔带。
   ⑧X62（1027·X58 之余）：411 选之先跑一条命令并印诸稿净重（净重对表 --量）与诸稿亮点所引之原场（章料 --稿引）、限 5；合核胜稿之原场同器；
     逻辑审先跑并展正文亮点之引、限 8；410 之令照判俱红；选令之 --稿引 命令真跑於 410 之诸稿。
+  ⑨X88／X89（1106）：N≥431 之执笔令带「构思档只录定案」「前章原字之限」二条；N≤430 ⛔带。
+  ⑩X95①（1111）：N≥442 之记令带「一事一处」（本章之事详写只在全书记忆、回执与创作记录⛔复述）；N≤441 ⛔带。
   回灌：②③④之判拿 397 之令（旧病）去判，须一一红；上回之假前提（读料之 Bash 末接 cat > 构思）、「思考里只想眼下这一拍」之牵灌回须红；
     ①之指换键序须变——证其判咬得住，⛔一律判过。
 ⛔限：渲染证得了「令里写了」，证不了「席守了」——守没守归 `工具/费审.py` 之「构思」「构思隔」两列（首落逾五分、诸写最长隔逾十分即⛔）。
@@ -71,7 +73,7 @@ const 交通 = (label, prompt) => {
 const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); return N >= 411 ? 交通(o.label, prompt) : 交(o.label) }
 const parallel = async (fs_) => Promise.all(fs_.map(f => f()))
 const AF = Object.getPrototypeOf(async function () {}).constructor
-new AF('args', 'agent', 'parallel', 'phase', 'log', src)(厚 === '厚' ? { 章: N, 重, 须厚: true } : { 章: N, 重 }, agent, parallel, () => {}, () => {})
+new AF('args', 'agent', 'parallel', 'phase', 'log', src)(Object.assign(厚 === '厚' ? { 章: N, 重, 须厚: true } : { 章: N, 重 }, process.env.ZJ_ARGS ? JSON.parse(process.env.ZJ_ARGS) : {}), agent, parallel, () => {}, () => {})
   .then(r => process.stdout.write(JSON.stringify({ 收, 果: r })))
   .catch(e => { process.stderr.write(String(e && e.stack || e)); process.exit(3) })
 """
@@ -109,8 +111,9 @@ _基二 = {"398轻病": "b043bdd206d3a656", "398中净": "73bdff10966a522d", "39
       "b3c8a8460bd40311", "410中病": "0053d64e255a2ba5", "410中病厚": "9d9437e0ddeb2db4", "410重净": "b3c8a8460bd40311"}
 
 
-def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False):
-    o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚, 空], capture_output=True, text=True, cwd=ROOT, timeout=60)
+def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False, 加=None):
+    o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚, 空], capture_output=True, text=True, cwd=ROOT, timeout=60,
+                       env=dict(os.environ, ZJ_ARGS=json.dumps(加, ensure_ascii=False)) if 加 else None)
     if o.returncode:
         raise RuntimeError('造章.js 渲染不起（%d %s %s）：%s' % (n, 重, 病, o.stderr.strip()[:300]))
     d = json.loads(o.stdout)
@@ -382,6 +385,31 @@ def 跑():
         # ⑥★1020 X40：须厚入令——401（须厚:true）之执笔令带其硬项、选令带其底；400 传之亦⛔认；401 不传者⛔带
         for 名, ok in 须厚之条(器):
             R.append(('X40·' + 名, ok))
+        # ⑨★1106 X88／X89：N≥431 之执笔令带「构思档只录定案」「前章原字之限」；430 ⛔带（N≤430 之令一字不动）
+        执431 = _令(渲(器, 431), '执笔'); 执430 = _令(渲(器, 430), '执笔')
+        R.append(('X88／X89·431 执笔令 %d 席俱带「构思档只录定案」「前章原字之限」；430 之 %d 席⛔带' % (len(执431), len(执430)),
+                  bool(执431) and all('【构思档只录定案·X88】' in c['prompt'] and '【前章原字之限·X89】' in c['prompt'] for c in 执431)
+                  and bool(执430) and not any('X88】' in c['prompt'] or 'X89】' in c['prompt'] for c in 执430)))
+        # ⑩★1111 X95①：N≥442 之记令带「一事一处」；441 ⛔带（N≤441 之令一字不动）
+        记442 = (_令(渲(器, 442), '记席') or [{'prompt': ''}])[0]['prompt']
+        记441 = (_令(渲(器, 441), '记席') or [{'prompt': ''}])[0]['prompt']
+        R.append(('X95①·442 记令带「一事一处」；441 ⛔带', '【一事一处·X95①】' in 记442 and bool(记441) and 'X95①】' not in 记441))
+        # ⑪★1112 X100③：N≥450 之记令带「锚之律」（⛔句号、⛔破折）；449 ⛔带
+        记450 = (_令(渲(器, 450), '记席') or [{'prompt': ''}])[0]['prompt']
+        记449 = (_令(渲(器, 449), '记席') or [{'prompt': ''}])[0]['prompt']
+        R.append(('X100③·450 记令带「锚之律」；449 ⛔带', '【锚之律·X100③】' in 记450 and bool(记449) and 'X100③】' not in 记449))
+        # ⑫★1113 X106②：N≥455 之记令带「回执之思」（先骨後判、⛔通篇拟）；454 ⛔带
+        记455 = (_令(渲(器, 455), '记席') or [{'prompt': ''}])[0]['prompt']
+        记454 = (_令(渲(器, 454), '记席') or [{'prompt': ''}])[0]['prompt']
+        R.append(('X106②·455 记令带「回执之思」；454 ⛔带', '【回执之思·X106②】' in 记455 and bool(记454) and 'X106②】' not in 记454))
+        # ⑫★1112 X101①：N≥452 承回写而 args 带 裁＋销 → ⛔派 盲读·2／逻辑审·2、只跑记席；缺销、或 451 → 照跑
+        def _验席(n, 加):
+            return [c['label'] for c in 渲(器, n, 加=加)]
+        承病 = {'承': {'回写': True}}
+        销452 = _验席(452, dict(承病, 裁='已亲治读误', 销=True))
+        R.append(('X101①·452 回写既承＋裁＋销 → 盲读·2／逻辑审·2 ⛔派、记席照跑；缺销或 451 → 照派',
+                  '盲读·2' not in 销452 and '逻辑审·2' not in 销452 and any(l.startswith('记席') for l in 销452)
+                  and '逻辑审·2' in _验席(452, dict(承病, 裁='已亲治读误')) and '逻辑审·2' in _验席(451, dict(承病, 裁='已亲治读误', 销=True))))
     except Exception as e:
         R.append(('⛔渲染不起：%s' % e, False))
     finally:

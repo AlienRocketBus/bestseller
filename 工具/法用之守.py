@@ -2144,6 +2144,8 @@ def 报之读(root=ROOT, 取=True, 顶=3, 诸=None):
             诸 = 推报.诸报(root, 取=取, 类=('推', '演'), 并=(主枝,))
     except Exception as e:
         return ['⚠ 报之读不得：%s' % str(e)[:80]]
+    if 取 and _git(root, 'rev-parse', '--is-shallow-repository')[1].strip() == 'true':
+        _git(root, 'fetch', '-q', '--deepen=300', 'origin', 主枝, 限=120)   # 浅克隆：旧 sha 不可证入主→误印已消之红（1107 查得）
     坏 = 未消之坏(诸, lambda s: bool(re.fullmatch(r'[0-9a-f]{7,40}', str(s)))
                   and _git(root, 'merge-base', '--is-ancestor', s, 'refs/remotes/origin/%s' % 主枝)[0] == 0)
     行 = []

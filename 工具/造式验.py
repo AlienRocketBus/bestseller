@@ -40,6 +40,32 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 #   ②--料 之验：须厚之章，段案本章「字数」之带不及暗厚即⛔红（其判在 段案验.须厚之带红·与 段案验 同一把）。
 #   ⛔N≤400 之判一格未动（须厚起 401）；⛔另造一把判：须厚之判直取 分量闸.须厚（与推闸同尺）。
 须厚起 = 401
+# ★1113 X105（453:7「潮了一小块」：段案 451-460 头⛔「潮」字，五稿、行家、逻辑审俱未逮，记席方见）：
+#   N≥455 起读本章所在段案之头（首「## NNN」之前）与本章一节之「⛔「X」字」之列，本章白文命中即致命红（合稿时即见）
+禁字起 = 455
+_禁字式 = re.compile(r'⛔「([^」]{1,4})」字')
+
+
+def 段案之禁字(n, root=ROOT):
+    """→ [字]：本章所在段案之头与本章一节所列「⛔「X」字」（去重、依次）。"""
+    for f in sorted(glob.glob(os.path.join(root, '设定', '段案', '[0-9]*-[0-9]*.md'))):
+        t = open(f, encoding='utf-8').read()
+        m = re.search(r'^## %d\s*$(.*?)(?=^## |\Z)' % n, t, re.M | re.S)
+        if m:
+            头 = re.split(r'^## \d+\s*$', t, maxsplit=1, flags=re.M)[0]
+            return list(dict.fromkeys(_禁字式.findall(头 + '\n' + m.group(1))))
+    return []
+
+
+def 禁字之红(白文, 字表):
+    """纯判：→ [(字, 行号, 句)]，白文命中段案所禁之字者。"""
+    出 = []
+    for i, ln in enumerate(白文.split('\n'), 1):
+        for z in 字表:
+            if z in ln:
+                k = ln.find(z)
+                出.append((z, i, ln[max(0, k - 12):k + 12]))
+    return 出
 
 
 def 须厚之料():
@@ -248,8 +274,11 @@ def 红之要(器, out, 末):
 def 察之判(out, n):
     """检察官之印 → (红, 末, 要)：封版门 ERROR>0 或读不出即红；要取本章 ✗ 之行（至多五）。"""
     m = re.search(r'封版门:ERROR=(\d+)', out)
-    红 = (m is None) or int(m.group(1)) > 0
-    末 = ('ERROR=%s' % m.group(1)) if m else '封版门之印读不出'
+    # ★1110 W109（430—439 每章合稿必撞之误拦）：「回执未交」「第十一轮未过」二项係封版席与封版 --後 之产出，
+    #   合稿之时恒未有——只记「待封版」、⛔计致命；余之 ERROR 照红（封版门本身仍於 封版 --後 全计）
+    待封 = len(re.findall(r'(?m)^\s+(?:回执未交|第十一轮未过):', out))
+    红 = (m is None) or int(m.group(1)) - 待封 > 0
+    末 = ('ERROR=%s' % m.group(1) + ('（其中待封版 %d）' % 待封 if 待封 else '')) if m else '封版门之印读不出'
     要 = [l.strip()[:160] for l in out.split('\n') if re.match(r'\s*✗第%d章 \[' % n, l)][:5] if 红 else []
     return 红, 末, 要
 
@@ -290,6 +319,12 @@ def 验(n, root=ROOT):
                       末='净重 %d｜%s线带底 %s' % (w, l or '?', 底 if 底 else '（总纲无本章之行）') + ('｜' + 厚语 if 厚语 else ''),
                       **({'要': [x.strip().replace('**', '') for x in 须语.split('\n') if x.strip()]} if 厚红 else {})))
         # ★1020 X40·驳席：「要」只於须厚之红时添——N≤400 之厚一行（含 --json）与改前逐字同
+        if n >= 禁字起:
+            字表 = 段案之禁字(n, root)
+            中 = 禁字之红(open(f, encoding='utf-8').read(), 字表)
+            出.append(dict(器='禁字', 类='致命', 红=bool(中), rc=0, 秒=0,
+                          末=('段案所禁「%s」' % '、'.join(字表) if 字表 else '段案无「⛔「X」字」之列') + ('｜命中 %d 处' % len(中) if 中 else '｜零命中'),
+                          要=['「%s」 :%d  …%s…' % x for x in 中[:8]]))
     for 器, 参 in 报:
         rc, out, 末, 秒 = 跑(器, 参, n)
         出.append(dict(器=器, 类='报', 红=rc != 0, rc=rc, 秒=round(秒, 1), 末=末[:200],
@@ -299,7 +334,7 @@ def 验(n, root=ROOT):
 
 def 照整章(卡):
     """卡里「照 NNN」「NNN 之腔／原句」而全卡无「NNN:行」者 → [NNN]。"""
-    提 = set(re.findall(r'照\s*(\d{3})(?![\d:：])', 卡)) | set(re.findall(r'(?<![\d:：])(\d{3})\s*(?:之腔|原句|的原句|的腔)', 卡))
+    提 = set(re.findall(r'照\s*(\d{3})(?![\d:：])(?!\s*卡)', 卡))   # ★444：「照 447 卡」係照某章之卡、非照其白文（未写之章无白文可点） | set(re.findall(r'(?<![\d:：])(\d{3})\s*(?:之腔|原句|的原句|的腔)', 卡))
     return sorted(x for x in 提 if not re.search(r'(?<!\d)%s\s*[:：]\s*\d' % x, 卡))
 
 
@@ -387,9 +422,11 @@ def 自测():
     _察 = '  ✗第418章 [F007_打介词]行57: …我打那三处过。…\n  封版门:ERROR=1(须0) REVIEW=6(人工裁定)'
     共 += 1; ok += (察之判(_察, 418)[0] and len(察之判(_察, 418)[2]) == 1 and 察之判('  封版门:ERROR=0(须0)', 420) == (False, 'ERROR=0', [])
                   and 察之判('乱', 420)[0] and 察起 == 420)
+    _待 = '  ✗第439章《一格》:\n      第十一轮未过:未见 …\n      回执未交:当章…\n  封版门:ERROR=2(须0) REVIEW=7(人工裁定)'
+    共 += 1; ok += (not 察之判(_待, 439)[0] and 察之判(_待.replace('ERROR=2', 'ERROR=3'), 439)[0])   # ★1110 W109：待封版二项⛔计致命、余者照红
     共 += 1; ok += all(os.path.exists(os.path.join(ROOT, '工具', x[0] + '.py')) for x in 致命 + 报)
     共 += 1; ok += (线(381) == '暗' and 线(380) == '主' and 线(404) == '主' and 线(405) == '暗' and 线(999) is None)   # 右栏之章亦认
-    共 += 1; ok += (照整章('点户照 268 原句，腔照 211') == ['211', '268'] and 照整章('照 268 原句（268:61—77）') == [])
+    共 += 1; ok += (照整章('点户照 268 原句，腔照 211') == ['211', '268'] and 照整章('照 268 原句（268:61—77）') == [] and 照整章('照 447 卡，卡未定取挪晚') == [])
     import tempfile as _tf9                   # ★1027 X58：二档之料——点明彼档而彼档缺即红；彼档在、旧之一档 → 不红
     with _tf9.TemporaryDirectory() as _d9:
         open(os.path.join(_d9, '_料.md'), 'w', encoding='utf-8').write('# 料\n## 〔本料二档〕\n前文在 `版本/第9章/_料_前文.md`\n')
@@ -488,6 +525,10 @@ def 自测():
     共 += 1; ok += (a401['红'] and '治在事之择' in a401['末'] and a401.get('要') == ['⛔第401章非厚不可：桩']
                    and not a400['红'] and '须厚' not in a400['末'] and '要' not in a400
                    and len(b401) == 1 and '之底 ＜2900' in b401[0] and b400 == [])
+    # X105（1113）：段案头之禁字——453 v01「潮了一小块」回灌须红、改「湿」须绿；451-460 之列读得出「潮」
+    共 += 1; ok += (禁字之红('鞋帮潮了一小块。\n她没动。', ['潮']) == [('潮', 1, '鞋帮潮了一小块。')]
+                   and 禁字之红('鞋帮湿了一小块。', ['潮']) == [] and 禁字之红('潮', []) == []
+                   and '潮' in 段案之禁字(455) and 段案之禁字(9999) == [])
     print('造式验·自测 %d/%d' % (ok, 共))
     return ok == 共
 

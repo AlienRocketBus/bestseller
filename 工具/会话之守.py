@@ -10,7 +10,7 @@
   ① archive_session：**一律拦**。闲会话之机平台自收，归档零益而可杀活；须清理者作者於界面手为。
      settings.json 之 permissions.deny 另禁一道（两锁，一坏一在）。
   ② interrupt_session：本会话之转录须五分钟内对同一会话跑过 get_session（实时之状）方放——⛔凭旧状。
-  ③ create_session：云端心跳之锁（`工具/心跳.py`·四十五分）为他坐所持即拦——⛔同时两坐写同一章。
+  ③ create_session：云端心跳之锁（`工具/心跳.py`·心跳.限 分）为他坐所持即拦——⛔同时两坐写同一章。
      1024 起交棒⛔经总编辑另查——令含「第N章」之写书会话，本钩一并验：参须与 `接棒守.派之参` 逐键同（⛔手拟）、
      第N章云端已封即拦、第N-1章未入主枝即拦（新会话自主枝起，见不到前章）；总编辑醒来只照【派】所带之参调一回。
      1027 A2·死锁之治：N-1 未入主枝而其报红／拒／败（或缺章标而 备份/存底 有其封版之提交）——封版之坐已死则无人治之、书停；
@@ -96,6 +96,15 @@ def 锁之主():
 def 章号(令):
     m = re.search(r'第\s*(\d+)\s*章', 令 or '')
     return int(m.group(1)) if m else None
+
+
+def _心跳限分():
+    try:
+        sys.path.insert(0, os.path.join(ROOT, '工具'))
+        import 心跳
+        return 心跳.限 // 60
+    except Exception:
+        return 25
 
 
 def 前派(转录, 章, 今=None, 限=3600, 排=None, 近=20):
@@ -289,7 +298,7 @@ def 判(入, 转录读=新查, 锁读=锁之主, 我=None, 查=None, 首言=None
         我 = _号(我 if 我 is not None else 我之坐())
         if 持 and _号(坐) != 我:
             return True, ('⛔会话之守：第%s章之锁为他坐（%s）所持——⛔另开会话同写（402 之失）。'
-                          '先 get_session 看那一坐实时之状；其办毕撤锁（`心跳.py --收`）或逾四十五分不报，方可开。' % (章, 坐 or '未名'))
+                          '先 get_session 看那一坐实时之状；其办毕撤锁（`心跳.py --收`）或逾 %d 分不报，方可开。' % (章, 坐 or '未名', _心跳限分()))
         return False, ''
     return False, ''
 

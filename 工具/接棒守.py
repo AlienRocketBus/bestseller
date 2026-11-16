@@ -21,7 +21,7 @@
   python3 工具/接棒守.py --哨              # 定时之保用：有人在写或交棒中 rc=0；停写 rc=2 并印开写书会话之令
   python3 工具/接棒守.py --派令 404 [--重]  # 交棒：印 create_trigger 之参（run_once_at 已算）；总编辑醒即以其中之参原样 create_session 一回
                                            #   403 未入主枝而其报红／拒／败（或缺章标而 备份/存底 有其封版之提交）→ 自出【重派】之参：自「章-403」（或其源）起、先治（1027 A2）
-  python3 工具/接棒守.py --巡              # 停书之巡（总编辑之坐·每二十分）：印「止」或【重派】之参（rc 0 止｜2 派｜3 解停）
+  python3 工具/接棒守.py --巡              # 停书之巡（总编辑之坐·每二十分）：印「止」或【重派】之参（rc 0 止｜2 派｜3 解停｜4 封而逾三十分未入主·GitHub 停摆）
   python3 工具/接棒守.py --自测
 """
 import os as _o, sys as _s
@@ -185,6 +185,33 @@ def 巡判(d, 今, 限, 停在=True, 末=None):
     return '派', (号 if 号 is not None else 末), 由
 
 
+合入之界分 = 30   # 封版之章逾此分未入主枝 → 停书（GitHub 停摆·1116 实见：455 封於 10:25，GitHub 一时无报，心跳鲜而巡判止）
+
+
+def 合入之卡(d, 今=None, 标=None, 含=None, 时=None):
+    """心跳之章 N 鲜（封版之坐已跳 N+1、或新坐写 N）而第 N-1 章之封（章-(N-1)）逾 合入之界分 未入主 → 印停书之由；否则 ''。"""
+    try:
+        n = int(d.get('章')) - 1 if isinstance(d, dict) and d.get('章') not in (None, '暂停') else None
+    except (TypeError, ValueError):
+        n = None
+    if not n:
+        return ''
+    sha = (标 or 云端章标)(n)
+    if not sha or (含 or 主含)(n):
+        return ''
+    try:
+        t = (时 or (lambda s: int(subprocess.run(['git', 'log', '-1', '--format=%ct', s], cwd=ROOT, capture_output=True,
+                                                   text=True).stdout.strip() or 0)))(sha)
+    except Exception:
+        t = 0
+    分 = ((今 or int(time.time())) - t) // 60 if t else -1
+    if 0 <= 分 < 合入之界分:
+        return ''
+    return ('⛔ 停书：第%d章已封（章-%d %s）%s未入主枝——GitHub 之闸无果（多半 Actions 额度用光）。'
+            '即告作者「GitHub 跑不动了，多半是本月额度用光，请换号或等下月」；兜底 `python3 工具/推.py --直`（直推主枝须作者许）'
+            % (n, n, sha[:12], ('%d 分' % 分) if 分 >= 0 else '久'))
+
+
 def 巡():
     import 心跳
     在, d = 心跳._远()
@@ -202,6 +229,10 @@ def 巡():
             末 = None
     形, 号, 由 = 巡判(d if 在 else None, int(time.time()), 心跳.限, 停在=停在, 末=末)
     if 形 == '止':
+        卡 = 合入之卡(d)
+        if 卡:
+            print(卡)
+            return 4
         print('止')
         return 0
     print(由)
@@ -569,6 +600,12 @@ def 自测():
       and 巡判({'章': '暂停', '时': 4102444800, '坐': '暂停令'}, _今, _限)[0] == '止'
       and 巡判({'章': '暂停', '时': 4102444800, '坐': '暂停令'}, _今, _限, 停在=False)[0] == '解')
     _段巡 = src.split('def 巡():')[1].split('\ndef ')[0] if 'def 巡():' in src else ''
+    T('⑩之四 合入之卡：封逾三十分未入主→停书之报；未封／已入主／未逾→空',
+      '停书' in 合入之卡({'章': 456, '时': 1}, 今=10000, 标=lambda n: 'a' * 40, 含=lambda n: False, 时=lambda s: 10000 - 31 * 60)
+      and 合入之卡({'章': 456, '时': 1}, 今=10000, 标=lambda n: '', 含=lambda n: False, 时=lambda s: 0) == ''
+      and 合入之卡({'章': 456, '时': 1}, 今=10000, 标=lambda n: 'a' * 40, 含=lambda n: True, 时=lambda s: 0) == ''
+      and 合入之卡({'章': 456, '时': 1}, 今=10000, 标=lambda n: 'a' * 40, 含=lambda n: False, 时=lambda s: 10000 - 600) == ''
+      and 合入之卡({'章': None, '毕': 456}, 今=10000) == '' and 合入之卡({'章': '暂停'}, 今=10000) == '')
     T('⑩之三 巡之派参俱【重派】（越会话之守「一时内同章已派」之拦）、先 get_session 其坐、印「止」即止',
       '派之参(号, True, 治=治)' in _段巡 and 'get_session' in _段巡 and "print('止')" in _段巡
       and 派之参(455, True)['prompt'].startswith('【重派】'))

@@ -304,45 +304,6 @@ def 效账(root=ROOT):
     return 行
 
 
-def 方法账之草(W, 题, 平台, 总金, root=ROOT):
-    """★1113 X106①（451、452 二坐俱漏方法账升级链之行，皆由下一坐补）：章之简式起草时同草其行（零 token）——
-    件名（段案之重、日，正文之名）、所废之默、费（平台与 Run）、较旧之费（比上一行之 Run）俱自填；总编辑只改「进化」一格与效。
-    已有本 W 之行⛔重添。→ 所添之行或 None。"""
-    p = os.path.join(root, '设定', '方法账.md')
-    if not os.path.exists(p):
-        return None
-    t = open(p, encoding='utf-8').read()
-    if re.search(r'^\| %s·' % re.escape(W), t, re.M):
-        return None
-    m = re.search(r'第(\d+)章', 题)
-    名 = 题
-    if m:
-        n = int(m.group(1))
-        try:
-            import 章料
-            节 = 章料.段案行(n, root)
-        except Exception:
-            节 = ''
-        重 = (re.search(r'^- 重：(\S+)', 节, re.M) or [None, '?'])[1]
-        日 = (re.search(r'^- 日：(\S+)', 节, re.M) or [None, '?·?'])[1]
-        try:
-            import 造式验
-            档 = 造式验.正文档(n, root)
-        except Exception:
-            档 = None
-        章名 = os.path.basename(档).rsplit('_', 1)[-1][:-3] if 档 else '?'
-        名 = '第%d章（造式二代·%s·%s·%s）' % (n, 重, 日, 章名)
-    前 = re.findall(r'^\| W\d+·第(\d+)章[^|]*\|[^|]*\| [^|]*Run \$([\d.]+)', t, re.M)
-    较 = ''
-    if 前 and 总金:
-        k, v = 前[-1][0], float(前[-1][1])
-        较 = 'Run %+.1f%%（%s $%.2f）' % ((总金 - v) / max(v, 0.01) * 100, k, v)
-    费 = ('$%.2f（平台）' % 平台 if isinstance(平台, (int, float)) else '%s（平台）' % 平台) + '；Run $%.2f' % 总金
-    行 = '| %s·%s | 所废：无（常章一件）；进化（总编辑填：入账 X 号／已行带凭／无：由） | %s | 较旧：效——（总编辑填）；费——%s |' % (W, 名, 费, 较 or '（无前行可比）')
-    open(p, 'a', encoding='utf-8').write(('' if t.endswith('\n') else '\n') + 行 + '\n')
-    return 行
-
-
 def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平台=None):
     日 = 日 or time.strftime('%m%d', time.gmtime())
     出 = os.path.join(root, '设定', '复盘', '%s_%s_%s.md' % (日, W, 题))
@@ -461,10 +422,6 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
               '- 进化：（填一句：一条更省更好之改——入瑕疵总账 X 号带限，或「已行：」带凭（工具/<器>、法用#<法>、改单#G…），或「无：<所探之候与弃之之由>」；章之复盘⛔连三无）', '',
               '## 坑', '', '- 无新坑']
     open(出, 'w', encoding='utf-8').write('\n'.join(文))
-    if 简 and _类 == '一章':                     # ★1113 X106①：方法账升级链之行同草（⛔下一坐补）
-        _行 = 方法账之草(W, 题, 平台, 总金, root)
-        if _行:
-            print('✓ 方法账之行已草（设定/方法账.md 末行）——总编辑只改「进化」与「效」二格')
     print('✓ 起草 %s——%s' % (os.path.relpath(出, root), '三问三句与「浪费」之数须总编辑亲填（简式）' if 简 else '「产出」「与上回比」「无用功」之判「刀刃」「改进方案」「坑」须总编辑亲填'))
     return 出
 
@@ -577,12 +534,6 @@ def 自测():
         c5 = 进局([('1105_W90_第500章.md', 长由), ('1105_W91_第502章.md', 长由), ('1105_W92_第503章.md', 长由)])
         ok = ok and c1[0] is False and any('连三章' in x and '502造式' in x for x in c1[1]) and c2[0] and c3[0] is False \
             and any('连三章' in x and '第500章' in x for x in c3[1]) and c4[0] and c5[0]
-        # ★1113 X106①：方法账之行同草——添一行、件名自段案与正文、费比上一行之 Run；同 W 再草⛔重添
-        open(os.path.join(t, '设定', '方法账.md'), 'w', encoding='utf-8').write(
-            '| 件 | 法 | 费 | 判 |\n|---|---|---|---|\n| W1·第1章（造式二代·中·主·1·甲） | 所废：无 | $40.00（平台）；Run $40.00 | 较旧 |\n')
-        r1 = 方法账之草('W2', '第2章', 30.0, 30.0, t); r2 = 方法账之草('W2', '第2章', 30.0, 30.0, t)
-        ok = ok and r1 and r1.startswith('| W2·第2章（造式二代·') and 'Run -25.0%（1 $40.00）' in r1 and '进化（总编辑填' in r1 and r2 is None \
-            and open(os.path.join(t, '设定', '方法账.md'), encoding='utf-8').read().count('| W2·') == 1
     finally:
         shutil.rmtree(t)
     print('复盘·自测 %d/1' % int(ok))

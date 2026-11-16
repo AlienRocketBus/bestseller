@@ -1059,33 +1059,6 @@ def zonghe(n):
     return 0
 
 
-def 旧字残留(prev, txt, k=2):
-    """★1110 X93（435 总编辑改 :47「灶口里还红着」而亮点六仍书「灶口还红」，记席方逮）：
-    取末版→今版白文所删之处（含删口两侧），其 k 字串已从今之白文绝迹而仍见於【本章亮点】者，回 [(亮点之第几行, [串…])]。
-    纯判·可负测。只报不拦：亮点述物可用异於白文之称（436「记水那一页」），2 字之检有此假红——拦则误拦（丝滑主义）。"""
-    import difflib
-    分 = '【本章亮点】'
-    if not prev or 分 not in txt:
-        return []
-    旧白 = prev.split(分)[0]
-    新白, 新亮 = txt.split(分, 1)
-    sm = difflib.SequenceMatcher(None, 旧白, 新白, autojunk=False)
-    删 = set()
-    for op, a1, a2, _b1, _b2 in sm.get_opcodes():
-        if op in ('replace', 'delete'):
-            s = 旧白[max(0, a1 - k + 1):a2 + k - 1]
-            for i in range(len(s) - k + 1):
-                g = s[i:i + k]
-                if g not in 新白 and not any(c in '，。、：；！？「」『』…—\n \t' for c in g):
-                    删.add(g)
-    出 = []
-    for j, l in enumerate(新亮.split('\n')):
-        hit = sorted(g for g in 删 if g in l)
-        if hit:
-            出.append((j, hit))
-    return 出
-
-
 def selftest():
     """契约负测：每闸须能拦（正测）且不误拦（负测）。"""
     ok = fail = 0
@@ -1101,10 +1074,6 @@ def selftest():
     # ★★★★★2026-09-01 补·半角冒之闸（287第3轮所立）：
     # ★一个新加的硬项，须当场证三样：①它逮得住 ②它不误伤全角 ③它没把已封版之章打红。
     # ★★而第三样最要紧：新硬项若把二百八十七章打红一片，那不是修闸，是拆书。
-    # ★1110 X93·旧字残留：逮得住（435 之例）、不误报（亮点未引所删者）、无亮点即空
-    chk('旧字残留·逮得住', 旧字残留('灶口里还红着。\n【本章亮点】\n', '灶口埋着灰。\n【本章亮点】\n六·灶口还红\n') == [(1, ['还红'])])
-    chk('旧字残留·不误报', 旧字残留('灶口里还红着。\n【本章亮点】\n', '灶口埋着灰。\n【本章亮点】\n六·灰拨匀\n') == [])
-    chk('旧字残留·无亮点即空', 旧字残留('甲乙丙。', '甲丁丙。') == [])
     chk('半角冒·逮得住', score('他说:好。')[0].get('半角冒') == 1)
     chk('半角冒·不误伤全角', score('他说：好。')[0].get('半角冒') == 0)
     chk('半角冒·空文为零', score('')[0].get('半角冒') == 0)
@@ -1699,8 +1668,6 @@ def save(n, note=''):
         if _h10 and not force:
             halt = True
         glines.extend(_l10)
-        for _j, _g in 旧字残留(_prev, txt):
-            glines.append('   ⚠旧字残留（X93·只报）：白文已删「%s」，而【本章亮点】第 %d 行仍见——查亮点／骨记随改否' % ('」「'.join(_g), _j))
     except Exception as _e:
         glines.append('   ⚠法典闸未跑成：%s（不拦，然须查）' % _e)
     # 闸八·领轮闸（批114）：凡报「第N轮」者，须有领轮之基线（旧由 --下一轮 落；1027 十三轮汰，⛔再领——故第N轮之说明今恒拦）。

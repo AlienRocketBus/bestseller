@@ -116,23 +116,9 @@ def 复提之章(账号, d, 只封版=True):
         if 只封版 and not _已封版(n):
             continue
         t = d[n]
-        if any(k in t for k in 账[账号]) or 宽.search(t) or (只封版 and 严式(账号).search(_回执之文(n))):
+        if any(k in t for k in 账[账号]) or 宽.search(t):
             出.append(n)
     return 出
-
-
-# ★1111·445 封版逮（推闸「器红逾限」）：骨记漏报而回执已载其兑者，器只读正文、恒报红（大审440 #15「器之误」）——
-#   今兼读已封版章之回执，⛔而只认严式「SUS-X·本章复提：<据 ≥8 字>」（回执里「SUS-A 未复提」之类之论⛔误认）。
-def _回执之文(n):
-    out = []
-    for f in glob.glob(os.path.join(ROOT, '设定', '回执_*第%d章*' % n)):
-        out.append(io.open(f, encoding='utf-8', errors='replace').read())
-    return '\n'.join(out)
-
-
-def 严式(账号):
-    键 = re.escape(账号.split('-')[0] + '-' + 账号.split('-')[1])
-    return re.compile(r'(?m)' + 键 + r'·本章复提[：:]\s*(\S[^\n]{7,})')
 
 
 def 宽式(账号):
@@ -204,9 +190,6 @@ def 自测():
               not 宽式('SUS-A-那六天').search('悬念哨ＳＵＳ甲本章落一笔。')))
     # ⑨⛔牙·草稿不算：一章之回执不在盘上者，不许入数
     R.append(('⑨⛔草稿不算（回执不在即不数·330 之实）', _已封版(330) is False or _已封版(999) is False))
-    # ⑩★1111·回执之严式算、宽论⛔算
-    R.append(('⑩回执严式「SUS-C·本章复提：<据>」认得出', bool(严式('SUS-C-照着做').search('- SUS-C·本章复提：445:37—53 誊页一行一样、字大、暗处试认、日子空着'))))
-    R.append(('⑪⛔牙·回执里「SUS-A 未复提」之论不认', not 严式('SUS-A-那六天').search('SUS-A 未复提：本章没有位子，改挂 447')))
     # ⑥盘上真局：跑得动
     末, r = 判()
     R.append(('⑥盘上跑得动（末章 %d）' % 末, 末 > 300))

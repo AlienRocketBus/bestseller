@@ -99,7 +99,7 @@ def _源():
             return 'https://github.com/%s/%s' % (m.group(1), m.group(2))
     except Exception:
         pass
-    return 'https://github.com/RobotSpa/bestseller'   # 1106 仓改名 the-novel→bestseller（旧名 GitHub 自转）
+    return 'https://github.com/RobotSpa/the-novel'
 
 
 源 = _源()
@@ -287,7 +287,6 @@ def 候主(n, 限分=90, 隔=120, 查=None, 报=None, 进=None, 今=time.time, �
                   '`gh workflow run autopush.yml --ref 章-%s`（或 GitHub 之器 actions_run_trigger：workflow autopush.yml、ref 章-%s），'
                   '再 `python3 工具/接棒守.py --候主 %s`；仍无果（GitHub 停摆）方 `python3 工具/推.py --直`（审计之兜底·本地全闸）；治毕再交棒'
                   % (限分, n, n, n, n, n))
-            print('⛔⛔ 报作者（1108 作者令）：GitHub Actions 跑不动了——多半是本月额度（分钟）用光；即告作者「GitHub 跑不动了，多半是本月额度用光，请换号或等下月」。总编辑之坐当场告作者（对话＋推送通知）；写书之坐 create_trigger 入总编辑之会话（接棒守.总编辑）、令以「【报】GitHub 跑不动」起')
             print(存底包之语(n))
             return 2
         睡(隔)
@@ -484,7 +483,7 @@ def 自测():
     T('⑥之二 主含真查云端：章-N 之标为主枝之祖', all(k in 段主含 for k in ("'merge-base', '--is-ancestor'", "'refs/heads/章-%d'", 'ls-remote')))
     参 = 派之参(411, 名='第411章')
     T('⑦派之参：题、模、源、枝、令俱定形', 参['title'] == '镇冢秘术·第411章' and 参['model'] == 'claude-opus-5-5'
-      and 参['source_revision'] == 参['outcome_branch'] == 主枝 and 参['source_url'] == 源 and __import__('re').match(r'^https://github\.com/[^/]+/[^/]+$', 源)
+      and 参['source_revision'] == 参['outcome_branch'] == 主枝 and 'the-novel' in 参['source_url']
       and '第 411 章' in 参['prompt'] and '--跳 411' in 参['prompt'] and not 参['prompt'].startswith('【重派】'))
     T('⑦之二 重派：令首带【重派】、余同', 派之参(411, True, '第411章')['prompt'] == '【重派】' + 参['prompt'])
     T('⑦之五 题名实务：大审到期即名其段（1024 作者疑「怎么开始写 411」）',

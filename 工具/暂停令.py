@@ -254,7 +254,7 @@ def 解(言, root=ROOT):
     json.dump(d, open(os.path.join(root, 档), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print('✓ 暂停令已解（%s）：%s' % (d['解']['时'], 言))
     已印 = False
-    if root == ROOT:                    # 1022：停锁换空锁——守书三十分後见停写即派，书自续（自测之临时仓⛔动云端）
+    if root == ROOT:                    # 1022：停锁换空锁（自测之临时仓⛔动云端）；1116：巡坐⛔能派（平台之检），解毕须总编辑派下章——印 --派令（审 F3）
         try:
             import 心跳, 自走
             rc, m = 心跳.解停(自走.末章() + 1)   # 解停自印复开之参
@@ -264,6 +264,13 @@ def 解(言, root=ROOT):
             print('  ⚠ 解停锁未成（%s）——跑 `python3 工具/心跳.py --收`' % e)
     if not 已印:
         print('  守书之巡复开：%s；调毕 python3 工具/暂停令.py --守书已开' % 守书之参(True))
+    if root == ROOT:
+        try:
+            import 自走 as _自
+            _下 = _自.末章() + 1
+        except Exception:
+            _下 = 'N'
+        print('  派下章（⛔候巡坐：定时所唤之会话⛔能派）：`python3 工具/接棒守.py --派令 %s`、照其所印 create_trigger 一回（入总编辑之坐；在总编辑之坐则径以其参 create_session 并立限）' % _下)
     return True
 
 

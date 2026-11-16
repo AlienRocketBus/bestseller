@@ -120,7 +120,12 @@ def 心跳():
     if d.get('章') is None:
         return False, None, None
     差 = int(time.time()) - int(d.get('时', 0))
-    return (差 <= 45 * 60), d.get('章'), 差
+    try:
+        import 心跳 as _心
+        _限 = _心.限
+    except Exception:
+        _限 = 25 * 60
+    return (差 <= _限), d.get('章'), 差
 
 
 _未注 = object()   # ★**须与 None 分得开**：负测要注的正是「下一章根本没动静」这一局，

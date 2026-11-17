@@ -27,6 +27,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 自章 = 377   # 大师之制自 377 起生效；376 及以前用旧制，不追究
 
 
+def 拦而无稿(d, t):
+    """★1117：构思首有「无稿：…拦…」一行，且 _创作记录.md 载「缺档」、盘上起草_稿 ≥3 → 此席不查（席被拦非席之懒）；缺一即照查。"""
+    import glob as _g
+    if not re.search(r'^无稿[：:][^\n]*拦', t, re.M):
+        return False
+    记 = os.path.join(d, '_创作记录.md')
+    return (os.path.exists(记) and '缺档' in open(记, encoding='utf-8', errors='replace').read()
+            and len(_g.glob(os.path.join(d, '起草_稿*.md'))) >= 3)
+
+
 def 查(n, root=ROOT):
     d = os.path.join(root, '版本', '第%d章' % n)
     缺 = []
@@ -35,6 +45,8 @@ def 查(n, root=ROOT):
         if not os.path.exists(f):
             缺.append('构思·%s 不在' % 名); continue
         t = open(f, encoding='utf-8', errors='replace').read()
+        if 拦而无稿(d, t):                    # ★1117（459 丙·X111）：执笔被平台之检拦、明标无稿而稿已足——⛔假红
+            continue
         if len(re.sub(r'\s', '', t)) < 400:
             缺.append('构思·%s 不足 400 字' % 名)
         if '进化账所避' not in t:
@@ -119,6 +131,15 @@ def 自测():
         open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 立得住\n无\n## 合稿逐条回话\n1. 改\n')
         open(os.path.join(d, '起草_丙_构思.md'), 'w').write('进化账所避：某条\n' + '构' * 420)
         共 += 1; r = 全(tmp); ok += (400 in r and any('满分之问' in x for x in r[400]))
+        # ⑥之二★1117：丙被拦而明标无稿——创作记录有缺档且稿 ≥3 → 不查；稿不足 → 照红；无标 → 照红
+        open(os.path.join(d, '起草_丙_构思.md'), 'w').write('# 丙\n无稿：执笔被平台安全之检拦\n')
+        共 += 1; ok += any('构思·丙' in x for x in 全(tmp).get(400, []))          # 记无缺档、无稿 → 照红
+        open(os.path.join(d, '_创作记录.md'), 'a').write('稿五（缺档）\n')
+        for k in '一二三':
+            open(os.path.join(d, '起草_稿%s.md' % k), 'w').write('稿')
+        共 += 1; ok += not any('构思·丙' in x for x in 全(tmp).get(400, []))      # 俱足 → 不查
+        os.remove(os.path.join(d, '起草_稿三.md'))
+        共 += 1; ok += any('构思·丙' in x for x in 全(tmp).get(400, []))          # 稿只二 → 照红
         open(os.path.join(d, '起草_丙_构思.md'), 'w').write('进化账所避：某条\n满分之问：三路\n' + '构' * 420)
         # ⑥无「立得住」 → 红
         open(os.path.join(d, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 合稿逐条回话\n1. 改\n')

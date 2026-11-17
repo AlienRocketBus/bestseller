@@ -1,0 +1,19 @@
+{
+ "名": "F-旧基-旧",
+ "ref": "备份/待-F-旧基",
+ "sha": "208fda76a3a35734a2ab30043b6a4298ca7b3367",
+ "果": "过",
+ "红": [],
+ "时": "2026-11-17T15:12:03Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44110983168",
+ "候": "86e84bb289e697d1c8b3db3928af6fa2555d4adf",
+ "因": "",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 52.96,
+   "2": 71.36,
+   "3": 77.16
+  }
+ }
+}

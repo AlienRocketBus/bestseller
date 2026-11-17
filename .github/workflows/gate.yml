@@ -7,7 +7,8 @@
 #   取仓（1117 GitHub 化之审·F·法用#闸取仓之速）：备候与诸片之 checkout 係省取（partial clone·filter 见其 with：史与树全、档按需取——
 #     git 之义保其判全同）；降级＝全取（QUANQU 之 quan_qu：弃省取之仓、照旧式 fetch-depth 0 无 filter 重取）——省取不成、省取之仓备候败、
 #     片中懒取有败（GIT_TRACE2_EVENT 计之）即自降级而重跑，⛔因省取而红；片印「省取：懒取 n 回、败 m、s 秒」（可观）。
-#     全取之取（zai_shi）照 actions/checkout 之 RetryHelper：至多三回、回间随候 10—20 秒；所求之 sha 不在诸枝即专取之（同其 testRef 後之再取）。
+#     全取之取（zai_shi）照 actions/checkout 之 RetryHelper：至多三回、回间随候 10—20 秒；所求之 sha 不在诸枝即专取之（同其 testRef 後之再取）——
+#     係网取之再试（一取之败），⛔1027 所废之「机内取并再试」（主枝动则机内再取再并·今 API 重派 tries ≤ 2）。
 name: gate
 on:
   workflow_call:
@@ -44,12 +45,12 @@ env:
   REPORT: 备份/报
   QUANQU: |
     zai_shi() {
-      local i s
-      for i in 1 2 3; do
+      local n s
+      for n in 1 2 3; do
         "$@" && return 0
-        [ "$i" -lt 3 ] || return 1
+        [ "$n" -lt 3 ] || return 1
         s=$((10 + RANDOM % 11))
-        echo "::warning::全取之取第 $i 回不成——$s 秒後再试（照 actions/checkout 之 RetryHelper：至多三回、回间 10—20 秒）"
+        echo "::warning::全取之取第 $n 回不成——$s 秒後再试（照 actions/checkout 之 RetryHelper：至多三回、回间 10—20 秒）"
         sleep "$s"
       done
     }

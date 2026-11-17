@@ -1,14 +1,12 @@
 {
  "ref": "章-458",
  "sha": "8521b402f3b5de0eb3841a2fedaa70951366b6e5",
- "果": "败",
- "红": [
-  "⛔备候不成（因 merge）——未入片闸；看 run_url"
- ],
- "main_after": "a1adbadf227c4b975dac898294584f99a6450245",
- "时": "2026-11-17T11:16:49Z",
- "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44072418264",
- "因": "merge",
+ "果": "已在",
+ "红": [],
+ "main_after": "9054d83b71973e46dbe042713bb8c6881cf712f7",
+ "时": "2026-11-17T13:39:24Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44094733577",
+ "因": "gate",
  "试": 0,
  "器红": [],
  "逾": [],

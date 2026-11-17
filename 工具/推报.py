@@ -749,9 +749,10 @@ def 验乙(诸文, 钩):
     QQ = str((G.get('env') or {}).get('QUANQU') or '')
     if 省步 and 'quan_qu()' not in QQ:
         缺.append('⑱省取：gate 之 env 须有 QUANQU（quan_qu：降级全取之函）')
-    # ⑱之二 全取之取须再试（审·F 之治：旧 actions/checkout 之 fetch 经 RetryHelper 至多三回、回间随候 10—20 秒；降级之全取⛔劣於旧）
+    # ⑱之二 全取之取须再试（审·F 之治：旧 actions/checkout 之 fetch 经 RetryHelper 至多三回、回间随候 10—20 秒；降级之全取⛔劣於旧）——
+    #   网取之再试，⛔1027 所废「机内取并再试」（for i in 1 2 3 之并环·法用之守 ⑧ 之去证仍守其字）
     再试 = re.search(r'zai_shi\(\) \{(.*?)\n\}', QQ, re.S)
-    if 省步 and not (再试 and re.search(r'for i in 1 2 3; do', 再试.group(1)) and re.search(r'\$\(\(10 \+ RANDOM % 11\)\)', 再试.group(1))
+    if 省步 and not (再试 and re.search(r'for n in 1 2 3; do', 再试.group(1)) and re.search(r'\$\(\(10 \+ RANDOM % 11\)\)', 再试.group(1))
                     and re.search(r'sleep "\$s"', 再试.group(1))
                     and re.search(r"zai_shi git -c protocol\.version=2 fetch [^\n]*'\+refs/heads/\*:refs/remotes/origin/\*'", QQ)
                     and not re.search(r"(?<!zai_shi )git -c protocol\.version=2 fetch", QQ)):
@@ -1634,7 +1635,7 @@ def 自测():
         '片⛔计懒取之败': ('gate.yml', g.replace('quan_qu "$WANT" "片中懒取败 $BAI 回"', 'true')),
         '全取⛔再试': ('gate.yml', g.replace("&& zai_shi git -c protocol.version=2 fetch -q --prune", "&& git -c protocol.version=2 fetch -q --prune")),
         '全取再试⛔候': ('gate.yml', g.replace('        sleep "$s"\n', '')),
-        '全取再试二回': ('gate.yml', g.replace('for i in 1 2 3; do', 'for i in 1 2; do')),
+        '全取再试二回': ('gate.yml', g.replace('for n in 1 2 3; do', 'for n in 1 2; do')),
         '专取 sha ⛔再试': ('gate.yml', g.replace('|| zai_shi git -c protocol.version=2 fetch -q --no-tags', '|| git -c protocol.version=2 fetch -q --no-tags')),
         # B-v 驳：推主枝之短式（"$CAND:$MAIN"、${MAIN}、推本地同名之枝）旧式俱漏
         '演练推主枝·短式': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$CAND:$MAIN"\n          python3 工具/推报.py --落 "$D"')),

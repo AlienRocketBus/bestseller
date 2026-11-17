@@ -7,6 +7,7 @@
 #   取仓（1117 GitHub 化之审·F·法用#闸取仓之速）：备候与诸片之 checkout 係省取（partial clone·filter 见其 with：史与树全、档按需取——
 #     git 之义保其判全同）；降级＝全取（QUANQU 之 quan_qu：弃省取之仓、照旧式 fetch-depth 0 无 filter 重取）——省取不成、省取之仓备候败、
 #     片中懒取有败（GIT_TRACE2_EVENT 计之）即自降级而重跑，⛔因省取而红；片印「省取：懒取 n 回、败 m、s 秒」（可观）。
+#     全取之取（zai_shi）照 actions/checkout 之 RetryHelper：至多三回、回间随候 10—20 秒；所求之 sha 不在诸枝即专取之（同其 testRef 後之再取）。
 name: gate
 on:
   workflow_call:
@@ -42,15 +43,29 @@ env:
   MAIN: claude/the-novel-review-4dtuit
   REPORT: 备份/报
   QUANQU: |
+    zai_shi() {
+      local i s
+      for i in 1 2 3; do
+        "$@" && return 0
+        [ "$i" -lt 3 ] || return 1
+        s=$((10 + RANDOM % 11))
+        echo "::warning::全取之取第 $i 回不成——$s 秒後再试（照 actions/checkout 之 RetryHelper：至多三回、回间 10—20 秒）"
+        sleep "$s"
+      done
+    }
     quan_qu() {
       echo "::warning::省取降级·全取（$2）——照旧式 fetch-depth 0 无 filter 重取"
       cd "$GITHUB_WORKSPACE" || return 1
       find . -mindepth 1 -delete
       git init -q . && git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" && git config --local gc.auto 0 \
         && git config --local "http.$GITHUB_SERVER_URL/.extraheader" "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
-        && git -c protocol.version=2 fetch -q --prune --no-recurse-submodules origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' \
+        && zai_shi git -c protocol.version=2 fetch -q --prune --no-recurse-submodules origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' \
         || return 1
-      if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then git checkout -q --force --detach "$1"; else git checkout -q --force -B "$1" "refs/remotes/origin/$1"; fi
+      if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then
+        git cat-file -e "$1^{commit}" 2> /dev/null \
+          || zai_shi git -c protocol.version=2 fetch -q --no-tags --prune --no-recurse-submodules origin "$1" || return 1
+        git checkout -q --force --detach "$1"
+      else git checkout -q --force -B "$1" "refs/remotes/origin/$1"; fi
     }
     sheng_cang() { [ "$(git config --get remote.origin.promisor)" = true ]; }
     lan_qu() {
@@ -216,7 +231,7 @@ jobs:
             git config user.name autopush
             git config user.email autopush@users.noreply.github.com
             LI=1
-            if [ -f "$D/cand.bundle" ]; then git bundle unbundle "$D/cand.bundle" > /dev/null || LI=; fi
+            if [ -f "$D/cand.bundle" ]; then git bundle unbundle "$D/cand.bundle" > /dev/null && echo "· 候之包已解（${CAND:0:12}）" || LI=; fi
             git checkout -q -B "$MAIN" "$CAND" || LI=
             if [ "$(git rev-parse HEAD)" != "$CAND" ]; then echo "⛔片之树非候"; LI=; fi
             if [ -z "$LI" ]; then [ -n "$SHENG" ] && quan_qu "$WANT" "省取之仓立候不成" && continue; exit 2; fi

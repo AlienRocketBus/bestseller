@@ -662,7 +662,7 @@
   },
   {
    "id": "闸取仓之速",
-   "名": "GitHub 化之审·F：gate 诸片之取仓改 partial clone（filter blob:none），演练枝新旧两取并跑、诸片之报逐项全同方切（不劣），一片异即退",
+   "名": "GitHub 化之审·F：gate 备候与诸片之取仓改 partial clone（filter blob:limit=1m——⛔blob:none：诸报之 cat-file 逐档懒取，片懒取 145—164 回、片之算反慢；limit=1m 唯逾 1MB 之四档懒取，片懒取 0／2／9 回），演练枝新旧两取并跑、诸片之报逐项全同方切（不劣），一片异即退；降级全取之取再试三回（照 actions/checkout 之 RetryHelper）",
    "据": "设定/00_作者常令_不停之律.md 1117 作者令（迁 GitHub 之律：效不劣而求超）；设定/方法账.md GitHub 化之审",
    "限": 462,
    "证": [

@@ -342,12 +342,16 @@ def 钩之未推(root=ROOT):
 
 
 def 真钩(root=ROOT, env=None):
-    """真跑平台之 Stop 钩於 root（只读）→ (rc, 语) 或 None（钩不在·GitHub 之机）。自测与并跑对拍以之对 钩之未推 之复刻。"""
+    """真跑平台之 Stop 钩於 root（只读）→ (rc, 语) 或 None（钩不在·GitHub 之机）。自测与并跑对拍以之对 钩之未推 之复刻——
+    ★只报⛔计（1117 审）：平台之钩随平台改，其 rc 异於复刻只印 ⚠（推报 --自测 之末），⛔令 负测·autopush（读者可见之闸）红而拦 推.py --直 之兜底。崩 → (-1, 由)。"""
     if not os.path.exists(真钩之档):
         return None
-    e = {k: v for k, v in (env or os.environ).items() if k not in _定库之变}
-    r = subprocess.run(['bash', 真钩之档], cwd=root, input='{"stop_hook_active":false}', capture_output=True, text=True, timeout=60, env=e)
-    return r.returncode, (r.stderr or r.stdout).strip()
+    try:
+        e = {k: v for k, v in (env or os.environ).items() if k not in _定库之变}
+        r = subprocess.run(['bash', 真钩之档], cwd=root, input='{"stop_hook_active":false}', capture_output=True, text=True, timeout=60, env=e)
+        return r.returncode, (r.stderr or r.stdout).strip()
+    except Exception as x:
+        return -1, '真钩崩：%s' % str(x)[:120]
 
 
 def 泊(名, root=ROOT):
@@ -583,6 +587,12 @@ def _验钩(钩):
             缺.append('⑩钩：免闸之前缀须恰 章-*、治-*、备份/*（今 %s）' % (sorted(式) or 免))
         if not re.search(r'"\$N_ALL" -eq "\$N_STAGE"', 钩):
             缺.append('⑩钩：须所推俱係暂存方免（N_ALL == N_STAGE）')
+        # 1117（法用#停钩空转之审）：云端已有之 章-* ⛔挪⛔删（快进亦拦）——其拦须在免闸之判前（混主枝亦先拦）
+        挪 = re.search(r'case "\$R_SHA" in\s*\*\[!0\]\*\)\s*case "\$R_REF" in\s*refs/heads/章-\*\)\s*\[ "\$L_SHA" = "\$R_SHA" \] \|\| (\w+)=', 钩)
+        拦 = re.search(r'if \[ -n "\$%s" \]; then\n(?:[^\n]*\n){0,3}?\s*exit 1\n' % (挪.group(1) if 挪 else '_'), 钩)
+        免 = re.search(r'if \[ "\$N_ALL" -eq "\$N_STAGE" \]', 钩)
+        if not (挪 and 拦 and 免 and 拦.start() < 免.start()):
+            缺.append('⑫钩：云端已有之 章-*（远端 sha 非全 0）须⛔挪⛔删（快进亦拦·exit 1），且在免闸之判前')
     if 'python3 工具/全测并.py' not in (钩 or '') or '推闸之果' not in (钩 or ''):
         缺.append('⑪钩：余者照跑 全测并、落 推闸之果')
     return 缺
@@ -1320,7 +1330,11 @@ def 演钩(钩, 目):
          '主': 'HEAD %s refs/heads/%s %s\n' % (s, 主枝, z),
          '主＋治': 'HEAD %s refs/heads/%s %s\nHEAD %s refs/heads/治-abc %s\n' % (s, 主枝, z, s, z),
          '删治': '(delete) %s refs/heads/治-abc %s\n' % (z, s), '删主': '(delete) %s refs/heads/%s %s\n' % (z, 主枝, s),
-         '空': '', '章外': 'HEAD %s refs/heads/章外 %s\n' % (s, z)}
+         '空': '', '章外': 'HEAD %s refs/heads/章外 %s\n' % (s, z),
+         # 1117（法用#停钩空转之审）：云端已有之 章-*（远端 sha b·非全 0）挪（快进亦然）、删 → 拦；云端已有之 治-* 挪 → 拦；混主枝亦先拦（⛔跑闸）
+         '挪章': 'HEAD %s refs/heads/章-411 %s\n' % (s, 'b' * 40), '删章': '(delete) %s refs/heads/章-411 %s\n' % (z, 'b' * 40),
+         '挪治': 'HEAD %s refs/heads/治-abc %s\n' % (s, 'b' * 40), '主＋挪章': 'HEAD %s refs/heads/%s %s\nHEAD %s refs/heads/章-411 %s\n' % (s, 主枝, z, s, 'b' * 40),
+         '同章': 'HEAD %s refs/heads/章-411 %s\n' % (s, s), '章＋新治': 'HEAD %s refs/heads/章-412 %s\nHEAD %s refs/heads/治-abc %s\n' % (s, z, s, z)}
     出 = {}
     for 名, 入 in list(形.items()) + [('手跑', None)]:
         if os.path.exists(计):
@@ -1417,7 +1431,49 @@ def 演泊(目):
     _g(['push', '-q', 裸, V + ':refs/heads/' + 主枝], 新)
     o['真进'] = 快进(新)
     o['真后'], o['真当'], o['真泊枝'] = 钩(新), 当(新), 有枝(新, 名二)
+    o['挪'] = 演挪(目)
     return o
+
+
+def 旧钩之文(钩):
+    """pre-push 去 1117 之「云端已有之 章-*／治-* ⛔挪」二段 → 旧钩（并跑对拍之旧）。"""
+    钩 = re.sub(r'(?s)\n    case "\$R_SHA" in\n.*?\n    esac\n(?=  done\n)', '\n', 钩.replace('; MOVED=""', '', 1), 1)
+    return re.sub(r'(?s)  if \[ -n "\$MOVED" \]; then\n.*?\n  fi\n', '', 钩, 1)
+
+
+def 演挪(目):
+    """1117 审·并跑对拍（章标不动·治枝一树一闸）：旧钩（章-*／治-* 一律免闸）与新钩（云端已有之 章-* ⛔挪⛔删、治-* ⛔挪）各挂一临时之库（core.hooksPath），
+    同演「泊於章-9 而再提交、照平台 Stop 钩之教推 章-9」诸误推与正推，真跑 git push（钩读 git 所喂之远端 sha）。→ {版: {键: (rc, 云端之 sha)}}"""
+    钩文 = open(os.path.join(ROOT, '工具', 'githooks', 'pre-push'), encoding='utf-8').read()
+    出 = {'旧钩异': 旧钩之文(钩文) != 钩文 and 'MOVED' not in 旧钩之文(钩文) and 'MOVED="$MOVED' in 钩文}
+    for 版, 文 in (('新', 钩文), ('旧', 旧钩之文(钩文))):
+        d = os.path.join(目, '挪' + 版)
+        os.makedirs(os.path.join(d, '钩'))
+        open(os.path.join(d, '钩', 'pre-push'), 'w', encoding='utf-8').write(文)
+        os.chmod(os.path.join(d, '钩', 'pre-push'), 0o755)
+        裸, 沙, T = 演泊之库(d, '章-9')
+        _g(['config', 'core.hooksPath', os.path.join(d, '钩')], 沙)
+        泊('章-9', 沙)
+        _g(['commit', '-q', '--allow-empty', '-m', '泊後之新'], 沙)
+        U = _g(['rev-parse', 'HEAD'], 沙)
+        远 = lambda n: _g(['rev-parse', '--verify', '-q', 'refs/heads/' + n], 裸, 必=False)
+        推 = lambda *a: (subprocess.run(['git', '-c', 'core.quotepath=off', 'push', '-q', 'origin'] + list(a), cwd=沙, capture_output=True, text=True,
+                                        env=_净env(), timeout=120).returncode, 远(a[-1].split(':')[-1].replace('refs/heads/', '')))
+        o = {'T': T, 'U': U}
+        o['误推章'] = 推('章-9')                                             # 平台钩所教：push 章-9（快进章标）
+        o['钩'] = 钩之未推(沙)                                               # 新：拦而其钩照报 1（真未推）；旧：章标被挪而其钩 0（以挪章标「消」之）
+        o['误推章·HEAD'] = 推('HEAD:refs/heads/章-9')
+        o['删章'] = 推(':refs/heads/章-9')
+        o['新章'] = 推('HEAD:refs/heads/章-10')                              # 新之章标（存底 --标 之形）照免
+        o['同章'] = 推('HEAD:refs/heads/章-10')                              # 已同：git ⛔喂、照过
+        名 = '治-' + U[:12]
+        o['新治'] = 推('HEAD:refs/heads/' + 名)                               # 推.py 交之形照免
+        _g(['commit', '-q', '--allow-empty', '-m', '又一'], 沙)
+        o['V'] = _g(['rev-parse', 'HEAD'], 沙)
+        o['挪治'] = 推('HEAD:refs/heads/' + 名)
+        o['删治'] = 推(':refs/heads/' + 名)
+        出[版] = o
+    return 出
 
 
 def _对yaml(a, b):
@@ -1532,8 +1588,12 @@ def 自测():
     T('②之五 乙形诸改坏（%d 形）各红%s' % (len(坏形), ('：未红 ' + '、'.join(错)) if 错 else ''), not 错)
     坏钩 = {'免及主枝': 钩.replace('refs/heads/章-*|refs/heads/治-*|refs/heads/备份/*)', 'refs/heads/*)'),
           '旧钩（⛔读 stdin）': subprocess.run(['git', 'show', '%s:工具/githooks/pre-push' % 旧yml之笔], cwd=ROOT, capture_output=True, text=True).stdout,
-          '有一即免': 钩.replace('"$N_ALL" -eq "$N_STAGE"', '"$N_STAGE" -ge 1')}
-    T('②之六 钩之改坏（免及主枝、旧钩、有一暂存即免）各红', all(验(a, v, 诸) for v in 坏钩.values()))
+          '有一即免': 钩.replace('"$N_ALL" -eq "$N_STAGE"', '"$N_STAGE" -ge 1'),
+          '章标可挪': 钩.replace('[ "$L_SHA" = "$R_SHA" ] || MOVED=', 'true || MOVED=', 1),
+          '挪之拦在免後': re.sub(r'(?s)(  if \[ -n "\$MOVED" \]; then\n.*?\n  fi\n)(.*?)(  if \[ "\$N_ALL" -eq "\$N_STAGE" \]; then\n.*?\n  fi\n)', r'\2\3\1', 钩, 1)}
+    _坏钩未红 = [k for k, v in 坏钩.items() if v == 钩 or not 验(a, v, 诸)]
+    T('②之六 钩之改坏（免及主枝、旧钩、有一暂存即免、章标可挪、挪之拦在免後）各红%s' % ('：未红 ' + '、'.join(_坏钩未红) if _坏钩未红 else ''),
+      not _坏钩未红)
     # ③钩之 stdin 诸形真跑
     with tempfile.TemporaryDirectory() as t:
         o = 演钩(钩, os.path.join(t, '钩'))
@@ -1543,6 +1603,9 @@ def 自测():
     T('③之三 删治 → 免；git 所喂空 → 免；手跑（无参）→ 照闸', o['删治'][:2] == (0, False) and o['空'][:2] == (0, False)
       and o['手跑'] == (0, True, '绿'))
     T('③之四 主枝而闸红 → rc=1、落「红」', o['主·红'] == (1, True, '红'))
+    T('③之五（1117·法用#停钩空转之审）云端已有之 章-* 挪（快进亦然）、删 → 拦 rc=1、⛔跑闸、⛔落果；云端已有之 治-* 挪 → 拦；混主枝亦先拦（⛔跑闸）；'
+      '同 sha、新章标＋新治、删治 → 照免',
+      all(o[k] == (1, False, '') for k in ('挪章', '删章', '挪治', '主＋挪章')) and all(o[k][:2] == (0, False) for k in ('同章', '章＋新治', '删治')))
     # ④乙形诸 workflow 之真跑（桩之全测载真 全测、全测并、推报、存底；裸库）
     import concurrent.futures as _cf
     景们 = ('成', '器红', '红', '逾', '拒', '片崩', '章', '主动', '重派尽', '中已在', '演', '演红', '演推')
@@ -1617,15 +1680,26 @@ def 自测():
     T('④之七 以 章-N 触：成、章标恒留、报之「演」係真克隆章标之判（可跑之仓）%s' % 示(e), 报合(e, '成') and '章-9' in e['枝们']
       and (e['报'].get('演') or {}).get('果') == '过')
     # 1117 并跑对拍（GitHub 化之审·I·法用#停钩空转）：同一推（治-<sha12>／章-9）、同一真跑之 autopush——旧（不泊）与新（泊）之孪生
-    def 钩合(x, n):     # 复刻之量 n；真钩在盘者其 rc：0 静、2 报
-        return bool(x) and x[0] == n and (x[1] is None or x[1] == (0 if n == 0 else 2))
+    # ★1117 审：所计者唯本仓之复刻（钩之未推）；平台真钩（~/.claude/stop-hook-git-check.sh·随平台改）之 rc 只对而⛔计——
+    #   异即记入 真钩之异、末印 ⚠（负测·autopush 係读者可见之闸：平台改钩⛔令其红而拦 推.py --直 之兜底）
+    真钩之异, 真钩之对 = [], [0]
+
+    def 钩合(x, n, 何='?'):     # 复刻之量 n（计）；真钩在盘者其 rc 应 0 静、2 报（只报）
+        if not x or x[0] != n:
+            return False
+        if len(x) > 1 and x[1] is not None:
+            真钩之对[0] += 1
+            if x[1] != (0 if n == 0 else 2):
+                真钩之异.append('%s：复刻量 %d 而真钩 rc %s' % (何, n, x[1]))
+        return True
     for 景 in ('成', '章'):
         e = 演[景]
         T('④之泊%s（%s）：推後 旧其钩量未推 1、新泊於「%s」量 0；autopush 并入（候≠本枝）後 新旧俱 快进 至同一主枝、新者归主枝而删泊枝、其钩俱 0%s%s'
-          % ('一' if 景 == '成' else '二', '治枝·并而删' if 景 == '成' else '章标·恒留', e.get('R'), '·真钩亦跑' if os.path.exists(真钩之档) else '·真钩不在（只复刻）', 示(e)),
-          (e.get('泊') or (False,))[0] and e.get('当前') == e.get('R') and 钩合((e.get('钩前') or ((), ()))[0], 1) and 钩合((e.get('钩前') or ((), ()))[1], 0)
+          % ('一' if 景 == '成' else '二', '治枝·并而删' if 景 == '成' else '章标·恒留', e.get('R'), '·真钩亦对（只报）' if os.path.exists(真钩之档) else '·真钩不在（只复刻）', 示(e)),
+          (e.get('泊') or (False,))[0] and e.get('当前') == e.get('R') and 钩合((e.get('钩前') or ((), ()))[0], 1, '④%s·旧前' % 景)
+          and 钩合((e.get('钩前') or ((), ()))[1], 0, '④%s·新前' % 景)
           and (e.get('快进') or (False,))[0] and (e.get('快进旧') or (False,))[0] and e.get('沙主') == e.get('沙旧主') == e.get('主') != e.get('T')
-          and e.get('当后') == 主枝 and e.get('泊枝后') is False and all(钩合(x, 0) for x in (e.get('钩后') or ((), ())))
+          and e.get('当后') == 主枝 and e.get('泊枝后') is False and all(钩合(x, 0, '④%s·后' % 景) for x in (e.get('钩后') or ((), ())))
           and (e['R'] not in e['枝们'] if 景 == '成' else e['R'] in e['枝们']))
     e = 演['主动']
     一 = (e.get('二') or {}).get('报一') or {}
@@ -1654,13 +1728,15 @@ def 自测():
             o = {'崩': '%s：%s' % (type(x).__name__, x)}
     崩 = '：' + o['崩'] if o.get('崩') else ''
     T('⑤泊：推「章-9」後 旧（主枝超前）其钩量未推 1；新 泊於「章-9」（无上游·主枝仍指之）量 0%s%s'
-      % ('·真钩亦跑（rc 2／0）' if os.path.exists(真钩之档) else '·真钩不在（只复刻）', 崩),
-      钩合(o.get('旧前'), 1) and (o.get('泊') or (False,))[0] and o.get('新当') == '章-9' and 钩合(o.get('新前'), 0) and o.get('新上游') == '')
+      % ('·真钩亦对（只报）' if os.path.exists(真钩之档) else '·真钩不在（只复刻）', 崩),
+      钩合(o.get('旧前'), 1, '⑤旧前') and (o.get('泊') or (False,))[0] and o.get('新当') == '章-9' and 钩合(o.get('新前'), 0, '⑤新前')
+      and o.get('新上游') == '')
     T('⑤之二 设上游之议不成：主枝 --set-upstream-to=origin/章-9 → @{u}..HEAD＝0 而其钩仍量 1（钩以 origin/<当前枝> 量、⛔读 @{u}）' + 崩,
-      o.get('议u') == '0' and 钩合(o.get('议前'), 1))
+      o.get('议u') == '0' and 钩合(o.get('议前'), 1, '⑤之二·议'))
     T('⑤之三 origin 主枝含之：新 快进 先归主枝、删泊枝、主枝之上游之设仍在；新旧之 HEAD 俱即 origin 主枝、其钩俱 0' + 崩,
       (o.get('新进') or (False,))[0] and '归' in o['新进'][1] and (o.get('旧进') or (False,))[0] and o.get('新当后') == 主枝
-      and o.get('新章枝') is False and o.get('同') and 钩合(o.get('新后'), 0) and 钩合(o.get('旧后'), 0) and o.get('主上游') == 'refs/heads/' + 主枝)
+      and o.get('新章枝') is False and o.get('同') and 钩合(o.get('新后'), 0, '⑤之三·新') and 钩合(o.get('旧后'), 0, '⑤之三·旧')
+      and o.get('主上游') == 'refs/heads/' + 主枝)
     T('⑤之四 降级（⛔泊、⛔立泊枝、仍在主枝·照旧）：云端同名之枝非 HEAD、名非 章-N／治-<sha12>、云端无其枝、本地有异指之同名枝、游离' + 崩,
       o.get('降·异') == (False, 主枝, False) and o.get('降·名') == (False, 主枝) and o.get('降·无远') == (False, 主枝, False)
       and o.get('降·本异') == (False, 主枝, True) and o.get('降·游离') == (False, '', False))
@@ -1668,13 +1744,38 @@ def 自测():
       (o.get('再泊一') or (False,))[0] and (o.get('再泊二') or (False,))[0] and str(o['再泊二'][1]).startswith('治-')
       and o['再泊二'][2] is False and o['再泊二'][3] is True)
     T('⑤之六 泊後再提交：其钩照报（真未推⛔掩）；快进先归（主枝挪到 HEAD）而⛔快进、其钩於主枝照报、泊枝已删' + 崩,
-      钩合(o.get('真未推'), 1) and str(o.get('真未推当', '')).startswith('治-') and o.get('真进') and o['真进'][0] is False
-      and '本地有未入主之提交' in o['真进'][1] and 钩合(o.get('真后'), 1) and o.get('真当') == 主枝 and o.get('真泊枝') is False)
+      钩合(o.get('真未推'), 1, '⑤之六·泊後') and str(o.get('真未推当', '')).startswith('治-') and o.get('真进') and o['真进'][0] is False
+      and '本地有未入主之提交' in o['真进'][1] and 钩合(o.get('真后'), 1, '⑤之六·归後') and o.get('真当') == 主枝 and o.get('真泊枝') is False)
     _源 = {n: open(os.path.join(ROOT, '工具', n), encoding='utf-8').read() for n in ('推.py', '封版.py', '接棒守.py', '链之检.py')}
     T('⑤之七 诸器之接：封版 --後 推章-N 成即 泊章之语（推报.泊）；推.py 交成与已交即 泊之、枝正归主枝；候与候主之快进即 推报.快进（先归）；链之检之泊式同',
       "推报.泊('章-%d' % int(n), root)" in _源['封版.py'] and 'print(泊章之语(n, root))' in _源['封版.py']
       and 'print(泊之(名, root))' in _源['推.py'] and '推报.归(root)' in _源['推.py'] and '推报.泊(名, root)' in _源['推.py']
       and '推报.快进(ROOT)' in _源['接棒守.py'] and "泊式 = re.compile(r'%s')" % 泊式.pattern in _源['链之检.py'])
+    挪 = o.get('挪') or {}
+    新, 旧 = 挪.get('新') or {}, 挪.get('旧') or {}
+    封, 后, 又 = 新.get('T'), 新.get('U'), 新.get('V')
+    封旧, 后旧, 又旧 = 旧.get('T'), 旧.get('U'), 旧.get('V')
+    T('⑤之八 并跑对拍·章标不动（1117 审·真 git push 经钩）：泊於章-9 而再提交，照平台钩之教推 章-9（及 HEAD:章-9、删章-9）——'
+      '旧钩免之而章标快进至新提交（其钩以挪章标「消」为 0）、删之亦成；新钩俱拦（rc≠0）而章标仍在其封之笔、泊枝之钩照报未推 1' + 崩,
+      挪.get('旧钩异') is True and bool(封 and 后 and 封旧 and 后旧) and 新.get('误推章') == (1, 封) and 新.get('误推章·HEAD') == (1, 封)
+      and 新.get('删章') == (1, 封) and 旧.get('误推章') == (0, 后旧) and 旧.get('删章') == (0, '') and 新.get('钩') == 1 and 旧.get('钩') == 0)
+    T('⑤之九 正推照免（新旧同）：新之章标（存底 --标 之形）、已同之推、新之 治-<sha12>（推.py 交之形）、删治 → rc 0；'
+      '云端已有之 治-<sha12> 挪 → 新钩拦（旧钩挪之·一名二树）' + 崩,
+      bool(又 and 又旧) and 新.get('新章') == (0, 后) and 旧.get('新章') == (0, 后旧) and 新.get('同章') == (0, 后) and 新.get('新治') == (0, 后)
+      and 旧.get('新治') == (0, 后旧) and 新.get('挪治') == (1, 后) and 旧.get('挪治') == (0, 又旧) and 新.get('删治') == (0, '') and 旧.get('删治') == (0, ''))
+    _对前, _异前 = 真钩之对[0], len(真钩之异)
+    _只报 = (钩合((1, 0), 1, '（自测·假异）') and not 钩合((0, 2), 1) and not 钩合(None, 0) and 钩合((0, None), 0)
+           and 真钩之异[_异前:] == ['（自测·假异）：复刻量 1 而真钩 rc 0'])
+    del 真钩之异[_异前:]
+    真钩之对[0] = _对前
+    _崩 = 真钩(os.path.join(tempfile.gettempdir(), '推报·无此目·%d' % os.getpid()))
+    T('⑤之十 真钩只报⛔计（1117 审）：复刻之量合即过、真钩之 rc 异只记而末印 ⚠（平台改钩⛔令此读者可见之闸红、⛔拦 推.py --直）；复刻不合即红；真钩崩 → rc -1（⛔抛）',
+      _只报 and (_崩 is None or _崩[0] == -1))
+    if 真钩之异:
+        print('  ⚠ 真钩之对（只报·⛔计）：平台之 Stop 钩与本仓之复刻（钩之未推）异 %d／%d 处——平台或已改其钩，复刻须随之核：%s'
+              % (len(真钩之异), 真钩之对[0], '；'.join(真钩之异[:4])))
+    elif 真钩之对[0]:
+        print('  · 真钩之对（只报）：%d 处真钩之 rc 俱合复刻' % 真钩之对[0])
     ok = sum(R)
     print('── 负测·autopush %d/%d %s ──' % (ok, len(R), '全通' if ok == len(R) else '未过'))
     if ok != len(R):

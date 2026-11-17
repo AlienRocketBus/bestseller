@@ -15,6 +15,7 @@
     Bash 之 git push 其靶及主枝（含 --all／--mirror、无 refspec 而当前枝即主枝）→ 拦。
   ④（1117·法用#停钩空转）推後之泊（本地立於「章-N」／「治-<sha12>」·推报.泊）：Bash 之 git push 无 refspec／HEAD／其泊枝之名 → 拦
     （泊则主枝之禁不及之，而其推即推泊枝：章标不动、治枝一树一闸）——新提交一律 `推.py`（枝正归主枝）。
+    他之云端已有之 章-*／治-*（本钩⛔网、⛔认）由 pre-push 拦（远端 sha 非全 0 即⛔挪⛔删章标、⛔挪治枝·1117 审）。
   放行之反例（丝滑·⛔误拦）：echo 'pgrep'、heredoc 里之字、grep ZM_SKIP_HOOK 某档、git push origin HEAD:refs/heads/治-x、
     git push --no-verify origin x:refs/heads/备份/存底、git config core.hooksPath 工具/githooks（复原钩，⛔-c 之绕）。
 
@@ -395,6 +396,13 @@ def 自测():
         T('git push origin HEAD:refs/heads/治-fedcba987654', False, 当前=_泊)
         T('git push --no-verify origin HEAD:refs/heads/备份/存底', False, 当前=_泊)
         T('git push origin HEAD:%s' % 主枝, True, 当前=_泊)
+        # 1117 审：平台 Stop 钩泊後教「push <泊枝>」——其诸形（短式之的、强推、+、--set-upstream）俱拦
+        T('git push origin HEAD:%s' % _泊, True, 当前=_泊)
+        T('git push -f', True, 当前=_泊)
+        T('git push --force origin +HEAD:%s' % _泊, True, 当前=_泊)
+        T('git push --set-upstream origin %s' % _泊, True, 当前=_泊)
+    # 他之云端已有之章标（泊於章-459 推 HEAD:章-458；主枝上推本地之 章-459）此钩⛔认（⛔网）——其拦在 pre-push（云端已有之 章-* ⛔挪⛔删·推报 --自测 ③之五、⑤之八）
+    T('git push origin HEAD:refs/heads/章-458', False, 当前='章-459')
     T('git push origin HEAD:refs/heads/章-459', False, 当前=主枝)                      # 未泊：照旧（⛔新禁）
     T('git push origin 章-459', False, 当前='zh/B')
     T('git push origin HEAD', False, 当前='治-xyz')                                   # 非泊之形（⛔12 位之 sha）⛔认

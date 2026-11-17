@@ -104,6 +104,9 @@ def 汇(a, b, root=ROOT, 出=None, 顶=限):
     if 顶 and sum(len((t or '').encode()) for _, t in 段) > 顶 - 2048:
         舍名 = '前文·第%d章白文（全）' % (a - 2)
         段 = [(n, t) if n != 舍名 else ('前文·第%d章白文（逾顶舍之）' % (a - 2), '（段料逾 %d KB·坑③：本章白文舍去；须者 sed -n 另读 %s）' % (顶 // 1024, os.path.relpath(章料.章档(a - 2, root) or '', root))) for n, t in 段]
+    # ★1117（461 段料 152KB·守令 4.4KB）：一级舍後仍逾顶 → 拍库四十拍去其原句引文行（留目、绝、学；原句在 设定/叫绝之拍库.md·grep 之）——⛔舍诸账
+    if 顶 and sum(len((t or '').encode()) for _, t in 段) > 顶 - 2048:
+        段 = [(n, t) if n != '叫绝之拍库（全）' else ('叫绝之拍库（去引文·逾顶）', '（段料逾顶·坑③：四十拍之原句引文去之；须者 grep -n 设定/叫绝之拍库.md）\n' + re.sub(r'(?m)^「[^\n]*\n', '', t or '')) for n, t in 段]
     文 = ['# 第%d—%d章·段料（工具/段料.py 零 token 汇；设计席只读此档，料外只许 grep 核一处、上下三行）\n' % (a, b)]
     for 名, t in 段:
         文.append('## 〔%s〕\n\n%s\n' % (名, (t or '（无）').strip()))

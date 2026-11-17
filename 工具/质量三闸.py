@@ -304,6 +304,11 @@ def 自测():
     报('⑳X05·六问之净重＝锁定行之尺（⛔章题与「＊」）',
       (_六 and int(_六.group(1)) == _锁, _锁 != net(body(380))), (True, True))
 
+    # ㉑★1117 X108：沈鸢末见由总纲之暗行自算（负测：末暗章 455→距 0；删其行→退至前一暗章）
+    _纲 = '| 453 | 暗·178 | | 454 | 主·185 |\n| 455 | 暗·179 | | 456 | 主·186 |'
+    报('㉑X108·末暗章455→距0', 455 - (_暗线末章(455, _纲) or 0), 0)
+    报('㉑之二·删455行→退至453', _暗线末章(455, _纲.split('\n')[0]), 453)
+    报('㉑之三·真总纲·461 为暗', _暗线末章(461), 461)
     过 = sum(1 for _, ok, _, _ in 格 if ok)
     for 名, ok, 得, 期 in 格:
         if not ok:
@@ -406,11 +411,24 @@ FAN = {
 }
 CUR_JUAN = 3  # ★今在卷三（E3青溪）
 
+def _暗线末章(c, 文=None):
+    """★1117·X108：沈鸢之线即暗线——末见由总纲「| N | 暗·M |」自算（≤c 之最大 N），⛔手填常数。"""
+    if 文 is None:
+        try:
+            文 = open(os.path.join(ROOT, '设定', '02_余章之势_总纲.md'), encoding='utf-8').read()
+        except OSError:
+            return None
+    ns = [int(n) for n in re.findall(r'\|\s*(\d+)\s*\|\s*暗·\d+\s*\|', 文) if int(n) <= c]
+    return max(ns) if ns else None
+
+
 def gate4(c):
     """★防「主线漂掉」。其测二事：①二主角之线末次回切；②三反派之出场令有无违。
     ★★而其立之由：191章末之二笔账只在到期那一章咬人，中间九十九章无人管。"""
     out = []
     for who, (last, lim, why) in MAIN.items():
+        if who == '沈鸢':
+            last = _暗线末章(c) or last   # X108：总纲自算，常数只作无总纲之兜底
         d = c - last
         if lim >= 999:
             out.append(('④·%s 末见第%d章' % (who, last), True, '距 %d 章（不作硬限：%s）' % (d, why[:24])))

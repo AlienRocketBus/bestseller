@@ -128,6 +128,62 @@ def 验(文, a, b, 日=None, 厚=None):
     return 坏
 
 
+# ★1117 X102：段料须汇於裁档之後、且守令一节非空（451 段料 16:49 汇、裁档 19:22 方立，料首守令空）
+def 料之鲜(a, root=ROOT):
+    """→ 红语列（空即过）。料：设定/段案/_料_a-b.md；裁档：设定/剧情庭_势_第a段.md。"""
+    import glob as _g
+    料们 = _g.glob(os.path.join(root, '设定', '段案', '_料_%d-*.md' % a))
+    势 = os.path.join(root, '设定', '剧情庭_势_第%d段.md' % a)
+    if not 料们:
+        return ['段料未汇（设定/段案/_料_%d-*.md 无）——先跑 工具/段料.py' % a]
+    料 = 料们[0]; 红 = []
+    if not os.path.exists(势):
+        红.append('本段之势（%s）未立——先开剧情庭' % os.path.relpath(势, root))
+    elif os.path.getmtime(料) < os.path.getmtime(势):
+        红.append('段料（%s）汇於裁档之前——重跑 工具/段料.py' % os.path.relpath(料, root))
+    if '本段之势未立或无「守令」一节' in open(料, encoding='utf-8').read():
+        红.append('段料之守令一节为空——重跑 工具/段料.py（裁档须有「###…守令」一节）')
+    return 红
+
+
+# ★1117 X110：段案「物之计」所点之物须於书中有据（物件.md 或已写之正文），或本节标「新物」
+def _物名们(计):
+    出 = []
+    for 段 in 计.split('｜'):
+        if '→' not in 段:
+            continue
+        for x in re.split(r'[、，,]', 段.split('→')[0]):
+            x = re.sub(r'[*（(].*$', '', x).strip(' 　*')
+            if 1 <= len(x) <= 12:
+                出.append(x)
+    return 出
+
+
+_书文 = None
+def 书中有(名, root=ROOT):
+    global _书文
+    if _书文 is None:
+        import glob as _g
+        块 = []
+        for f in [os.path.join(root, '设定', '全书记忆', '物件.md')] + sorted(_g.glob(os.path.join(root, '正文', '**', '*.md'), recursive=True)):
+            try:
+                块.append(open(f, encoding='utf-8').read())
+            except OSError:
+                pass
+        _书文 = '\n'.join(块)
+    return 名 in _书文
+
+
+def 物之据红(n, 节, 有=None):
+    有 = 有 or 书中有
+    m = re.search(r'\*\*物之计\*\*[：:](.*)$', 节.get('物之动', ''))
+    if not m:
+        return []
+    return ['第%d章物之计所点「%s」书中无据（物件.md、正文俱无）——改锚已有之物，或於本节标「新物：%s」' % (n, x, x)
+            for x in _物名们(m.group(1))
+            if not 有(x) and ('新物：%s' % x) not in 节.get('物之动', '') and ('新物「%s」' % x) not in 节.get('物之动', '')]
+
+
 def 自测():
     ok = 共 = 0
     def 节(n, 种='无', 日='暗·142', 路='翻个儿｜物证', 重='中'):
@@ -170,6 +226,22 @@ def 自测():
         _文 = open(_p, encoding='utf-8').read()
         共 += 1; ok += (字数之带(节文们(_文).get(399, '')) == (2300, 2900) and '之底 ＜2900' in 须厚之带红(399, 节文们(_文)[399])
                        and not any('须厚' in x for x in 验(_文, 398, 400, 厚={399: (True, '')})))
+    # ★1117 X110：物之计之物须有据（造局：E6 那一卷图 → 红；标新物 → 过；已有之物 → 过）
+    _有 = lambda x: x in ('判纸', '票', '刃')
+    共 += 1; ok += (_物名们('封→拆开｜附页、判纸→她心口｜票→回怀里') == ['封', '附页', '判纸', '票']
+                   and 物之据红(458, {'物之动': '拍一 **物之计**：判纸→心口｜E6那一卷图→他手'}, _有) != []
+                   and 物之据红(458, {'物之动': '新物：E6那一卷图。**物之计**：判纸→心口｜E6那一卷图→他手'}, _有) == []
+                   and 物之据红(458, {'物之动': '**物之计**：判纸、票→心口｜刃→在袖'}, _有) == [])
+    # ★1117 X102：料汇於裁档之前／守令空 → 红（造局於临时目录）
+    import tempfile, time as _t
+    with tempfile.TemporaryDirectory() as _d:
+        os.makedirs(os.path.join(_d, '设定', '段案'))
+        _料 = os.path.join(_d, '设定', '段案', '_料_901-910.md'); _势 = os.path.join(_d, '设定', '剧情庭_势_第901段.md')
+        open(_料, 'w', encoding='utf-8').write('（本段之势未立或无「守令」一节——先开剧情庭）')
+        _t.sleep(0.01); open(_势, 'w', encoding='utf-8').write('### 守令\n⛔x\n')
+        _r1 = 料之鲜(901, _d)
+        _t.sleep(0.01); open(_料, 'w', encoding='utf-8').write('## 守令\n⛔x\n')
+        共 += 1; ok += (len(_r1) == 2 and 料之鲜(901, _d) == [] and 料之鲜(911, _d) != [])
     print('段案验·自测 %d/%d' % (ok, 共))
     return ok == 共
 
@@ -194,6 +266,11 @@ if __name__ == '__main__':
                 elif 厚[n][0] is None:
                     print('  ℹ' + 厚[n][1].lstrip('★') + '（只印不红）')
         坏 = 验(open(a[0], encoding='utf-8').read(), 起, 止, 段料.总纲之日(纲, 起, 止), 厚=厚)
+        if 起 >= 461:                                     # ★1117 X102／X110：461 段起
+            _文 = open(a[0], encoding='utf-8').read()
+            坏 += 料之鲜(起)
+            for _n, _节 in 节们(_文).items():
+                坏 += 物之据红(_n, _节)
         print('✓ 段案验：%s 闭环之机器诸项俱过' % a[0] if not 坏 else '⛔ 段案验 %d 处：\n  ' % len(坏) + '\n  '.join(坏))
         sys.exit(0 if not 坏 else 1)
     print(__doc__); sys.exit(2)

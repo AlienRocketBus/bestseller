@@ -18,6 +18,7 @@
 次序之据：开轮六检於第十一轮之前跑（旧⑭「封版之章不得再跑十轮」1027 汰——其防移 续跑之守：已封之 N ⛔再派造章）。
 一章之序（1027 A2·Variant S）：记席毕 → `--前 --红` 绿 → `复盘.py W … --简 --平台 $X` 与交接现状（写而⛔另提交）→ `--後`——
   封版#N 一提交载回执、记席诸档、复盘、交接；其末 `存底 --标` 推「章-N」即触 GitHub autopush（分片而闸、绿即并入主枝、果入 备份/报）；
+  推成即本地泊於「章-N」（1117·法用#停钩空转：平台 Stop 钩⛔每回合报「未推」；--候主 之快进归主枝；泊不成照旧）；
   沙盒⛔跑全闸、⛔推主枝；跑毕主环 `python3 工具/接棒守.py --候主 N`（run_in_background、零 token：主枝含即快进返 0、坏报即返其红——
   红者照其行治、提交、`推.py`（交「治-<sha>」）；`推.py --直` 只作审计之兜底：报「拒」或 GitHub 停摆）。
 """
@@ -708,6 +709,7 @@ def 後(n, 演=False, root=ROOT):
             标败 = 末[0].strip()[:150]
     if 标败 is not None:   # ★1027 A2 验：一章唯此一推——败而仍印「封版毕」，主环 --候主 白候九十分（无章-N 即无 autopush、无报），逾限之 workflow_dispatch 亦无其枝
         print(标推未成之语(n, 标败)); return False
+    print(泊章之语(n, root))   # ★1117（GitHub 化之审·I·法用#停钩空转）：章-N 已在云端 → 本地泊於「章-N」，候主之快进归主枝；败即照旧（只报⚠）
     print(封毕之语(n))
     return True
 
@@ -727,6 +729,18 @@ def 章之件标成(n, root=ROOT):
     except Exception as e:
         print('  ⚠ 工作流账    未标：%s' % str(e)[:120])
     return None
+
+
+def 泊章之语(n, root=ROOT):
+    """★1117（GitHub 化之审·I·法用#停钩空转）：「章-N」推成 → 本地泊於「章-N」（推报.泊）。平台 Stop 钩以 origin/<当前枝> 量「未推」——
+    封後本地主枝超 origin 主枝至 autopush 并之，每回合之末其钩报未推、空转二回；泊後其量 0（真未推之提交照报）；--候主 之快进归主枝。
+    ⛔抛、⛔拦（泊不成即照旧·只印 ⚠）。→ 印之行"""
+    try:
+        import 推报
+        ok, 语 = 推报.泊('章-%d' % int(n), root)
+    except Exception as e:
+        ok, 语 = False, '泊不成（照旧）：%s' % str(e)[:120]
+    return '  %s %-8s %s' % ('✓' if ok else '⚠', '泊', 语.lstrip('✓·⚠ '))
 
 
 def 标推未成之语(n, 由=''):
@@ -1106,6 +1120,27 @@ def 自测():
                    and "if 名 == '存底 --标' and rc != 0:" in _体 and 'print(标推未成之语(n, 标败)); return False' in _体
                    and _体.index('标推未成之语(n, 标败)') < _体.index('print(封毕之语(n))')
                    and '存底.py --标 411' in 标推未成之语(411, 'x') and '--候主 411' in 标推未成之语(411) and '封版毕' not in 标推未成之语(411))
+    # ★1117（GitHub 化之审·I·法用#停钩空转）：章-N 推成（标败为 None）方泊、泊在封毕之语前；泊不成（无远端之临时库）只印 ⚠、⛔抛；
+    #   真推之泊（临时裸库）：泊於「章-N」、平台 Stop 钩之量 0（推报.钩之未推）——回灌：泊在标败之判前、泊章之语抛、⛔泊即红
+    _无 = tempfile.mkdtemp(prefix='封版泊_')
+    subprocess.run(['git', 'init', '-q', _无], capture_output=True)
+    _泊印 = 泊章之语(411, _无)
+    shutil.rmtree(_无, ignore_errors=True)
+    _泊真 = False
+    _库 = tempfile.mkdtemp(prefix='封版泊_')
+    try:
+        import 推报 as _报
+        _裸, _沙, _ = _报.演泊之库(_库, '章-411')        # 临时之裸库（推报 之演·写者册 演）：主枝一笔、「章-411」已推而未并
+        _前钩 = _报.钩之未推(_沙)
+        _真印 = 泊章之语(411, _沙)
+        _泊真 = (_前钩 == 1 and _真印.lstrip().startswith('✓ 泊') and _报.钩之未推(_沙) == 0
+                 and subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], cwd=_沙, capture_output=True, text=True).stdout.strip() == '章-411')
+    except Exception as _x:
+        print('  ✗ 泊之真推 崩：%s' % _x)
+    finally:
+        shutil.rmtree(_库, ignore_errors=True)
+    共 += 1; ok += ('print(泊章之语(n, root))' in _体 and _体.index('print(标推未成之语(n, 标败)); return False') < _体.index('print(泊章之语(n, root))')
+                   < _体.index('print(封毕之语(n))') and _泊印.lstrip().startswith('⚠ 泊') and _泊真)
     # ★1027 A2：--演 只於 --试 所立之副本里跑（无演之记即止，⛔在真仓同步而不提交）；诸闸之判自其印取；医生与末章硬闸并起
     import io as _io0, contextlib as _cl0
     _目1 = tempfile.mkdtemp(prefix='封版演记_')

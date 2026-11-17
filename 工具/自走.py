@@ -37,6 +37,7 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+主枝 = 'claude/the-novel-review-4dtuit'   # 与 推报.主枝、存底.主枝 同（自测对之·⛔两把尺）——残树恒⛔计之（1117·法用#停钩空转：泊於章-N 时主枝亦「已并」）
 CN = {'零': 0, '〇': 0, '一': 1, '二': 2, '三': 3, '四': 4,
       '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
 
@@ -414,8 +415,10 @@ def 欠十一轮之章():
 
 def 残树(跑=None, root=None, 在用=None):
     """★1027 执行之审 #63（执行主义「老旧拖累者直接删」）：已并而未删之 worktree 与枝 → (树[], 枝[])。
-    已并＝其枝在 `git branch --merged HEAD`（其顶为 HEAD 之祖）；主树与本枝⛔计；枝之已检出於某树者归树、⛔重计；
-    二时内有动之树（其 index 新）作「在用」⛔计（丝滑：⛔把他坐正跑之树报成残）。读崩 → ([], [])。"""
+    已并＝其枝在 `git branch --merged HEAD`（其顶为 HEAD 之祖）；主树、本枝与主枝⛔计；枝之已检出於某树者归树、⛔重计；
+    二时内有动之树（其 index 新）作「在用」⛔计（丝滑：⛔把他坐正跑之树报成残）。读崩 → ([], [])。
+    ★1117（法用#停钩空转）：推後泊於「章-N」／「治-<sha12>」时主枝⛔检出於本树而为 HEAD 之祖——旧之判报之「已并而未删」并教 `git branch -d <主枝>`（险）；
+      今主枝恒⛔计（枝与树俱然）。"""
     import subprocess
     root = root or ROOT
     跑 = 跑 or (lambda *a: subprocess.run(['git'] + list(a), cwd=root, capture_output=True, text=True, timeout=30).stdout)
@@ -430,7 +433,8 @@ def 残树(跑=None, root=None, 在用=None):
     try:
         本 = 跑('rev-parse', '--abbrev-ref', 'HEAD').strip()
         块们 = [b for b in 跑('worktree', 'list', '--porcelain').strip().split('\n\n') if b.strip()]
-        并 = set(x.strip() for x in 跑('branch', '--merged', 'HEAD', '--format=%(refname:short)').splitlines() if x.strip())
+        并 = set(x.strip() for x in 跑('branch', '--merged', 'HEAD', '--format=%(refname:short)').splitlines()
+                if x.strip() and not x.strip().startswith('('))   # 游离之 HEAD 其列作「(HEAD detached …)」⛔枝（1117 审之顺治）
     except Exception:
         return [], []
     树, 出枝 = [], set()
@@ -439,11 +443,11 @@ def 残树(跑=None, root=None, 在用=None):
         枝 = re.search(r'^branch refs/heads/(.+)$', 块, re.M)
         if 枝:
             出枝.add(枝.group(1))
-        if i == 0 or not (路 and 枝) or 枝.group(1) == 本 or 枝.group(1) not in 并:
+        if i == 0 or not (路 and 枝) or 枝.group(1) in (本, 主枝) or 枝.group(1) not in 并:
             continue
         if not 在用(路.group(1)):
             树.append(路.group(1))
-    return 树, sorted(b for b in 并 if b != 本 and b not in 出枝)
+    return 树, sorted(b for b in 并 if b not in (本, 主枝) and b not in 出枝)
 
 
 def 残树之印(树枝=None):
@@ -1035,6 +1039,24 @@ def 自测():
               _树 == ['/r/w1', '/r/w2'] and _枝 == ['旧枝甲'] and 残树之印((_树, _枝))[0].lstrip().startswith('⚠ 已并而未删之 worktree 2／枝 1')
               and _净 == ([], []) and 残树之印(_净) == [] and 残树(跑=lambda *a: 1 / 0) == ([], [])
               and '残树之印()' in 码.split('def 断(')[1]))
+    # ⑬之二（1117·法用#停钩空转之审）：本树泊於「章-459」，主枝为 HEAD 之祖（--merged 列之）而⛔检出於任一树 → 主枝⛔计（旧判报之并教 git branch -d 主枝）；
+    #   他树检出主枝者亦⛔计其树；他之已并之枝照计（回灌：去其⛔即红）；主枝之名与 推报、存底 同（⛔两把尺）
+    _泊wl = 'worktree /r\nHEAD a\nbranch refs/heads/章-459\n\nworktree /r/w5\nHEAD a\nbranch refs/heads/%s\n' % 主枝
+    _泊出 = {'rev-parse': '章-459\n', 'worktree': 'worktree /r\nHEAD a\nbranch refs/heads/章-459\n', 'branch': '章-459\n%s\n' % 主枝}
+    _泊 = 残树(跑=lambda *a: _泊出[a[0]])
+    _泊树 = 残树(跑=lambda *a: dict(_泊出, worktree=_泊wl)[a[0]], 在用=lambda 路: False)
+    _泊他 = 残树(跑=lambda *a: dict(_泊出, branch='章-459\n%s\n治-0123456789ab\n' % 主枝)[a[0]])
+    _游离 = 残树(跑=lambda *a: {'rev-parse': 'HEAD\n', 'worktree': 'worktree /r\nHEAD a\ndetached\n',
+                                'branch': '(HEAD detached from e2b4553e3)\n%s\n' % 主枝}[a[0]])
+    try:
+        import 推报 as _报t, 存底 as _底t
+        _同名 = 主枝 == _报t.主枝 == _底t.主枝
+    except Exception:
+        _同名 = False
+    R.append(('⑬之二 泊於「章-459」而主枝已并（--merged 列之·⛔检出）→ 残树⛔计主枝（枝与树俱然）、⛔教 git branch -d 主枝；他之已并之枝（治-…）照计；'
+              '游离之「(HEAD detached …)」⛔作枝；主枝之名与 推报／存底 同',
+              _泊 == ([], []) and 残树之印(_泊) == [] and _泊树 == ([], []) and _泊他 == ([], ['治-0123456789ab'])
+              and not any(主枝 in x for x in 残树之印(_泊他)) and _游离 == ([], []) and _同名))
     # ⑭1027 执行之审 #1 #71 #78：卡死之印⛔含「报作者」；账限之欠⛔教无数之「延：」
     _欠印 = 码[码.index("【判】欠。瑕疵总账之限"):][:200]
     R.append(('⑭卡死之印⛔含「报作者」（第一律·自决：换法自通、办毕报所为）；账限之欠印「延至 NNN」、⛔教无数之「延：<由>」',

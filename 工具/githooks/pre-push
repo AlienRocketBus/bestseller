@@ -8,15 +8,30 @@ cd "$ROOT" || exit 1
 #   所推之远端 ref 俱係 refs/heads/章-*（封版之标）、治-*（治推）、备份/*（存底、心跳、报、演）者——章-*、治-* 一推即触 GitHub autopush，
 #   其分片之闸（gate.yml·一候之树一闸，1027 坑54；GitHub 之推指空钩、⛔经此钩）过即并入主枝，果入 备份/报（工具/推报.py）；本地⛔再跑十余分之全测（旧：一章之树三跑闸·GitHub 之路恒输）。
 #   ★余者（主枝，或混主枝）照旧全闸；git 所喂无一行（俱已同或已被拒，⛔一 ref 将动）亦免；手跑（无参、⛔读 stdin）照旧全闸。
+# 【1117·法用#停钩空转之审】章标不动、治枝一树一闸：云端已有之 章-*（远端 sha 非全 0）⛔挪（快进亦拦）、⛔删；云端已有之 治-* ⛔挪（删照免）。
+#   推後泊於「章-N」／「治-<sha12>」而再提交者，平台 Stop 钩教「push 章-N」——误推即快进章标（其免闸之支放之、autopush 再跑）；今一行中即拦（混主枝亦先拦）。
+#   正路：封版之标係 存底 --标（一章一推）、治係 推.py 交（新名 治-<sha12>）——俱推新 ref，⛔及此拦。
 if [ $# -ge 1 ]; then
-  N_ALL=0; N_STAGE=0
+  N_ALL=0; N_STAGE=0; MOVED=""
   while read -r L_REF L_SHA R_REF R_SHA; do
     [ -n "$R_REF" ] || continue
     N_ALL=$((N_ALL + 1))
     case "$R_REF" in
       refs/heads/章-*|refs/heads/治-*|refs/heads/备份/*) N_STAGE=$((N_STAGE + 1)) ;;
     esac
+    case "$R_SHA" in
+      *[!0]*)
+        case "$R_REF" in
+          refs/heads/章-*) [ "$L_SHA" = "$R_SHA" ] || MOVED="$MOVED ${R_REF#refs/heads/}" ;;
+          refs/heads/治-*) case "$L_SHA" in *[!0]*) [ "$L_SHA" = "$R_SHA" ] || MOVED="$MOVED ${R_REF#refs/heads/}" ;; esac ;;
+        esac ;;
+    esac
   done
+  if [ -n "$MOVED" ]; then
+    echo "⛔ pre-push（章标不动·治枝一树一闸）：云端已有之${MOVED} ⛔挪（快进亦拦）、章标⛔删——推已拦停。"
+    echo "   泊於章-N／治-<sha12> 而有新提交者：python3 工具/推.py（枝正归主枝、交新之 治-<sha12>）；封版之标唯 python3 工具/存底.py --标 N。"
+    exit 1
+  fi
   if [ "$N_ALL" -eq 0 ]; then
     echo "· pre-push：无一 ref 将动（俱已同或已被拒）——免闸。"
     exit 0

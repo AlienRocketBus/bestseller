@@ -1,0 +1,48 @@
+# 云巡（1117 作者令「定时检查能不能不花费 token 而且能够达到最好的效果……最大程度的去利用 github」；同日「没有额度限制 可以无限跑 放心用」）：
+#   停书之巡交 GitHub——每五分跑 `python3 工具/接棒守.py --云巡`（＝接棒守.巡()，与沙盒同一之判）：「止」即毕——零 token；
+#   停写／解停／合入之卡／器自败 → 於哨 PR（头枝 备份/巡警·⛔并）留一言，唤总编辑之坐（其订此 PR 之动静·唯其能派）；同局二十分一唤；
+#   停逾九十分（或器败、合入之卡）→ 本跑红：GitHub 邮作者（停书警报）。每跑落 备份/巡印（单提交·force）——总编辑兜底之巡验其鲜。
+#   演练（丝滑主义）：推「备份/巡演」即以其树之器跑一回 --试（必留一言、验唤醒之路）；workflow_dispatch shi=1 同。
+name: 巡
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      shi:
+        description: 试（1＝必留一言，验唤醒之路）
+        required: false
+        default: ''
+        type: string
+  push:
+    branches: ['备份/巡演']
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+concurrency:
+  group: xun
+  cancel-in-progress: false
+jobs:
+  xun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && github.sha || 'claude/the-novel-review-4dtuit' }}
+          fetch-depth: 0
+          filter: tree:0
+          sparse-checkout: |
+            工具
+            正文
+            设定
+      - name: 云巡
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHI: ${{ github.event_name == 'push' && '1' || inputs.shi }}
+        run: |
+          git config user.name xun
+          git config user.email xun@users.noreply.github.com
+          if [ -n "$SHI" ]; then python3 工具/接棒守.py --云巡 --试; else python3 工具/接棒守.py --云巡; fi

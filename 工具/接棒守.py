@@ -8,11 +8,12 @@
   ①Stop 钩（`工具/席在跑吗.py`）：本坐持写书之锁而手上无席、无後台之活 → 拦（⛔再认己锁作「他人在跑」）。
   ②本器 `--候 N`：交棒者收锁、开新会话之後，後台跑之（零 token）；每分取云端心跳——见第 N 章之锁为他坐所持且新鲜
     → ✓接棒成（rc=0）；逾限（默三十分）无人接 → rc=2，醒交棒者重开。候时 Stop 钩认之放行。
-  ③定时之保（1116 汰其派：平台不许定时所唤之会话自开会话、自建定时之令）：今唯停书警报——每时只读心跳、停逾九十分推作者之机（总编辑之坐亦死之兜底）；`--哨` 留与写书之坐自查。
-  ④停书之巡（1116 作者令「一定要有一个机制防止这种事情再次出现」「stops at most 1 hour」——455 之坐容器死，守书三六十八时只报
-    「待示派发」，书停三日。演练得平台之检令定时所唤之会话⛔自开会话、⛔自建定时之令，③遂只能报⛔能派）：三条每时之令（:07 :27 :47）
-    入总编辑之坐（唯其能派），每二十分跑 `--巡`：有人在写／交棒中／暂停即印「止」；心跳逾限即印【重派】之参（先 get_session 其坐）。
-    坐死至新坐开 ≤ 心跳.限 25 分 ＋ 巡之隔 20 分 ＋ 派之数分 ＜ 一时（审之余量约十分）。
+  ③停书警报（1117 交 GitHub）：云巡之跑停逾九十分即红——GitHub 邮作者（总编辑之坐亦死之兜底）；旧每时新会话之警报汰。`--哨` 留与写书之坐自查。
+  ④停书之巡（1116 作者令「一定要有一个机制防止这种事情再次出现」「stops at most 1 hour」——455 之坐容器死，书停三日）：
+    1117 作者令「定时检查能不能不花费 token……最大程度的去利用 github」「没有额度限制 可以无限跑」→ 交 GitHub（`.github/workflows/巡.yml`）：
+    每五分跑 `--云巡`（＝巡()）：有人在写／交棒中／暂停即「止」——零 token；停写／解停／合入之卡 → 於哨 PR（头枝 备份/巡警）留一言，
+    唤总编辑之坐（其订此 PR·唯其能派；同局二十分一唤）；每跑落 备份/巡印。总编辑醒即跑 `--巡`（沙盒并验巡印之鲜·rc 5 即 GitHub 之巡停摆）。
+    兜底之巡（每三时一令入总编辑之坐·号 兜底之令号）只防 GitHub 之巡自停。坐死至新坐开 ≤ 25＋5＋GitHub 之迟（≤15）＋数分＜一时。
 用法：
   python3 工具/接棒守.py --候主 403 [分]   # 封版後候主枝含 403（run_in_background；零 token）：0 已含（已快进）｜3 GitHub 报红／拒／败（印其红）｜2 逾限（印 workflow_dispatch 之兜底·⛔沙盒跑闸）
   python3 工具/接棒守.py --候 404 [分]     # 交棒後以 run_in_background 跑
@@ -21,7 +22,8 @@
   python3 工具/接棒守.py --哨              # 定时之保用：有人在写或交棒中 rc=0；停写 rc=2 并印开写书会话之令
   python3 工具/接棒守.py --派令 404 [--重]  # 交棒：印 create_trigger 之参（run_once_at 已算）；总编辑醒即以其中之参原样 create_session 一回
                                            #   403 未入主枝而其报红／拒／败（或缺章标而 备份/存底 有其封版之提交）→ 自出【重派】之参：自「章-403」（或其源）起、先治（1027 A2）
-  python3 工具/接棒守.py --巡              # 停书之巡（总编辑之坐·每二十分）：印「止」或【重派】之参（rc 0 止｜2 派｜3 解停｜4 封而逾三十分未入主·GitHub 停摆）
+  python3 工具/接棒守.py --巡              # 停书之巡（总编辑之坐·醒於哨 PR 之言或兜底之巡）：印「止」或【重派】之参（rc 0 止｜2 派｜3 解停｜4 封而逾三十分未入主·GitHub 停摆｜5 巡印逾三十分·GitHub 之巡停摆）
+  python3 工具/接棒守.py --云巡 [--试]      # GitHub（巡.yml）每五分：巡()、落巡印、非止即於哨 PR 留言唤总编辑（--试 必留一言，验唤醒之路）
   python3 工具/接棒守.py --自测
 """
 import os as _o, sys as _s
@@ -158,11 +160,10 @@ def 派令(n, 重=False, 今=time.time, 治=None):
                        '重派与参之形；拦即照其由办），⛔另查、⛔改参：%s' % (int(n), '（重派·自「%s」起、先治第 %d 章）' % (治, int(n) - 1) if 治 else '', 参))}
 
 
-# ── ④停书之巡（1116 作者令：停书⛔再；又令「stops at most 1 hour」）──
-#   坐死至新坐开 ≤ 心跳.限（25 分）＋巡之隔（20 分：三条每时之令错二十分）＋派之数分 ＜ 一时。
-#   定时所唤之新会话⛔能派（平台之检·1116 演练二回），故巡入总编辑之坐（唯其有 create_session）；每醒只跑本令、印「止」即止。
-巡之隔分 = 20
-巡之令号 = ('trig_014QwEoUV4uaYJXmQrUtHSGh', 'trig_01Q7EtciYmueJhVgjeNAzrgU', 'trig_01TNKutzRmdDGYtauqe2YHx9')   # :07 :27 :47（平台每令至密一时·三令错二十分；暂停中⛔关——巡见停锁自判「止」，免忘复开而违一时之令）
+# ── ④停书之巡（1116 作者令「stops at most 1 hour」；1117 作者令「定时检查不花 token、最大程度利用 GitHub」→ 交 GitHub：见⑤云巡）──
+#   巡()：GitHub 每五分跑之（`--云巡`），止即零 token；非止方唤总编辑之坐（哨 PR 一言）——唯其有 create_session（定时所唤之新会话⛔能派·1116 演练二回）。
+#   总编辑醒（哨 PR 之言、或兜底之巡每三时）跑 `--巡`（沙盒：并验巡印之鲜）：印「止」即答「止」一字而止。
+#   旧三条每时之令（:07 :27 :47·每二十分唤总编辑一回、日七十二唤）1117 汰：日常之巡零 token。
 解停之令 = "python3 -c \"import sys;sys.path.insert(0,'工具');import 心跳,自走;print(心跳.解停(自走.末章()+1))\""
 
 
@@ -212,7 +213,7 @@ def 合入之卡(d, 今=None, 标=None, 含=None, 时=None):
             % (n, n, sha[:12], ('%d 分' % 分) if 分 >= 0 else '久'))
 
 
-def 巡():
+def 巡(查印=False):
     import 心跳
     在, d = 心跳._远()
     try:
@@ -233,6 +234,10 @@ def 巡():
         if 卡:
             print(卡)
             return 4
+        印由 = 巡印之由() if 查印 else ''
+        if 印由:
+            print(印由)
+            return 5
         print('止')
         return 0
     print(由)
@@ -250,6 +255,168 @@ def 巡():
     print('  ②create_session 参原样（【重派】·会话之守钩拦即照其参／其由办）%s：' % ('（先治第%d章·源「%s」）' % (号 - 1, 治) if 治 else ''))
     print('  ' + json.dumps(派之参(号, True, 治=治), ensure_ascii=False))
     return 2
+
+
+# ── ⑤云巡（1117 作者令「定时检查能不能不花费 token 而且能够达到最好的效果……最大程度的去利用 github」；同日「没有额度限制 可以无限跑」）──
+#   停书之巡交 GitHub（.github/workflows/巡.yml）：每五分跑 `--云巡`＝巡()；「止」即毕——零 token。
+#   非止（停写→派｜解停｜合入之卡｜器自败）→ 於哨 PR（头枝 备份/巡警）留一言：总编辑之坐订其动静（subscribe_pr_activity），一言即唤之
+#   （候时零 token）；同一停之局 唤之隔 二十分一唤（⛔每五分刷）；停逾 警之界 九十分（或器自败、合入之卡）→ 本跑红：GitHub 邮作者＝停书警报。
+#   每跑落 备份/巡印（单提交、force）之 _巡印.json——总编辑之兜底之巡（每三时一令）跑 `--巡` 验其鲜：逾 巡印之限 未印即 GitHub 之巡停摆（rc 5）。
+#   坐死至新坐开 ≤ 心跳.限 25 ＋ 云巡之隔 5 ＋ GitHub 定时之迟（留 15）＋ 派之数分 ＜ 一时。
+云巡之隔分 = 5
+GitHub之迟分 = 15
+唤之隔分 = 20
+警之界分 = 90
+巡警枝 = '备份/巡警'     # 哨 PR 之头枝（⛔并；只为唤总编辑之坐）
+巡印枝 = '备份/巡印'     # 单提交（无父）之枝，其上只 _巡印.json——云巡每跑 force 写之
+巡印档 = '_巡印.json'
+巡印之限分 = 30
+兜底之令号 = 'trig_待立'   # 总编辑之坐之兜底之巡（每三时）：跑 `--巡`（验巡印之鲜）——号同 席在跑吗.守书之令（暂停令停之、解停复开）
+警记 = '<!-- 巡警:%s -->'
+
+
+def 云巡判(rc, d, 今, 旧言, 印=''):
+    """⛔纯判（云巡）：巡之 rc、云端心跳 d、今、哨 PR 之旧言 [(时, 键)] → (唤?, 键, 红?, 停分)。
+    rc 0 → 不唤、不红。键＝同一停之局（rc·章或毕·心跳之时）；同键之末言未逾 唤之隔分 → ⛔再唤。
+    红：器自败（rc ∉ 0/2/3/4/5）、合入之卡（rc 4）、或停逾 警之界分。"""
+    if rc == 0:
+        return False, '', False, 0
+    时 = 0
+    if isinstance(d, dict):
+        try:
+            时 = int(d.get('时') or 0)
+        except (TypeError, ValueError):
+            时 = 0
+    停分 = (今 - 时) // 60 if 时 else -1
+    if rc in (2, 3) and isinstance(d, dict):
+        键 = 'rc%d·%s·%d' % (rc, d.get('章') if d.get('章') is not None else d.get('毕'), 时)
+    else:
+        import hashlib
+        键 = 'rc%d·%s' % (rc, hashlib.sha1((印 or '').split('\n')[0].encode('utf-8')).hexdigest()[:10])
+    末 = max([t for t, k in 旧言 if k == 键] or [0])
+    唤 = not (末 and 今 - 末 < 唤之隔分 * 60)
+    红 = rc not in (2, 3, 5) or 停分 >= 警之界分
+    return 唤, 键, 红, 停分
+
+
+def _接口(法, 径, 体=None):
+    """GitHub REST（GITHUB_TOKEN；⛔沙盒用——沙盒走 git 与会话之器）。→ 解析之 JSON。"""
+    import urllib.request
+    api = os.environ.get('GITHUB_API_URL', 'https://api.github.com')
+    req = urllib.request.Request(api + 径, method=法, data=json.dumps(体).encode('utf-8') if 体 is not None else None,
+                                 headers={'Authorization': 'Bearer ' + os.environ.get('GH_TOKEN', os.environ.get('GITHUB_TOKEN', '')),
+                                          'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode('utf-8') or 'null')
+
+
+def 哨PR(仓=None):
+    """→ 哨 PR 之号（头枝 备份/巡警、开着者）；无即 None。"""
+    import urllib.parse
+    仓 = 仓 or os.environ.get('GITHUB_REPOSITORY', '')
+    诸 = _接口('GET', '/repos/%s/pulls?state=open&per_page=100&head=%s' % (仓, urllib.parse.quote('%s:%s' % (仓.split('/')[0], 巡警枝))))
+    return 诸[0]['number'] if 诸 else None
+
+
+def _旧言(仓, 号, 今):
+    """哨 PR 上 github-actions 所留、带 警记 之言（近六时）→ [(时, 键)]。"""
+    import calendar, re as _re
+    起 = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(今 - 6 * 3600))
+    言 = _接口('GET', '/repos/%s/issues/%d/comments?per_page=100&since=%s' % (仓, 号, 起)) or []
+    出 = []
+    for c in 言:
+        m = _re.search(r'<!-- 巡警:(.+?) -->', c.get('body') or '')
+        if m and (c.get('user') or {}).get('type') == 'Bot':
+            出.append((calendar.timegm(time.strptime(c['created_at'], '%Y-%m-%dT%H:%M:%SZ')), m.group(1)))
+    return 出
+
+
+def 落巡印(rc, 印, 今, 跑=''):
+    """→ 落 备份/巡印（单提交、force）之 _巡印.json；成否。"""
+    体 = json.dumps({'时': 今, '刻': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(今)), 'rc': rc,
+                    '印': (印 or '').strip().split('\n')[0][:200], '跑': 跑}, ensure_ascii=False)
+    def 跑令(*a, **k):
+        return subprocess.run(a, cwd=ROOT, capture_output=True, text=True, **k)
+    b = 跑令('git', 'hash-object', '-w', '--stdin', input=体).stdout.strip()
+    t = 跑令('git', 'mktree', input='100644 blob %s\t%s\n' % (b, 巡印档)).stdout.strip()
+    env = dict(os.environ, GIT_AUTHOR_NAME='xun', GIT_AUTHOR_EMAIL='xun@users.noreply.github.com',
+               GIT_COMMITTER_NAME='xun', GIT_COMMITTER_EMAIL='xun@users.noreply.github.com')
+    c = subprocess.run(['git', 'commit-tree', t, '-m', '巡印 rc=%s' % rc], cwd=ROOT, capture_output=True, text=True, env=env).stdout.strip()
+    if not c:
+        return False
+    return 跑令('git', '-c', 'core.hooksPath=/dev/null', 'push', '-q', '-f', 'origin', '%s:refs/heads/%s' % (c, 巡印枝)).returncode == 0
+
+
+def 巡印判(d, 今):
+    """⛔纯判：巡印 d（dict 或 None）→ ''（鲜）或停摆之由。"""
+    try:
+        时 = int((d or {}).get('时') or 0)
+    except (TypeError, ValueError):
+        时 = 0
+    if not 时:
+        return '⛔ GitHub 之巡停摆：备份/巡印 读不出——巡.yml 未跑或被停'
+    分 = (今 - 时) // 60
+    if 分 > 巡印之限分:
+        return '⛔ GitHub 之巡停摆：巡印 %d 分未更（限 %d 分）——查 Actions「巡」之跑（被停／定时失灵即 workflow_dispatch 巡.yml 再起、改 .github/workflows/巡.yml 之 cron 以复其定时）' % (分, 巡印之限分)
+    return ''
+
+
+def 巡印之由(今=None):
+    """沙盒（总编辑之兜底之巡）：取云端巡印验其鲜 → ''｜停摆之由。"""
+    subprocess.run(['git', 'fetch', '-q', 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (巡印枝, 巡印枝)], cwd=ROOT, capture_output=True)
+    r = subprocess.run(['git', 'show', 'origin/%s:%s' % (巡印枝, 巡印档)], cwd=ROOT, capture_output=True, text=True)
+    try:
+        d = json.loads(r.stdout) if r.returncode == 0 else None
+    except Exception:
+        d = None
+    return 巡印判(d, 今 or int(time.time()))
+
+
+def 云巡(试=False):
+    """GitHub（巡.yml）之跑：巡() → 落巡印 → 非止即唤（哨 PR 留一言）。→ 0 绿｜1 红（停逾九十分、器败、合入之卡、唤不成）。"""
+    import io, contextlib, traceback
+    今 = int(time.time())
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            rc = 巡()
+    except Exception:
+        rc = 1
+        buf.write('⛔ 云巡自败：\n' + traceback.format_exc()[-1500:])
+    印 = buf.getvalue()
+    print(印.rstrip())
+    try:
+        import 心跳
+        在, d = 心跳._远()
+    except Exception:
+        在, d = False, None
+    仓 = os.environ.get('GITHUB_REPOSITORY', '')
+    跑 = '%s/%s/actions/runs/%s' % (os.environ.get('GITHUB_SERVER_URL', 'https://github.com'), 仓, os.environ.get('GITHUB_RUN_ID', ''))
+    印成 = 落巡印(rc, 印, 今, 跑)
+    if not 印成:
+        print('⚠ 巡印落不成（备份/巡印）')
+    if rc == 0 and not 试:
+        return 0
+    try:
+        号 = 哨PR(仓)
+        if not 号:
+            print('⛔ 哨 PR（头枝 %s）不在——唤不得：总编辑立之、订之' % 巡警枝)
+            return 1
+        唤, 键, 红, 停分 = 云巡判(rc, d if 在 else None, 今, _旧言(仓, 号, 今), 印)
+        if 试:
+            唤, 键 = True, '试·%d' % 今
+        if not 唤:
+            print('· 同局（%s）%d 分内已唤——⛔再唤' % (键, 唤之隔分))
+            return 1 if 红 else 0
+        体 = ('【巡警】%s\n\n```\n%s\n```\n\n总编辑：醒即照总章三之5「醒於【巡】」办——沙盒跑 `python3 工具/接棒守.py --巡` 自验（⛔凭此言径派）。'
+              '%s\n\n%s' % ('试唤（验唤醒之路·无须派）' if 试 else ('停书 %s 分' % 停分 if 停分 >= 0 else '器之报'),
+                            印.strip()[:3000], '\n\n⚠ 停逾 %d 分——作者知悉（本跑红）。' % 警之界分 if (红 and not 试) else '', 警记 % 键))
+        _接口('POST', '/repos/%s/issues/%d/comments' % (仓, 号), {'body': 体})
+        print('✓ 已唤（哨 PR #%d·%s）' % (号, 键))
+        return 1 if (红 and not 试) else 0
+    except Exception as e:
+        print('⛔ 唤不成：%s' % e)
+        return 1
 
 
 def 派令之治(n, 主=None, 治=None):
@@ -587,9 +754,11 @@ def 自测():
     import 心跳 as _心
     _今 = 10 ** 9
     _限 = _心.限
-    T('⑩一时之界：心跳.限 25 分＋巡之隔 20 分＋派之约 5 分 ≤ 50 分（余量 ≥10 分）；交棒之宽 ≤ 心跳.限；三令号俱 trig_',
-      _限 == 25 * 60 and 巡之隔分 == 20 and _限 // 60 + 巡之隔分 + 5 <= 50 and 交棒之宽分 * 60 <= _限
-      and len(巡之令号) == 3 and all(str(x).startswith('trig_') for x in 巡之令号))
+    import 席在跑吗 as _席
+    T('⑩一时之界（1117 云巡）：心跳.限 25 分＋云巡之隔 5 分＋GitHub 定时之迟 15 分＋派之约 5 分 ≤ 50 分（余量 ≥10 分）；交棒之宽 ≤ 心跳.限；'
+      '兜底之令号 即 席在跑吗.守书之令（暂停令停之、解停复开）',
+      _限 == 25 * 60 and 云巡之隔分 == 5 and _限 // 60 + 云巡之隔分 + GitHub之迟分 + 5 <= 50 and 交棒之宽分 * 60 <= _限
+      and str(兜底之令号).startswith('trig_') and 兜底之令号 == _席.守书之令 and '巡之令号 =' not in src)
     T('⑩之二 巡判逐形：在写／交棒中→止；停写→派（号取章或毕；皆无取末）；读不出→派末；暂停→止；停锁残而令解→解',
       巡判({'章': 455, '时': _今 - 600, '坐': 'A'}, _今, _限)[0] == '止'
       and 巡判({'章': None, '毕': 456, '时': _今 - 600}, _今, _限)[0] == '止'
@@ -599,7 +768,7 @@ def 自测():
       and 巡判({'时': 'x'}, _今, _限, 末=458)[:2] == ('派', 458)
       and 巡判({'章': '暂停', '时': 4102444800, '坐': '暂停令'}, _今, _限)[0] == '止'
       and 巡判({'章': '暂停', '时': 4102444800, '坐': '暂停令'}, _今, _限, 停在=False)[0] == '解')
-    _段巡 = src.split('def 巡():')[1].split('\ndef ')[0] if 'def 巡():' in src else ''
+    _段巡 = src.split('def 巡(查印=False):')[1].split('\ndef ')[0] if 'def 巡(查印=False):' in src else ''
     T('⑩之四 合入之卡：封逾三十分未入主→停书之报；未封／已入主／未逾→空',
       '停书' in 合入之卡({'章': 456, '时': 1}, 今=10000, 标=lambda n: 'a' * 40, 含=lambda n: False, 时=lambda s: 10000 - 31 * 60)
       and 合入之卡({'章': 456, '时': 1}, 今=10000, 标=lambda n: '', 含=lambda n: False, 时=lambda s: 0) == ''
@@ -611,6 +780,25 @@ def 自测():
       and 派之参(455, True)['prompt'].startswith('【重派】'))
     T('⑩之五 巡之重派先核周限（坑59·1117：周限尽则写书之坐与诸巡俱停十一时；额度未复⛔派）',
       'rate_limit_info' in _段巡 and '周限' in _段巡)
+    _旧 = [(_今 - 600, 'rc2·455·%d' % (_今 - _限 - 60))]
+    _d = {'章': 455, '时': _今 - _限 - 60, '坐': 'A'}
+    T('⑪云巡判（1117）：止→⛔唤⛔红；停写→唤（键＝rc·章·心跳之时）；同键二十分内⛔再唤、逾即再唤；停逾九十分或器败或合入之卡→红',
+      云巡判(0, _d, _今, [])[:3] == (False, '', False)
+      and 云巡判(2, _d, _今, [])[:3] == (True, 'rc2·455·%d' % (_今 - _限 - 60), False)
+      and 云巡判(2, _d, _今, _旧)[0] is False
+      and 云巡判(2, _d, _今 + 唤之隔分 * 60, _旧)[0] is True
+      and 云巡判(2, {'章': 455, '时': _今 - 警之界分 * 60, '坐': 'A'}, _今, [])[2] is True
+      and 云巡判(1, None, _今, [], '⛔ 云巡自败')[2] is True and 云巡判(4, _d, _今, [], '⛔ 停书')[2] is True
+      and 云巡判(3, {'章': '暂停', '时': _今 - 60}, _今, [])[2] is False)
+    T('⑪之二 巡印判：鲜→空；逾三十分或读不出→停摆之由',
+      巡印判({'时': _今 - 600}, _今) == '' and '停摆' in 巡印判({'时': _今 - 巡印之限分 * 60 - 120}, _今)
+      and '停摆' in 巡印判(None, _今) and '停摆' in 巡印判({'时': 'x'}, _今))
+    _流 = open(os.path.join(ROOT, '.github', 'workflows', '巡.yml'), encoding='utf-8').read() if os.path.exists(
+        os.path.join(ROOT, '.github', 'workflows', '巡.yml')) else ''
+    T('⑪之三 巡.yml：每五分之 cron、跑 --云巡、可写言（issues／pull-requests）、可推巡印（contents）；沙盒之 --巡 验巡印（rc 5）、GitHub 之 --巡⛔验',
+      "cron: '*/5 * * * *'" in _流 and '接棒守.py --云巡' in _流 and 'issues: write' in _流 and 'pull-requests: write' in _流
+      and 'contents: write' in _流 and '巡印之由() if 查印' in _段巡
+      and "巡(查印=os.environ.get('GITHUB_ACTIONS') != 'true')" in open(os.path.abspath(__file__), encoding='utf-8').read())
     T('⑦之四 诸印之令俱指 --派令（⛔手拟【派】）', src.count('--派令 %s') >= 2 and '令「【派】开第' not in src)
     _起们 = []
     _原迹存 = os.environ.pop('ZM_TRACE_SAVE', None)
@@ -670,8 +858,10 @@ if __name__ == '__main__':
         sys.exit(_rc)
     if '--哨' in a:
         sys.exit(哨())
+    if '--云巡' in a:
+        sys.exit(云巡('--试' in a))
     if '--巡' in a:
-        sys.exit(巡())
+        sys.exit(巡(查印=os.environ.get('GITHUB_ACTIONS') != 'true'))
     if '--在候' in a:
         sys.exit(0 if 在候() else 1)
     if '--候' in a:

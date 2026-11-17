@@ -18,7 +18,13 @@
 【随时记（1009 作者令「任务一完就记，记了就不会算错」）】每个 Run 一完、每件主环之活一完，即 `--记`：
   界面所示之数（通知之 subagent_tokens）与精算之数（美元、四项、全量、末回）同记一行入 `设定/费账.json`，当场核；
   复盘起草时自动补记其 Run。⛔事後凭记忆追算。
+【续档（1117·坑62）】一会话可有数档：会话换了工作目录（cwd）而续，Claude Code 於新目录之 projects/<cwd>/ 下另开同名（同 sessionId）之档，
+  其首段照抄旧档末一 compact_boundary 以後之诸行（uuid、timestamp、message 一字不改；requestId、promptId 去；cwd 等改）。
+  本会话实例：旧档 -home-user-the-novel/fc87….jsonl 第 2724—5310 行 ＝ 新档 -home-user/fc87….jsonl 第 1—1856 行（1856 行、690 回 assistant 之行、393 个 message.id）。
+  故主会话之单位＝同名诸档（按首时之序）；後档之行若其 uuid 已见於前档、sessionId 同、message 一字不差、且前档之行带 requestId 而此行无——即抄，整行不计；
+  他形之重现照计（费审对拍 报其真异）。主环／主环之等／主环之重载 不给档者，读最新之主会话档与其同名诸档（主档们）。
 【前车】坑⑯：旧审逐行相加，一回 API 拆数行、行行重抄 usage，计重 1.8 倍。坑⑲：方法账之「实耗」取自通知之数，非实耗。
+  坑62：续档首段重抄前档之末段——费审对拍按档名合两档而逐档去重，393 回计两遍（$176.60）；费审按名取末一档，漏旧档 420 回（$72.91）；实 1378 回 $136.64。
 
 用法：
   python3 工具/费审.py <Run 之目录或 Run ID>   # 每席：来回、工具、四项、全量、美元、末回、构思（首落−席起之分）、构思隔（诸写之最长隔）、撞顶而截之回（max_tokens·1020 X26）；按类合计（美元之占）；与通知核
@@ -180,53 +186,117 @@ def _分(a, b):
     return round((P(b) - P(a)).total_seconds() / 60, 1)
 
 
+def _首时(f):
+    """一档首个 timestamp（至多看前五百行）；无则 ''。"""
+    with open(f, encoding='utf-8') as fh:
+        for n, l in enumerate(fh):
+            if n >= 500:
+                break
+            try:
+                ts = json.loads(l).get('timestamp')
+            except Exception:
+                continue
+            if ts:
+                return ts
+    return ''
+
+
+def 档序(fs):
+    """★1117（坑62）：一会话之诸档按首时（次 mtime、次路径）排——旧档在前、续档在後（续档首段所抄之时晚於旧档之首）。"""
+    return sorted(fs, key=lambda x: (_首时(x), os.path.getmtime(x), x))
+
+
+def 主档们():
+    """★1117（坑62）：最新之主会话档与其同名（同 sessionId）诸档——会话换工作目录而续，旧档在他目录。→ [档…]（档序）。"""
+    全 = glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl'))
+    if not 全:
+        return []
+    新 = os.path.basename(max(全, key=os.path.getmtime))
+    return 档序([x for x in 全 if os.path.basename(x) == 新])
+
+
+def _档们(f):
+    """f：一档（str）、诸档（list）、或 None（主档们）。"""
+    return [f] if isinstance(f, str) else (list(f) if f else 主档们())
+
+
+def 是抄(e, 原):
+    """★1117（坑62）：续档之一行是否照抄前档之行。原：uuid → {(sessionId, message 之 JSON): 前档该行带 requestId 否}（只收前诸档之行）。
+    抄之确形（本会话实核 1856 行俱合）：uuid 已见於前档、sessionId 同（且有）、message 一字不差；assistant 之行另须前档之行带 requestId 而此行无。
+    他形（message 有异、此行带 requestId、前档无 requestId、sessionId 异）⛔认作抄——照计，费审对拍 报其真异。"""
+    d = 原.get(e.get('uuid'))
+    if not d or not e.get('sessionId'):
+        return False
+    键 = (e['sessionId'], json.dumps(e.get('message'), sort_keys=True, ensure_ascii=False))
+    if 键 not in d:
+        return False
+    return e.get('type') != 'assistant' or (d[键] and not e.get('requestId'))
+
+
 def 审一(f, 名, 自=None, 至=None, root=ROOT):
     """一档之账。usage 按 message.id 只取一回（无 id 者逐行计）；自／至＝起止之时（ISO，主环用）；美元逐回照价目算。
     ★1020 W53·X26：构思＝「构思首落−席起」之分（席之首行之时至首回写构思档之时）；构思隔＝构思诸写之最长隔
-    （席起、诸写之时依次相减取最大——首回只建档首而後一气写毕者，首落虽小而此隔必大）；无构思档者俱 None。"""
+    （席起、诸写之时依次相减取最大——首回只建档首而後一气写毕者，首落虽小而此隔必大）；无构思档者俱 None。
+    ★1117（坑62）：f 可为一会话之诸档（list，档序）——後档之行照抄前档者（见 是抄）整行不计（来回、四项、工具、取、可见、起止）；
+    去重按（档, message.id）——他形之跨档重现照计两回（⛔猜其为一），由 费审对拍 之记录之义报真异。"""
+    fs = [f] if isinstance(f, str) else list(f)
     具 = 取 = 可见 = 0
     起 = 止 = ''
     起全 = None
     构思时们 = []
     构思稿回 = []
     用, 序, 模, 终, 截 = {}, [], {}, {}, set()
-    for l in open(f, encoding='utf-8'):
-        try:
-            e = json.loads(l)
-        except Exception:
-            continue
-        ts = e.get('timestamp') or ''
-        if (自 and ts and ts < 自) or (至 and ts and ts >= 至):
-            continue
-        if ts:
-            起 = 起 or ts[11:16]; 止 = ts[11:16]
-            起全 = 起全 or ts
-        m = e.get('message') or {}
-        u = m.get('usage')
-        if u and e.get('type') == 'assistant':
-            k = m.get('id') or ('_%d' % len(用))
-            if k not in 用:
-                序.append(k)
-            用[k] = u
-            模[k] = m.get('model') or ''
-            终[k] = bool(m.get('stop_reason'))          # ★坑㉗：席之转录多只记流首之 usage（stop_reason 空、产出为占位之数）
-            if m.get('stop_reason') == 'max_tokens':   # ★1020 W53·X26：撞产出之顶（128k）而截之回——X26 实证之主量
-                截.add(k)
-        c = m.get('content')
-        if isinstance(c, list):
-            for x in c:
-                if x.get('type') == 'tool_use':
-                    具 += 1
-                    if e.get('type') == 'assistant':
-                        可见 += len(json.dumps(x.get('input'), ensure_ascii=False))
-                        if ts and 是建构思(x):
-                            构思时们.append(ts)
-                            构思稿回.append(any(是写稿(y) for y in c))   # ★X96（1111）：此回是否同写稿——最长隔止於稿回＝写稿之思，止於构思回＝排构思之思
-                elif x.get('type') == 'text' and e.get('type') == 'assistant':
-                    可见 += len(x.get('text') or '')
-                elif x.get('type') == 'tool_result':
-                    取 += len(json.dumps(x.get('content'), ensure_ascii=False).encode())
-    r = dict(名=名, 回=len(用), 具=具, 取=取 // 1024, 起=起, 止=止, 未终=sum(1 for k in 用 if not 终.get(k)), 可见=可见, 截=len(截),
+    原, 抄 = {}, 0
+    for i, ff in enumerate(fs):
+        本原 = {}
+        for l in open(ff, encoding='utf-8'):
+            try:
+                e = json.loads(l)
+            except Exception:
+                continue
+            if len(fs) > 1 and e.get('uuid'):
+                if i and 是抄(e, 原):
+                    抄 += 1
+                    continue
+                if e.get('sessionId'):
+                    d = 本原.setdefault(e['uuid'], {})
+                    键 = (e['sessionId'], json.dumps(e.get('message'), sort_keys=True, ensure_ascii=False))
+                    d[键] = d.get(键, False) or bool(e.get('requestId'))
+            ts = e.get('timestamp') or ''
+            if (自 and ts and ts < 自) or (至 and ts and ts >= 至):
+                continue
+            if ts:
+                起 = 起 or ts[11:16]; 止 = ts[11:16]
+                起全 = 起全 or ts
+            m = e.get('message') or {}
+            u = m.get('usage')
+            if u and e.get('type') == 'assistant':
+                k = (i, m.get('id') or ('_%d' % len(用)))
+                if k not in 用:
+                    序.append(k)
+                用[k] = u
+                模[k] = m.get('model') or ''
+                终[k] = bool(m.get('stop_reason'))          # ★坑㉗：席之转录多只记流首之 usage（stop_reason 空、产出为占位之数）
+                if m.get('stop_reason') == 'max_tokens':   # ★1020 W53·X26：撞产出之顶（128k）而截之回——X26 实证之主量
+                    截.add(k)
+            c = m.get('content')
+            if isinstance(c, list):
+                for x in c:
+                    if x.get('type') == 'tool_use':
+                        具 += 1
+                        if e.get('type') == 'assistant':
+                            可见 += len(json.dumps(x.get('input'), ensure_ascii=False))
+                            if ts and 是建构思(x):
+                                构思时们.append(ts)
+                                构思稿回.append(any(是写稿(y) for y in c))   # ★X96（1111）：此回是否同写稿——最长隔止於稿回＝写稿之思，止於构思回＝排构思之思
+                    elif x.get('type') == 'text' and e.get('type') == 'assistant':
+                        可见 += len(x.get('text') or '')
+                    elif x.get('type') == 'tool_result':
+                        取 += len(json.dumps(x.get('content'), ensure_ascii=False).encode())
+        for u_, d in 本原.items():   # 本档之行入「原」——只供後档认抄（本档内⛔自认）
+            for 键, v in d.items():
+                原.setdefault(u_, {})[键] = 原.get(u_, {}).get(键, False) or v
+    r = dict(名=名, 回=len(用), 具=具, 取=取 // 1024, 起=起, 止=止, 未终=sum(1 for k in 用 if not 终.get(k)), 可见=可见, 截=len(截), 抄=抄,
              写1h=sum((u.get('cache_creation') or {}).get('ephemeral_1h_input_tokens', 0) for u in 用.values()),
              写5m=sum((u.get('cache_creation') or {}).get('ephemeral_5m_input_tokens', 0) for u in 用.values()),
              构思=_分(起全, 构思时们[0]) if (起全 and 构思时们) else None,
@@ -238,6 +308,7 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
         r[k] = sum(u.get(key, 0) for u in 用.values())
     r['全'] = r['新'] + r['建'] + r['读'] + r['出']
     r['末'] = sum(用[序[-1]].get(key, 0) for _, key in 项) if 序 else 0
+    r['末入'] = sum(用[序[-1]].get(key, 0) for _, key in 项[:3]) if 序 else 0   # ★1117：末回之入三项（不含产出）——核之差之解（见 印）
     目 = 价目(root)
     r['金'], r['疑'] = 0.0, []
     for k in 序:
@@ -249,9 +320,10 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
 
 
 def 主环(自=None, f=None, 至=None):
-    """主会话（总编辑）之账：主环每一回工具都重发整个上下文——其费常不亚於诸席（坑⑮）。"""
-    f = f or (sorted(glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl')), key=os.path.getmtime) or [None])[-1]
-    return 审一(f, '主环(总编辑)', 自, 至) if f else None
+    """主会话（总编辑）之账：主环每一回工具都重发整个上下文——其费常不亚於诸席（坑⑮）。
+    ★1117（坑62）：不给 f 者读 主档们（最新之主会话档与其同名之续档／旧档）——⛔只读最新一档（会话换目录而续後，旧段只在旧档）。"""
+    fs = _档们(f)
+    return 审一(fs, '主环(总编辑)', 自, 至) if fs else None
 
 
 等之式 = re.compile(r'(?<![\w.])sleep\s+\d|\bpgrep\b|\bkill\s+-0\b|推\.py\s+--等')
@@ -269,12 +341,13 @@ def 是等(x):
 
 
 def 主环之等(自=None, 至=None, f=None):
-    """→ (回, 美元)：主环於 [自, 至) 内发出等待／轮询类工具调用（sleep、pgrep、kill -0、推.py --等）之那几回 API 之费——机器能办而花 token 之一类（坑⑮）。"""
-    f = f or (sorted(glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl')), key=os.path.getmtime) or [None])[-1]
-    if not f:
+    """→ (回, 美元)：主环於 [自, 至) 内发出等待／轮询类工具调用（sleep、pgrep、kill -0、推.py --等）之那几回 API 之费——机器能办而花 token 之一类（坑⑮）。
+    ★1117（坑62）：f 可为诸档（不给即 主档们）；按 message.id 合——续档所抄之行与原行同 id、同 usage，合之即一回。"""
+    fs = _档们(f)
+    if not fs:
         return 0, 0.0
     用, 模, 时, 等 = {}, {}, {}, set()
-    for l in open(f, encoding='utf-8'):
+    for l in (l for ff in fs for l in open(ff, encoding='utf-8')):
         try:
             e = json.loads(l)
         except Exception:
@@ -297,13 +370,14 @@ def 主环之等(自=None, 至=None, f=None):
 
 def 主环之重载(自=None, 至=None, f=None, 闲=3600):
     """→ (回, 美元)：主环於 [自, 至) 内「闲逾一时之後之首回」重写缓存之费（缓存 1h 档过期，整份上下文重写；坑㉓）。
-    只计缓存写之费（照该回之 5m／1h 两档），⛔计其读与产出——那是这一回本来就要花的。"""
+    只计缓存写之费（照该回之 5m／1h 两档），⛔计其读与产出——那是这一回本来就要花的。
+    ★1117（坑62）：f 可为诸档（不给即 主档们）——续档之首回之「前一回」在旧档，只读续档则其闲认不着。"""
     from datetime import datetime
-    f = f or (sorted(glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl')), key=os.path.getmtime) or [None])[-1]
-    if not f:
+    fs = _档们(f)
+    if not fs:
         return 0, 0.0
     用, 时, 模 = {}, {}, {}
-    for l in open(f, encoding='utf-8'):
+    for l in (l for ff in fs for l in open(ff, encoding='utf-8')):
         try:
             e = json.loads(l)
         except Exception:
@@ -348,7 +422,7 @@ def 本之通知(rid, blk):
 
 
 def 合(行):
-    s = {k: sum(r.get(k, 0) for r in 行) for k in ('回', '具', '新', '建', '读', '出', '全', '金', '末', '未终', '可见', '写1h', '写5m', '截')}
+    s = {k: sum(r.get(k, 0) for r in 行) for k in ('回', '具', '新', '建', '读', '出', '全', '金', '末', '末入', '未终', '可见', '写1h', '写5m', '截', '抄')}
     s['疑'] = sum(len(r['疑']) for r in 行)
     return s
 
@@ -406,6 +480,9 @@ def 印(行, rid=None, 档们=None):
             print('  核：✓ Σ末回 %d ＝ 通知之 subagent_tokens %d（本器读对了转录）' % (s['末'], n))
         else:
             print('  核：⚠ Σ末回 %d ≠ 通知之 %d（差 %+.1f%%）——不符之因未尽明（已知：续跑之 Run 通知只计其一段）；美元照转录精算，不受此影响' % (s['末'], n, 100.0 * (s['末'] - n) / (n or 1)))
+            # ★1117：转录今记终值之 usage（stop_reason 俱在），通知则似取流首之数（入三项＋占位之产出）——故 Σ末回含诸席末回之终产出而示不含；
+            #   印 Σ末回之入三项以便判（wf_d9b92499-c7d：示−Σ入 ＝ +90、wf_f230e25f-88c：+57，六席各十上下，与坑㉗ 之流首占位相当）
+            print('     Σ末回之入三项（新入＋缓存建＋缓存读）%d：示 − 此 ＝ %+d；Σ末回之产出 %d' % (s['末入'], n - s['末入'], s['末'] - s['末入']))
 
 
 def 找目录(x):
@@ -634,8 +711,61 @@ def 自测():
                         and '⛔撞产出之顶而截（max_tokens）：2 回／1 席：戊 2' in 汇)
     finally:
         shutil.rmtree(t2)
+    o_, c_ = _续档自测()
+    ok += o_; 共 += c_
     print('费审·自测 %d/%d' % (ok, 共))
     return ok == 共
+
+
+def _续档自测():
+    """★1117（坑62）金题（与 费审对拍 之金题不同之数）：会话换目录而续，新档首段照抄旧档末一 compact_boundary 以後之诸行。→ (过, 共)。"""
+    ok = 共 = 0
+    t = tempfile.mkdtemp()
+    try:
+        S = 'claude-sonnet-5-5'   # Sonnet 5.5：新入 2、写5m 2.5、写1h 4、读 0.10、产出 10（每百万）
+        def A(uuid, mid, u, ts, req, cwd='/a', 具=None):
+            e = {'type': 'assistant', 'uuid': uuid, 'sessionId': 'Z', 'cwd': cwd, 'timestamp': ts, 'requestId': req,
+                 'message': {'id': mid, 'model': S, 'stop_reason': 'end_turn', 'usage': u, 'content': [具] if 具 else [{'type': 'text', 'text': '甲乙'}]}}
+            return e if req else {k: v for k, v in e.items() if k != 'requestId'}
+        def 抄(e, **改):
+            x = json.loads(json.dumps(e)); x['cwd'] = '/b'; x.pop('requestId', None); x.update(改); return x
+        def 写(p, es):
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            open(p, 'w', encoding='utf-8').write(''.join(json.dumps(e, ensure_ascii=False) + '\n' for e in es)); return p
+        # w1＝10×2＋4000(5m)×2.5＋100×10＝11020；w2＝4×2＋60000×0.1＋40×10＝6408；w3＝6×2＋2000(1h)×4＋8000×0.1＋70×10＝9512
+        w1 = {'input_tokens': 10, 'cache_creation_input_tokens': 4000, 'cache_creation': {'ephemeral_5m_input_tokens': 4000, 'ephemeral_1h_input_tokens': 0}, 'cache_read_input_tokens': 0, 'output_tokens': 100}
+        w2 = {'input_tokens': 4, 'cache_creation_input_tokens': 0, 'cache_creation': {'ephemeral_5m_input_tokens': 0, 'ephemeral_1h_input_tokens': 0}, 'cache_read_input_tokens': 60000, 'output_tokens': 40}
+        w3 = {'input_tokens': 6, 'cache_creation_input_tokens': 2000, 'cache_creation': {'ephemeral_5m_input_tokens': 0, 'ephemeral_1h_input_tokens': 2000}, 'cache_read_input_tokens': 8000, 'output_tokens': 70}
+        等 = {'type': 'tool_use', 'name': 'Bash', 'input': {'command': 'sleep 30'}}
+        x1 = A('u1', 'x1', w1, '2026-11-01T08:30:00Z', 'q1', 具=等)                  # 旧档独有（compact_boundary 之前）：只在旧档
+        界 = {'type': 'system', 'subtype': 'compact_boundary', 'uuid': 'u2', 'sessionId': 'Z', 'cwd': '/a', 'timestamp': '2026-11-01T09:00:00Z'}
+        x2a = A('u3', 'x2', w2, '2026-11-01T09:00:05Z', 'q2'); x2b = A('u4', 'x2', w2, '2026-11-01T09:00:05Z', 'q2', 具={'type': 'tool_use', 'name': 'Read', 'input': {'file_path': '/x'}})
+        x3 = A('u5', 'x3', w3, '2026-11-02T10:30:00Z', 'q3', cwd='/b')               # 新档自有：闲逾一时之首回（距 x2 逾一日）
+        旧 = 写(os.path.join(t, 'p', '-a', 'Z.jsonl'), [x1, 界, x2a, x2b])
+        新 = 写(os.path.join(t, 'p', '-b', 'Z.jsonl'), [抄(界), 抄(x2a), 抄(x2b), x3])
+        os.utime(旧, (1e9, 1e9))                     # mtime 反序亦无碍：档序先看首时
+        共 += 1; ok += (档序([新, 旧]) == [旧, 新])
+        r = 审一([旧, 新], '主')
+        共 += 1; ok += (r['回'] == 3 and r['新'] == 20 and r['建'] == 6000 and r['读'] == 68000 and r['出'] == 210
+                        and abs(r['金'] - (11020 + 6408 + 9512) / 1e6) < 1e-12 and r['抄'] == 3)
+        共 += 1; ok += (r['具'] == 2 and r['起'] == '08:30' and r['止'] == '10:30' and r['末'] == 6 + 2000 + 8000 + 70 and r['末入'] == 6 + 2000 + 8000)
+        # 旧器之二误：只读续档 → 漏 x1（2 回）；逐档各算而相加 → x2 计两遍（4 回）
+        共 += 1; ok += (审一(新, '主')['回'] == 2 and 审一(旧, '主')['回'] + 审一(新, '主')['回'] == 4)
+        # 主环之等／主环之重载 读诸档：x1 之 sleep 只在旧档（只读续档即漏）；x3 距 x2 逾一时（w3 之 1h 写 2000×$4/M）
+        共 += 1; ok += (主环之等(f=[旧, 新]) == (1, 11020e-6) and 主环之等(f=新) == (0, 0.0)
+                        and 主环之重载(f=[旧, 新])[0] == 1 and abs(主环之重载(f=[旧, 新])[1] - 2000 * 4 / 1e6) < 1e-12)
+        # 他形⛔认作抄（照计两回，由 费审对拍 报真异）：抄而 usage 异、抄而带 requestId、抄而 sessionId 异、前档无 requestId
+        x2c = 抄(x2a); x2c['message'] = dict(x2c['message'], usage=dict(w2, output_tokens=41))
+        原无 = 写(os.path.join(t, 'p', '-c', 'Z.jsonl'), [x1, 界, A('u3', 'x2', w2, '2026-11-01T09:00:05Z', None), A('u4', 'x2', w2, '2026-11-01T09:00:05Z', None, 具=x2b['message']['content'][0])])
+        for 旧_, 诸 in ((旧, [抄(界), x2c, 抄(x2b), x3]), (旧, [抄(界), dict(抄(x2a), requestId='q2'), dict(抄(x2b), requestId='q2'), x3]),
+                       (旧, [抄(界), 抄(x2a, sessionId='Y'), 抄(x2b, sessionId='Y'), x3]), (原无, [抄(界), 抄(x2a), 抄(x2b), x3])):
+            共 += 1; ok += (审一([旧_, 写(os.path.join(t, 'p', '-d', 'Z.jsonl'), 诸)], '主')['回'] == 4)
+        # 是抄：非 assistant 之行（无 requestId 之事）只问 uuid、sessionId、message
+        原 = {'u2': {('Z', 'null'): False}}
+        共 += 1; ok += (是抄(抄(界), 原) and not 是抄(dict(抄(界), sessionId=None), 原) and not 是抄(抄(界, uuid='u9'), 原))
+    finally:
+        shutil.rmtree(t)
+    return ok, 共
 
 
 if __name__ == '__main__':
@@ -662,7 +792,7 @@ if __name__ == '__main__':
                 nm = 席名(json.load(open(mf, encoding='utf-8'))) if os.path.exists(mf) else ''
                 记(名, '非工作流子席·' + nm, [审一(fs[0], nm)], None)
             else:
-                记(名, '主会话全程', [审一(fs[0], '主会话')], None)
+                记(名, '主会话全程', [审一(fs, '主会话')], None)   # ★1117（坑62）：同名诸档（续档）合为一单位，抄行不计
         sys.exit(0)
     if a[:1] == ['--记主'] and len(a) in (3, 4):
         r = 主环(a[2], 至=a[3] if len(a) == 4 else None)

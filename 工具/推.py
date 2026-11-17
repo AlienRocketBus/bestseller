@@ -47,7 +47,23 @@ re_号 = re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 
 
 def _git目录(root):
-    return os.path.join(root, '.git')
+    """`.git` 之目录（锁、记、待之所）。★1117：git worktree（工作流之席之隔离工作区）之 `.git` 是档（`gitdir: <真目录>`）——
+    取其真目录（旧径 open 即 NotADirectoryError 而崩，席遂交不得）；主工作区之 `.git` 是目录，照旧。"""
+    g = os.path.join(root, '.git')
+    if os.path.isfile(g):
+        try:
+            s = open(g, encoding='utf-8').read().strip()
+        except OSError:
+            return g
+        if s.startswith('gitdir:'):
+            p = s[len('gitdir:'):].strip()
+            return p if os.path.isabs(p) else os.path.normpath(os.path.join(root, p))
+    return g
+
+
+def 在工作树(root=ROOT):
+    """★1117：root 是 git worktree（`.git` 是档）否——主枝检出於主工作区，此处⛔挪主枝（git ≥2.43 拒；旧 git 则改他工作区之枝而不动其档）。"""
+    return os.path.isfile(os.path.join(root, '.git'))
 
 
 def _跑(args, root=ROOT, **kw):
@@ -214,9 +230,12 @@ def 速检(root=ROOT):
     return 红
 
 
-def 枝正(root=ROOT):
+def 枝正(root=ROOT, 交=False):
     """★1022（405 之推三回 non-fast-forward）：会话起於游离之 HEAD，本地之枝停在旧提交——`git push origin 枝` 推的是那旧枝而非 HEAD。
-    → 红之行或 None：游离而枝为 HEAD 之祖即把枝挪到 HEAD 并检出（零 token）；枝不在 HEAD 之祖上即红（⛔盲挪）。"""
+    → 红之行或 None：游离而枝为 HEAD 之祖即把枝挪到 HEAD 并检出（零 token）；枝不在 HEAD 之祖上即红（⛔盲挪）。
+    ★1117：git worktree 之中⛔挪主枝——交（推 HEAD 於 治-<sha12>，枝名无涉）照行；直推（推本地主枝）即红。"""
+    if 在工作树(root):
+        return None if 交 else '  ✗ 枝正：git worktree 之中⛔直推主枝（主枝检出於主工作区）——用默之交（python3 工具/推.py）'
     当 = _跑(['git', 'symbolic-ref', '-q', '--short', 'HEAD'], root).stdout.strip()
     if 当 == 枝:
         return None
@@ -355,7 +374,7 @@ def 交(root=ROOT, 交法=None, 最多=5):
             if 交法 is None:
                 if 心跳章(root):
                     _跑([sys.executable, os.path.join(ROOT, '工具', '心跳.py'), '--跳', str(心跳章(root))], root)
-                _歪 = 枝正(root)
+                _歪 = 枝正(root, 交=True)
                 if _歪:
                     print('⛔ ' + _歪.strip()); _记(root, _歪.strip()); return 1
                 速红 = 速检(root)      # 数秒之闸先跑：红即⛔交（省 GitHub 一回十余分之闸）
@@ -681,6 +700,12 @@ def 自测():
         print('  ✗ 链之检 读不出：%s' % e)
         _链好 = _链拦 = _链放 = False
     共 += 1; ok += (_链好 and _链拦 and _链放)
+    # ★1117：git worktree（`.git` 是档）——锁落其真目录（⛔崩）；交之枝正⛔挪主枝，直推即红
+    _w = tempfile.mkdtemp(); _wg = tempfile.mkdtemp()
+    open(os.path.join(_w, '.git'), 'w').write('gitdir: %s\n' % _wg)
+    _wl = 取锁(_w); _wl在 = _wl is not None and os.path.exists(os.path.join(_wg, '推.lock')); _wl.close()
+    共 += 1; ok += (_git目录(_w) == _wg and _wl在 and _git目录(t) == os.path.join(t, '.git')
+                    and 枝正(_w, 交=True) is None and (枝正(_w) or '').startswith('  ✗ 枝正：git worktree'))
     print('推·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' ⛔未过'))
     return ok == 共
 

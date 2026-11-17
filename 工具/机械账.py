@@ -8,6 +8,7 @@
 
 量法（与 工具/费审.py 同一把尺，⛔另造）：
   · 每回按 message.id 去重，usage 取其末行（流式之末值）；美元照 费审.一回之金（设定/价目.json）。
+  · 主会话读其同名诸档（费审.主档们·坑62：会话换目录而续，旧段只在旧档）。
   · 一回发数个工具者，其费按工具数均分到各类；无工具之回（答话）入「答话」。
   · 闲逾一时之首回另记其缓存重写之费（费审.主环之重载，坑㉓）——它是「停」之价，⛔是那一回之活之价。
   · 归类只看命令之字（先剔 heredoc 之体与引号中之字，同 费审.是等——坑㉑），先中先得，序即下表之序。
@@ -64,10 +65,11 @@ def 归(x):
 
 
 def 账(f=None, 自=None, 至=None):
-    """→ {类: [回, 美元]}（另「答话」「闲置重载」二行）。"""
-    f = f or (sorted(glob.glob(os.path.expanduser('~/.claude/projects/*/*.jsonl')), key=os.path.getmtime) or [None])[-1]
+    """→ {类: [回, 美元]}（另「答话」「闲置重载」二行）。
+    ★1117（坑62）：f 可为诸档；不给即 费审.主档们（最新之主会话档与其同名之旧档／续档）——按 message.id 合，续档所抄之回与原回同 id 同 usage，合之即一回。"""
+    fs = [f] if isinstance(f, str) else (list(f) if f else 费审.主档们())
     用, 模, 时, 具 = {}, {}, {}, {}
-    for l in open(f, encoding='utf-8'):
+    for l in (l for ff in fs for l in open(ff, encoding='utf-8')):
         try:
             e = json.loads(l)
         except Exception:
@@ -94,7 +96,7 @@ def 账(f=None, 自=None, 至=None):
         for 名 in 名们:
             r = 出.setdefault(名, [0.0, 0.0])
             r[0] += 1 / len(名们); r[1] += 金 / len(名们)
-    回, 金 = 费审.主环之重载(自, 至, f)
+    回, 金 = 费审.主环之重载(自, 至, fs)
     出['（内含）闲置重载'] = [回, 金]
     return 出
 

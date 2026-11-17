@@ -4,6 +4,9 @@
 #     候以 git bundle 交诸片（⛔推临时之枝：免权与清理）；秒表取 备份/报 之 报/均秒.json（GitHub 实测），缺即仓中之种 设定/全测均秒.json。
 #   诸片：同一候之树、同一秒表 → 同一分；每片之果落 shard-<k>（if: always()，逾时亦交已跑者）。
 #   判（并判·推闸同策：工具/全测.py --并果）与其後之行（推主枝／报）在调者之末一 job；本档⛔写云端（permissions 只读）。
+#   取仓（1117 GitHub 化之审·F·法用#闸取仓之速）：备候与诸片之 checkout 係省取（partial clone·filter 见其 with：史与树全、档按需取——
+#     git 之义保其判全同）；降级＝全取（QUANQU 之 quan_qu：弃省取之仓、照旧式 fetch-depth 0 无 filter 重取）——省取不成、省取之仓备候败、
+#     片中懒取有败（GIT_TRACE2_EVENT 计之）即自降级而重跑，⛔因省取而红；片印「省取：懒取 n 回、败 m、s 秒」（可观）。
 name: gate
 on:
   workflow_call:
@@ -38,6 +41,50 @@ permissions:
 env:
   MAIN: claude/the-novel-review-4dtuit
   REPORT: 备份/报
+  QUANQU: |
+    quan_qu() {
+      echo "::warning::省取降级·全取（$2）——照旧式 fetch-depth 0 无 filter 重取"
+      cd "$GITHUB_WORKSPACE" || return 1
+      find . -mindepth 1 -delete
+      git init -q . && git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" && git config --local gc.auto 0 \
+        && git config --local "http.$GITHUB_SERVER_URL/.extraheader" "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
+        && git -c protocol.version=2 fetch -q --prune --no-recurse-submodules origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' \
+        || return 1
+      if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then git checkout -q --force --detach "$1"; else git checkout -q --force -B "$1" "refs/remotes/origin/$1"; fi
+    }
+    sheng_cang() { [ "$(git config --get remote.origin.promisor)" = true ]; }
+    lan_qu() {
+      python3 -c '
+    import json, os, re, sys
+    d, P, bad = sys.argv[1], {}, 0
+    QUE = re.compile(r"promisor remote|lazy fetch|^Not a valid object name [0-9a-f]{40}$|^unable to read [0-9a-f]{40}|^missing (blob|tree) object")
+    for f in (os.listdir(d) if os.path.isdir(d) else []):
+        sid = s = e = None
+        for l in open(os.path.join(d, f), encoding="utf-8", errors="replace"):
+            try:
+                j = json.loads(l)
+            except ValueError:
+                continue
+            sid = sid or j.get("sid")
+            if j.get("event") == "start":
+                s = j.get("argv") or []
+            elif j.get("event") == "exit":
+                e = j
+            elif j.get("event") == "error" and QUE.search(j.get("msg") or ""):
+                bad += 1
+        if sid:
+            P[sid] = (s, e)
+    n = 0
+    t = 0.0
+    for sid, (s, e) in P.items():
+        if s and "fetch.negotiationAlgorithm=noop" in s and "--stdin" in s:
+            n += 1
+            t += (e or {}).get("t_abs", 0)
+            fu = P.get(sid.rsplit("/", 1)[0]) if "/" in sid else None
+            if not e or e.get("code") or (fu and not fu[1]):
+                bad += 1
+    print(n, bad, round(t, 1))' "$1" 2> /dev/null || echo "? ? ?"
+    }
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -53,20 +100,30 @@ jobs:
       ks: ${{ steps.p.outputs.ks }}
     steps:
       - uses: actions/checkout@v4
+        id: qu
+        continue-on-error: true
         with:
           ref: ${{ inputs.sha || inputs.ref }}
           fetch-depth: 0
+          filter: blob:limit=1m
       - name: 备候（并主枝·已在／拒·出候之包）
         id: p
         shell: bash
         env:
           R: ${{ inputs.ref }}
           MODE: ${{ inputs.mode }}
+          QU: ${{ steps.qu.outcome }}
+          WANT: ${{ inputs.sha || inputs.ref }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set +e
+          eval "$QUANQU"
+          D="$RUNNER_TEMP/cand"
+          { [ "$QU" = success ] && git rev-parse --verify -q 'HEAD^{commit}' > /dev/null; } || quan_qu "$WANT" "检出不成：$QU" || exit 1
+          bei_hou() {
           git config user.name autopush
           git config user.email autopush@users.noreply.github.com
-          D="$RUNNER_TEMP/cand"; mkdir -p "$D"
+          rm -rf "$D"; mkdir -p "$D"
           GUO=; YIN=; GO=0; C=; N=; KS='[1]'
           T="$(git rev-parse --verify -q 'HEAD^{commit}')"
           if ! git fetch -q origin "+refs/heads/$MAIN:refs/remotes/origin/$MAIN"; then GUO=败; YIN=fetch; fi
@@ -94,10 +151,13 @@ jobs:
             N="$(python3 工具/全测.py --片数 --秒表 "$D/secs.json")"
             if [ "${N:-0}" -ge 1 ] 2>/dev/null; then GO=1; KS="[$(seq -s, 1 "$N")]"; else GUO=败; YIN=片数; N=; fi
           fi
+          }
+          bei_hou
+          if [ "$GUO" = 败 ] && sheng_cang; then quan_qu "$WANT" "省取之仓备候败（因 $YIN）" && bei_hou; fi
           {
             echo "go=$GO"; echo "guo=$GUO"; echo "yin=$YIN"; echo "base=$B0"; echo "sha=$T"; echo "cand=$C"; echo "n=$N"; echo "ks=$KS"
           } >> "$GITHUB_OUTPUT"
-          echo "· 候 ${C:0:12}（主 ${B0:0:12} ＋ $R ${T:0:12}）｜片 ${N:-—}｜${GUO:-入闸}"
+          echo "· 候 ${C:0:12}（主 ${B0:0:12} ＋ $R ${T:0:12}）｜片 ${N:-—}｜${GUO:-入闸}｜取 $(git config --get remote.origin.partialclonefilter || echo 全)"
       - uses: actions/upload-artifact@v4
         if: steps.p.outputs.go == '1'
         with:
@@ -119,9 +179,12 @@ jobs:
         k: ${{ fromJSON(needs.prepare.outputs.ks) }}
     steps:
       - uses: actions/checkout@v4
+        id: qu
+        continue-on-error: true
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           fetch-depth: 0
+          filter: blob:limit=1m
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -139,16 +202,35 @@ jobs:
           K: ${{ matrix.k }}
           N: ${{ needs.prepare.outputs.n }}
           CAND: ${{ needs.prepare.outputs.cand }}
+          QU: ${{ steps.qu.outcome }}
+          WANT: ${{ needs.prepare.outputs.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set +e
-          git config user.name autopush
-          git config user.email autopush@users.noreply.github.com
-          D="$RUNNER_TEMP/cand"; O="$RUNNER_TEMP/shard"; mkdir -p "$O"
-          if [ -f "$D/cand.bundle" ]; then git bundle unbundle "$D/cand.bundle" > /dev/null || exit 2; fi
-          git checkout -q -B "$MAIN" "$CAND" || exit 2
-          if [ "$(git rev-parse HEAD)" != "$CAND" ]; then echo "⛔片之树非候"; exit 2; fi
-          git config core.hooksPath 工具/githooks
-          python3 工具/全测.py --片 "$K/$N" --秒表 "$D/secs.json" --出 "$O/shard$K.json"
+          eval "$QUANQU"
+          D="$RUNNER_TEMP/cand"; O="$RUNNER_TEMP/shard"; T2="$RUNNER_TEMP/t2"
+          { [ "$QU" = success ] && git rev-parse --verify -q 'HEAD^{commit}' > /dev/null; } || quan_qu "$WANT" "检出不成：$QU" || exit 2
+          while :; do
+            SHENG=; sheng_cang && SHENG="$(git config --get remote.origin.partialclonefilter)"
+            rm -rf "$O" "$T2"; mkdir -p "$O" "$T2"
+            git config user.name autopush
+            git config user.email autopush@users.noreply.github.com
+            LI=1
+            if [ -f "$D/cand.bundle" ]; then git bundle unbundle "$D/cand.bundle" > /dev/null || LI=; fi
+            git checkout -q -B "$MAIN" "$CAND" || LI=
+            if [ "$(git rev-parse HEAD)" != "$CAND" ]; then echo "⛔片之树非候"; LI=; fi
+            if [ -z "$LI" ]; then [ -n "$SHENG" ] && quan_qu "$WANT" "省取之仓立候不成" && continue; exit 2; fi
+            git config core.hooksPath 工具/githooks
+            if [ -n "$SHENG" ]; then export GIT_TRACE2_EVENT="$T2"; fi
+            python3 工具/全测.py --片 "$K/$N" --秒表 "$D/secs.json" --出 "$O/shard$K.json"
+            rc=$?
+            unset GIT_TRACE2_EVENT
+            [ -n "$SHENG" ] || exit $rc
+            read -r LAN BAI MIAO <<< "$(lan_qu "$T2")"
+            echo "· 省取（$SHENG）：懒取 $LAN 回、败 $BAI、$MIAO 秒"
+            [ "$BAI" = 0 ] && exit $rc
+            rm -rf "$O"; quan_qu "$WANT" "片中懒取败 $BAI 回" || exit 2
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -26,7 +26,10 @@
   python3 工具/暂停令.py --自测
 
 守书之巡（1024·省审 sessions 四）：停锁之下守书每时一唤只判「止」，纯是白耗——令在即关其定时之令，解即复开。
-  其号取 `席在跑吗.守书之令`（与 守书之号 同处·⛔另硬写）；令已解而「守书已停」之记仍在：自走红、会话之守拦开写书会话
+  ★1117 起守书之巡＝兜底之巡三令（`接棒守.兜底之令`：甲 :27、乙 :57 常开，丙常停·降级方启）：停则三令俱 enabled false
+  （旧只停甲，乙丙每时空唤耗 token）；解则复常——甲、乙 enabled true 且 cron 复常之刻、丙 enabled false（降级中停者亦复常；
+  仍降级则 --巡 自印 rc 5 再降）。暂停中解停由 GitHub 云巡察之（巡.yml 每五分·零 token），⛔需兜底。号与 cron 俱取
+  `接棒守.兜底之令`（⛔另硬写）；令已解而「守书已停」之记仍在：自走红、会话之守拦开写书会话
   （书不停之第三锁⛔失守·作者 1022 严令防断流）。
 """
 import os as _o, sys as _s
@@ -204,10 +207,23 @@ def 销(件, root=ROOT):
     return False
 
 
+def 守书之诸参(开):
+    """→ [(名, update_trigger 之原样参)]，兜底之巡三令各一（号、cron 俱取 接棒守.兜底之令——⛔另硬写）。
+    停（开=False）：三令俱 enabled false（暂停中解停由 GitHub 云巡察之·⛔需兜底）；
+    开（解停）：复常——各令 enabled＝常时开否、cron_expression＝常之 cron（甲 :27、乙 :57 开，丙停）。"""
+    import 接棒守
+    出 = []
+    for 名, 号, 常, _, 常开 in 接棒守.兜底之令:
+        参 = {'trigger_id': 号, 'enabled': bool(常开) if 开 else False}
+        if 开:
+            参['cron_expression'] = 常
+        出.append((名, 'update_trigger ' + json.dumps(参)))
+    return 出
+
+
 def 守书之参(开):
-    """update_trigger 之原样参（开＝True 复开守书之巡）。号取 席在跑吗.守书之令——⛔另硬写。"""
-    import 席在跑吗
-    return 'update_trigger ' + json.dumps({'trigger_id': 席在跑吗.守书之令, 'enabled': bool(开)})
+    """update_trigger 之原样参（三令以「；」连；开＝True 复常、False 俱停）——见 守书之诸参。"""
+    return '；'.join(参 for _, 参 in 守书之诸参(开))
 
 
 def 守书停记(root=ROOT):
@@ -223,8 +239,8 @@ def 记守书(停, root=ROOT):
     if 停:
         if not d or d.get('解') or not 在(root)[0]:   # 待（大审未毕）亦⛔：令未生效而巡先停，书续而无人兜
             print('⛔ 暂停令未在（无令、已解或未生效）——⛔停守书之巡（书不停之第三锁）'); return False
-        import 席在跑吗
-        d['守书已停'] = {'时': 时, 'trigger_id': 席在跑吗.守书之令}
+        import 接棒守
+        d['守书已停'] = {'时': 时, 'trigger_id': [x[1] for x in 接棒守.兜底之令]}   # 兜底之巡三令之号
     else:
         if not 守书停记(root):
             print('⛔ 无「守书已停」之记，无须记开'); return False
@@ -236,12 +252,12 @@ def 记守书(停, root=ROOT):
 
 
 def 守书之哨(root=ROOT):
-    """→ 红行之列：令已解（或无令）而「守书已停」之记仍在——书断流之险，印复开之原样参。"""
+    """→ 红行之列：令已解（或无令）而「守书已停」之记仍在——书断流之险，印复常之原样参（三令各一行）。"""
     x = 守书停记(root)
     if not x or 在(root)[0]:
         return []
-    return ['⛔ 守书之巡仍停（令已解·停记 %s）——照调：%s；调毕 python3 工具/暂停令.py --守书已开'   # ★一行⛔逾 160 字（自走默印截於此）
-            % (x.get('时', ''), 守书之参(True))]
+    return (['⛔ 守书之巡（兜底三令）仍停（令已解·停记 %s）——照调下三参复常；调毕 python3 工具/暂停令.py --守书已开' % x.get('时', '')]
+            + ['⛔ 复常·%s：%s' % (名, 参) for 名, 参 in 守书之诸参(True)])   # ★每行⛔逾 160 字（自走默印截於此）、行首⛔（默印只收之）
 
 
 def 解(言, root=ROOT):
@@ -263,7 +279,7 @@ def 解(言, root=ROOT):
         except Exception as e:
             print('  ⚠ 解停锁未成（%s）——跑 `python3 工具/心跳.py --收`' % e)
     if not 已印:
-        print('  守书之巡复开：%s；调毕 python3 工具/暂停令.py --守书已开' % 守书之参(True))
+        print('  守书之巡（兜底三令）复常：%s；调毕 python3 工具/暂停令.py --守书已开' % 守书之参(True))
     if root == ROOT:
         try:
             import 自走 as _自
@@ -324,19 +340,27 @@ def 自测():
         共 += 1; ok += 在(t)[0] is False                                   # 待之章号坏⛔认（⛔误停）
         with contextlib.redirect_stdout(io.StringIO()):
             共 += 1; ok += 记守书(True, t) is False and 守书停记(t) is None   # 1024 验：令未生效（待）⛔记守书已停（书续而巡先停）
-        # 1024 守书之巡：参之号取一处之常量；令在而记停 → 哨⛔红；解後记仍在 → 红且带 enabled=true 之参；记开後 → 绿
-        import 席在跑吗
+        # 1024 守书之巡（1117 起＝兜底之巡三令）：号与 cron 取 接棒守.兜底之令；令在而记停 → 哨⛔红；解後记仍在 → 红且带复常之参；记开後 → 绿
+        import 接棒守, 席在跑吗
+        _号 = {x[0]: x[1] for x in 接棒守.兜底之令}
         w({'立': 'x', '令': '作者令：暂停', '据': '设定/交.md:2', '解': None})
         with contextlib.redirect_stdout(io.StringIO()) as 印:
-            s0 = 记守书(False, t); s1 = 记守书(True, t); 哨在 = 守书之哨(t); 解('作者令：开', t); 哨解 = 守书之哨(t)
+            s0 = 记守书(False, t); s1 = 记守书(True, t); 停记 = 守书停记(t); 哨在 = 守书之哨(t); 解('作者令：开', t); 哨解 = 守书之哨(t)
             s2 = 记守书(True, t); s3 = 记守书(False, t); 哨开 = 守书之哨(t)
-        参开 = 'update_trigger {"trigger_id": "%s", "enabled": true}' % 席在跑吗.守书之令
-        共 += 1; ok += (s0 is False and s1 is True and 哨在 == [] and len(哨解) == 1 and 参开 in 哨解[0]
-                        and 参开 in 印.getvalue() and s2 is False and s3 is True and 哨开 == []
-                        and 守书之参(False) == 参开.replace('true', 'false') and 席在跑吗.守书之令.startswith('trig_')
-                        and len(哨解[0]) <= 160 and 哨解[0].endswith('--守书已开'))   # 自走默印每行截於 160 字
+        复 = {'甲': 'update_trigger {"trigger_id": "%s", "enabled": true, "cron_expression": "27 * * * *"}' % _号['甲'],
+              '乙': 'update_trigger {"trigger_id": "%s", "enabled": true, "cron_expression": "57 * * * *"}' % _号['乙'],
+              '丙': 'update_trigger {"trigger_id": "%s", "enabled": false, "cron_expression": "7 * * * *"}' % _号['丙']}
+        共 += 1; ok += (s0 is False and s1 is True and 哨在 == [] and len(哨解) == 4 and all(复[k] in '\n'.join(哨解) for k in 复)
+                        and 守书之参(True) in 印.getvalue() and s2 is False and s3 is True and 哨开 == []
+                        and (停记 or {}).get('trigger_id') == [_号['甲'], _号['乙'], _号['丙']]
+                        and all(len(x) <= 160 and x.startswith('⛔') for x in 哨解) and 哨解[0].endswith('--守书已开'))   # 自走默印每行截於 160 字、只收行首⛔
+        停参 = 守书之参(False)
+        共 += 1; ok += (停参.count('update_trigger') == 3 and 'true' not in 停参 and 'cron' not in 停参
+                        and all('update_trigger {"trigger_id": "%s", "enabled": false}' % _号[k] in 停参 for k in '甲乙丙')
+                        and _号['甲'] == 席在跑吗.守书之令)          # 1117 停：甲乙丙俱 enabled false（旧只停甲·乙丙每时空唤耗 token）
+        共 += 1; ok += 守书之参(True) == '；'.join(复[k] for k in '甲乙丙')   # 1117 解：复常——甲 :27、乙 :57 开（降级之 :47 亦复），丙停
         src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
-        共 += 1; ok += ('trig_' not in src)                               # 号⛔硬写於本器（取 席在跑吗.守书之令）
+        共 += 1; ok += ('trig_' not in src and '* * *' not in src)        # 号与 cron ⛔硬写於本器（取 接棒守.兜底之令）
         # 1027 执行之审 #30 #61 #31：交接现状过期、入口档之旧暂停令块——令在而交接首节早於令之立即红；入口档旧块红
         w({'立': '2026-10-27 07:50 UTC', '令': '作者令：411 候令', '据': '设定/交.md:2', '解': None})
         jp = os.path.join(t, 交接档)

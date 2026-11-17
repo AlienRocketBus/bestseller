@@ -472,9 +472,10 @@ def 断(印=True):
         L.append('  ── 下一条命令 ──')
         L.append('  python3 工具/心跳.py --立停     # 停锁（时在远後）：停书之巡判止、新坐⛔跳；解令时自换空锁')
         try:   # ★1024·省审 sessions 四：停锁之下守书每唤只判「止」——关其定时之令，调毕记之（解令时 --解 印复开之参）
-            if not _停.守书停记():
-                L.append('  %s     # 停守书之巡（此为工具之调，非 shell）' % _停.守书之参(False))
-                L.append('  python3 工具/暂停令.py --守书已停     # 上一调毕即记')
+            if not _停.守书停记():   # 1117：兜底之巡三令俱停（乙丙每时空唤耗 token；暂停中解停由 GitHub 云巡察之）
+                for _名, _参 in _停.守书之诸参(False):
+                    L.append('  %s     # 停兜底之巡·%s（此为工具之调，非 shell）' % (_参, _名))
+                L.append('  python3 工具/暂停令.py --守书已停     # 上三调毕即记')
         except Exception:
             pass
         L.append('  python3 工具/暂停令.py --查')

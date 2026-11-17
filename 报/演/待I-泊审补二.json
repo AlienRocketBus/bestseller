@@ -1,0 +1,19 @@
+{
+ "名": "待I-泊审补二",
+ "ref": "备份/待-I",
+ "sha": "d1471623744c63e51e0c1fe253cfc9516e7d3686",
+ "果": "过",
+ "红": [],
+ "时": "2026-11-17T15:47:23Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44117699387",
+ "候": "d1471623744c63e51e0c1fe253cfc9516e7d3686",
+ "因": "",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 85.87,
+   "2": 56.55,
+   "3": 87.32
+  }
+ }
+}

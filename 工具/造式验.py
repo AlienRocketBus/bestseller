@@ -57,6 +57,54 @@ def 段案之禁字(n, root=ROOT):
     return []
 
 
+# ★1117 X107（454:15「沟里有雪，没过脚面」：同线前三章白文「雪」字俱 0（只霜），一过杆子即没脚面之雪——五稿、行家、合稿俱未逮，唯逻辑审 soft-1 见）：
+#   N≥457 起报之器「天候」：本章白文新出之天候字（雪、霜、雨、冰），同线前三章白文俱 0 者，其首见之段须带承接之相（早先、存着、化、冻）一处，否即报
+天候起 = 457
+天候字 = ['雪', '霜', '雨', '冰']
+承相 = ['早先', '存着', '化', '冻']
+_天候之伪 = ['冰凉', '冰冷', '冰窖']           # 言凉非言天，⛔算
+
+
+def 章白文(n, root=ROOT):
+    f = 正文档(n, root)
+    if not f:
+        return None
+    t = open(f, encoding='utf-8').read()
+    i = t.find('【本章亮点】')
+    return t[:i] if i >= 0 else t
+
+
+def _天候数(t, z):
+    for w in _天候之伪:
+        if z in w:
+            t = t.replace(w, '')
+    return t.count(z)
+
+
+def 天候之红(白文, 前文表):
+    """纯判：→ [(字, 行号, 段首)]：本章有、前文表（同线前三章之白文）俱 0、而首见之段无承接之相者。"""
+    出 = []
+    行 = 白文.split('\n')
+    for z in 天候字:
+        if not _天候数(白文, z) or any(_天候数(p or '', z) for p in 前文表):
+            continue
+        for i, ln in enumerate(行, 1):
+            if _天候数(ln, z):
+                if not any(c in ln for c in 承相):
+                    出.append((z, i, ln[:24]))
+                break
+    return 出
+
+
+def 同线前章(n, 几=3, root=ROOT):
+    l, 出, k = 线(n, root), [], n - 1
+    while l and k > 0 and len(出) < 几 and n - k <= 30:
+        if 线(k, root) == l:
+            出.append(k)
+        k -= 1
+    return 出
+
+
 def 禁字之红(白文, 字表):
     """纯判：→ [(字, 行号, 句)]，白文命中段案所禁之字者。"""
     出 = []
@@ -325,6 +373,12 @@ def 验(n, root=ROOT):
             出.append(dict(器='禁字', 类='致命', 红=bool(中), rc=0, 秒=0,
                           末=('段案所禁「%s」' % '、'.join(字表) if 字表 else '段案无「⛔「X」字」之列') + ('｜命中 %d 处' % len(中) if 中 else '｜零命中'),
                           要=['「%s」 :%d  …%s…' % x for x in 中[:8]]))
+        if n >= 天候起:
+            前 = 同线前章(n, root=root)
+            中 = 天候之红(章白文(n, root) or '', [章白文(k, root) for k in 前])
+            出.append(dict(器='天候', 类='报', 红=bool(中), rc=0, 秒=0,
+                          末='同线前章 %s' % ('、'.join(map(str, 前)) or '无') + ('｜新出而无承接之相 %d 字' % len(中) if 中 else '｜续'),
+                          要=['「%s」 :%d  %s…——前三章俱无，首见之段须带早先／存着／化／冻一处' % x for x in 中]))
     for 器, 参 in 报:
         rc, out, 末, 秒 = 跑(器, 参, n)
         出.append(dict(器=器, 类='报', 红=rc != 0, rc=rc, 秒=round(秒, 1), 末=末[:200],
@@ -529,6 +583,15 @@ def 自测():
     共 += 1; ok += (禁字之红('鞋帮潮了一小块。\n她没动。', ['潮']) == [('潮', 1, '鞋帮潮了一小块。')]
                    and 禁字之红('鞋帮湿了一小块。', ['潮']) == [] and 禁字之红('潮', []) == []
                    and '潮' in 段案之禁字(455) and 段案之禁字(9999) == [])
+    # X107（1117）：天候之续——454 v01「沟里有雪，没过脚面」须红、v02「存着早先落的雪…冻了一层壳」须绿（同线前三章 452、450、448 白文无雪）
+    def _段白(p):
+        t = open(os.path.join(ROOT, '版本', '第454章', p), encoding='utf-8').read()
+        i = t.find('【本章亮点】')
+        return t[:i] if i >= 0 else t
+    前454 = [章白文(k) for k in 同线前章(454)]
+    r1, r2 = 天候之红(_段白('v01.md'), 前454), 天候之红(_段白('v02.md'), 前454)
+    共 += 1; ok += (len(同线前章(454)) == 3 and [x[0] for x in r1] == ['雪'] and r2 == []
+                   and 天候之红('手冰凉。', ['']) == [] and 天候之红('下雨了。', ['雨']) == [])
     print('造式验·自测 %d/%d' % (ok, 共))
     return ok == 共
 

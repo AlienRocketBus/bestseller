@@ -1,13 +1,19 @@
 {
  "名": "F-终-1",
- "ref": "603f70e8c",
- "sha": "",
- "果": "红",
- "红": [
-  "⛔备候不成（因 gate）——未入片闸；看 run_url"
- ],
- "时": "2026-11-17T14:32:22Z",
- "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44103997558",
- "候": "",
- "因": "gate"
+ "ref": "603f70e8cf74fb829358c2f23f941e5989a66ba1",
+ "sha": "603f70e8cf74fb829358c2f23f941e5989a66ba1",
+ "果": "过",
+ "红": [],
+ "时": "2026-11-17T14:35:47Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44104356946",
+ "候": "603f70e8cf74fb829358c2f23f941e5989a66ba1",
+ "因": "",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 55.94,
+   "2": 89.43,
+   "3": 68.76
+  }
+ }
 }

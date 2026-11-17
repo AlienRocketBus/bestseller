@@ -15,6 +15,8 @@
     唤总编辑之坐（其订此 PR·唯其能派；同局二十分一唤）；每跑落 备份/巡印。总编辑醒即跑 `--巡`（沙盒并验巡印之鲜·rc 5 即 GitHub 之巡停摆）。
     兜底之巡（三令入总编辑之坐·见 兜底之令；平台定时之令最短一时，故常＝甲:27＋乙:57 每三十分·缓存恒温，降级＝丙:07 启＋乙改:47 每二十分）防 GitHub 之巡自停。
     坐死至新坐开：常 ≤ 50 分（＝旧），GitHub 死 ≤ 60 分、降级後 ≤ 50。
+    1117 再治（環）：*/5 之 cron 首一时零跑（GitHub 之定时不可恃）→ 巡.yml 改「環」：workflow_dispatch huan=1 之跑每五分一巡、
+    满三百四十分自派後继（concurrency 排候·无缝），schedule 与无 huan 之 dispatch 为再起之器；rc 5 之印即 run_workflow huan=1 起環。
     1117 作者续令「效果至少要和现在一样，最好能超越」→ 不劣之审：闭环（总编辑每 --巡 落 备份/巡应，云巡唤而三十分未应即红邮作者）、
     常对拍（沙盒复云巡之判，异即 rc 6）、护额（仓转私有即云巡自停）——见⑤。
 用法：
@@ -26,7 +28,7 @@
   python3 工具/接棒守.py --派令 404 [--重]  # 交棒：印 create_trigger 之参（run_once_at 已算）；总编辑醒即以其中之参原样 create_session 一回
                                            #   403 未入主枝而其报红／拒／败（或缺章标而 备份/存底 有其封版之提交）→ 自出【重派】之参：自「章-403」（或其源）起、先治（1027 A2）
   python3 工具/接棒守.py --巡              # 停书之巡（总编辑之坐·醒於哨 PR 之言或兜底之巡）：印「止」或【重派】之参（rc 0 止｜2 派｜3 解停｜4 封而逾三十分未入主·GitHub 停摆｜5 巡印逾三十分·GitHub 之巡停摆→降级｜6 对拍不合｜7 巡印复鲜→复常）；沙盒每跑落 备份/巡应
-  python3 工具/接棒守.py --云巡 [--试]      # GitHub（巡.yml）每五分：巡()、落巡印、非止即於哨 PR 留言唤总编辑（--试 必留一言，验唤醒之路）
+  python3 工具/接棒守.py --云巡 [--试]      # GitHub（巡.yml·環之跑每五分一巡）：巡()、落巡印、非止即於哨 PR 留言唤总编辑（--试 必留一言，验唤醒之路）
   python3 工具/接棒守.py --自测
 """
 import os as _o, sys as _s
@@ -286,6 +288,9 @@ def 巡(查印=False):
 #     ④兜底之巡每三十分（甲 :27＋乙 :57 二令——平台定时之令最短一时，一令二刻〔27,57〕1117 平台拒之；缓存一时内恒温，每唤约 $0.1—0.2；
 #       每三时则缓存恒冷、每唤约 $1——日耗反不逾每三时，而守倍密·1117 审计实测）：验巡印之鲜（rc 5 即降级：丙 :07 启＋乙改 :47＝每二十分如旧；复鲜 rc 7 即复）。
 #   坐死至新坐开：常 ≤ 心跳.限 25 ＋ 云巡之隔 5 ＋ GitHub 定时之迟（留 15）＋ 派之数分 ≤ 50（＝旧）；GitHub 死 ≤ 25 ＋ 兜底之隔 30 ＋ 5 ≤ 60，降级後 ≤ 50（＝旧）。
+#   1117 再治（環·GitHub 之 */5 定时首一时零跑、dispatch 之跑俱成）：巡.yml 之五分⛔倚 cron——workflow_dispatch huan=1 起「環」之跑
+#     （每 jian 三百秒一巡、每巡先取本 ref 之新；满 fen 三百四十分〔job 之限 355〕即以 GITHUB_TOKEN 自派後继，concurrency 巡环-<枝> 排候·无缝）；
+#     schedule（若偶发）与无 huan 之 dispatch 为再起之器（本枝无環即派一環）；巡.yml 被停（私停）→ 環於本巡後即止。rc 5 之印即起環（run_workflow huan=1）。
 云巡之隔分 = 5
 GitHub之迟分 = 15
 唤之隔分 = 20
@@ -448,11 +453,11 @@ def 落巡应(rc, 今=None):
 def 巡印判(d, 今):
     """⛔纯判：巡印 d（dict 或 None）→ ''（鲜）或停摆之由（附降级之令）。"""
     降级 = '降级（兜底之巡 %s＝每二十分·如旧之三令）：%s' % (兜底之刻(True), 兜底之改(True))
-    降 = ('——①先再起：actions_run_trigger（run_workflow·巡.yml·ref 主枝）；②%s'
+    降 = ('——①先再起：actions_run_trigger run_workflow 巡.yml ref 主枝 inputs {"huan":"1"}（起環：每五分一巡、满三百四十分自派後继；環已在则排候、⛔重環）；②%s'
           '——巡印复鲜，--巡 即印 rc 7 而复常（%s＝每三十分）' % (降级, 兜底之刻()))
     if isinstance(d, dict) and d.get('私'):
-        return ('⛔ GitHub 之巡自停：仓已转私有（Actions 按分计——云巡日 288 跑将耗尽 autopush 之额度而书停，故自 disable 巡.yml）'
-                '——%s；仓复公开即 enable 巡.yml（Actions 页「巡」之 Enable workflow）' % 降级)
+        return ('⛔ GitHub 之巡自停：仓已转私有（Actions 按分计——云巡之環终日在跑将耗尽 autopush 之额度而书停，故自 disable 巡.yml·環即止）'
+                '——%s；仓复公开即 enable 巡.yml（Actions 页「巡」之 Enable workflow），再 run_workflow 巡.yml ref 主枝 inputs {"huan":"1"} 起環' % 降级)
     try:
         时 = int((d or {}).get('时') or 0)
     except (TypeError, ValueError):
@@ -512,9 +517,9 @@ def 仓私(仓):
 
 
 def 私停(仓, 今):
-    """仓转私有（Actions 按分计）：云巡每五分（日 288 跑≈月 8,640 分）将耗尽 autopush 之额度而书停 → 自 disable 巡.yml、唤总编辑降级。→ 1（红·邮作者）。"""
+    """仓转私有（Actions 按分计）：云巡之環终日在跑（≈月四万三千分）将耗尽 autopush 之额度而书停 → 自 disable 巡.yml（環於本巡後见之即止）、唤总编辑降级。→ 1（红）。"""
     import urllib.parse
-    由 = '⛔ 仓已转私有（Actions 按分计：云巡日 288 跑≈月 8,640 分，将耗尽 autopush 之额度而书停）——云巡自停（disable 巡.yml）'
+    由 = '⛔ 仓已转私有（Actions 按分计：云巡之環终日在跑≈月四万三千分，将耗尽 autopush 之额度而书停）——云巡自停（disable 巡.yml·環即止）'
     try:
         _接口('PUT', '/repos/%s/actions/workflows/%s/disable' % (仓, urllib.parse.quote('巡.yml')))
     except Exception as e:
@@ -1006,9 +1011,16 @@ def 自测():
     T('⑪之四 云巡：读旧言败即作无旧言（宁多唤⛔不唤）；哨 PR 不在即红（GitHub 邮作者）；巡印每跑俱落（止亦落）',
       "旧 = []" in _段云 and '哨 PR' in _段云 and 'return 1' in _段云
       and _段云.index('落巡印(') < _段云.index('if rc == 0 and not 试'))
-    T('⑪之三 巡.yml：每五分之 cron、跑 --云巡、可写言（issues／pull-requests）、可推巡印（contents）；沙盒之 --巡 验巡印（rc 5）、GitHub 之 --巡⛔验',
+    T('⑪之三 巡.yml：每五分之 cron、跑 --云巡、可写言（issues／pull-requests）、可推巡印（contents）；沙盒之 --巡 验巡印（rc 5）、GitHub 之 --巡⛔验；'
+      '環（1117·cron 首一时零跑）：huan 之入、每巡取本 ref 之新、满分自派後继（dispatches 之 POST）、concurrency 巡环 排候、job 之限 355、'
+      '再起之器认 run-name「巡环」、巡.yml 被停即止；rc 5 之印起環（"huan":"1"）',
       "cron: '*/5 * * * *'" in _流 and '接棒守.py --云巡' in _流 and 'issues: write' in _流 and 'pull-requests: write' in _流
       and 'contents: write' in _流 and 'actions: write' in _流 and '巡印之由(d=印d)' in _段巡
+      and all(k in _流 for k in ('      huan:\n', "inputs.huan == '1'", 'timeout-minutes: 355', 'group: 巡环-${{ github.ref_name }}',
+                                  'cancel-in-progress: false', 'fetch -q origin "$GITHUB_REF_NAME"', 'reset -q --hard FETCH_HEAD',
+                                  '-X POST', '/actions/workflows/%E5%B7%A1.yml/dispatches', '"huan":"1"', "format('巡环", 'startswith("巡环")',
+                                  '!= active', 'until curl'))
+      and '"huan":"1"' in 巡印判({'时': _今 - 巡印之限分 * 60 - 120}, _今) and '"huan":"1"' in 巡印判(None, _今)
       and all(k in open(os.path.abspath(__file__), encoding='utf-8').read().split("\nif __name__ == '__main__':")[1] for k in ("_rc = 巡(查印=True)", '落巡应(_rc)', 'sys.exit(巡())')))
     T('⑪之九 合入之卡：键以章（印之分数异而键同·⛔每五分一唤）；首唤先 workflow_dispatch autopush（ref 章-N）、再唤⛔复派',
       云巡判(4, _d, _今, [], '⛔ 停书：第456章已封（章-456 abc）31 分未入主枝')[1] == 云巡判(4, _d, _今, [], '⛔ 停书：第456章已封（章-456 abc）36 分未入主枝')[1] == 'rc4·456'

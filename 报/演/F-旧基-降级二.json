@@ -1,0 +1,19 @@
+{
+ "名": "F-旧基-降级二",
+ "ref": "备份/待-F-旧基",
+ "sha": "208fda76a3a35734a2ab30043b6a4298ca7b3367",
+ "果": "过",
+ "红": [],
+ "时": "2026-11-17T15:21:23Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44112515027",
+ "候": "36f93d090acaa19de2439efb804b4c9eb4a80daa",
+ "因": "",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 52.29,
+   "2": 62.68,
+   "3": 70.5
+  }
+ }
+}

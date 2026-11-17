@@ -306,9 +306,21 @@ def 并判(诸片, 候=None, 账=None, 章=None, quick=False, 印=print, 名们=
     """GitHub 之并判：诸片之果 → (rc, 判)。rc 0 过｜1 红（推闸同策）｜2 败（片缺、片坏、sha 不一、恰一不成——⛔以残果判）。
     判：{果, fails, 读红, 器红, 逾, 语, 新账, 片秒, 诸秒}"""
     import 全测
-    名们 = 名们 or [x for x, _ in 全测.诸项(quick)]
+    去 = []
+    if not 名们:
+        # ★1117 片去活态（法用#片去活态）：GitHub 上片闸之表＝全表去活态之格（全测.闸之诸项·与 --片数、--片 同一函）。
+        #   降级之容：诸片之表纹若为全表（旧式：开关关、旧器之片）或「全表去活态之格」（沙盒并 GitHub 之片），即以其表判（恰一照验）；⛔认他表。
+        全名 = [x for x, _ in 全测.诸项(quick)]
+        名们 = [x for x, _ in 全测.闸之诸项(quick)]
+        纹们 = {d.get('表') for d in 诸片 if '坏' not in d}
+        if len(纹们) == 1 and 表纹(名们) not in 纹们:
+            for 候表 in (全名, [x for x in 全名 if x not in 全测.活态之格]):
+                if 表纹(候表) in 纹们:
+                    名们 = 候表
+                    break
+        去 = [x for x in 全名 if x not in 名们]
     章 = 章 if 章 is not None else (全测._末章() or 0)
-    判 = {'果': '败', 'fails': [], '读红': [], '器红': [], '逾': [], '语': '', '新账': None, '片秒': {}, '诸秒': {}}
+    判 = {'果': '败', 'fails': [], '读红': [], '器红': [], '逾': [], '语': '', '新账': None, '片秒': {}, '诸秒': {}, '免': 去}
     败 = []
     坏 = [d['坏'] for d in 诸片 if '坏' in d]
     诸片 = [d for d in 诸片 if '坏' not in d]
@@ -360,6 +372,8 @@ def 并判(诸片, 候=None, 账=None, 章=None, quick=False, 印=print, 名们=
     判.update(果='过' if rc == 0 else '红', fails=fails, 读红=读红, 器红=器红, 语=语, 新账=新账, 章=章,
              逾=[k for k in 器红 if 新账 and k in 新账 and 章 > 新账[k]['限']])
     印('  · 诸片之秒：%s' % '、'.join('%s→%s' % kv for kv in sorted(判['片秒'].items())))
+    if 去:
+        印('  · 活态免（GitHub·法用#片去活态）：%s——沙盒之全测与封版之活态之报照跑；复旧：全测.活态免GitHub = False' % '、'.join(去))
     return rc, 判
 
 
@@ -426,6 +440,7 @@ def 自测():
     src = open(os.path.abspath(__file__), encoding='utf-8').read().split('def 自测')[0]
     R.append(('⑥推闸、空跑闸、留字、器账俱取 全测 之原函（⛔另写）', all(x in src for x in ('全测.推闸(', '全测.最少件数', '全测._留字之差(', '全测._记器账('))))
     R += 片之自测(名们)
+    R += 片去活态之自测(名们)
     for k, ok in R:
         print('  %s %s' % ('✓' if ok else '✗', k))
     ok = sum(1 for _, o in R if o)
@@ -520,6 +535,130 @@ def 片之自测(名们):
                       and sorted(json.load(open(os.path.join(t, '秒.json'), encoding='utf-8'))) == sorted(n for n, _ in 假)))
     finally:
         全测.诸项, 全测._留字快照 = 原诸项, 原照
+    return R
+
+
+def _封版之活态之格():
+    """封版.py 之 `活态之格 = (...)`（封版 --後 之活态之报於沙盒所跑）——ast 取之（⛔import 封版：其载重）。"""
+    import ast
+    try:
+        for n in ast.parse(open(os.path.join(ROOT, '工具', '封版.py'), encoding='utf-8').read()).body:
+            if isinstance(n, ast.Assign) and any(getattr(t, 'id', '') == '活态之格' for t in n.targets):
+                return tuple(ast.literal_eval(n.value))
+    except Exception:
+        pass
+    return ()
+
+
+def 片去活态之自测(名们):
+    """1117 GitHub 化之审·H（法用#片去活态）：GitHub 片闸免活态之格——名单之据、沙盒照跑、免之形、降级（开关、名单不合、表纹之容）、片跑往返。"""
+    import 全测
+    import contextlib
+    import io
+    R = []
+    格 = tuple(全测.活态之格)
+    快 = [n for n, _ in 全测.诸项(True)]
+    R.append(('⑬片去活态·名单：活态之格 ⊆ 全测并.活态（W51 串并对表所定·⛔凭猜添）；沙盒照跑——俱在全测之全表与快表、俱在 封版.活态之格（--後 之活态之报）',
+              bool(格) and set(格) <= set(活态) and set(格) <= set(名们) and set(格) <= set(快) and set(格) <= set(_封版之活态之格())))
+    R.append(('⑬之二 ⛔免判树之活态：跑账（乙路·注没注上）、钩子挂载（pre-push 在盘·读者可见）、负测·自进化环（自测）——GitHub 上红得起',
+              not ({'跑账', '钩子挂载', '负测·自进化环'} & set(格)) and not (set(格) & 全测.读者可见之闸)))
+    # ⛔诸格不随开关之位：开之诸验当场置开（finally 复原）——开关关（降级）时本测照绿，⛔令降级反红闸
+    原境, 原关, 原格 = os.environ.get('GITHUB_ACTIONS'), 全测.活态免GitHub, 全测.活态之格
+
+    def 境(v):
+        if v is None:
+            os.environ.pop('GITHUB_ACTIONS', None)
+        else:
+            os.environ['GITHUB_ACTIONS'] = v
+    try:
+        全测.活态免GitHub = True
+        境(None)
+        沙 = [n for n, _ in 全测.闸之诸项(False)]
+        境('true')
+        云 = [n for n, _ in 全测.闸之诸项(False)]
+        云语 = 全测.活态之语(名们)
+        全测.活态免GitHub = False
+        复 = [n for n, _ in 全测.闸之诸项(False)]
+        复语 = 全测.活态之语(名们)
+        全测.活态免GitHub = True
+        全测.活态之格 = 格 + ('无此格',)
+        缺去, 缺 = 全测.活态之免(名们)
+        缺语 = 全测.活态之语(名们)
+        缺表 = [n for n, _ in 全测.闸之诸项(False)]
+    finally:
+        全测.活态免GitHub, 全测.活态之格 = 原关, 原格
+        境(原境)
+    R.append(('⑬之三 沙盒（非 GitHub）片闸之表＝全表；GitHub 上恰去活态之格（余序不变）而印其免；开关关（活态免GitHub = False）即复全表',
+              沙 == 名们 and 云 == [n for n in 名们 if n not in 格] and 格[0] in 云语 and '活态免' in 云语 and 复 == 名们 and 复语 == ''))
+    R.append(('⑬之四 降级：名单之名有不在表者（改名、删格）→ ⛔免、全跑（旧式）而语带⚠',
+              缺去 == () and 缺 == ['无此格'] and 缺语.startswith('⚠') and 缺表 == 名们))
+    # ⑬之五 并判之表纹之容：默表（闸之诸项）与诸片之表不一时，诸片之表为全表或「全表去活态」方认；他表照败
+    秒 = 秒表()
+    sha = 'e' * 40
+
+    def 造(表名):
+        return [{'片': k, '数': 3, 'sha': sha, '表': 表纹(表名), '快': False, '名们': list(我),
+                 '果': [[x, True, 'ok', 1.0] for x in 我], '留字': [], '席凭': [], '秒': len(我), '毕': True}
+                for k, 我 in enumerate(分片(表名, 秒, 3), 1)]
+    静 = lambda *a, **k: None
+    去表 = [n for n in 名们 if n not in 格]
+    try:
+        全测.活态免GitHub = True
+        境('true')
+        rc云全, d云全 = 并判(造(名们), sha, {}, 420, 印=静)
+        rc云去, d云去 = 并判(造(去表), sha, {}, 420, 印=静)
+        境(None)
+        rc沙去, d沙去 = 并判(造(去表), sha, {}, 420, 印=静)
+        rc沙全, d沙全 = 并判(造(名们), sha, {}, 420, 印=静)
+        rc他, _ = 并判(造(名们[:-1] + ['外格']), sha, {}, 420, 印=静)
+    finally:
+        全测.活态免GitHub = 原关
+        境(原境)
+    R.append(('⑬之五 并判：GitHub 之去表 → 过而判记其免；诸片跑全表（旧式）→ 以全表判、⛔免；沙盒判 GitHub 之去表 → 认；他表 → rc 2',
+              rc云去 == 0 and d云去['免'] == list(格) and rc云全 == 0 and d云全['免'] == [] and rc沙去 == 0 and d沙去['免'] == list(格)
+              and rc沙全 == 0 and d沙全['免'] == [] and rc他 == 2))
+    # ⑬之六 片跑往返（GitHub 之境）：假表含「接力」——诸片⛔跑之（其函一跑即记）、片档记其免、--并果 恰一而过、--秒出 留其旧秒
+    原诸项, 原照 = 全测.诸项, 全测._留字快照
+    跑了 = []
+    假 = [('假%d' % i, (lambda i=i: (True, '第%d' % i))) for i in range(44)] + [('接力', lambda: (跑了.append(1), (True, '活'))[1])]
+    try:
+        全测.诸项 = lambda quick: list(假)
+        全测._留字快照 = lambda: {}
+        全测.活态免GitHub = True
+        境('true')
+        with tempfile.TemporaryDirectory() as t:
+            片目_ = os.path.join(t, '片')
+            json.dump({'接力': 0.42, '假0': 9.0}, open(os.path.join(t, '秒.json'), 'w'))
+            with contextlib.redirect_stdout(io.StringIO()) as 印:
+                rcs = [全测.片跑(k, 3, os.path.join(片目_, '%d.json' % k), False, os.path.join(t, '秒.json')) for k in (1, 2, 3)]
+                候 = json.load(open(os.path.join(片目_, '1.json'), encoding='utf-8'))['sha']
+                rc = 并判口(['--并果', 片目_, '--候', 候, '--判', os.path.join(t, '判.json'), '--秒出', os.path.join(t, '秒出.json'),
+                           '--秒表', os.path.join(t, '秒.json')], False)
+            诸档 = [json.load(open(os.path.join(片目_, '%d.json' % k), encoding='utf-8')) for k in (1, 2, 3)]
+            j = json.load(open(os.path.join(t, '判.json'), encoding='utf-8'))
+            秒出 = json.load(open(os.path.join(t, '秒出.json'), encoding='utf-8'))
+        印文 = 印.getvalue()
+    finally:
+        全测.诸项, 全测._留字快照 = 原诸项, 原照
+        全测.活态免GitHub = 原关
+        境(原境)
+    R.append(('⑬之六 片跑往返（GitHub 之境）：接力⛔跑、三片之名们之并＝去表、片档记免、并判过而印「活态免」、秒出留接力之旧秒（复旧时分片⛔失其秒）',
+              not 跑了 and rcs == [0, 0, 0] and rc == 0 and sorted(sum((d['名们'] for d in 诸档), [])) == sorted('假%d' % i for i in range(44))
+              and all(d['免'] == ['接力'] for d in 诸档) and j['免'] == ['接力'] and '活态免' in 印文 and 秒出.get('接力') == 0.42))
+    # ⑬之七 --片数 之 stdout 唯片数（备候以 $(…) 取之）：GitHub 之境亦然（免之语入 stderr）
+    e = dict(os.environ, GITHUB_ACTIONS='true')
+    r = subprocess.run([sys.executable, os.path.join(ROOT, '工具', '全测.py'), '--片数'], cwd=ROOT, env=e, capture_output=True, text=True, timeout=120)
+    R.append(('⑬之七 --片数（GitHub 之境）：stdout 唯一整数；免之语在 stderr（开关开即有、关即无——降级⛔红）', r.returncode == 0 and r.stdout.strip().isdigit()
+              and len(r.stdout.strip().split('\n')) == 1 and ('活态免' in r.stderr) == bool(原关)))
+    try:
+        import 推报
+        报 = 推报.成报('章-1', 'a' * 40, '成', '', 判={'免': ['接力'], '片秒': {'1': 1.0}})
+        演报 = 推报.成演报('试', 'x', 'a' * 40, '过', '', 判={'免': ['接力']})
+        无免 = 推报.成报('章-1', 'a' * 40, '成', '', 判={'片秒': {'1': 1.0}})
+        报之免 = 报.get('免') == ['接力'] and 演报.get('免') == ['接力'] and '免' not in 无免
+    except Exception:
+        报之免 = False
+    R.append(('⑬之八 报/推、报/演 之 json 记其免（并判之判.免·可观）；不免者⛔此键', 报之免))
     return R
 
 

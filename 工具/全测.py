@@ -4128,6 +4128,49 @@ def 诸项(quick):
     return items
 
 
+# ═══ 片去活态（1117·GitHub 化之审·H·法用#片去活态）═══
+# ★GitHub 之片闸（gate.yml：--片数／--片／--并果）免「活态之格」——其判唯取沙盒之现场，GitHub 之机上其现场恒空恒新、绿而无所证：
+#   接力：心跳之锁（远端 备份/心跳 之一瞬）、`版本/第N+1章/` 与 `_十一轮.json` 之 mtime（GitHub 上即 checkout 之刻·静恒数十秒）、
+#     续跑之步（_任务流.json·.gitignore）——其唯一之红（断流）须「静逾二十五分」或二档俱无，章-411—459 之树俱有二档 → GitHub 上红不起；
+#     报/推 之迹（备份/报·1027—1117）121 跑俱 ✓ 而其语恒一（不停之律⑤之印行：⛔一跑见断流之行）。
+#   ⛔余活态（全测并.活态）不免：跑账之乙路（注没注上）、钩子挂载之「pre-push 在盘」、负测·自进化环之自测——俱判树，GitHub 上红得起。
+#   沙盒照跑（效不减）：全测（串／并·pre-push 之非暂存之推）与 封版 --後 之活态之报（封版.活态之格）俱跑接力。
+#   降级：活态免GitHub = False 即复旧（一处之开关·⛔改 workflow：治推即生效）；名单之名有不在表者（改名、删格）即⛔免而全跑（旧式）；
+#     并判之表纹：诸片所跑为全表（旧式）亦认（全测并.并判）。
+活态免GitHub = True
+活态之格 = ('接力',)
+
+
+def 在GitHub():
+    return os.environ.get('GITHUB_ACTIONS') == 'true'
+
+
+def 活态之免(名们, 免=None):
+    """→ (所免之名们, 缺)：GitHub 片闸所免之格。免 None 即「活态免GitHub 且 在GitHub()」；不免、或名单之名有不在表者（缺）→ 所免为 ()（全跑·旧式）。⛔印（--片数 之 stdout 唯片数）。"""
+    免 = (活态免GitHub and 在GitHub()) if 免 is None else 免
+    if not 免:
+        return (), []
+    缺 = [x for x in 活态之格 if x not in 名们]
+    return (() if 缺 else tuple(活态之格)), 缺
+
+
+def 闸之诸项(quick, 免=None):
+    """GitHub 片闸之项表（--片数、--片、--并果 同取此一函·⛔各算）：诸项去 活态之免；沙盒（非 GitHub）即诸项。"""
+    项 = 诸项(quick)
+    去, _ = 活态之免([x for x, _ in 项], 免)
+    return [(x, f) for x, f in 项 if x not in 去]
+
+
+def 活态之语(名们, 免=None):
+    """片闸之印之一行（片跑之头、并判之末）：所免、或降级之⚠；不免即空。"""
+    去, 缺 = 活态之免(名们, 免)
+    if 缺:
+        return '⚠ 活态之格 %s 不在全测之表——GitHub 片闸⛔免、全跑（旧式·法用#片去活态之降级）' % '、'.join(缺)
+    if 去:
+        return '· 活态免（GitHub·法用#片去活态）：%s——沙盒之全测与封版之活态之报照跑；复旧：全测.活态免GitHub = False' % '、'.join(去)
+    return ''
+
+
 def 只跑(名们, 出, quick):
     """★1017 W51：`--只 名,… [--出 档]`——只跑所列之项（取自 诸项()，⛔另写），每项印一行同 main；
     以 JSON 交其果 {果: [[名, 过, 语, 秒]], 未认: [...]} 於 出（全测并.py 於工作副本中逐项调之）。
@@ -4156,17 +4199,21 @@ def 片跑(k, n, 出, quick, 秒档=None):
     每跑一格即落 出（逾时被杀亦存已跑者，并判见其缺）。⛔推闸、⛔记器账——判在并判（全测并.并判）。→ 0 俱绿｜1 有红"""
     import json as _j
     import 全测并 as _并
-    项 = 诸项(quick)
+    全名 = [x for x, _ in 诸项(quick)]
+    项 = 闸之诸项(quick)                      # ★1117 片去活态：GitHub 上免活态之格（沙盒即全表）
     表, 名们 = dict(项), [x for x, _ in 项]
     我 = _并.分片(名们, _并.秒表(秒档), n)[k - 1]
     sha = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    d = {'片': k, '数': n, 'sha': sha, '表': _并.表纹(名们), '快': bool(quick), '名们': 我, '果': [], '留字': [], '席凭': [], '秒': 0, '毕': False}
+    d = {'片': k, '数': n, 'sha': sha, '表': _并.表纹(名们), '快': bool(quick), '名们': 我, '果': [], '留字': [], '席凭': [], '秒': 0, '毕': False,
+         '免': [x for x in 全名 if x not in 表]}
 
     def 落():
         if 出:
             os.makedirs(os.path.dirname(os.path.abspath(出)), exist_ok=True)
             _j.dump(d, open(出, 'w', encoding='utf-8'), ensure_ascii=False)
     print('\n████ 全测·片 %d/%d · %d 项（共 %d）· %s ████' % (k, n, len(我), len(名们), sha[:12]))
+    if 活态之语(全名):
+        print('  ' + 活态之语(全名))
     落()
     t0, 快照 = time.time(), _留字快照()
     for 名 in 我:
@@ -4205,9 +4252,11 @@ def main():
     # ★1027 坑54：GitHub 分片之闸三口——--片数（备候者择 N）、--片 k/N（一片）、--并果（诸片之果并判·推闸同策）
     if '--片数' in _a:
         import 全测并 as _并
-        n, 诸 = _并.择片数([x for x, _ in 诸项(quick)], _并.秒表(_参(_a, '--秒表')))
+        n, 诸 = _并.择片数([x for x, _ in 闸之诸项(quick)], _并.秒表(_参(_a, '--秒表')))   # ★1117 片去活态：与 --片、--并果 同表
         print(n)
         print('  · 诸片数之关键路（秒）：%s' % '、'.join('%d→%.0f' % kv for kv in sorted(诸.items())), file=sys.stderr)
+        if 活态之语([x for x, _ in 诸项(quick)]):
+            print('  ' + 活态之语([x for x, _ in 诸项(quick)]), file=sys.stderr)
         return 0
     if '--并果' in _a:
         import 全测并 as _并

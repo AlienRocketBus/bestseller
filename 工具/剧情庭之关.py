@@ -36,12 +36,25 @@ def 有势(s, root=ROOT):
     return True
 
 
+def 欠引(s, root=ROOT):
+    """★1117 X104：瑕疵总账「未治」之条，其主写「S 段剧情庭」者，本段之势须引其号；缺即红（⛔段势漏账而动笔）。"""
+    f = os.path.join(root, '设定', '瑕疵总账.md')
+    if not os.path.exists(f):
+        return []
+    账 = open(f, encoding='utf-8').read().split('## 已治')[0]
+    势 = open(os.path.join(root, '设定', '剧情庭_势_第%d段.md' % s), encoding='utf-8', errors='replace').read()
+    号们 = [m.group(1) for m in re.finditer(r'^\|\s*(X\d+)\s*\|([^\n]*)$', 账, re.M) if ('%d 段剧情庭' % s) in m.group(2)]
+    return ['第%d段之势未引瑕疵总账 %s（其主係本段剧情庭）——裁档须排其治' % (s, x) for x in 号们 if x not in 势]
+
+
 def 查(root=ROOT, 章=None):
     if 章 is not None:                        # 动笔前之验
         if 章 < 起:
             return []
         s = 段首(章)
-        return [] if 有势(s, root) else ['第%d—%d段无剧情庭之势（第%d章动笔前须先裁：工具/席/剧情庭.js 式段）' % (s, s + 9, 章)]
+        if not 有势(s, root):
+            return ['第%d—%d段无剧情庭之势（第%d章动笔前须先裁：工具/席/剧情庭.js 式段）' % (s, s + 9, 章)]
+        return 欠引(s, root)
     红 = []
     段 = set()
     for d in glob.glob(os.path.join(root, '版本', '第*章')):
@@ -77,6 +90,11 @@ def 自测():
         共 += 1; ok += (len(查(t)) == 1)                  # 代裁所点之档有缺 → 红
         open(f, 'w').write('## ⛔此裁无效\n代裁：设定/真裁.md\n裁')
         共 += 1; ok += (查(t) == [])
+        # ★1117 X104：未治之账主写「381 段剧情庭」者，势未引其号 → 动笔前红；引之 → 过；已治之条不算
+        open(os.path.join(t, '设定', '瑕疵总账.md'), 'w').write('## 未治\n| X9 | 缺 | 源 | 381 段剧情庭：排一章 | 385 |\n## 已治\n| X8 | 缺 | 源 | 381 段剧情庭 | 381 |\n')
+        共 += 1; ok += (len(查(t, 章=385)) == 1 and 'X9' in 查(t, 章=385)[0])
+        open(f, 'a').write('\n治 X9：……')
+        共 += 1; ok += (查(t, 章=385) == [])
     finally:
         shutil.rmtree(t)
     print('剧情庭之关·自测 %d/%d' % (ok, 共))

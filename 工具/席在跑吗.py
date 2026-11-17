@@ -220,6 +220,15 @@ def 後台之活(根='/proc'):
     return sorted(set(在))
 
 
+def 子席在跑(根=None, 界=10 * 60, 今=None):
+    """★1117（461 段案交一子会话立·钩判「己持锁而闲」误拦）：Agent 之子会话（subagents/agent-*.jsonl，非 workflows）
+    十分内有写即认作在跑——其毕有通知；崩而留半者十分後即不认（⛔以旧转录充活）。"""
+    import glob as _g
+    根 = 根 or os.path.expanduser('~/.claude/projects')
+    今 = 今 or time.time()
+    return any(今 - os.path.getmtime(f) <= 界 for f in _g.glob(os.path.join(根, '*', '*', 'subagents', 'agent-*.jsonl')))
+
+
 def 判路(叫停=False, 暂停=False, 有席=False, 锁坐='', 我坐='', 转录活=False, 後台活=False, 完本=False,
         交棒中=False, 撤锁者='', 流活=False, 守书=False):
     """⛔纯判（main 只走此一条路）：回 (rc, 由)。rc=0 放行｜2 拦（无席）｜3 拦（己持锁而闲）｜4 拦（己撤锁而未候接棒）。"""
@@ -269,7 +278,7 @@ def main():
     毕章 = 毕章 if 毕章 is not None else (锁.get('毕') if isinstance(锁, dict) else None)
     转, 档 = 席之转录在写()
     後 = 後台之活()
-    流 = 流在跑()
+    流 = 流在跑() or 子席在跑()
     rc, 由 = 判路(有席=有席, 锁坐=锁坐, 我坐=我之坐(), 转录活=转, 後台活=bool(後), 交棒中=交, 撤锁者=撤者,
                 流活=流, 守书=守书之坐(),
                 完本=(False if (有席 or 转 or 後 or 交) else 完本了吗()[0]))
@@ -392,6 +401,9 @@ def 自测():
     open(os.path.join(_d, 'journal.jsonl'), 'a').write(_jj.dumps({'type': 'result'}) + '\n')
     报('⑳之二 started＝result（流毕）→ 否', 流在跑(_w), False)
     open(os.path.join(_d, 'journal.jsonl'), 'a').write(_jj.dumps({'type': 'started'}) + '\n')
+    _a = os.path.join(_w, 'p', 's', 'subagents'); open(os.path.join(_a, 'agent-x.jsonl'), 'w').write('{}')
+    报('㉒子会话之转录十分内有写 → 认在跑', 子席在跑(_w), True)
+    报('㉒之二 逾十分无写 → 否', 子席在跑(_w, 今=time.time() + 11 * 60), False)
     报('⑳之三 半崩之 journal 逾三十分无写 → 否', 流在跑(_w, 今=time.time() + 31 * 60), False)
     _sh.rmtree(_w)
     报('㉑後台之器⛔认裸 git push（存底守五分一推）', 'git push' in 後台之器, False)

@@ -207,8 +207,8 @@ def 合入之卡(d, 今=None, 标=None, 含=None, 时=None):
     分 = ((今 or int(time.time())) - t) // 60 if t else -1
     if 0 <= 分 < 合入之界分:
         return ''
-    return ('⛔ 停书：第%d章已封（章-%d %s）%s未入主枝——GitHub 之闸无果（多半 Actions 额度用光）。'
-            '即告作者「GitHub 跑不动了，多半是本月额度用光，请换号或等下月」；兜底 `python3 工具/推.py --直`（直推主枝须作者许）'
+    return ('⛔ 停书：第%d章已封（章-%d %s）%s未入主枝——GitHub 之闸无果（多半 Actions 额度用光、或账号之 Actions 被停——1116 RobotSpa 即后者）。'
+            '即告作者「GitHub 跑不动了，多半是本月额度用光（或账号被停），请换号或等下月」；兜底 `python3 工具/推.py --直`（直推主枝须作者许）'
             % (n, n, sha[:12], ('%d 分' % 分) if 分 >= 0 else '久'))
 
 
@@ -245,7 +245,7 @@ def 巡():
         return 2
     坐 = str(d.get('坐') or '') if isinstance(d, dict) else ''
     if isinstance(d, dict) and d.get('章') is not None and 坐 and 坐 not in ('暂停令', '未名'):
-        print('  ①先 get_session session_%s 看实时之状：正跑一回（running）即⛔重派、答「候」而止；否则续②（痛三：动他会话只凭实时之状）' % 坐)
+        print('  ①先 get_session session_%s 看实时之状：正跑一回（running）即⛔重派、答「候」而止；其 rate_limit_info.status 非 allowed（周限·坑59：额度未复，派亦即败）即⛔重派、答「候·周限至 resetsAt」而止；否则续②（痛三：动他会话只凭实时之状）' % 坐)
     治 = 派令之治(号)
     print('  ②create_session 参原样（【重派】·会话之守钩拦即照其参／其由办）%s：' % ('（先治第%d章·源「%s」）' % (号 - 1, 治) if 治 else ''))
     print('  ' + json.dumps(派之参(号, True, 治=治), ensure_ascii=False))
@@ -609,6 +609,8 @@ def 自测():
     T('⑩之三 巡之派参俱【重派】（越会话之守「一时内同章已派」之拦）、先 get_session 其坐、印「止」即止',
       '派之参(号, True, 治=治)' in _段巡 and 'get_session' in _段巡 and "print('止')" in _段巡
       and 派之参(455, True)['prompt'].startswith('【重派】'))
+    T('⑩之五 巡之重派先核周限（坑59·1117：周限尽则写书之坐与诸巡俱停十一时；额度未复⛔派）',
+      'rate_limit_info' in _段巡 and '周限' in _段巡)
     T('⑦之四 诸印之令俱指 --派令（⛔手拟【派】）', src.count('--派令 %s') >= 2 and '令「【派】开第' not in src)
     _起们 = []
     _原迹存 = os.environ.pop('ZM_TRACE_SAVE', None)

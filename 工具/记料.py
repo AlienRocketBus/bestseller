@@ -562,7 +562,11 @@ def 汇(N, root=ROOT):
     卡, 下卡 = 读(卡档[0], root), 读(卡档[1], root)
     # 一、前章回执之式
     前回 = sorted(glob.glob(os.path.join(root, '设定', '回执_*_第%d章封版席.md' % (N - 1))))
-    if 前回:
+    _骨 = sorted(glob.glob(os.path.join(root, '设定', '回执_*_第%d章封版席.md' % N)))
+    if N >= 460 and 前回 and _骨:          # ★X109（1117）：回执之骨已由 记落 --骨 立——⛔再印前章回执之式（骨即其式）
+        诸.append(('一', '回执之骨（X109·`记落.py %d --骨` 已立 %s：节目、键、§一 器格俱在）——⛔Write 回执全档；只以 Edit 并发把诸「‹判›」换作判语（每条 ≤60 字·凭写 章:行），本章特有之节（本章之失、交总编辑）照实书条；前章回执 %s 要其式者 sed -n 其节'
+                   % (N, os.path.relpath(_骨[-1], root), os.path.relpath(前回[-1], root)), '', os.path.relpath(_骨[-1], root)))
+    elif 前回:
         p = os.path.relpath(前回[-1], root)
         import 封版 as _封                    # ★X83（1105）：回执闸之键与封版 --前 一表（418 记席多回补键）
         诸.append(('一', '前章回执之式（%s：每节首三行；全文照此式写）｜回执闸之键（俱须在·小说检察官._receipt_ok）：%s'
@@ -1128,7 +1132,13 @@ if __name__ == '__main__':
     if a == ['--自测']:
         sys.exit(0 if 自测() else 1)
     if len(a) == 1 and a[0].isdigit():
-        N = int(a[0]); t = 汇(N)
+        N = int(a[0])
+        if N >= 460:                       # ★X109：先立回执之骨（已有回执即⛔覆）
+            import 记落 as _记落
+            _bp = _记落.骨(N)
+            if _bp:
+                print('✓ 回执之骨：%s' % _bp)
+        t = 汇(N)
         p = os.path.join(ROOT, '版本', '第%d章' % N, '_记料.md')
         os.makedirs(os.path.dirname(p), exist_ok=True)
         open(p, 'w', encoding='utf-8').write(t)

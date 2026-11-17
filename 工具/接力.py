@@ -221,8 +221,16 @@ def 查(印=True, now=None, 末=None, 回执=None, 动=_未注, 跳=None, 续跑
     return 坏, 黄
 
 
+def 主(argv, 查之=None):
+    """★1117 H 审（法用#片去活态）：入口之判归一函——`--自测` 与真跑同经此（自测⑳以注入之 查之 验其 rc 之路）。→ rc"""
+    if '--自测' in argv:
+        return 0 if 自测() else 1
+    坏, _ = (查之 or 查)()
+    return 1 if 坏 else 0
+
+
 def 自测():
-    global ROOT        # ⑯改 ROOT 指 tempdir（读盘之路），finally 还原
+    global ROOT, _末锁坐   # ⑯改 ROOT 指 tempdir（读盘之路）、⑱心跳之读改 _末锁坐——finally 俱还原
     ok, bad = 0, []
 
     def T(x, c, note=''):
@@ -356,13 +364,125 @@ def 自测():
     T('㉔心跳先取云端之锁、读不出方退本地（1022：写书之坐在他机，本机之档陈即假断流）',
       '_hb._远()' in _段 and _段.index('_hb._远()') < _段.index("'_心跳.json'"))
     T('㉕锁为他机之坐所持⛔判空转（本机无其版本目录）', 'if 有人 and 章 and not 他机:' in _src)
+
+    # ★★1117 H 审（法用#片去活态·审者变异所逮）：GitHub 片闸免「接力」之真跑後，其守唯本自测——而上诸格俱 印=False，
+    #   **印之块（查() 之末）与真跑之路一行未跑**：变异「print('  ✓ 接上了。' % 下)」接力即崩，旧自测照绿。
+    #   故⑰—⑳：印=True 之诸支（净／断流／将断／心跳在）以 redirect_stdout 收其印而验之；⑱心跳() 之读（远端以注入代·⛔连网）；
+    #   ⑲真树之读（末章／有回执／新动／交棒／续跑末步／暂停 及 印=True 之真树一跑）；⑳入口 主() 之 rc 之路。崩即记其格（⛔崩全测）。
+    import io
+    import contextlib
+
+    def 印跑(**k):
+        """→ (坏, 黄, 所印, 崩)：印=True 跑查，收其 stdout；崩则记其异（⛔抛）。"""
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                坏_, 黄_ = 查(印=True, **k)
+            return 坏_, 黄_, buf.getvalue(), None
+        except Exception as e:
+            return None, None, buf.getvalue(), '%s: %s' % (type(e).__name__, e)
+
+    # ⑰印之块·净：下一章 30 秒前动 → 印「✓ 接上了。」与不停之律（⛔印断流之治）
+    坏, 黄, 文, 崩 = 印跑(now=now, 末=312, 回执=True, 动=now - 30, 跳=(False, None, None), 停=(False, ''), 交=None)
+    T('⑰印之块·净支：⛔崩、印头行／末章／✓ 接上了／自走之令／不停之律⑤，⛔印断流之治',
+      崩 is None and 坏 == [] and 黄 == [] and '════ 接力 ════' in 文 and '末章 第312章｜其回执 在｜心跳 无人在跑' in 文
+      and '  ✓ 接上了。\n' in 文 and 'python3 工具/自走.py' in 文 and '⑤⛔而权再大也不许' in 文 and '当场派下一席' not in 文,
+      崩 or 文[-120:])
+    # ⑰之二 印之块·断流（0911 之局）：印「⛔ 甲·断流」与其治（当场派下一席·第 313 章、先跑席法），⛔印「✓ 接上了」
+    坏, 黄, 文, 崩 = 印跑(now=now, 末=312, 回执=True, 动=None, 跳=(False, None, None), 停=(False, ''), 交=None)
+    T('⑰之二 印之块·断流支：⛔崩、印 ⛔ 甲·断流、根本不在、其治（第 313 章、席法），⛔印 ✓ 接上了',
+      崩 is None and bool(坏) and '  ⛔ 甲·**断流**' in 文 and '根本不在' in 文 and '第 313 章' in 文
+      and 'python3 工具/席法.py' in 文 and '✓ 接上了' not in 文, 崩 or 文[-120:])
+    # ⑰之三 印之块·黄支（将断）：印「⚠ 丙·将断」，⛔印 ✓、⛔印断流之治
+    坏, 黄, 文, 崩 = 印跑(now=now, 末=312, 回执=True, 动=now - 限断 * 0.8, 跳=(False, None, None), 停=(False, ''), 交=None)
+    T('⑰之三 印之块·将断支：⛔崩、印 ⚠ 丙·将断，⛔印 ✓、⛔印其治',
+      崩 is None and not 坏 and '  ⚠ 丙·将断' in 文 and '✓ 接上了' not in 文 and '当场派下一席' not in 文, 崩 or 文[-120:])
+    # ⑰之四 印之块·心跳在＋空转：印「心跳 第313章·2 分钟前」与 ⚠ 乙·空转
+    坏, 黄, 文, 崩 = 印跑(now=now, 末=312, 回执=True, 动=now - 限空 - 60, 跳=(True, 313, 120),
+                        续跑=now - 限空 - 60, 停=(False, ''), 交=None)
+    T('⑰之四 印之块·心跳在＋空转：⛔崩、印「心跳 第313章·2 分钟前」与 ⚠ 乙·空转',
+      崩 is None and not 坏 and '心跳 第313章·2 分钟前' in 文 and '  ⚠ 乙·空转' in 文, 崩 or 文[-120:])
+    # ⑰之五 印之块·暂停令：印 ⚠ ⏸，⛔印断流
+    坏, 黄, 文, 崩 = 印跑(now=now, 末=380, 回执=True, 动=None, 跳=(False, None, None), 停=(True, '暂停令在'), 交=None)
+    T('⑰之五 印之块·暂停令支：⛔崩、印 ⚠ ⏸ 暂停令在，⛔印甲·断流', 崩 is None and not 坏 and '  ⚠ ⏸ 暂停令在' in 文 and '⛔ 甲' not in 文,
+      崩 or 文[-120:])
+
+    # ⑱心跳() 之读（真跑之路·⛔连网：以注入代 心跳._远）——远端之锁、他机之判、远端读不出退本地之档、远端崩亦退
+    _旧锁坐, _根 = _末锁坐, ROOT
+    try:
+        import 心跳 as _hb
+        _远原, _坐原 = _hb._远, _hb.坐
+        try:
+            t真 = int(time.time())
+            _hb._远 = lambda: (True, {'章': 313, '时': t真 - 60, '坐': '他坐'})
+            跳1 = 心跳()
+            T('⑱心跳·远端之锁：(在跑, 313, ~60 秒)、记其坐', 跳1[0] is True and 跳1[1] == 313 and 50 <= (跳1[2] or 0) <= 600
+              and _末锁坐 == '他坐', repr(跳1))
+            _hb._远 = lambda: (True, {'章': None, '毕': 312, '坐': '他坐'})
+            T('⑱之二 心跳·远端已撤锁 → 无人在跑', 心跳() == (False, None, None))
+            _hb._远 = lambda: (True, {'章': 313, '坐': '他坐'})
+            跳无时 = 心跳()
+            T('⑱之二b 心跳·锁无「时」→ 作逾限（无人在跑·⛔崩）', 跳无时[0] is False and 跳无时[1] == 313, repr(跳无时))
+            # ⑱之三 远端之锁为他机之坐 → ⛔判空转；同坐 → 照报空转（跳 不注：真跑之路）
+            _hb._远 = lambda: (True, {'章': 313, '时': t真 - 60, '坐': '他坐'})
+            _hb.坐 = lambda: '本坐'
+            坏, 黄他, 文, 崩他 = 印跑(now=now, 末=312, 回执=True, 动=now - 限空 - 60, 续跑=now - 限空 - 60, 停=(False, ''), 交=None)
+            _hb.坐 = lambda: '他坐'
+            坏, 黄同, 文同, 崩同 = 印跑(now=now, 末=312, 回执=True, 动=now - 限空 - 60, 续跑=now - 限空 - 60, 停=(False, ''), 交=None)
+            T('⑱之三 真跑之路（跳 不注）：锁为他机之坐 ⛔判空转、同坐照报；俱⛔崩',
+              崩他 is None and 崩同 is None and not any('空转' in x for x in 黄他) and any('空转' in x for x in 黄同)
+              and '心跳 第313章' in 文同, 崩他 or 崩同)
+            # ⑱之四 远端读不出（或 _远 崩）→ 退本地之档（ROOT 指 tempdir）：有档读之、无档作无人
+            import tempfile
+            with tempfile.TemporaryDirectory(prefix='接力自测心跳_') as td:
+                ROOT = td
+
+                def _崩():
+                    raise RuntimeError('远端崩')
+                _hb._远 = lambda: (False, None)
+                无档 = 心跳()
+                open(os.path.join(td, '_心跳.json'), 'w', encoding='utf-8').write(
+                    json.dumps({'章': 300, '时': t真 - _hb.限 - 120, '坐': '本地'}))
+                有档 = 心跳()
+                _hb._远 = _崩
+                崩退 = 心跳()
+            T('⑱之四 远端读不出／崩 → 退本地之档：无档作无人；有档（逾限）作 (无人, 300, 逾限之秒)',
+              无档 == (False, None, None) and 有档[0] is False and 有档[1] == 300 and 有档[2] > _hb.限
+              and 崩退[1] == 300, repr((无档, 有档, 崩退)))
+        finally:
+            _hb._远, _hb.坐 = _远原, _坐原
+    except Exception as e:
+        T('⑱心跳() 之读', False, '%s: %s' % (type(e).__name__, e))
+    finally:
+        _末锁坐, ROOT = _旧锁坐, _根
+
+    # ⑲真树之读（GitHub 片闸免「接力」之真跑後之守：树之形一变而崩，此格即红）——⛔判其活态之果（静、锁随时而异），只验⛔崩与其印
+    if os.path.isdir(os.path.join(ROOT, '正文')):
+        try:
+            n真 = 末章()
+            读 = (有回执(n真), 新动(n真 + 1), 交棒(n真), 续跑末步(), 暂停())
+            坏, 黄, 文, 崩 = 印跑(跳=(False, None, None))
+            T('⑲真树之读：末章／有回执／新动／交棒／续跑末步／暂停 ⛔崩、其形不变；印=True 之真树一跑（心跳注入·⛔连网）⛔崩而印末章',
+              n真 > 0 and isinstance(读[0], bool) and all(x is None or isinstance(x, (int, float)) for x in 读[1:4])
+              and isinstance(读[4], tuple) and len(读[4]) == 2 and 崩 is None and ('末章 第%d章' % n真) in 文,
+              崩 or repr(读)[:120])
+        except Exception as e:
+            T('⑲真树之读', False, '%s: %s' % (type(e).__name__, e))
+    else:
+        T('⑲真树之读（树无 正文/·略：非本仓之树）', True)
+        print('  · ⑲略：%s 无 正文/' % ROOT)
+
+    # ⑳入口 主()：断流 → rc 1、黄而无坏 → rc 0、净 → rc 0；__main__ 唯经 主()（⛔另写一路）
+    try:
+        rc们 = (主(['接力.py'], 查之=lambda: (['甲'], [])), 主(['接力.py'], 查之=lambda: ([], ['乙'])), 主(['接力.py'], 查之=lambda: ([], [])))
+    except Exception as e:
+        rc们 = repr(e)
+    _尾 = open(os.path.abspath(__file__), encoding='utf-8').read().split("if __name__ == '__main__':")[-1]
+    T('⑳入口 主()：断流 rc 1、黄 rc 0、净 rc 0；__main__ 唯 sys.exit(主(sys.argv))',
+      rc们 == (1, 0, 0) and _尾.strip() == 'sys.exit(主(sys.argv))', repr(rc们))
     print('── 负测·接力 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 
 
 if __name__ == '__main__':
-    a = sys.argv
-    if '--自测' in a:
-        sys.exit(0 if 自测() else 1)
-    坏, _ = 查()
-    sys.exit(1 if 坏 else 0)
+    sys.exit(主(sys.argv))

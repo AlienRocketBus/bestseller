@@ -21,6 +21,8 @@
   ⑤ 每次推前先跳心跳（防「接力」误红）、枝正、速检、先存底（1008：存底环受两时之限与容器重启而死，存底枝旧则推闸之活态之检红）；全程记 `.git/推.log`。
   ⑦ `--候 <sha>`：⛔pgrep、⛔sleep 环之手候——一进程阻塞：每回一取（主枝与 备份/报 同取，至多每分一回），主枝含 sha 即快进返 0；
      报（同 sha）为红／拒／败即印其红返 3；逾限返 2（GitHub 或停摆 → `--直`）。
+  ⑧ （1117·法用#停钩空转）交成即本地泊於「治-<sha12>」（推报.泊：平台 Stop 钩以 origin/<当前枝> 量未推，泊後 0、⛔每回合空转）；
+     `--候` 之快进、枝正 俱先归主枝；泊不成即照旧（其钩照报）。
 
 用法：
   python3 工具/推.py                  # 交 GitHub：推 治-<sha12>（後台跑亦可）→ 印候之令
@@ -218,6 +220,13 @@ def 枝正(root=ROOT):
     当 = _跑(['git', 'symbolic-ref', '-q', '--short', 'HEAD'], root).stdout.strip()
     if 当 == 枝:
         return None
+    import 推报
+    if 推报.泊式.match(当):        # ★1117（法用#停钩空转）：推後之泊（章-N／治-<sha12>）→ 归主枝（主枝为 HEAD 之祖即挪之、删泊枝；同一把尺）
+        归否, 归语 = 推报.归(root)
+        if 归否:
+            print('· 枝正：' + 归语.lstrip('· '))
+            return None
+        return '  ✗ 枝正：' + 归语.lstrip('·⛔ ')
     if _跑(['git', 'merge-base', '--is-ancestor', 'refs/heads/' + 枝, 'HEAD'], root).returncode not in (0, 128):
         return '  ✗ 枝正：HEAD 不在 %s 上（今 %s），且枝不是 HEAD 之祖——先并而後推' % (枝, 当 or '游离')
     _跑(['git', 'checkout', '-q', '-B', 枝, 'HEAD'], root)
@@ -320,6 +329,15 @@ def 候之令(sha, 枝们=()):
     return 'python3 工具/推.py --候 %s' % sha[:12]
 
 
+def 泊之(名, root=ROOT):
+    """★1117（GitHub 化之审·I·法用#停钩空转）：交成即本地泊於同名之枝——平台 Stop 钩以 origin/<当前枝> 量「未推」，主枝超前而每回合空转二回；
+    泊後其量 0，候（--候 → 推报.快进）归主枝。败即照旧（⚠·其钩照报）。→ 印之行"""
+    import 推报
+    ok, 语 = 推报.泊(名, root)
+    _记(root, ('泊 %s' % 名) if ok else ('泊不成：' + 语)[:300])
+    return '  ' + 语 if ok else '  ⚠ ' + 语.lstrip('·⚠ ')
+
+
 def 交(root=ROOT, 交法=None, 最多=5):
     """默（1027 坑51）：推 HEAD 於 治-<sha12>（暂存之枝：pre-push 免闸），GitHub autopush 分片而闸、过即并入主枝（1027 坑54）。
     → 0 已交（或 HEAD 已在主枝）｜1 被拦（枝歪、速检红、推不上）｜2 已有人在推（已登记待推）。⛔本地全测。"""
@@ -355,7 +373,8 @@ def 交(root=ROOT, 交法=None, 最多=5):
             if 已:
                 print('✓ HEAD（%s）已交 GitHub（%s）——⛔再交同树（一树一闸）；候：%s（run_in_background）'
                       % (sha[:12], '、'.join(已), 候之令(sha, 已)))
-                _记(root, '已交：' + '、'.join(已)); return 0
+                _记(root, '已交：' + '、'.join(已))
+                print(泊之(next((x for x in 已 if x.startswith('章-')), 已[0]), root)); return 0
             名 = 治名(sha)
             try:
                 r = (交法 or (lambda 名: _跑(['git', 'push', 'origin', 'HEAD:refs/heads/' + 名], root, timeout=600)))(名)
@@ -369,6 +388,7 @@ def 交(root=ROOT, 交法=None, 最多=5):
             _记(root, '交 %s（第 %d 回）' % (名, 回))
             print('✓ 已交 GitHub：%s（autopush 分片而闸、过即并入主枝；果入 备份/报 之 报/推/%s.json）' % (名, 名))
             print('  → 零 token 候：python3 工具/推.py --候 %s（run_in_background；红／拒／败即早返）' % sha[:12])
+            print(泊之(名, root))
             if not os.path.exists(待):
                 return 0
         print('⚠ 交了 %d 回仍有待推（提交来得太快）——下回再跑本器' % 最多)
@@ -576,6 +596,37 @@ def 自测():
         _rc = 候(_t, 限分=3, 读=lambda: None, 进=lambda: (True, ''), 今=lambda: _钟[0],
                 睡=lambda x: _钟.__setitem__(0, _钟[0] + x), root=_c)
     共 += 1; ok += (bool(_t) and _rc == 0 and _钟[0] == 0 and _取(_c) is True)
+    # ⑱之二（1117·GitHub 化之审·I·法用#停钩空转）交之真推（临时裸库）：交成即泊於「治-<sha12>」（平台 Stop 钩之量 0）；
+    #   主枝含之 → 候之默进（推报.快进）归主枝、删泊枝；枝正於泊枝即归（主枝挪到 HEAD）；泊不成（云端无其枝）照旧
+    import 推报 as _报2
+    subprocess.run(['git', 'commit', '-q', '--allow-empty', '-m', '治'], cwd=_c, capture_output=True, env=_e)
+    _us = _跑(['git', 'rev-parse', 'HEAD'], _c).stdout.strip()
+    _前钩 = _报2.钩之未推(_c)
+    with _cl.redirect_stdout(_io.StringIO()) as _o:
+        _rc = 交(_c, 交法=lambda 名: subprocess.run(['git', 'push', '-q', 'origin', 'HEAD:refs/heads/' + 名], cwd=_c, capture_output=True, text=True, env=_e))
+    _泊当 = _跑(['git', 'symbolic-ref', '-q', '--short', 'HEAD'], _c).stdout.strip()
+    _泊钩 = _报2.钩之未推(_c)
+    subprocess.run(['git', 'push', '-q', 'origin', _us + ':refs/heads/' + 枝], cwd=_c, capture_output=True, env=_e)   # autopush 之并
+    _钟[0] = 0.0
+    with _cl.redirect_stdout(_io.StringIO()) as _o2:
+        _rc2 = 候(_us, 限分=3, 读=lambda: None, 今=lambda: _钟[0], 睡=lambda x: _钟.__setitem__(0, _钟[0] + x), root=_c)
+    共 += 1; ok += (_rc == 0 and _前钩 == 1 and _泊当 == 治名(_us) and _泊钩 == 0 and '✓ 泊：' in _o.getvalue()
+                    and _rc2 == 0 and '归' in _o2.getvalue() and _跑(['git', 'symbolic-ref', '-q', '--short', 'HEAD'], _c).stdout.strip() == 枝
+                    and _跑(['git', 'rev-parse', 'HEAD'], _c).stdout.strip() == _跑(['git', 'rev-parse', 'origin/' + 枝], _c).stdout.strip() == _us
+                    and not _跑(['git', 'branch', '--list', 治名(_us)], _c).stdout.strip() and _报2.钩之未推(_c) == 0)
+    subprocess.run(['git', 'commit', '-q', '--allow-empty', '-m', '再治'], cwd=_c, capture_output=True, env=_e)
+    subprocess.run(['git', 'push', '-q', 'origin', 'HEAD:refs/heads/章-7'], cwd=_c, capture_output=True, env=_e)
+    _报2.泊('章-7', _c)
+    subprocess.run(['git', 'commit', '-q', '--allow-empty', '-m', '泊後之新'], cwd=_c, capture_output=True, env=_e)
+    with _cl.redirect_stdout(_io.StringIO()):
+        _e2 = 枝正(_c)
+    _w = _跑(['git', 'rev-parse', 'HEAD'], _c).stdout.strip()
+    共 += 1; ok += (_e2 is None and _跑(['git', 'symbolic-ref', '-q', '--short', 'HEAD'], _c).stdout.strip() == 枝
+                    and _跑(['git', 'rev-parse', 'refs/heads/' + 枝], _c).stdout.strip() == _w
+                    and not _跑(['git', 'branch', '--list', '章-7'], _c).stdout.strip())                    # 枝正於泊枝：归（主枝挪到 HEAD、删泊枝）
+    with _cl.redirect_stdout(_io.StringIO()):
+        _l = 泊之('治-' + 'f' * 12, _c)
+    共 += 1; ok += ('⚠' in _l and _跑(['git', 'symbolic-ref', '-q', '--short', 'HEAD'], _c).stdout.strip() == 枝)   # 泊不成（云端无其枝）→ ⚠、照旧
     import shutil as _sh
     _sh.rmtree(_r, ignore_errors=True); _sh.rmtree(_c, ignore_errors=True)
     # ⑲（1027 坑⑱·#41）覆写之检：已入 git 之档一推删八成而换新、说明无「覆写：」→ 红；小改、新档、说明带「覆写：」、器生之档 → 放

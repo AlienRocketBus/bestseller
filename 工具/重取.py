@@ -24,6 +24,12 @@ import os, sys, re, json, time, subprocess
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 旗名 = '盘坏.flag'
 主枝 = 'claude/the-novel-review-4dtuit'   # 读不出本枝时之退路（与 存底.主枝 同；⛔另起尺：自测对之）
+泊式 = re.compile(r'^(章-\d+|治-[0-9a-f]{12})$')   # 推後之泊（1117·法用#停钩空转·与 推报.泊式 同：自测对之）——重取之仓⛔立於泊枝
+
+
+def 本枝(当):
+    """→ 重取之仓所检出之枝：读不出、游离、或泊於「章-N」／「治-<sha12>」者 → 主枝（泊枝无上游、其提交已在入主之途）；余照其枝。"""
+    return 主枝 if (not 当 or 当 == 'HEAD' or 泊式.match(当)) else 当
 _坏式 = re.compile(r'Input/output error|signal 7|Bus error|SIGBUS', re.I)
 
 
@@ -163,6 +169,14 @@ def 自测():
         T('⑦退路之枝与 存底.主枝 同（⛔两把尺）', 主枝 == 存底.主枝)
     except Exception as e:
         T('⑦存底导入不得：%s' % e, False)
+    try:
+        import 推报
+        T('⑧（1117·法用#停钩空转）泊於章-N／治-<sha12>、游离、读不出 → 主枝；他枝照其枝；泊式与 推报.泊式 同（⛔两把尺）',
+          本枝('章-459') == 主枝 and 本枝('治-0123456789ab') == 主枝 and 本枝('HEAD') == 主枝 and 本枝('') == 主枝
+          and 本枝('枝甲') == '枝甲' and 本枝('治-xyz') == '治-xyz' and 泊式.pattern == 推报.泊式.pattern
+          and "步(仓, 本枝(_读('git', 'rev-parse', '--abbrev-ref', 'HEAD'))" in open(os.path.abspath(__file__), encoding='utf-8').read())
+    except Exception as e:
+        T('⑧推报导入不得：%s' % e, False)
     ok = sum(r)
     print('── 负测·重取 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)
@@ -188,7 +202,7 @@ if __name__ == '__main__':
     仓 = os.path.dirname(_公) if os.path.basename(_公) == '.git' else ROOT   # worktree 之中亦指主仓（盘坏者主仓也）
     l = 印()
     print(l or '（今无盘坏之旗——此步备用）')
-    for x in 步(仓, _读('git', 'rev-parse', '--abbrev-ref', 'HEAD') or 主枝, _读('git', 'remote', 'get-url', 'origin'),
+    for x in 步(仓, 本枝(_读('git', 'rev-parse', '--abbrev-ref', 'HEAD')), _读('git', 'remote', 'get-url', 'origin'),
                _读('git', 'config', '--get', 'user.name'), _读('git', 'config', '--get', 'user.email'),
                os.path.join(_公, 'info', 'exclude')):
         print(x)

@@ -746,8 +746,16 @@ def 验乙(诸文, 钩):
     #   不成即 quan_qu 降级全取（旧式 fetch-depth 0 无 filter）；片须以 GIT_TRACE2_EVENT 计懒取之败（lan_qu）而降级全取重跑——⛔因省取而红
     省步 = [(k, j) for k, j in GJ.items() for s in j.get('steps') or []
             if str(s.get('uses') or '').startswith('actions/checkout') and (s.get('with') or {}).get('filter')]
-    if 省步 and 'quan_qu()' not in str((G.get('env') or {}).get('QUANQU') or ''):
+    QQ = str((G.get('env') or {}).get('QUANQU') or '')
+    if 省步 and 'quan_qu()' not in QQ:
         缺.append('⑱省取：gate 之 env 须有 QUANQU（quan_qu：降级全取之函）')
+    # ⑱之二 全取之取须再试（审·F 之治：旧 actions/checkout 之 fetch 经 RetryHelper 至多三回、回间随候 10—20 秒；降级之全取⛔劣於旧）
+    再试 = re.search(r'zai_shi\(\) \{(.*?)\n\}', QQ, re.S)
+    if 省步 and not (再试 and re.search(r'for i in 1 2 3; do', 再试.group(1)) and re.search(r'\$\(\(10 \+ RANDOM % 11\)\)', 再试.group(1))
+                    and re.search(r'sleep "\$s"', 再试.group(1))
+                    and re.search(r"zai_shi git -c protocol\.version=2 fetch [^\n]*'\+refs/heads/\*:refs/remotes/origin/\*'", QQ)
+                    and not re.search(r"(?<!zai_shi )git -c protocol\.version=2 fetch", QQ)):
+        缺.append('⑱省取：quan_qu 之全取须再试（zai_shi：至多三回、回间随候 10—20 秒——照 actions/checkout 之 RetryHelper）')
     for k, j in dict(省步).items():
         步 = j.get('steps') or []
         跑 = '\n'.join(s.get('run') or '' for s in 步)
@@ -1624,6 +1632,10 @@ def 自测():
         '省取⛔降级（检出不成即红）': ('gate.yml', g.replace(' || quan_qu "$WANT" "检出不成：$QU"', '')),
         '省取之检出⛔continue-on-error': ('gate.yml', g.replace('        id: qu\n        continue-on-error: true\n', '        id: qu\n')),
         '片⛔计懒取之败': ('gate.yml', g.replace('quan_qu "$WANT" "片中懒取败 $BAI 回"', 'true')),
+        '全取⛔再试': ('gate.yml', g.replace("&& zai_shi git -c protocol.version=2 fetch -q --prune", "&& git -c protocol.version=2 fetch -q --prune")),
+        '全取再试⛔候': ('gate.yml', g.replace('        sleep "$s"\n', '')),
+        '全取再试二回': ('gate.yml', g.replace('for i in 1 2 3; do', 'for i in 1 2; do')),
+        '专取 sha ⛔再试': ('gate.yml', g.replace('|| zai_shi git -c protocol.version=2 fetch -q --no-tags', '|| git -c protocol.version=2 fetch -q --no-tags')),
         # B-v 驳：推主枝之短式（"$CAND:$MAIN"、${MAIN}、推本地同名之枝）旧式俱漏
         '演练推主枝·短式': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$CAND:$MAIN"\n          python3 工具/推报.py --落 "$D"')),
         '演练推主枝·${MAIN}': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$CAND:refs/heads/${MAIN}"\n          python3 工具/推报.py --落 "$D"')),

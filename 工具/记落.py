@@ -325,6 +325,9 @@ def 核(n, 文们, v, 笔, root=ROOT, 回放=False):
         余 = sorted(set(占.findall(t or '')))
         if 余:
             红.append((名, '占位之键不识：%s' % '、'.join(余)))
+        判 = 判占.findall(t or '')
+        if 判:
+            红.append((名, '回执之骨之判未填 %d 处（X109·‹判›）：%s' % (len(判), '、'.join(sorted(set(判)))[:120])))
     return 红
 
 
@@ -367,6 +370,65 @@ def 落(n, root=ROOT, 试=False, 印=print):
     if not 红:
         印('✓ 记落 %d%s：代填 %d 格、落 %d 档（%s），核俱合' % (n, '·试（⛔写）' if 试 else '', 填, len(改), '、'.join(x[0] for x in 改) or '无改'))
     return 红
+
+
+# ── X109（1117·460 起）：回执之骨——记席 455—459 回执一 Write 通篇自拟（$2.9—3.1、12 回、逾配额 5%），器先立骨、记席只填判 ──
+骨起 = 460
+判占 = re.compile(r'‹判[^›\n]{0,24}›')
+
+
+def 骨(n, root=ROOT, 日=None):
+    """立「设定/回执_<日>_第n章封版席.md」之骨（已有回执即⛔覆、返 None）：节目照前章回执（章号随移）；§一 写器格占位；
+    余节之「- **键**」「N. **题**」「> **式…**」留其键与题、判写 ‹判›；无键之节留 ‹判·节›；归封版之节（§十六）照抄。返其路。"""
+    if 回执档(n, root):
+        return None
+    前 = 回执档(n - 1, root)
+    if not 前:
+        return None
+    t = 读(前, root)
+    日 = 日 or time.strftime('%Y%m%d')
+    号 = lambda s: re.sub(r'(?<!\d)(%d|%d)(?!\d)' % (n, n - 1), lambda m: str(int(m.group(1)) + 1), s)
+    出 = ['# 回执 · 第%d章《‹判·题›》封版席（记席·造式二代·%s-%s-%s）' % (n, 日[:4], 日[4:6], 日[6:]), '']
+    节, 有 = None, 0
+    def 收():
+        if 节 is not None and not 有:
+            出.append('‹判·%s›' % re.sub(r'^## ([^·]+)·.*$', r'\1', 节))
+            出.append('')
+    for l in t.split('\n')[1:]:
+        if l.startswith('## '):
+            收()
+            if 出[-1] != '':
+                出.append('')
+            节, 有 = l, 0
+            出.extend([号(l), ''])
+            if l.startswith('## 一·'):
+                出.extend(['‹器:回执之数›', '- **品**：‹判›；**层**：‹判›', '- **极短段**：‹器:极短段›；‹判·极短段›',
+                          '- **对白**：‹器:对白›；‹判·对白›', '']); 有 = 1
+            elif l.startswith('## 八·'):
+                出.extend(['器拍：‹器:拍界›（「＊」在 ‹器:星行›）', '‹判·八›', '']); 有 = 1
+            elif l.startswith('## 九·'):
+                出.extend(['- 总纲：‹器:总纲›；日号：‹器:日号›（‹判·日号›）', '‹判·九›', '']); 有 = 1
+            continue
+        if 节 is None:
+            m = re.match(r'^> (\*\*[^*]+\*\*)', l)
+            if m:
+                出.extend(['> %s：‹判›' % m.group(1), ''])
+            continue
+        if 节.startswith(('## 一·', '## 八·', '## 九·')) or '本章之失' in 节 or '交总编辑' in 节:     # 本章特有之节⛔袭前章之条
+            continue
+        if '归 `封版.py`' in 节:
+            if l.strip():
+                出.append(号(l)); 有 = 1
+            continue
+        m = re.match(r'^(- \*\*[^*]+\*\*|\d+\. \*\*[^*]+\*\*)', l)
+        if m:
+            出.append(号(m.group(1)) + ('——' if m.group(1)[0].isdigit() else '：') + '‹判›'); 有 = 1
+        elif not l.strip() and 有 and 出[-1] != '':
+            出.append('')
+    收()
+    p = os.path.join('设定', '回执_%s_第%d章封版席.md' % (日, n))
+    open(os.path.join(root, p), 'w', encoding='utf-8').write('\n'.join(出).rstrip() + '\n')
+    return p
 
 
 值档 = os.path.join('版本', '第%d章', '_记落值.json')
@@ -588,6 +650,17 @@ def 自测():
         验('重填·纯数短格⛔单换', not 可换('107') and not 可换('2,629') and 可换(旧v['sha1']) and 换值('a107b', [('107', '9')]) == ('a9b', 1))
         os.remove(os.path.join(目, 值档 % 410))
         验('重填·无席时之值即红', 重填(410, 目, 印=lambda s: None) == [('重填', '无席时之值')])
+        # ★X109：回执之骨——节目随前章、§一器格、判占未填即红、已有回执⛔覆
+        _骨目 = tempfile.mkdtemp(); os.makedirs(os.path.join(_骨目, '设定'))
+        open(os.path.join(_骨目, '设定', '回执_20261101_第409章封版席.md'), 'w', encoding='utf-8').write(
+            '# 回执 · 第409章《甲》封版席\n\n> **式：虫洞**：乙\n\n## 一·本章之数（器出）\n\n- 白文 **1—9** 行\n\n## 二·检察官回执诸项\n\n- **章魂**：丙\n'
+            '- **五钩**：丁\n\n## 四·本章之失\n\n1. **读误**——戊\n\n## 八·锁定行逐拍之落处\n\n器拍：己\n\n## 十三·410 开镜卡\n\n- **锚之取**：庚\n\n'
+            '## 十六·归 `封版.py` 之事（本坐⛔办）\n\n- 俱归 `python3 工具/封版.py 409 --後`。\n')
+        _p = 骨(410, _骨目, '20261102'); _t = 读(_p, _骨目)
+        验('骨·立', _p and '‹器:回执之数›' in _t and '- **章魂**：‹判›' in _t and '## 十三·411 开镜卡' in _t and '封版.py 410 --後' in _t
+            and '读误' not in _t and '丙' not in _t and '‹器:拍界›' in _t and 骨(410, _骨目) is None, _t[:300])
+        验('骨·判未填即红', any('‹判›' in x[1] for x in 核(410, {'回执': _t}, v, [], _骨目)))
+        shutil.rmtree(_骨目, ignore_errors=True)
         验('N≤410 ⛔写', subprocess.run([sys.executable, os.path.abspath(__file__), '410'], capture_output=True, text=True).returncode == 2)
     finally:
         shutil.rmtree(目, ignore_errors=True); shutil.rmtree(父, ignore_errors=True)
@@ -606,6 +679,10 @@ if __name__ == '__main__':
             sys.exit(1 if 重填(int(a[0])) else 0)
         except Exception as e:
             print('⛔ 记落·重填：器格算不出（%s）' % e); sys.exit(1)
+    if a and a[0].isdigit() and a[1:] == ['--骨']:
+        p = 骨(int(a[0]))
+        print('✓ 回执之骨：%s（只以 Edit 填 ‹判›·X109）' % p if p else '· 回执之骨：已有回执或无前章回执，⛔立')
+        sys.exit(0)
     if a and a[0].isdigit() and set(a[1:]) <= {'--试'}:
         N, 试 = int(a[0]), '--试' in a
         if N < 起 and not 试:

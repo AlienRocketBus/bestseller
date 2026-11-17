@@ -13,6 +13,9 @@
     唯 git push 之 refspec 俱係 备份/* 者放（存底、心跳之备份枝本即免闸；⛔误拦）。
   ③写者唯一（主枝唯 GitHub autopush 写；`推.py --直` 在 python 内调 git、⛔经此钩，係唯一之审计之例外）：
     Bash 之 git push 其靶及主枝（含 --all／--mirror、无 refspec 而当前枝即主枝）→ 拦。
+  ④（1117·法用#停钩空转）推後之泊（本地立於「章-N」／「治-<sha12>」·推报.泊）：Bash 之 git push 无 refspec／HEAD／其泊枝之名 → 拦
+    （泊则主枝之禁不及之，而其推即推泊枝：章标不动、治枝一树一闸）——新提交一律 `推.py`（枝正归主枝）。
+    他之云端已有之 章-*／治-*（本钩⛔网、⛔认）由 pre-push 拦（远端 sha 非全 0 即⛔挪⛔删章标、⛔挪治枝·1117 审）。
   放行之反例（丝滑·⛔误拦）：echo 'pgrep'、heredoc 里之字、grep ZM_SKIP_HOOK 某档、git push origin HEAD:refs/heads/治-x、
     git push --no-verify origin x:refs/heads/备份/存底、git config core.hooksPath 工具/githooks（复原钩，⛔-c 之绕）。
 
@@ -29,6 +32,7 @@ import os, sys, re, json, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 主枝 = 'claude/the-novel-review-4dtuit'          # 与 推.枝、推报.主枝 同（自测对之）
+泊式 = re.compile(r'^(章-\d+|治-[0-9a-f]{12})$')   # 推後之泊之枝（与 推报.泊式 同·自测对之；⛔import 推报：本钩每令一跑，求速）
 形 = re.compile(r'python3\s+\S*工具/\S+\.py[^|&;\n]*\|(?!\|)[^&;\n]*&&')
 
 
@@ -232,13 +236,17 @@ def 绕之判(c, 当前=None, 目=ROOT):
                 return ('⛔链之检（总章§五·⛔--no-verify、⛔绕钩）：「%s」——git push 绕 pre-push 之闸；唯 refspec 俱係 备份/* 者许（存底、心跳）。'
                         '照闸之红治，再 `python3 工具/推.py`（交 GitHub）。' % ' '.join(w)[:120])
             当 = None
-            if None in 靶 or 'HEAD' in 靶:
+            if None in 靶 or 'HEAD' in 靶 or any(泊式.match(t or '') for t in 靶):
                 当 = 当前 if 当前 is not None else _当前枝(git目 or 目)      # 先 cd／-C 入某席之 worktree 者取其枝
             及主 = 全推 or any(t == 主枝 or (t in (None, 'HEAD') and 当 == 主枝) for t in 靶)
             if 及主:
                 return ('⛔链之检（写者唯一·坑51／53）：「%s」——Bash 之 git push 其靶及主枝 %s。主枝唯 GitHub autopush 一写者：'
                         '`python3 工具/推.py`（交 治-<sha>，GitHub 分片而闸、过即并入）；报「拒」或 GitHub 停摆方 `python3 工具/推.py --直`（审计之例外）。'
                         % (' '.join(w)[:120], 主枝))
+            if 当 and 泊式.match(当) and any(t in (None, 'HEAD', 当) for t in 靶):
+                return ('⛔链之检（推後之泊·1117 法用#停钩空转）：「%s」——本地泊於「%s」（其提交已在云端之同名枝，入主枝归 GitHub autopush）；'
+                        '无 refspec／HEAD／其名之 Bash 推即推此泊枝（章标不动、治枝一树一闸）。新提交一律 `python3 工具/推.py`（枝正归主枝、交 治-<sha>）。'
+                        % (' '.join(w)[:120], 当))
             continue
         if 绕旗:
             return ('⛔链之检（总章§五·⛔绕钩）：「%s」——以 -c core.hooksPath= 绕钩。复原钩用 `git config core.hooksPath 工具/githooks`。' % ' '.join(w)[:120])
@@ -378,6 +386,26 @@ def 自测():
     T('git commit -m "治 (git push --no-verify 之禁)"', False)
     T('echo "例 (git push origin %s)"; git commit -m \'说明 (git commit -n)\'' % 主枝, False)
     T('x=$(git push origin HEAD:%s)' % 主枝, True)
+    # ★1117（法用#停钩空转）推後之泊：泊枝上无 refspec／HEAD／其名之推 → 拦（章标不动、治枝一树一闸）；他靶（治-新、备份）、未泊 → 照旧
+    for _泊 in ('章-459', '治-0123456789ab'):
+        T('git push', True, 当前=_泊)
+        T('git push origin', True, 当前=_泊)
+        T('git push origin HEAD', True, 当前=_泊)
+        T('git push -u origin %s' % _泊, True, 当前=_泊)
+        T('git push origin HEAD:refs/heads/%s' % _泊, True, 当前=_泊)
+        T('git push origin HEAD:refs/heads/治-fedcba987654', False, 当前=_泊)
+        T('git push --no-verify origin HEAD:refs/heads/备份/存底', False, 当前=_泊)
+        T('git push origin HEAD:%s' % 主枝, True, 当前=_泊)
+        # 1117 审：平台 Stop 钩泊後教「push <泊枝>」——其诸形（短式之的、强推、+、--set-upstream）俱拦
+        T('git push origin HEAD:%s' % _泊, True, 当前=_泊)
+        T('git push -f', True, 当前=_泊)
+        T('git push --force origin +HEAD:%s' % _泊, True, 当前=_泊)
+        T('git push --set-upstream origin %s' % _泊, True, 当前=_泊)
+    # 他之云端已有之章标（泊於章-459 推 HEAD:章-458；主枝上推本地之 章-459）此钩⛔认（⛔网）——其拦在 pre-push（云端已有之 章-* ⛔挪⛔删·推报 --自测 ③之五、⑤之八）
+    T('git push origin HEAD:refs/heads/章-458', False, 当前='章-459')
+    T('git push origin HEAD:refs/heads/章-459', False, 当前=主枝)                      # 未泊：照旧（⛔新禁）
+    T('git push origin 章-459', False, 当前='zh/B')
+    T('git push origin HEAD', False, 当前='治-xyz')                                   # 非泊之形（⛔12 位之 sha）⛔认
     print('链之检·自测 %d/%d' % (ok, 共))
     # 主枝之名与 推.py、推报 同（⛔另起尺）
     try:
@@ -386,7 +414,12 @@ def 自测():
     except Exception:
         同 = False
     print('  %s 主枝之名与 推.py 同' % ('✓' if 同 else '✗'))
-    return ok == 共 and 同
+    try:
+        泊同 = ("泊式 = re.compile(r'%s')" % 泊式.pattern) in open(os.path.join(ROOT, '工具', '推报.py'), encoding='utf-8').read()
+    except Exception:
+        泊同 = False
+    print('  %s 泊式与 推报.泊式 同（⛔两把尺）' % ('✓' if 泊同 else '✗'))
+    return ok == 共 and 同 and 泊同
 
 
 if __name__ == '__main__':

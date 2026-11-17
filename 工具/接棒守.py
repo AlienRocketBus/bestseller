@@ -402,7 +402,13 @@ def 云巡(试=False):
         if not 号:
             print('⛔ 哨 PR（头枝 %s）不在——唤不得：总编辑立之、订之' % 巡警枝)
             return 1
-        唤, 键, 红, 停分 = 云巡判(rc, d if 在 else None, 今, _旧言(仓, 号, 今), 印)
+        try:
+            旧 = _旧言(仓, 号, 今)
+        except Exception as e:      # 读旧言败 → 宁多唤一回、⛔因去重之败而不唤
+            print('⚠ 旧言读不出（%s）——作无旧言论' % e)
+            旧 = []
+        print('· 哨 PR #%d：近六时旧唤 %d（%s）' % (号, len(旧), '、'.join(k for _, k in 旧[-3:]) or '无'))
+        唤, 键, 红, 停分 = 云巡判(rc, d if 在 else None, 今, 旧, 印)
         if 试:
             唤, 键 = True, '试·%d' % 今
         if not 唤:
@@ -795,6 +801,10 @@ def 自测():
       and '停摆' in 巡印判(None, _今) and '停摆' in 巡印判({'时': 'x'}, _今))
     _流 = open(os.path.join(ROOT, '.github', 'workflows', '巡.yml'), encoding='utf-8').read() if os.path.exists(
         os.path.join(ROOT, '.github', 'workflows', '巡.yml')) else ''
+    _段云 = src.split('def 云巡(')[1].split('\ndef ')[0]
+    T('⑪之四 云巡：读旧言败即作无旧言（宁多唤⛔不唤）；哨 PR 不在即红（GitHub 邮作者）；巡印每跑俱落（止亦落）',
+      "旧 = []" in _段云 and '哨 PR' in _段云 and 'return 1' in _段云
+      and _段云.index('落巡印(') < _段云.index('if rc == 0 and not 试'))
     T('⑪之三 巡.yml：每五分之 cron、跑 --云巡、可写言（issues／pull-requests）、可推巡印（contents）；沙盒之 --巡 验巡印（rc 5）、GitHub 之 --巡⛔验',
       "cron: '*/5 * * * *'" in _流 and '接棒守.py --云巡' in _流 and 'issues: write' in _流 and 'pull-requests: write' in _流
       and 'contents: write' in _流 and '巡印之由() if 查印' in _段巡

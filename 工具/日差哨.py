@@ -67,8 +67,9 @@ def 骨日(n):
     卡 = os.path.join(ROOT, '版本', '第%d章' % n, '_开镜卡.md')
     if not os.path.exists(卡):
         return None
-    m = re.search(r'本章之一事\**：([主暗])·第([零〇一二三四五六七八九十百]+)[天日]', io.open(卡, encoding='utf-8').read())
-    return (m.group(1), cn2i(m.group(2))) if m else None
+    # ★1118（465 记席所逮）：464 卡作「主190」（阿拉伯字、无「第」）→ 旧式 None、退取白文回指之「第一百八十九天」得假差 5；今兼认「主190／主·190」
+    m = re.search(r'本章之一事\**：([主暗])·?(?:第([零〇一二三四五六七八九十百]+)[天日]|(\d{1,4})(?!\d))', io.open(卡, encoding='utf-8').read())
+    return (m.group(1), cn2i(m.group(2)) if m.group(2) else int(m.group(3))) if m else None
 
 
 def 线与日(body, 骨=None):

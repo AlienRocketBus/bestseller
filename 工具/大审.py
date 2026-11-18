@@ -343,6 +343,8 @@ def 包(a, b):
         红 = [x for x in o.splitlines() if re.search(r'⛔|⚠|✗|红', x) and '只报不拦' not in x[:6]]
         L.append('- **%s**：%s' % (名, ('红 %d 行' % len(红)) if 红 else '✓'))
         L += ['    ' + x.strip()[:240] for x in 红[:12]]
+        # ★1118 总编辑复核·刻意之疲 改（0ad2fad7c）：只照镜之器（恒绿）以「镜·」起之行照录——镜给大审之通读者，⛔算红
+        L += ['    ' + x.strip()[:240] for x in o.splitlines() if x.strip().startswith('镜·') and x not in 红][:4]
     for n in range(a, b + 1):
         try:
             r = subprocess.run(['python3', os.path.join(ROOT, '工具', '整句复述哨.py'), str(n)], cwd=ROOT,

@@ -2979,7 +2979,8 @@ def chk_duizhang_yushai():
 
 def chk_kexi():
     """刻意之疲（2026-09-25 立·作者令「最怕刻意：每章都吊胃口，读者审美疲劳、全书割裂」）：
-    按段看章尾——吊式收尾成套、或最新一章又落进收尾之模子，即红。见 工具/刻意之疲.py。"""
+    只照镜不拦（0925 四裁·a4b544611）：印末 12 章收尾之形与同式；恒绿，器崩方红。
+    见 工具/刻意之疲.py（1118 总编辑复核·刻意之疲 改·0ad2fad7c）。"""
     import subprocess as _sp
     r = _sp.run([sys.executable, '工具/刻意之疲.py'], cwd=ROOT, capture_output=True, text=True)
     last = [l for l in r.stdout.splitlines() if '刻意之疲' in l or '收尾同式' in l]

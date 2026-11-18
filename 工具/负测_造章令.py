@@ -71,8 +71,10 @@ const 交通 = (label, prompt) => {
   return { [通键(label)]: 交(label), flaws: '无' }
 }
 const 拒们 = process.env.ZJ_拒 ? JSON.parse(process.env.ZJ_拒) : {}   // ★1118：{label 之前缀: 错语}——其席之 agent() 以此错拒（平台安全之检之形）；不设者旧行不变
-const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); const 拒 = Object.keys(拒们).find(k => o.label.startsWith(k)); if (拒) throw new Error(拒们[拒]); return N >= 411 ? 交通(o.label, prompt) : 交(o.label) }
-const parallel = async (fs_) => Promise.all(fs_.map(f => f()))
+// ★1118 总编辑复核「大师之关」→改：桩从运行时之约——ZJ_死＝[label 之前缀]：其席之 agent() 遇终错返 null（⛔throw）；parallel ⛔reject（一席之 throw 化 null）。不设者旧行不变
+const 死们 = process.env.ZJ_死 ? JSON.parse(process.env.ZJ_死) : []
+const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); const 拒 = Object.keys(拒们).find(k => o.label.startsWith(k)); if (拒) throw new Error(拒们[拒]); if (死们.some(k => o.label.startsWith(k))) return null; return N >= 411 ? 交通(o.label, prompt) : 交(o.label) }
+const parallel = async (fs_) => Promise.all(fs_.map(f => Promise.resolve().then(f).catch(() => null)))
 const AF = Object.getPrototypeOf(async function () {}).constructor
 new AF('args', 'agent', 'parallel', 'phase', 'log', src)(Object.assign(厚 === '厚' ? { 章: N, 重, 须厚: true } : { 章: N, 重 }, process.env.ZJ_ARGS ? JSON.parse(process.env.ZJ_ARGS) : {}), agent, parallel, () => {}, () => {})
   .then(r => process.stdout.write(JSON.stringify({ 收, 果: r })))
@@ -112,10 +114,11 @@ _基二 = {"398轻病": "b043bdd206d3a656", "398中净": "73bdff10966a522d", "39
       "b3c8a8460bd40311", "410中病": "0053d64e255a2ba5", "410中病厚": "9d9437e0ddeb2db4", "410重净": "b3c8a8460bd40311"}
 
 
-def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False, 加=None, 拒=None):
-    环 = dict(os.environ, **({'ZJ_ARGS': json.dumps(加, ensure_ascii=False)} if 加 else {}), **({'ZJ_拒': json.dumps(拒, ensure_ascii=False)} if 拒 else {}))
+def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False, 加=None, 拒=None, 死=None):
+    环 = dict(os.environ, **({'ZJ_ARGS': json.dumps(加, ensure_ascii=False)} if 加 else {}), **({'ZJ_拒': json.dumps(拒, ensure_ascii=False)} if 拒 else {}),
+              **({'ZJ_死': json.dumps(死, ensure_ascii=False)} if 死 else {}))
     o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚, 空], capture_output=True, text=True, cwd=ROOT, timeout=60,
-                       env=环 if (加 or 拒) else None)
+                       env=环 if (加 or 拒 or 死) else None)
     if o.returncode:
         raise RuntimeError('造章.js 渲染不起（%d %s %s）：%s' % (n, 重, 病, o.stderr.strip()[:300]))
     d = json.loads(o.stdout)
@@ -438,6 +441,20 @@ def 跑():
                   and '--标无稿' not in 选令之(464, {'执笔·乙': 'Request timed out after retries'})
                   and '--标无稿' not in 选令之(464, {'执笔·丁': 安错})
                   and '--标无稿' not in 选令之(464)))
+        # ⑬之二★1118 总编辑复核「大师之关」→改（桩从运行时之约·ZJ_死：其席之 agent() 返 null、拒因恒空）：N≥467 拦号凭「甲乙丙之席无稿」之实（⛔凭拒因）——
+        #   467 乙 null → 选之先跑接「--标无稿 467 宽 稿号」（逆之＝乙·令里⛔执笔之名）；重·甲丙 null → 二号（逆之＝甲丙）；丁 null、无 null → ⛔接；
+        #   466 乙 null → ⛔接（464—466 之支凭 安全拒·拒因恒空·一字未动）
+        选令死 = lambda n, 死=None, 重='中': (_令(渲(器, n, 重, '净', 死=死), '选') or [{'prompt': ''}])[0]['prompt']
+        m467 = 标(选令死(467, ['执笔·乙']))
+        m467二 = 标(选令死(467, ['执笔·甲', '执笔·丙'], '重'))
+        R.append(('无稿之标·467 乙 agent() 返 null（运行时之约）→ 选之先跑接 --标无稿 467 5 %s（逆之＝%s·令里⛔执笔之名）；重·甲丙 null → %s；丁 null、无 null、466 乙 null → ⛔接'
+                  % (m467[3] if m467[0] else '?', _关.号之席(467, 5, m467[3]) if m467[0] else '?', m467二[3] if m467二[0] else '?'),
+                  bool(m467[0]) and (m467[1], m467[2]) == ('467', '5') and _关.号之席(467, 5, m467[3]) == '乙' and m467[3] == _关.席之号(467, 5, '乙')
+                  and not re.search('[甲乙丙丁戊己庚]', m467[0])
+                  and bool(m467二[0]) and m467二[2] == '5' and sorted(_关.号之席(467, 5, h) for h in m467二[3].split(',')) == ['丙', '甲']
+                  and '--标无稿' not in 选令死(467, ['执笔·丁'])
+                  and '--标无稿' not in 选令死(467)
+                  and '--标无稿' not in 选令死(466, ['执笔·乙'])))
     except Exception as e:
         R.append(('⛔渲染不起：%s' % e, False))
     finally:

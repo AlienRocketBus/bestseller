@@ -1,14 +1,12 @@
 {
  "ref": "章-466",
  "sha": "2f7d8ba45a075e403d050cca74bc8ff39eff5f4f",
- "果": "败",
- "红": [
-  "⛔备候不成（因 merge）——未入片闸；看 run_url"
- ],
- "main_after": "f7cac8662df355ea5609fa7aeb3a4908263bec3a",
- "时": "2026-11-18T15:21:57Z",
- "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44334531281",
- "因": "merge",
+ "果": "已在",
+ "红": [],
+ "main_after": "d48bea5a2da2772d29813ed25b91bde83549a3ea",
+ "时": "2026-11-18T18:34:57Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44371110068",
+ "因": "gate",
  "试": 0,
  "器红": [],
  "逾": [],

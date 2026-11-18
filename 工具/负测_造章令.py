@@ -70,7 +70,8 @@ const 交通 = (label, prompt) => {
   if (label === '逻辑审·1' && 病 === '误') return { audit: { hard: [], soft: '软1', gate: '闸', misread: true, misread_where: '处', misread_fix: '治' }, flaws: '无' }
   return { [通键(label)]: 交(label), flaws: '无' }
 }
-const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); return N >= 411 ? 交通(o.label, prompt) : 交(o.label) }
+const 拒们 = process.env.ZJ_拒 ? JSON.parse(process.env.ZJ_拒) : {}   // ★1118：{label 之前缀: 错语}——其席之 agent() 以此错拒（平台安全之检之形）；不设者旧行不变
+const agent = async (prompt, o) => { 收.push({ label: o.label, prompt, schema: o.schema || null, effort: o.effort || null }); const 拒 = Object.keys(拒们).find(k => o.label.startsWith(k)); if (拒) throw new Error(拒们[拒]); return N >= 411 ? 交通(o.label, prompt) : 交(o.label) }
 const parallel = async (fs_) => Promise.all(fs_.map(f => f()))
 const AF = Object.getPrototypeOf(async function () {}).constructor
 new AF('args', 'agent', 'parallel', 'phase', 'log', src)(Object.assign(厚 === '厚' ? { 章: N, 重, 须厚: true } : { 章: N, 重 }, process.env.ZJ_ARGS ? JSON.parse(process.env.ZJ_ARGS) : {}), agent, parallel, () => {}, () => {})
@@ -111,9 +112,10 @@ _基二 = {"398轻病": "b043bdd206d3a656", "398中净": "73bdff10966a522d", "39
       "b3c8a8460bd40311", "410中病": "0053d64e255a2ba5", "410中病厚": "9d9437e0ddeb2db4", "410重净": "b3c8a8460bd40311"}
 
 
-def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False, 加=None):
+def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False, 加=None, 拒=None):
+    环 = dict(os.environ, **({'ZJ_ARGS': json.dumps(加, ensure_ascii=False)} if 加 else {}), **({'ZJ_拒': json.dumps(拒, ensure_ascii=False)} if 拒 else {}))
     o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚, 空], capture_output=True, text=True, cwd=ROOT, timeout=60,
-                       env=dict(os.environ, ZJ_ARGS=json.dumps(加, ensure_ascii=False)) if 加 else None)
+                       env=环 if (加 or 拒) else None)
     if o.returncode:
         raise RuntimeError('造章.js 渲染不起（%d %s %s）：%s' % (n, 重, 病, o.stderr.strip()[:300]))
     d = json.loads(o.stdout)
@@ -410,6 +412,23 @@ def 跑():
         R.append(('X101①·452 回写既承＋裁＋销 → 盲读·2／逻辑审·2 ⛔派、记席照跑；缺销或 451 → 照派',
                   '盲读·2' not in 销452 and '逻辑审·2' not in 销452 and any(l.startswith('记席') for l in 销452)
                   and '逻辑审·2' in _验席(452, dict(承病, 裁='已亲治读误')) and '逻辑审·2' in _验席(451, dict(承病, 裁='已亲治读误', 销=True))))
+        # ⑬★1118 无稿之标（a9e5cc5ee 根病②）：N≥464 执笔·甲乙丙被平台安全之检拦而未交 → 选之先跑首接「大师之关.py --标无稿 N 宽 稿号」（〔原场〕仍居印末），
+        #   其稿号以 大师之关.号之席 逆之即被拦之席（JS 蒙号与 Python 之逆同式）、令里⛔现执笔之名（蒙名）；463、非安全之错、丁席、无拒 → ⛔接
+        import importlib.util as _iu
+        _sp = _iu.spec_from_file_location('大师之关', os.path.join(ROOT, '工具', '大师之关.py')); _关 = _iu.module_from_spec(_sp); _sp.loader.exec_module(_关)
+        安错 = 'API Error: Claude Code is unable to respond to this request, which appears to violate our Usage Policy (AUP)'
+        选令之 = lambda n, 拒=None, 重='中': (_令(渲(器, n, 重, '净', 拒=拒), '选') or [{'prompt': ''}])[0]['prompt']
+        标 = lambda s: (re.search(r'：python3 工具/大师之关\.py --标无稿 (\d+) (\d) ([^;\s]+); for f in ', s) or [None] * 4)
+        m464 = 标(选令之(464, {'执笔·乙': 安错}))
+        m464二 = 标(选令之(464, {'执笔·丙': 安错, '执笔·甲': 安错}, '重'))
+        R.append(('无稿之标·464 乙被安全之检拦 → 选之先跑接 --标无稿 464 5 %s（逆之＝%s·令里⛔执笔之名）；甲丙俱拦（重·宽五·余三稿足）→ %s；463、非安全之错、丁被拦、无拒 → ⛔接'
+                  % (m464[3] if m464[0] else '?', _关.号之席(464, 5, m464[3]) if m464[0] else '?', m464二[3] if m464二[0] else '?'),
+                  bool(m464[0]) and (m464[1], m464[2]) == ('464', '5') and _关.号之席(464, 5, m464[3]) == '乙' and not re.search('[甲乙丙丁戊己庚]', m464[0])
+                  and bool(m464二[0]) and m464二[2] == '5' and sorted(_关.号之席(464, 5, h) for h in m464二[3].split(',')) == ['丙', '甲']
+                  and '--标无稿' not in 选令之(463, {'执笔·乙': 安错})
+                  and '--标无稿' not in 选令之(464, {'执笔·乙': 'Request timed out after retries'})
+                  and '--标无稿' not in 选令之(464, {'执笔·丁': 安错})
+                  and '--标无稿' not in 选令之(464)))
     except Exception as e:
         R.append(('⛔渲染不起：%s' % e, False))
     finally:

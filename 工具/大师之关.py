@@ -14,6 +14,9 @@
 用法：python3 工具/大师之关.py          # 全书（自 自章 起）
       python3 工具/大师之关.py 377      # 只查一章
       python3 工具/大师之关.py --自测
+      python3 工具/大师之关.py --标无稿 N 宽 稿号[,稿号]   # ★1118 写者（造章.js N≥464 选之先跑自调·零 token）：
+            执笔被平台安全之检拦（造章.js 安全拒）而盘上缺档 → 於其构思书「无稿：…拦」一行；只印稿号（⛔泄执笔之名·蒙名）。
+            ⛔代「缺档」：拦而无稿 照旧三条俱验（明标＋_创作记录.md 载缺档＋起草_稿 ≥3）——本器只书其一。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -35,6 +38,44 @@ def 拦而无稿(d, t):
     记 = os.path.join(d, '_创作记录.md')
     return (os.path.exists(记) and '缺档' in open(记, encoding='utf-8', errors='replace').read()
             and len(_g.glob(os.path.join(d, '起草_稿*.md'))) >= 3)
+
+
+干 = '甲乙丙丁戊己庚'                                          # 造章.js 功底之序
+稿号们 = ('稿一', '稿二', '稿三', '稿四', '稿五', '稿六', '稿七')   # 造章.js 稿号
+
+
+def 号之席(n, 宽, 号):
+    """造章.js 蒙号(名)＝稿号[(干序+N) % 宽] 之逆：稿号 → 执笔之名（记料.py _胜嫁之构思 同式；负测_造章令 以真渲之令对之）。"""
+    k = 稿号们.index(号)
+    if not (3 <= 宽 <= 7 and k < 宽):
+        raise ValueError('稿号 %s 不在宽 %d 之内' % (号, 宽))
+    return 干[(k - n) % 宽]
+
+
+def 标无稿(n, 宽, 号, root=ROOT):
+    """★1118（a9e5cc5ee 根病②：459 丙、461 乙俱手补）：执笔被平台安全之检拦而盘上缺档者，於其构思书「无稿：…拦」一行。→ (名, 判)。
+    其据：造章.js 之 安全拒（拒因含 safeguards／AUP／usage policy·X79）——只由 造章.js 选之先跑传入（⛔模型手传）。
+    四条俱合方书（缺一⛔书、照红）：①稿档不在（选之先跑印「缺档」之同一判） ②起草_稿*.md ≥3 ③其构思今照 查() 即红（满者⛔书） ④未书过（⛔重书）；
+    只书 甲乙丙（大师之关所查）。⛔代 _创作记录.md 之「缺档」——拦而无稿 照旧三条俱验，本器只书其一。"""
+    import glob as _g
+    名 = 号之席(n, 宽, 号)
+    if 名 not in '甲乙丙':
+        return 名, '⛔非大师之关所查之席——⛔书'
+    d = os.path.join(root, '版本', '第%d章' % n)
+    if os.path.exists(os.path.join(d, '起草_%s.md' % 号)):
+        return 名, '⛔稿档在——非无稿，⛔书'
+    if len(_g.glob(os.path.join(d, '起草_稿*.md'))) < 3:
+        return 名, '⛔起草_稿 不足三——⛔书'
+    f = os.path.join(d, '起草_%s_构思.md' % 名)
+    t = open(f, encoding='utf-8', errors='replace').read() if os.path.exists(f) else None
+    if t is not None and re.search(r'^无稿[：:][^\n]*拦', t, re.M):
+        return 名, '已书（⛔重书）'
+    if not any(x.startswith('构思·%s ' % 名) for x in 查(n, root)):
+        return 名, '⛔构思照查已全——⛔书'
+    行 = '无稿：执笔被平台安全之检拦、未交（造章.js 拒因·安全之检·X79；%s 盘上缺档；大师之关.py --标无稿 自书）\n' % 号
+    with open(f, 'a', encoding='utf-8') as o:
+        o.write(('# 执笔·%s之构思（无稿）\n' % 名 if t is None else ('' if t.endswith('\n') or not t else '\n')) + 行)
+    return 名, '已书'
 
 
 def 查(n, root=ROOT):
@@ -148,6 +189,42 @@ def 自测():
         d2 = os.path.join(tmp, '版本', '第376章'); os.makedirs(d2)
         open(os.path.join(d2, '_十一轮.json'), 'w').write('{}')
         共 += 1; ok += (376 not in 全(tmp))
+        # ⑦★1118 写者（标无稿·造章.js N≥464 选之先跑自调）——稿号之逆钉真例：461 稿三＝乙、459 稿二＝丙／稿五＝甲、464 稿一＝乙、宽三之 464 稿二＝丙
+        共 += 1; ok += ([号之席(461, 5, '稿三'), 号之席(459, 5, '稿二'), 号之席(459, 5, '稿五'), 号之席(464, 5, '稿一'), 号之席(464, 3, '稿二')]
+                       == ['乙', '丙', '甲', '乙', '丙'])
+        d7 = os.path.join(tmp, '版本', '第461章'); os.makedirs(d7)
+        open(os.path.join(d7, '_十一轮.json'), 'w').write('{}')
+        for 名 in '甲丙':
+            open(os.path.join(d7, '起草_%s_构思.md' % 名), 'w').write('进化账所避：某条\n满分之问：三路\n' + '构' * 420)
+        题 = '# 执笔·乙之构思（咬合路）\n'
+        open(os.path.join(d7, '起草_乙_构思.md'), 'w').write(题)                       # 461 之真形：只一题行（38 字节）
+        open(os.path.join(d7, '_行家评.md'), 'w').write('【小说家】…\n【总编辑】…\n## 立得住\n无\n## 合稿逐条回话\n1. 改\n')
+        open(os.path.join(d7, '_创作记录.md'), 'w').write(''.join(k + '、x\n' for k in '一二三四五六'))
+        open(os.path.join(tmp, '设定', '大师进化账.md'), 'a').write('- [第461章] 教训｜出处｜往后\n')
+        for k in '一二四':
+            open(os.path.join(d7, '起草_稿%s.md' % k), 'w').write('稿')
+        乙构 = lambda: open(os.path.join(d7, '起草_乙_构思.md'), encoding='utf-8').read()
+        红乙 = lambda: any('构思·乙' in x for x in 全(tmp).get(461, []))
+        # ⑦之二 稿档在（稿三在盘）→ ⛔书、构思一字不动
+        open(os.path.join(d7, '起草_稿三.md'), 'w').write('稿')
+        共 += 1; ok += (标无稿(461, 5, '稿三', tmp)[1].startswith('⛔稿档在') and 乙构() == 题)
+        os.remove(os.path.join(d7, '起草_稿三.md'))
+        # ⑦之三 稿不足三（只二）→ ⛔书
+        os.remove(os.path.join(d7, '起草_稿四.md'))
+        共 += 1; ok += (标无稿(461, 5, '稿三', tmp)[1].startswith('⛔起草_稿 不足三') and 乙构() == 题)
+        open(os.path.join(d7, '起草_稿四.md'), 'w').write('稿')
+        # ⑦之四 四条俱合 → 书；而创作记录未载缺档者照红（写者⛔代缺档）；载之即绿；再跑⛔重书
+        共 += 1; ok += (标无稿(461, 5, '稿三', tmp) == ('乙', '已书') and 红乙())
+        open(os.path.join(d7, '_创作记录.md'), 'a').write('| 稿三 | 乙 | 咬合 | 构思档只一题行，稿缺档 |\n')
+        共 += 1; ok += (not 红乙() and 标无稿(461, 5, '稿三', tmp)[1].startswith('已书（') and 乙构().count('无稿：') == 1)
+        # ⑦之五 构思已全者 → ⛔书（满者照内容查，⛔以标免之）；构思不在者 → 立档书之（造式 ② 之「在」亦合）
+        open(os.path.join(d7, '起草_乙_构思.md'), 'w').write('进化账所避：某条\n满分之问：三路\n' + '构' * 420)
+        共 += 1; ok += (标无稿(461, 5, '稿三', tmp)[1].startswith('⛔构思照查已全') and '无稿' not in 乙构())
+        os.remove(os.path.join(d7, '起草_乙_构思.md'))
+        共 += 1; ok += (红乙() and 标无稿(461, 5, '稿三', tmp) == ('乙', '已书') and 乙构().startswith('# 执笔·乙之构思') and not 红乙())
+        # ⑦之六 稿号映於 丁（461 稿五＝丁·创作记录「稿五（丁·翻个儿）」）→ ⛔书（只 甲乙丙）
+        共 += 1; ok += (号之席(461, 5, '稿五') == '丁' and 标无稿(461, 5, '稿五', tmp)[1].startswith('⛔非大师之关所查')
+                       and not os.path.exists(os.path.join(d7, '起草_丁_构思.md')))
     finally:
         shutil.rmtree(tmp)
     print('大师之关·自测 %d/%d' % (ok, 共))
@@ -158,6 +235,13 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == '--自测':
         sys.exit(0 if 自测() else 1)
+    if a and a[0] == '--标无稿':                 # ★1118：造章.js（N≥464）选之先跑自调——只印稿号（蒙名）、恒返 0（⛔断选之先跑）
+        for 号 in a[3].split(','):
+            try:
+                print('· 无稿之标·%s：%s' % (号, 标无稿(int(a[1]), int(a[2]), 号)[1]))
+            except Exception as e:
+                print('· 无稿之标·%s：⛔判不出（%s）' % (号, e))
+        sys.exit(0)
     if a:
         缺 = 查(int(a[0]))
         print(('⛔ 大师之关·第%s章：' % a[0] + '｜'.join(缺)) if 缺 else '✓ 大师之关·第%s章：五样俱全' % a[0])

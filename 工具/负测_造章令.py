@@ -418,7 +418,7 @@ def 跑():
         _sp = _iu.spec_from_file_location('大师之关', os.path.join(ROOT, '工具', '大师之关.py')); _关 = _iu.module_from_spec(_sp); _sp.loader.exec_module(_关)
         安错 = 'API Error: Claude Code is unable to respond to this request, which appears to violate our Usage Policy (AUP)'
         选令之 = lambda n, 拒=None, 重='中': (_令(渲(器, n, 重, '净', 拒=拒), '选') or [{'prompt': ''}])[0]['prompt']
-        标 = lambda s: (re.search(r'：python3 工具/大师之关\.py --标无稿 (\d+) (\d) ([^;\s]+); for f in ', s) or [None] * 4)
+        标 = lambda s: (re.search(re.escape('：python3 工具/大师之关.py --标无稿 ') + r'(\d+) (\d) ([^;\s]+); for f in ', s) or [None] * 4)   # re.escape：死处方哨认「大师之关\.py」为器名而红（同 242 行之例）
         m464 = 标(选令之(464, {'执笔·乙': 安错}))
         m464二 = 标(选令之(464, {'执笔·丙': 安错, '执笔·甲': 安错}, '重'))
         R.append(('无稿之标·464 乙被安全之检拦 → 选之先跑接 --标无稿 464 5 %s（逆之＝%s·令里⛔执笔之名）；甲丙俱拦（重·宽五·余三稿足）→ %s；463、非安全之错、丁被拦、无拒 → ⛔接'

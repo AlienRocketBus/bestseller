@@ -54,10 +54,26 @@ def 末章():
     return len([x for x in os.listdir(os.path.join(ROOT, '正文')) if x.endswith('.md')])
 
 
+段封版之始 = 368   # ★1118 总编辑复核「负测·封版之凭」→改②：N≥此兼认席记之「封版」段（案席末见 367；320—464 俱有之）
+
+
+def 封版之段(n, root=None):
+    """★1118：第n章 `_席记.json` 之 段.封版 係 封版.py 於後之闸俱过之後所书否（N<段封版之始 不问）。
+    记席之占「待 封版.py」（造章.js 之令、记落.席记之落 代书之）⛔作数；档缺、坏、段非表 → 否。十一轮哨 同调此函（二器同判）。"""
+    if n < 段封版之始:
+        return True
+    try:
+        v = (json.load(open(os.path.join(root or ROOT, '版本', '第%d章' % n, '_席记.json'), encoding='utf-8')).get('段') or {}).get('封版')
+    except Exception:
+        return False
+    return isinstance(v, str) and bool(v.strip()) and not v.strip().startswith('待')
+
+
 def 有回执(n):
     # ⛔认三种，不只认作业单（限360·其详在 负测_封版之凭.py 之头；全测之 _已封版 1027 汰，本函今即其判）
+    # ★1118（X109：记料先立封版席之骨，记席未毕即作封版）：N≥段封版之始 兼认 段.封版
     return any(glob.glob(os.path.join(ROOT, '设定', '回执_*_第%d章%s.md' % (n, k)))
-               for k in ('作业单', '封版席'))  # ⛔0924 收回「案席」·见上注
+               for k in ('作业单', '封版席')) and 封版之段(n)  # ⛔0924 收回「案席」·见上注
 
 
 def 新动(n):

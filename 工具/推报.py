@@ -742,6 +742,31 @@ def 验乙(诸文, 钩):
         上 = [s for s in j片.get('steps') or [] if str(s.get('uses') or '').startswith('actions/upload-artifact')]
         if not 上 or 'always()' not in str(上[0].get('if', '')):
             缺.append('⑫片：片之果须 if: always() 上件（逾时亦交已跑者）')
+    # ⑱省取（1117 GitHub 化之审·F·法用#闸取仓之速）：带 filter 之 checkout（partial clone）须 continue-on-error 而有 id，其 job 之跑验检出、
+    #   不成即 quan_qu 降级全取（旧式 fetch-depth 0 无 filter）；片须以 GIT_TRACE2_EVENT 计懒取之败（lan_qu）而降级全取重跑——⛔因省取而红
+    省步 = [(k, j) for k, j in GJ.items() for s in j.get('steps') or []
+            if str(s.get('uses') or '').startswith('actions/checkout') and (s.get('with') or {}).get('filter')]
+    QQ = str((G.get('env') or {}).get('QUANQU') or '')
+    if 省步 and 'quan_qu()' not in QQ:
+        缺.append('⑱省取：gate 之 env 须有 QUANQU（quan_qu：降级全取之函）')
+    # ⑱之二 全取之取须再试（审·F 之治：旧 actions/checkout 之 fetch 经 RetryHelper 至多三回、回间随候 10—20 秒；降级之全取⛔劣於旧）——
+    #   网取之再试，⛔1027 所废「机内取并再试」（for i in 1 2 3 之并环·法用之守 ⑧ 之去证仍守其字）
+    再试 = re.search(r'zai_shi\(\) \{(.*?)\n\}', QQ, re.S)
+    if 省步 and not (再试 and re.search(r'for n in 1 2 3; do', 再试.group(1)) and re.search(r'\$\(\(10 \+ RANDOM % 11\)\)', 再试.group(1))
+                    and re.search(r'sleep "\$s"', 再试.group(1))
+                    and re.search(r"zai_shi git -c protocol\.version=2 fetch [^\n]*'\+refs/heads/\*:refs/remotes/origin/\*'", QQ)
+                    and not re.search(r"(?<!zai_shi )git -c protocol\.version=2 fetch", QQ)):
+        缺.append('⑱省取：quan_qu 之全取须再试（zai_shi：至多三回、回间随候 10—20 秒——照 actions/checkout 之 RetryHelper）')
+    for k, j in dict(省步).items():
+        步 = j.get('steps') or []
+        跑 = '\n'.join(s.get('run') or '' for s in 步)
+        if any(str(s.get('continue-on-error')).lower() != 'true' or not s.get('id') for s in 步
+               if str(s.get('uses') or '').startswith('actions/checkout') and (s.get('with') or {}).get('filter')) \
+                or not re.search(r'eval "\$QUANQU"', 跑) or not re.search(r'\|\| quan_qu "\$WANT" "检出不成', 跑):
+            缺.append('⑱省取：%s 之省取（filter）须 continue-on-error、有 id，其跑验检出而不成即降级全取（quan_qu）' % k)
+        if ((j.get('strategy') or {}).get('matrix') or {}).get('k') and not (
+                re.search(r'GIT_TRACE2_EVENT', 跑) and re.search(r'lan_qu "\$T2"', 跑) and re.search(r'quan_qu "\$WANT" "片中懒取败', 跑)):
+            缺.append('⑱省取：片须计懒取之败（GIT_TRACE2_EVENT·lan_qu）而降级全取重跑')
     # ③一闸：全档之闸恰一处（片）；⛔直跑钩／全测并／全跑全测；GitHub 上诸推俱指空钩
     片令 = re.findall(r'工具/全测\.py --片 ', 全文)
     if len(片令) != 1:
@@ -1021,8 +1046,16 @@ def _用(uses, 与, 工, 世, 境):
     名 = uses.split('@')[0]
     if 名 == 'actions/checkout':
         ref = _串(与.get('ref')) or 境['github']['sha']
+        滤 = _串(与.get('filter'))
+        if 滤 and 世.get('省败'):           # 景「省败」：省取不成（其步 continue-on-error → 次步降级全取）
+            if not os.path.isdir(os.path.join(工, '.git')):
+                _g(['init', '-q', 工], 世['目'], env=世['gitenv'])
+            return False
         if not os.path.isdir(os.path.join(工, '.git')):
-            _g(['clone', '-q', 世['裸'], 工], 世['目'], env=世['gitenv'])
+            if 滤:                          # 省取（1117·法用#闸取仓之速）：真 partial clone（file:// 方认 filter；裸库 allowfilter）
+                _g(['clone', '-q', '--no-checkout', '--filter=' + 滤, 'file://' + 世['裸'], 工], 世['目'], env=世['gitenv'])
+            else:
+                _g(['clone', '-q', 世['裸'], 工], 世['目'], env=世['gitenv'])
         if re.fullmatch(r'[0-9a-f]{40}', ref):
             _g(['checkout', '-q', '--detach', ref], 工, env=世['gitenv'])
         else:
@@ -1074,6 +1107,8 @@ def _跑一job(jid, j, 境, wenv, 世, k):
             continue
         if s.get('uses'):
             ok = _用(s['uses'], {a: _插(b, 境s) for a, b in (s.get('with') or {}).items()}, 工, 世, 境s)
+            if s.get('id'):
+                诸步[s['id']] = {'outputs': {}, 'outcome': 'success' if ok else 'failure'}
             世['印'].append('· %s/%s：%s' % (jid, 名, 'ok' if ok else '败'))
         else:
             out = os.path.join(rt, '.out%d' % i)
@@ -1096,7 +1131,8 @@ def _跑一job(jid, j, 境, wenv, 世, k):
             if s.get('id'):
                 诸步[s['id']] = {'outputs': outs, 'outcome': 'success' if ok else 'failure'}
             世['印'].append('· %s/%s：rc=%d\n%s%s' % (jid, 名, r.returncode, r.stdout[-1200:], r.stderr[-800:]))
-        成 = 成 and ok
+            世['印'] += ['告 %s/%s：%s' % (jid, 名, l) for l in r.stdout.split('\n') if l.startswith('::warning::')]   # 告（降级之印）⛔被截
+        成 = 成 and (ok or str(s.get('continue-on-error')).lower() == 'true')     # 步之 continue-on-error（outcome 败而 job 续）
     outs = {a: _串(_插(b, dict(境, steps=诸步, env=env))) for a, b in (j.get('outputs') or {}).items()}
     return {'result': 'success' if 成 else 'failure', 'outputs': outs}
 
@@ -1142,8 +1178,8 @@ def _跑诸job(w, 诸文, 境基, 世):
     return 果
 
 
-def 跑流(诸文, 档, 事, 裸, 目, 基env):
-    """以桩真跑一 workflow（事：{event_name, ref_name, sha, inputs}）→ (诸 job 之果, 印)。"""
+def 跑流(诸文, 档, 事, 裸, 目, 基env, 省败=False):
+    """以桩真跑一 workflow（事：{event_name, ref_name, sha, inputs}）→ (诸 job 之果, 印)。省败：带 filter 之 checkout 俱败（降级之演）。"""
     w = _yaml(诸文[档])
     on = w.get('on') or {}
     inputs = {}
@@ -1153,7 +1189,7 @@ def 跑流(诸文, 档, 事, 裸, 目, 基env):
     gh = {'ref_name': 事['ref_name'], 'sha': 事['sha'], 'event_name': 事['event_name'], 'token': 'tok', 'run_id': '1',
           'repository': '演/仓', 'server_url': 'file://' + 目, 'api_url': 'http://api.invalid'}
     件 = tempfile.mkdtemp(dir=目, prefix='件_')
-    世 = {'目': 目, '裸': 裸, '件': 件, '印': [], '基env': 基env, 'gitenv': _净env(), 'wenv': w.get('env') or {}}
+    世 = {'目': 目, '裸': 裸, '件': 件, '印': [], '基env': 基env, 'gitenv': _净env(), 'wenv': w.get('env') or {}, '省败': 省败}
     果 = _跑诸job(w, 诸文, {'github': gh, 'inputs': inputs, 'vars': {}}, 世)
     return 果, '\n'.join(世['印'])
 
@@ -1161,7 +1197,8 @@ def 跑流(诸文, 档, 事, 裸, 目, 基env):
 _桩全测 = r'''#!/usr/bin/env python3
 # 桩之全测（推报·自测）：载真 全测（_真全测.py）而以桩格代其诸项——--片数、--片、--并果 之真码照跑。
 #   ZM_STUB：绿｜红（字数闸·读者可见）｜器红（桩器乙）；ZM_STUB_CNT 记每格之跑；ZM_STUB_MOVE=<他之克隆>：首格之中把他之主枝推上（一回）；
-#   ZM_STUB_CRASH=k：第 k 片未跑即崩（⛔落果）。
+#   ZM_STUB_CRASH=k：第 k 片未跑即崩（⛔落果）。ZM_STUB_LAN=k：第 k 片於省取之仓（promisor）懒取一回而败（形同 git 之 promisor fetch），
+#   其片诸格随之红（降级全取而重跑即绿——法用#闸取仓之速）。
 import os, sys, importlib.util, subprocess
 H = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, H)
@@ -1192,6 +1229,13 @@ m._留字快照 = lambda: {}
 崩 = os.environ.get('ZM_STUB_CRASH')
 if 崩 and '--片' in sys.argv and sys.argv[sys.argv.index('--片') + 1].startswith(崩 + '/'):
     sys.exit(3)
+懒 = os.environ.get('ZM_STUB_LAN')
+if 懒 and '--片' in sys.argv and sys.argv[sys.argv.index('--片') + 1].startswith(懒 + '/') \
+        and subprocess.run(['git', 'config', '--get', 'remote.origin.promisor'], capture_output=True, text=True).stdout.strip() == 'true':
+    subprocess.run(['git', '-c', 'fetch.negotiationAlgorithm=noop', 'fetch', 'origin', '--no-tags', '--no-write-fetch-head',
+                    '--recurse-submodules=no', '--filter=blob:none', '--stdin'], input='0' * 40 + '\n', text=True, capture_output=True,
+                   env=dict(os.environ, GIT_ALLOW_PROTOCOL='none'))
+    红 = set(名们)
 sys.exit(m.main())
 '''
 _桩名数 = 47
@@ -1215,7 +1259,8 @@ def _g(a, cwd, env=None, 必=True):
 def 演乙(诸文, 钩, 景, 目):
     """以桩真跑乙形诸 workflow 於 目 下之裸库。景：
     成｜器红｜红｜逾（器红账首见已逾）｜拒（改 workflows）｜片崩｜章（章-9 触·演章）｜主动（闸中他坐推进主枝 → 重派 → 续跑而成）｜
-    重派尽（tries 2 而主动）｜中已在（闸中他坐以他并含本枝）｜演（演练·派：改 workflows 之枝照演）｜演红｜演推（演练·推 备份/演/<名>）。
+    重派尽（tries 2 而主动）｜中已在（闸中他坐以他并含本枝）｜演（演练·派：改 workflows 之枝照演）｜演红｜演推（演练·推 备份/演/<名>）｜
+    省败（带 filter 之省取俱败 → 降级全取）｜懒败（片一於省取之仓懒取而败、其格俱红 → 降级全取重跑）——法用#闸取仓之速。
     → {果, 报, 演报, 器红账, 计, 主, T, R, 枝们, 派, 印, 二, 沙, 他sha}"""
     import importlib
     env0 = _净env()
@@ -1223,6 +1268,7 @@ def 演乙(诸文, 钩, 景, 目):
     种, 沙, 他, 桩bin = (os.path.join(目, x) for x in ('种', '沙', '他', 'bin'))
     os.makedirs(os.path.dirname(裸))
     _g(['init', '-q', '--bare', 裸], 目)
+    _g(['config', 'uploadpack.allowfilter', 'true'], 裸)          # 省取（partial clone）之演：file:// 之裸库许 filter
     _g(['init', '-q', '-b', 主枝, 种], 目)
     工具 = os.path.dirname(os.path.abspath(__file__))
     档们 = {'工具/githooks/pre-push': 钩, '工具/全测.py': _桩全测, '设定/全测均秒.json': '{}\n',
@@ -1289,6 +1335,8 @@ def 演乙(诸文, 钩, 景, 目):
         基['ZM_STUB_MOVE'] = 他
     if 景 == '片崩':
         基['ZM_STUB_CRASH'] = '2'
+    if 景 == '懒败':
+        基['ZM_STUB_LAN'] = '1'
     if 景 in ('演', '演红'):
         事 = {'event_name': 'workflow_dispatch', 'ref_name': 主枝, 'sha': '', 'inputs': {'ref': R, 'name': '试一'}}
         档 = '演练.yml'
@@ -1300,7 +1348,7 @@ def 演乙(诸文, 钩, 景, 目):
         事, 档 = {'event_name': 'push', 'ref_name': R, 'sha': T}, 'autopush.yml'
     if 档 == '演练.yml' and not 事['sha']:
         事['sha'] = _g(['rev-parse', 'refs/heads/' + 主枝], 裸)
-    果, 印 = 跑流(诸文, 档, 事, 裸, 目, 基)
+    果, 印 = 跑流(诸文, 档, 事, 裸, 目, 基, 省败=(景 == '省败'))
     二 = None
     if 景 == '主动':
         计一 = open(计, encoding='utf-8').read() if os.path.exists(计) else ''
@@ -1582,6 +1630,13 @@ def 自测():
         '演练删枝': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin ":refs/heads/$REF"\n          python3 工具/推报.py --落 "$D"')),
         '演练⛔推之触': ('演练.yml', y.replace("    branches: ['备份/演/*']\n", "    branches: ['演/*']\n")),
         '绕钩之字': ('gate.yml', g.replace('git config core.hooksPath 工具/githooks', 'export ZM_SKIP_HOOK=1')),
+        '省取⛔降级（检出不成即红）': ('gate.yml', g.replace(' || quan_qu "$WANT" "检出不成：$QU"', '')),
+        '省取之检出⛔continue-on-error': ('gate.yml', g.replace('        id: qu\n        continue-on-error: true\n', '        id: qu\n')),
+        '片⛔计懒取之败': ('gate.yml', g.replace('quan_qu "$WANT" "片中懒取败 $BAI 回"', 'true')),
+        '全取⛔再试': ('gate.yml', g.replace("&& zai_shi git -c protocol.version=2 fetch -q --prune", "&& git -c protocol.version=2 fetch -q --prune")),
+        '全取再试⛔候': ('gate.yml', g.replace('        sleep "$s"\n', '')),
+        '全取再试二回': ('gate.yml', g.replace('for n in 1 2 3; do', 'for n in 1 2; do')),
+        '专取 sha ⛔再试': ('gate.yml', g.replace('|| zai_shi git -c protocol.version=2 fetch -q --no-tags', '|| git -c protocol.version=2 fetch -q --no-tags')),
         # B-v 驳：推主枝之短式（"$CAND:$MAIN"、${MAIN}、推本地同名之枝）旧式俱漏
         '演练推主枝·短式': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$CAND:$MAIN"\n          python3 工具/推报.py --落 "$D"')),
         '演练推主枝·${MAIN}': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$CAND:refs/heads/${MAIN}"\n          python3 工具/推报.py --落 "$D"')),
@@ -1612,7 +1667,7 @@ def 自测():
       all(o[k] == (1, False, '') for k in ('挪章', '删章', '挪治', '主＋挪章')) and all(o[k][:2] == (0, False) for k in ('同章', '章＋新治', '删治')))
     # ④乙形诸 workflow 之真跑（桩之全测载真 全测、全测并、推报、存底；裸库）
     import concurrent.futures as _cf
-    景们 = ('成', '器红', '红', '逾', '拒', '片崩', '章', '主动', '重派尽', '中已在', '演', '演红', '演推')
+    景们 = ('成', '器红', '红', '逾', '拒', '片崩', '章', '主动', '重派尽', '中已在', '演', '演红', '演推', '省败', '懒败')
 
     def 演一(景):
         t = tempfile.mkdtemp(prefix='推报演_')
@@ -1724,6 +1779,21 @@ def 自测():
     e = 演['演推']
     T('④之十三 演练（推 备份/演/<名>）：名去前缀、所演即其树、果「过」%s' % 示(e), (e.get('演报') or {}).get('果') == '过'
       and e['演报'].get('ref') == 演之前缀 + '试一' and not e['T在主'])
+    # 1117 GitHub 化之审·F（法用#闸取仓之速）：省取（partial clone）与其降级
+    省 = re.search(r'filter: (\S+)', 诸['gate.yml'])
+    省 = 省.group(1) if 省 else ''
+    e = 演['成']
+    T('④之十四 省取之常：备候、诸片俱省取（%s·真 partial clone）、片印懒取之计（败 0）、⛔降级%s' % (省 or '无 filter', 示(e)),
+      bool(省) and '｜取 blob:' in e.get('印', '') and len(re.findall(r'省取（blob:[^）]+）：懒取 0 回、败 0、', e['印'])) >= 3
+      and '省取降级' not in e['印'])
+    e = 演['省败']
+    T('④之十五 省取不成（带 filter 之 checkout 俱败·continue-on-error）→ 备候、诸片俱自降级全取：闸恰一、成、主枝即候%s' % 示(e),
+      恰一(e) and 报合(e, '成') and e['T在主'] and len(re.findall(r'(?m)^告 .*：::warning::省取降级·全取（检出不成：failure）', e['印'])) >= 4)
+    e = 演['懒败']
+    计 = e.get('计') or []
+    T('④之十六 片一於省取之仓懒取而败（其格俱红）→ 自降级全取、重跑其片而绿：成、⛔器红、诸格俱跑（唯片一二回）%s' % 示(e),
+      报合(e, '成') and e['T在主'] and not e['报'].get('器红') and len(set(计)) == _桩名数 and len(计) > _桩名数
+      and len(re.findall(r'(?m)^告 .*：::warning::省取降级', e['印'])) == 1 and '：::warning::省取降级·全取（片中懒取败 1 回）' in e['印'])
     # ⑤（1117·GitHub 化之审·I·法用#停钩空转）泊／归 之诸景（临时之裸库；旧／新／议 三孪生；真钩在盘即并真跑）
     with tempfile.TemporaryDirectory() as t:
         try:

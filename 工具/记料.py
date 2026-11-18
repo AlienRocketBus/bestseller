@@ -82,7 +82,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def 读(p, root=ROOT):
     p = os.path.join(root, p)
-    return open(p, encoding='utf-8').read() if os.path.exists(p) else ''
+    if not os.path.exists(p):
+        return ''
+    b = open(p, 'rb').read()
+    try:
+        return b.decode('utf-8')
+    except UnicodeDecodeError as e:
+        # ★X116（469）：467 之 _轮记.md 被某席之落档截在字节、末字残——旧以 utf-8 读之即崩、记席手去残字节方续。
+        #   残在档尾（≤3 字节之不全之字）：轮记之档就地去残、印一行；余处之坏照 replace 读（⛔崩）。
+        if e.start >= len(b) - 3 and e.reason == 'unexpected end of data':
+            t = b[:e.start].decode('utf-8')
+            if os.path.basename(p) == '_轮记.md':
+                open(p, 'wb').write(b[:e.start])
+                sys.stderr.write('⚠ X116 %s 档尾残 %d 字节（截於字节）——已就地去残；其末节或缺尾，记席照实记\n' % (p, len(b) - e.start))
+            return t
+        return b.decode('utf-8', errors='replace')
 
 
 def 行们(文, 式, 上=0, 下=0, 最多=None):
@@ -1262,6 +1276,18 @@ def 自测():
     共 += 1; ok += ('（全行 sed -n 3 读）' in _四们[2] and '乙' * 今之末之底 in _四们[2] and '乙' * 20000 not in _四们[2]
                     and '- **主线·510（局）**' in _四们[2] and '读者之所欠（至 510）' in _四们[2])
     共 += 1; ok += ('（总览之片逾额' in _四们[3] and '己' * 30000 not in _四们[3])
+    # ★X116（469）：轮记截於字节、末字残——读之⛔崩、就地去残；非轮记者只读⛔写
+    import tempfile as _tf
+    _局X = _tf.mkdtemp()
+    try:
+        _pX = os.path.join(_局X, '_轮记.md'); _qX = os.path.join(_局X, '_料.md')
+        for _f in (_pX, _qX):
+            open(_f, 'wb').write('## 节\n甲乙…'.encode()[:-1])
+        _tX = 读(_pX, _局X); _uX = 读(_qX, _局X)
+        共 += 1; ok += (_tX == '## 节\n甲乙' and open(_pX, 'rb').read() == '## 节\n甲乙'.encode()
+                        and _uX == '## 节\n甲乙' and len(open(_qX, 'rb').read()) == len('## 节\n甲乙…'.encode()) - 1)
+    finally:
+        shutil.rmtree(_局X, ignore_errors=True)
     print('记料·自测 %d/%d（%d 之记料 %d 字节；八倍之章、全册在场 %d 字节·头 %d；399 %d 字节；限 %d）' % (
         ok, 共, 末, len(t末.encode()), 胀, _头(胀文), len(t399.encode()), 限))
     return ok == 共

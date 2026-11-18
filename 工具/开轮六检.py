@@ -184,7 +184,7 @@ def check7(cur):
         lj = os.path.join(ROOT, '版本', '第%d章' % cur, '_轮记.md')
         done = False
         if os.path.exists(lj):
-            tx = open(lj, encoding='utf-8').read()
+            tx = open(lj, encoding='utf-8', errors='replace').read()  # ★X116：轮记截於字节⛔崩
             # ★★★★★2026-08-17 订：先前以文中任一「第N轮」计，遂误判。
             # ★其由：轮记之正文常引先例（依二百章第6轮所立、而一百九十九章第8轮…），
             # ★★而那些引文里的轮号被一并计入——★★★遂207真轮5/10而判「十轮已满」。

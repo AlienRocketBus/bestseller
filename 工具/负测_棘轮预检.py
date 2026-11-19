@@ -4,6 +4,7 @@
 　★★而本器之要害不是「会不会报红」，是「它报的红与 --存版 之棘轮闸是不是同一个红」。
 　　　一个自己另造一把尺的预检，绿了也不作数（§六③之「陪跑」）。
 　★★★故九项之中，④⑤⑥⑦为回灌：拿本坐真撞过棘轮的两版原物灌回去，须逐版报红且所指之串正确。
+〔1119 死规之审·gates21〕添 ⑪：嗅／沈鸢之降、四感低於起草 → 只 ⚠、rc 0；四字串三现／顿悟起手之升照旧 ⛔、rc 1（守牙）。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -90,6 +91,40 @@ t('⑩之三·所留之句不入表（不许把没删的算成删的）',
 t('⑩之四·器认得四感四样，与 RATCHET_V01 同源（§六④）',
   sorted(J._感式) == sorted(RATCHET_V01), True)
 t('⑩之五·旧式（判据里无「所删之句」）对同一局一言不发', hasattr(J, '_四感删证'), True)
+
+# ⑪〔1119 死规之审·gates21〕RATCHET_MAX（嗅／沈鸢对末版降）与 RATCHET_V01（四感低於起草）→ ⚠ 只报、rc 0；
+#    ⛔守牙：RATCHET_MIN（四字串三现／顿悟起手）对末版升 → 照旧 ⛔、rc 1。
+#    其局：正文取 289 现文（只读），末版／起草版／最优／拆章 四函换桩，⛔写盘一字。
+import contextlib as _cl
+def _局跑(末=None, v01=None):
+    旧 = (J.末版, J.起草版, J.最优, J._末版係拆章前, J._拆出章)
+    J.末版 = lambda n: (dict(末 or {}), 'v桩')
+    J.起草版 = lambda n: dict(v01 or {})
+    J.最优 = lambda n: {}
+    J._末版係拆章前 = lambda n, 档=None: (0, None)
+    J._拆出章 = lambda n: None
+    buf = io.StringIO()
+    try:
+        with _cl.redirect_stdout(buf):
+            rc = J.跑(289, 报=True)
+    finally:
+        J.末版, J.起草版, J.最优, J._末版係拆章前, J._拆出章 = 旧
+    return rc, buf.getvalue()
+_h, _今 = score(io.open(J.正文路径(289), encoding='utf-8').read())
+_末MAX = dict(_今, 嗅=_今['嗅'] + 1, 沈鸢=_今['沈鸢'] + 1)
+_rcA, _oA = _局跑(末=_末MAX)
+t('⑪嗅／沈鸢对末版各降一 → rc 0、印「⚠ 内容之底」二行、⛔无一字（起草闸.红行 见⛔即红）',
+  (_rcA, _oA.count('⚠ 内容之底'), '⛔' in _oA), (0, 2, False))
+_rcB, _oB = _局跑(末=dict(_今), v01=dict(_今, 听=_今['听'] + 1, 视=_今['视'] + 1))
+t('⑪之二·听／视低於起草 → rc 0、印「⚠ 内容之底…低於起草」二行、⛔无一字',
+  (_rcB, _oB.count('(低於起草)'), '⛔' in _oB), (0, 2, False))
+_rcC, _oC = _局跑(末=dict(_今, 四字串三现=_今['四字串三现'] - 1))
+t('⑪之三·⛔守牙：四字串三现对末版升 → 照旧 ⛔、rc 1',
+  (_rcC, '⛔ 四字串三现' in _oC), (1, True))
+_rcD, _oD = _局跑(末=dict(_末MAX, 顿悟起手=_今['顿悟起手'] - 1), v01=dict(_今, 听=_今['听'] + 1))
+t('⑪之四·⛔守牙：顿悟起手升而嗅降、听低於起草 → rc 1；⛔只落在顿悟起手，余二样只 ⚠',
+  (_rcD, [l.strip().split()[1] for l in _oD.split('\n') if l.strip().startswith('⛔ ')],
+   '⚠ 内容之底' in _oD), (1, ['顿悟起手'], True))
 print('════ 负测·棘轮预检 ════')
 for 名, ok, 实, 期 in 过:
     print('  %s %s' % ('✓' if ok else '✗', 名), '' if ok else '（实 %r 期 %r）' % (实, 期))

@@ -1070,6 +1070,10 @@ def 自测():
                and '--不续心跳 --存' in _起们[0][0][2] and '存底.py' in _起们[0][0][2]
                and _段主.split("'--派令' in a")[1].split('sys.exit')[0].count('迹存(') == 1
                and _段主.split("'--候主' in a")[1].split('sys.exit')[0].count('迹存(') == 1)
+    _段巡沙 = _段主.split("if '--巡' in a:")[1].split('sys.exit(_rc)')[0] if "if '--巡' in a:" in _段主 else ''
+    T('1119 沙盒之巡每跑验存底守在跑、不在即起（印归 stderr、⛔扰「止」）；GitHub 之巡⛔起',
+      '_守.在跑()' in _段巡沙 and '_守.起()' in _段巡沙 and 'redirect_stdout(sys.stderr)' in _段巡沙
+      and _段巡沙.index('_守.起()') > _段巡沙.index("GITHUB_ACTIONS") and _段巡沙.index('_守.起()') < _段巡沙.index('巡(查印=True)'))
     ok = sum(r)
     print('── 负测·接棒守 %d/%d %s ──' % (ok, len(r), '全通' if ok == len(r) else '未过'))
     return ok == len(r)
@@ -1120,6 +1124,13 @@ if __name__ == '__main__':
     if '--巡' in a:
         if os.environ.get('GITHUB_ACTIONS') == 'true':
             sys.exit(巡())
+        try:                         # 1119 作者令「及时备份……防沙盒突然重启」（法用#防失稿三锁）：每巡验本坐之存底守在跑、不在即起——
+            import contextlib as _cl, 存底守 as _守   # 机换而开头之钩未跑之隙（1119 实踩：本坐 11-16 後三日无守、五十一档未存底）；零 token
+            if not _守.在跑():
+                with _cl.redirect_stdout(sys.stderr):
+                    _守.起()
+        except Exception as _e:
+            sys.stderr.write('⚠ 存底守之验起不成：%s\n' % _e)
         _rc = 巡(查印=True)          # 沙盒（总编辑之坐）：验巡印、常对拍；每跑俱落巡应（云巡验其应）
         if not 落巡应(_rc):
             sys.stderr.write('⚠ 巡应落不成（备份/巡应·先 git remote set-url origin 正址）——云巡将以「唤而未应」红\n')

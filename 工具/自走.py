@@ -224,8 +224,12 @@ def 派令(n, root=None, 厚=None):
                         root or ROOT, '版本', '第%d章' % n, '_承.js')]
         return ['  python3 工具/章料.py %d && python3 工具/造式验.py %d --料   # 料全方派' % (n, n),
                 '  # 开工之闸：设定/方案/W<k>.md 逐环确证 ＋ python3 工具/工作流账.py --开 W<k>（法典二之七步）'] + (
-                ['  # ★须厚（X40）：args 添 须厚:true——执笔令硬项「本章之事须担得起 2,900」、选令「须厚之章之底」（造章.js）；其由：'] + 由
-                if 须 is True else ['  # ⛔须厚未可判（%s）——先治其由再派' % 须语.lstrip('★')] if 须 is None else []) + [
+                # 〔1119 死规之审·gates6/docs7〕N≥473（造式验._死规审自）：须厚只报——造章.js 执笔令【须厚·参考】、选令只报，造式验 --料 未可判亦只 ⚠：注随之，⛔再言硬项、⛔先治再派
+                (['  # ⚠须厚（X40·只报·1119 死规之审）：args 添 须厚:true——执笔令【须厚·参考】、选令只报（⛔作底须写由、⛔交总编辑·造章.js）；其由：'] + 由
+                 if n >= 造式验._死规审自 else
+                 ['  # ★须厚（X40）：args 添 须厚:true——执笔令硬项「本章之事须担得起 2,900」、选令「须厚之章之底」（造章.js）；其由：'] + 由)
+                if 须 is True else [('  # ⚠须厚未可判（%s）——只报（1119 死规之审）' if n >= 造式验._死规审自 else '  # ⛔须厚未可判（%s）——先治其由再派') % 须语.lstrip('★')]
+                if 须 is None else []) + [
                 "  Workflow({scriptPath:'工具/席/造章.js', args:{章:%d, 重:'%s', 魂路:[%s]%s%s}})" % (
                     n, 重.group(1), ', '.join("'%s'" % x for x in 路们), ', 须厚:true' if 须 is True else '',
                     ", 带:'%s'" % 带 if 带 else '')]
@@ -834,6 +838,8 @@ def 自测():
         _厚 = 派令(9001, 厚=(True, '⛔**第9001章非厚不可**：其前四篇暗线……\n    ⛔**其治只有一样：换一件更大的事**'))
         _薄 = 派令(9001, 厚=(False, '★第9001章不须厚'))
         _未 = 派令(9001, 厚=(None, '★第9001章之须厚未可判'))
+        _厚旧 = 派令(472, 厚=(True, '⛔**第472章非厚不可**：桩'))     # 〔1119 死规之审·gates6〕N<473 之注照旧（坑㉚）
+        _未旧 = 派令(472, 厚=(None, '★第472章之须厚未可判'))
         _章料.段案行 = lambda n, root=None: '（设定/段案/9001-9002.md）\n- 重：中\n- 魂路：物证｜换账｜翻个儿'
         _无带 = 派令(9001, 厚=(False, '★不须厚'))
         _旧章 = 派令(470, 厚=(False, '★不须厚'))
@@ -845,6 +851,12 @@ def 自测():
                and not any('须厚:true' in x for x in _薄 + _未) and len(_薄) == 3
                and any('须厚未可判' in x for x in _未)
                and 派令(382, 厚=(True, '⛔x')) == _派 and not any('须厚' in x for x in _派)))
+    # 〔1119 死规之审·gates6/docs7〕N≥473 须厚之注只报（⛔「硬项」、⛔「先治其由再派」）；472 照旧；args 之 须厚:true 照传（执笔令【须厚·参考】）
+    R.append(('死规审·派令：N≥473 须厚之注只报（⚠·⛔硬项、⛔先治再派），须厚:true 照传；472 之注照旧',
+               any('⚠须厚（X40·只报' in x for x in _厚) and not any('硬项「本章之事须担得起' in x for x in _厚)
+               and any('⚠须厚未可判' in x and '只报' in x for x in _未) and not any('先治其由再派' in x for x in _未)
+               and any('硬项「本章之事须担得起 2,900」' in x for x in _厚旧) and any('须厚:true' in x for x in _厚旧)
+               and any('⛔须厚未可判' in x and '先治其由再派' in x for x in _未旧)))
     R.append(('X119·派令：n≥471 args 带段案之带（带:\'2,900—3,300\'）；段案无「字数」者⛔派、印先补；N≤470 ⛔带',
                any("Workflow" in x and "args:{章:9001, 重:'中', 魂路:['物证', '换账', '翻个儿'], 带:'2,900—3,300'}" in x for x in _薄)
                and not any('Workflow' in x for x in _无带) and any('先补段案之字数' in x for x in _无带)

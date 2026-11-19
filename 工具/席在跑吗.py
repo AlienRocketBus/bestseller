@@ -388,10 +388,10 @@ def 自测():
            (len(_c) == 1 and "awk '/^## 一、/{exit}1' 00_总章.md" in _c[0] and 'cat 00_总章.md' not in _c[0],
             '**痛之录' in _h, len(_h) <= 5000), (True, True, True))
         # 1106 作者令「每次在开写的时候你也要读到，并且要严格执行起来」：开写三纲（唯一之的→第一律·自决→六大主义）俱在首段、依此序，自决以二者为裁之尺
-        _i = [_h.find(k) for k in ('**开写三纲', '**★唯一之的**', '**★第一律·自决', '**★六大主义')]
+        _i = [_h.find(k) for k in ('**开写三纲', '**★唯一之的**', '**★第一律·自决', '**★七大主义')]   # 1119：GitHub 主义入为第七
         _z = _h[_i[2]:_i[3]] if -1 not in _i else ''
         报('⑲之五 首段带开写三纲：唯一之的→第一律·自决→六大主义依序；自决除作者之令外一切自决、以唯一之的与六大主义为裁之尺',
-           (-1 not in _i and _i == sorted(_i), '除作者亲下之令' in _z and '唯一之的' in _z and '六大主义' in _z), (True, True))
+           (-1 not in _i and _i == sorted(_i), '除作者亲下之令' in _z and '唯一之的' in _z and '七大主义' in _z), (True, True))
     except Exception as e:
         报('⑲之三 settings 读不出：%s' % e, False, True)
     import json as _jj

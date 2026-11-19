@@ -9,6 +9,10 @@
   ② `相对之型` **窗内不足八章者退回旧式**（⛔免拿三五个数去分四档）；
   ③ `check_endgame` **三判各管一样**（已逾终点／清不完／到期章逾终点）。
   另 ④ `check_type_chain` 连锁之限係写死之 12，⛔不由今日之数算出。
+〔1119 死规之审·gates10/12〕⑥ 起钉新裁：①在场之距／②章型连锁 照旧侦得、只印 ⚠、⛔入「不过」；
+  ③账之净额 照旧拦（净 >0 入「不过」·〔1119 更胜从前之筛〕gates11 退回原样）；⑤ 见下条。
+〔1119 死规之审·gates漏2·终局之令〕⑤ 三判（已逾终点／清不完／到期章逾终点）照旧各管一样、照旧侦得，今亦只印 ⚠、⛔入「不过」
+  （终点係今之估、由事定·作者 1119）；守牙仍红者：未见正文 → rc 2；任一检入 bad → 格照拦（rc 2·「不过」）。
 ⛔本负测一律造局，⛔**不读真盘一个字去下判**；末格方点一回真盘作注。
 """
 import os as _o, sys as _s
@@ -80,6 +84,7 @@ def 跑():
               == m.相对之型(窗, 12) is not None))
 
     # ③⛔`check_endgame` 三判各管一样（⛔不许一判吞三判）
+    # 〔1119 死规之审·gates漏2·终局之令〕其第三项今係「信号」（main 只印 ⚠、⛔入「不过」）——三判各管一样之钉照留
     终 = m.END_CH
     R.append(('③甲·已逾终点（今章 %d）即报' % 终,
               any('终点' in x for x in m.check_endgame([], 终)[2])))
@@ -102,6 +107,73 @@ def 跑():
               and re.search(r'^TYPE_CHAIN_LIMIT = 12$', src, re.M) is not None))
     R.append(('④之二·⛔END_CH 亦係常量（%d）' % 终,
               re.search(r'^END_CH = \d+$', src, re.M) is not None))
+
+    # ⑥〔1119 死规之审·gates10/12〕造局：①② 俱逾而③⑤无事 → 侦得（⚠ 照印）而 rc 0；③ 净 >0 → rc 2（守牙仍红）
+    import contextlib
+    def _章(c):
+        return _文(['甲' * 40, '乙' * 40, '丙' * 40])
+    诸章 = dict((c, _章(c)) for c in range(200, 220))           # 二十章同纹理、六人之名一字不现
+    账 = [{'id': 'A', '立账章': 219, '状态': 'open', '到期章': 300}]   # 近十章立一笔、清零笔 → 净 +1
+    # 〔1119 更胜从前之筛·gates11 退回〕③ 照旧拦，故验 ①②⑤ 之局须净 ≤0：另清一笔（立於窗外）→ 立一清一、净 0
+    账0 = 账 + [{'id': 'B', '立账章': 150, '状态': 'done', '清偿章': 219}]
+    _p, _bp, _ = m.check_presence(诸章, 账)
+    R.append(('⑥①逾限而无账：照旧侦得（其行 ok=False、印 ⚠）而⛔入 bad',
+              any((not r[4]) and r[5].startswith('⚠') for r in _p) and _bp == []))
+    _sq, _ch, _bt = m.check_type_chain(诸章)
+    R.append(('⑥之二·②同型连 %d 章（限 %d）：照旧侦得而⛔入 bad' % (_ch[1], m.TYPE_CHAIN_LIMIT),
+              _ch[1] > m.TYPE_CHAIN_LIMIT and _bt == []))
+    # 〔1119 更胜从前之筛·gates11 退回〕钉还原：净 >0 → 入 bad（③守牙仍红）；净 ≤0 → 不入
+    _rd, _net, _bd = m.check_due_net(账, 219)
+    R.append(('⑥之三·⛔③近十章净 %+.1f（>0）→ 入 bad（守牙仍红）' % _net,
+              _net > 0 and len(_bd) == 1 and '须 ≤0' in _bd[0]))
+    _rd0, _net0, _bd0 = m.check_due_net(账0, 219)
+    R.append(('⑥之三b·③立一清一、净 %+.1f → ⛔入 bad（⛔证本检不是一律判否）' % _net0,
+              _net0 <= 0 and _bd0 == []))
+    def _主(诸, 账_, 静=True):
+        旧 = (m.load_chapters, m.load_due, sys.argv)
+        m.load_chapters, m.load_due = (lambda: dict(诸)), (lambda: list(账_))
+        sys.argv = ['书级体检.py'] + (['--静'] if 静 else [])
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                rc = m.main()
+        finally:
+            m.load_chapters, m.load_due, sys.argv = 旧
+        return rc, buf.getvalue()
+    _rc0, _o0 = _主(诸章, 账0)
+    R.append(('⑥之四·①② 俱逾而③⑤无事 → rc 0、「书级体检通过」（⛔再拦）', _rc0 == 0 and '书级体检通过' in _o0))
+    _rc1, _o1 = _主(诸章, 账0, 静=False)
+    R.append(('⑥之五·其详印里 ①② 各印 ⚠（信号照印，⛔印 ⛔）',
+              _rc1 == 0 and _o1.count('⚠') >= 2 and '⛔逾限' not in _o1 and '已连锁' not in _o1))
+    # 〔1119 更胜从前之筛·gates11 退回〕③守牙仍红：同局而净 +1 → rc 2、「不过」、详印 ③ 行印 ⛔
+    _rc1b, _o1b = _主(诸章, 账)
+    _rc1c, _o1c = _主(诸章, 账, 静=False)
+    R.append(('⑥之五b·⛔③近十章净 +1 → rc 2、「不过」、其由「账之净额…须 ≤0」；详印 ③ 行印 ⛔',
+              _rc1b == 2 and '不过' in _o1b and '账之净额 +1.0（须 ≤0）' in _o1b
+              and _rc1c == 2 and re.search(r'★近十章净 \+1\.0.*⛔', _o1c) is not None))
+    # 〔1119 死规之审·gates漏2·终局之令〕钉改：⑤ 三判今只印 ⚠、⛔入「不过」（原验「⑤到期章逾终点 → rc 2」今验「⚠ 而不红」）
+    _账5 = 账0 + [{'id': 'Z', '状态': 'open', '到期章': 终 + 1}]   # 〔gates11 退回〕用净 0 之局，免 ③ 混入
+    _rc2, _o2 = _主(诸章, _账5)
+    _rc2b, _o2b = _主(诸章, _账5, 静=False)
+    R.append(('⑥之六·⑤到期章逾终点（今之估）→ rc 0、「通过」；详印 ⚠ 照印、注「终点係估」（⛔印 ⛔）',
+              _rc2 == 0 and '书级体检通过' in _o2 and _rc2b == 0
+              and '⚠有 1 笔账之到期章逾终点' in _o2b and '终点係估' in _o2b and '⛔ 有' not in _o2b))
+    _终章 = dict((c, _章(c)) for c in range(终 - 2, 终 + 3))             # 今章逾估之终
+    _rc3, _o3 = _主(_终章, [], 静=False)
+    _近章 = dict((c, _章(c)) for c in range(终 - 8, 终 - 2))             # 余 3 章、未清 10 笔
+    _rc4, _o4 = _主(_近章, [{'id': 'X%d' % i, '状态': 'open', '到期章': 终 - 1} for i in range(10)], 静=False)
+    R.append(('⑥之七·⑤已逾今之估终点／照估清不完 → 俱 rc 0、⚠ 照印（⛔逼收、⛔逼凑章数）',
+              _rc3 == 0 and '⚠已达或逾终点' in _o3 and _rc4 == 0 and '⚠未清之账 10 笔' in _o4 and '清不完' in _o4))
+    # ⛔守牙仍红：未见正文 → rc 2；格之拦照在——任一检入 bad 即 rc 2、「不过」（造局：借 ① 之口报一条）
+    _rc5, _o5 = _主({}, 账)
+    _旧p = m.check_presence
+    m.check_presence = lambda c, d: (lambda r: (r[0], ['造局之守'], r[2]))(_旧p(c, d))
+    try:
+        _rc6, _o6 = _主(诸章, 账0)   # 〔gates11 退回〕用净 0 之局，令其红只出於造局之①
+    finally:
+        m.check_presence = _旧p
+    R.append(('⑥之八·⛔守牙仍红：未见正文 → rc 2；任一检入 bad → rc 2、「不过」（书级体检之格留）',
+              _rc5 == 2 and '未见正文' in _o5 and _rc6 == 2 and '不过' in _o6 and '造局之守' in _o6))
 
     # ⑤真盘（⛔只作注）：本器今日六检皆过
     import subprocess

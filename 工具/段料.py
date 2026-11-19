@@ -128,6 +128,12 @@ def 汇(a, b, root=ROOT, 出=None, 顶=限):
             留 = [x for x in 身.split('｜') if _pat.search(x)]
             return 头 + '｜'.join(留) if 留 else l
         段 = [(n, t) if n != '悬线·钉在本段之行' else ('悬线·钉在本段之行（只留涉本段之分句·逾顶）', '（段料逾顶·坑③：每行只留其首与涉第%d—%d章之分句；全行 grep -n 设定/全书记忆/悬线.md）\n' % (a, b) + '\n'.join(_缩(l) for l in (t or '').split('\n'))) for n, t in 段]
+    # ★1119（471 段料 167KB：段势之裁入余章总案 §四 後此节 43KB，三级舍後仍逾顶）：四级舍 → §四 之行，其首之章号不在本段者只留首 200 字（全行 grep 其首即得），本段诸章之行一字不动——⛔舍诸账
+    if 顶 and sum(len((t or '').encode()) for _, t in 段) > 顶 - 2048:
+        def _外(l):
+            m = re.match(r'^- (\d{3})', l)
+            return bool(m) and not (a <= int(m.group(1)) <= b) and len(l) > 200
+        段 = [(n, t) if not n.startswith('余章总案·§四') else (n + '（段外之行只留其首·逾顶）', '（段料逾顶·坑③：首章号不在第%d—%d章之行只留首 200 字；全行 grep -n 设定/剧情庭题/余章总案.md）\n' % (a, b) + '\n'.join((l[:200] + '……') if _外(l) else l for l in (t or '').split('\n'))) for n, t in 段]
     文 = ['# 第%d—%d章·段料（工具/段料.py 零 token 汇；设计席只读此档，料外只许 grep 核一处、上下三行）\n' % (a, b)]
     for 名, t in 段:
         文.append('## 〔%s〕\n\n%s\n' % (名, (t or '（无）').strip()))

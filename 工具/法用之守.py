@@ -21,6 +21,13 @@
     ④方法账 1027 起之行、总章§八 ≥23 之条：须书「所废」与「较旧：效…；费…」（真无旧可比写「较旧：无」）——心诀·虫洞。
   ★未行之数（同功两处即废劣者：五本执行之账合印一数）：进化链无守＋裁未生效＋坑已治未守＋令无证＋待逾限＋废而未除＋复核未行——
     --报 印之、只许降（棘轮唯一处：册之「未行」「底」；--未行 --降 降之）；--报 --首 印一行之要（会话开头之钩印之）。
+  ★纸证之数（〔1119 执行之审·治2〕作者问「七大主义到底有没有真执行，还是停於字面、喊口号」）：证只验串在者即纸证——
+    钩（串在 settings）、「席记含法用」（只算法用之守自身）、{git:枝} 无「新」（只验枝在）、档含；钩自跑⛔免。
+    法（机证不能亦计）＋待（〔复核〕⛔看限：同一之册於诸章同数·棘轮方同尺）＋令（所据俱纸）＋条（所据俱纸）——--报、--报 --首、--验 N 之头印之；
+    册「纸证」之底为其棘轮（数＞底即⛔拦封·只拦新添；未立只印·⛔今即红；--纸证 --立／--降）。
+    到限之待证只验串在（E4）：--验 N 逐条印 ⚠（只印·⛔拦——到限之待须行为之证，由此逐条见之，⛔借一数）。
+  ★经闸入主（〔1119 执行之审·治5〕）：报/推 之果败而其 sha 经其後任一成报（章标、治枝俱可·〔复核〕）之 main_after 入主 → 报之证认之（印「经治闸入主」）；
+    未消之坏同用此函（⛔两把尺）；只经直推入主者仍红。备份/报 之读经 推报.诸报（⛔另造读器）。
 ★执行之守·丝滑之守（1027 作者令「执行主义」「丝滑主义」·坑53：沙盒推与 GitHub 推同推主枝、新法立而旧路未除）：
   ①所废除尽：册之「废」一废一条——据、废于、在（废前之笔）、去证（无档｜无文｜无格｜推报验｜无踪｜无渲）；去证有一尚在即「废而未除」红
     （待合＝并行之轨合流方除：限前只报⚠）；每条去证於其「在」之树须红（--自测 验之：式写错即永绿）。
@@ -39,6 +46,7 @@
   python3 工具/法用之守.py --报              # 全测之格（只报）：完备、册之形、逾限之待、废、写者、同功、演之数、未行之数（只许降）
   python3 工具/法用之守.py --报 --首        # 一行之要（会话开头之钩印之·⛔析写者：约一秒）
   python3 工具/法用之守.py --未行 [--降]     # 未行之数之分（--降：今 < 底 即降其底·棘轮唯一处）
+  python3 工具/法用之守.py --纸证 [--立|--降] # 纸证之数之详（法、到限之待、令、条）；--立：册未有「纸证」即以今数立其底；--降：只许降
   python3 工具/法用之守.py --废              # 每废：今尽否、其「在」之树去证真红否（合流之段校去证用之）
   python3 工具/法用之守.py --写者 [版]       # 诸推之处与其族（带版即以今之写者册回放史之树）
   python3 工具/法用之守.py --报读            # 备份/报 之未消坏报（全；自走之首只印三行）
@@ -72,7 +80,7 @@ try:
     主枝 = _存底.主枝                        # ⛔另起尺
 except Exception:
     主枝 = 'claude/the-novel-review-4dtuit'
-证之键 = ('档', '跑', 'git', '报', '钩', '量', '限', '或', '若')
+证之键 = ('档', '跑', 'git', '报', '钩', '量', '限', '或', '若', '纸')   # 纸（〔1119 执行之审·治2〕）：纸证之数 ≤ 底 − 纸（册立其底方验）——计为纸证（⛔充行为之证）
 
 
 # ───────── 小件 ─────────
@@ -394,6 +402,7 @@ class 境:
             self.开 = 封时(n - 1, root, 'HEAD')
         self.今 = 今
         self.坐 = None                       # 本章之坐（None 即取本会话之号；自测可代）
+        self.册 = None                       # 〔1119 执行之审·治2〕本回之册（纸之证用；None 即读盘）
         self._取过 = set()
 
     def 取引(self, 枝):
@@ -468,10 +477,17 @@ def _验证(c, e):
         if rc != 0:
             return '⛔', '%s 不在（备份/报）' % 路
         try:
-            果 = json.loads(o).get('果')
+            d = json.loads(o)
+            果 = d.get('果')
         except Exception:
             return '⛔', '%s 坏' % 路
-        return ('✓', '%s 果＝%s' % (路, 果)) if 果 in (c.get('果') or 果默) else ('⛔', '%s 果＝%s' % (路, 果))
+        if 果 in (c.get('果') or 果默):
+            return '✓', '%s 果＝%s' % (路, 果)
+        经 = _经闸之证(e, 引, d) if 路.startswith('报/推/') else None      # 〔1119 执行之审·治5(b)〕果败而其 sha 经治闸入主 → 认
+        if 经:
+            return '✓', '%s 果＝%s·经治闸入主（%s 果＝%s·main_after %s 含 %s）' % (
+                路, 果, 经.get('ref'), 经.get('果'), str(经.get('main_after'))[:8], str(d.get('sha'))[:8])
+        return '⛔', '%s 果＝%s' % (路, 果)
     if 'git' in c:
         k = c['git']
         if k == '含':
@@ -513,14 +529,30 @@ def _验证(c, e):
             return ('✓', '%s 於前章封後有提交 %s' % (档, o.split()[0])) if rc == 0 and o.strip() else ('⛔', '%s 自前章封版（%s）无提交' % (档, _iso(e.开)[5:16]))
         if k == '枝':
             枝 = 填(c['枝'], n)
+            新 = c.get('新')         # 〔1119 执行之审·治2(a)〕新（分）：枝之末提交须在此限之内——只验枝在者即纸证（纸证之数计之）
             if e.史至 is not None:
-                rc, o = _git(e.root, 'log', '-1', '--format=%h', '--until=@%d' % e.史至, 'refs/remotes/origin/%s' % 枝)
-                return ('✓', 'origin/%s 彼时在' % 枝) if rc == 0 and o.strip() else ('⛔', 'origin/%s 彼时无' % 枝)
+                rc, o = _git(e.root, 'log', '-1', '--format=%ct', '--until=@%d' % e.史至, 'refs/remotes/origin/%s' % 枝)
+                if not (rc == 0 and o.strip()):
+                    return '⛔', 'origin/%s 彼时无' % 枝
+                if 新 and e.史至 - int(o.strip()) > 新 * 60:
+                    return '⛔', 'origin/%s 彼时末提交 %s，逾 %d 分（新）' % (枝, _iso(int(o.strip()))[5:16], 新)
+                return '✓', 'origin/%s 彼时在' % 枝
             if e.取:
                 rc, o = _git(e.root, 'ls-remote', '--heads', 'origin', 枝)
             else:
                 rc, o = _git(e.root, 'rev-parse', '-q', '--verify', 'refs/remotes/origin/%s' % 枝)
-            return ('✓', 'origin/%s 在' % 枝) if rc == 0 and o.strip() else ('⛔', 'origin 无 %s 之枝' % 枝)
+            if not (rc == 0 and o.strip()):
+                return '⛔', 'origin 无 %s 之枝' % 枝
+            if not 新:
+                return '✓', 'origin/%s 在' % 枝
+            e.取引(枝)
+            rc, o = _git(e.root, 'log', '-1', '--format=%ct', 'refs/remotes/origin/%s' % 枝)
+            if not (rc == 0 and o.strip().isdigit()):
+                return '⛔', 'origin/%s 之末提交之时读不得（新须之）' % 枝
+            t = int(o.strip())
+            if (e.今 or time.time()) - t > 新 * 60:
+                return '⛔', 'origin/%s 末提交 %s，逾 %d 分（新）' % (枝, _iso(t)[5:16], 新)
+            return '✓', 'origin/%s 末提交 %s（新 %d 分之内）' % (枝, _iso(t)[5:16], 新)
         return '⛔', 'git 之式不识：%s' % k
     if '档' in c:
         式 = 填(c['档'], n)
@@ -553,6 +585,21 @@ def _验证(c, e):
         return '✓', '第%d章%s %s' % (m, c['量'], v)
     if '限' in c:
         return ('✓', '未到限 %s' % c['限']) if n <= int(c['限']) else ('⛔', '逾限 %s' % c['限'])
+    if '纸' in c:                        # 〔1119 执行之审·治2〕待「执行之审」之证：纸证之数须降（≤ 底 − 纸）——⛔再以「方法账含已行」销
+        册_ = getattr(e, '册', None)
+        if 册_ is None:
+            try:
+                册_ = json.loads(e.盘.读(册名.replace(os.sep, '/')) or '') if e.盘.版 else 读册(e.root)
+            except Exception:
+                return '⛔', '册读不得（纸）'
+        数 = _纸数(册_, e.root, n)
+        底 = (册_.get('纸证') or {}).get('底') if isinstance(册_.get('纸证'), dict) else None
+        if 数 is None:
+            return '⛔', '纸证之数算不得（纸）'
+        if not isinstance(底, int):
+            return '⛔', '纸证之棘轮未立（册无「纸证」之底）——纸之证无可比'
+        k = int(c['纸'])
+        return ('✓', '纸证之数 %d ≤ 底 %d − %d' % (数, 底, k)) if 数 <= 底 - k else ('⛔', '纸证之数 %d ＞ 底 %d − %d（须降）' % (数, 底, k))
     return '⛔', '证之式不识：%s' % '、'.join(c)
 
 
@@ -686,6 +733,21 @@ def _清(s):
     return re.sub(r'[`*]', '', s or '')
 
 
+def _据引之(据们):
+    """诸据之串 → (所点之总章之键之集, §五 之词们)。〔1119 执行之审·治2(c)〕自 总章之盖 提出：纸证之条 同用（⛔两把尺）。"""
+    键, 词 = set(), []
+    for s in 据们:
+        a, b = 据之引(s)
+        键 |= a
+        词 += b
+    return 键, 词
+
+
+def _条中(k, 文, 键词):
+    """总章之条 (k, 文) 为 键词（_据引之 之果）所点否。〔1119 执行之审·治2(c)〕同上。"""
+    return k in 键词[0] or (k.startswith('§五·') and any(w in _清(文) for w in 键词[1]))
+
+
 def 总章之盖(册, root=ROOT):
     """→ (红[], 条数)：总章之条无一法／待／废（或「机证不能」）之据点之者；机证不能之条逾四之一亦红。"""
     条 = 总章之条(root)
@@ -694,16 +756,7 @@ def 总章之盖(册, root=ROOT):
     for x in 机:
         if not isinstance(x, dict) or not x.get('据') or len(str(x.get('由') or '')) < 8:
             红.append('⛔ 册坏：机证不能之条须 据（所点之总章之条）、由（≥八字）：%s' % json.dumps(x, ensure_ascii=False)[:50])
-    def 引之(据们):
-        键, 词 = set(), []
-        for s in 据们:
-            a, b = 据之引(s)
-            键 |= a
-            词 += b
-        return 键, 词
-
-    def 中(k, 文, 键词):
-        return k in 键词[0] or (k.startswith('§五·') and any(w in _清(文) for w in 键词[1]))
+    引之, 中 = _据引之, _条中
     # 真据：法（机证不能者除）、待、废、册之「机证不能」；机证不能之法之据只算「机证不能」（⛔以纯理之法冒充有证·复核补：其条入四之一之数）
     真 = 引之([str(x.get('据', '')) for k in ('法', '待', '废') for x in 册.get(k) or [] if not (k == '法' and x.get('机证不能'))]
              + [str(x.get('据', '')) for x in 机 if isinstance(x, dict)])
@@ -758,9 +811,10 @@ def 册之引(册):
     return '\n'.join(文们), 档们, 跑们
 
 
-def 常令之验(册, root=ROOT):
+def 常令之验(册, root=ROOT, 盖出=None):
     """作者常令 1021 起每条：行内「法用#<id>」（id 在册），或其「落」所点之器／档在盘且为册（据、证）所引 → (红[], 令数)。
-    落所点之档不在盘亦红；引册外之 id 亦红。"""
+    落所点之档不在盘亦红；引册外之 id 亦红。
+    盖出（dict·可缺）：〔1119 执行之审·治2(c)〕每令之所据 → {行号: (首, 所引之册内 id 们, 落所盖之路们)}——纸证之令 由此取（⛔另算一把尺）。"""
     ids = {x.get('id') for k in ('法', '待', '废') for x in 册.get(k) or []}
     据文, 档们, 跑们 = 册之引(册)
     红, 令们 = [], 常令之令(root)
@@ -775,10 +829,12 @@ def 常令之验(册, root=ROOT):
         缺 = [p for p in 路们 if not glob.glob(os.path.join(root, p))]
         if 缺:
             红.append('⛔ 令落之档不在：作者常令 L%d（%s）点 %s——器改名、已删：令随之改' % (i, 首, 缺[0]))
-        if any(x in ids for x in 引):
-            continue
         盖 = [p for p in 路们 if p not in 缺 and (p in 据文 or any(p == d or fnmatch.fnmatchcase(p, d) for d in 档们)
                                                  or (p.startswith('工具/') and os.path.basename(p) in 跑们))]
+        if 盖出 is not None:
+            盖出[i] = (首, [x for x in 引 if x in ids], 盖)
+        if any(x in ids for x in 引):
+            continue
         if not 盖:
             红.append('⛔ 令立无证：作者常令 L%d（%s）——行内写「法用#<id>」，或其「落」所点之器／档须在盘且为法用册所引' % (i, 首))
     return 红, len(令们)
@@ -811,6 +867,147 @@ def 行为之验(册):
         红.append('⛔ 法证只验码在：%s（时 %s）——须一条行为之证（跑／git／报／量，或章之迹：档之路带 {N} 之类），或书「钩自跑」带钩之证'
                  % (x.get('id', '?'), x.get('时')))
     return 红
+
+
+# ───────── 纸证之数（〔1119 执行之审·治2〕作者问「七大主义到底有没有真执行，还是停於字面、喊口号」） ─────────
+# 其由（执行之审 F3 F4）：旧 行为之验 一见章迹之占即认作行为——「版本/第{N-1}章/_席记.json 含 "法用"」只证法用之守自身跑过，
+#   却充他法已行之证；「钩自跑」可免行为之证（钩只验串在 settings）；{git:枝} 只验枝在。於是未行之数 0、席记 ✓，作者却亲手逮到存底三日断。
+# 其治：严之行为之证（_真行）→ 纸证之法／待；沿 令→法、条→法 传上（纸证之令、纸证之条）；--报 印其数，册「纸证」之底为棘轮（只许降）。
+#   ⛔改 行为之验（其仍係「时∈开／封前／封後 之法至少一条旧式行为之证」之底线·红即拦）——严判只入此数、由棘轮拦新添者，⛔今即红。
+纸证之自 = ('法用之守',)          # 「席记含法用」只算此法（法用之守自身）之行为之证
+
+
+def _席记自证(c):
+    """「版本/第{N-1}章/_席记.json 含 "法用"」之证否（封版 --後 记法用之守之验末行於席记：只证法用之守跑过）。"""
+    return isinstance(c, dict) and '档' in c and '_席记.json' in str(c['档']) and '法用' in json.dumps(c.get('含'), ensure_ascii=False)
+
+
+def _真行(c, 法id=None):
+    """〔1119 执行之审·治2(a)(b)〕严之行为之证：跑／报／量、git（含／改／坐异；枝须带「新」＝末提交在限时之内）、章之迹（同 _有行）；
+    唯：「席记含法用」只算法用之守自身（纸证之自）；钩（串在 settings）恒非；或须诸支俱是、若看其则。"""
+    if not isinstance(c, dict):
+        return False
+    if '或' in c:
+        return bool(c['或']) and all(_真行(y, 法id) for y in c['或'])
+    if '若' in c:
+        return _真行(c.get('则'), 法id)
+    if c.get('git') == '枝':
+        return isinstance(c.get('新'), int) and not isinstance(c.get('新'), bool) and c['新'] > 0
+    if _席记自证(c):
+        return 法id in 纸证之自
+    return _有行(c)
+
+
+def 纸证之法(x):
+    """一法／待係纸证否：机证不能（书由·计数而不求降）、或其证无一条严之行为之证（钩自跑⛔免）。"""
+    if not isinstance(x, dict):
+        return False
+    if x.get('机证不能'):
+        return True
+    return not any(_真行(c, x.get('id')) for c in x.get('证') or [])
+
+
+def _纸态(x, 类, n, 缓=False):
+    """一项之态：真（有严之行为之证；废之去证係每章真验之树）｜纸（证只验串在）｜机（机证不能·书由）｜缓（缓之内·≤三章带由）。
+    〔1119 执行之审·复核〕待⛔看限（旧：未到限即「未」⛔计——数随 n 而升：同一之册 473→58、474→67、476→79，--立 以末封立底而 --验 N 以 N 比，
+    底与数⛔同尺，474 即逾底而误拦封）：待之证只验串在即纸，⛔论到限否；到限之纸证之待另由 --验 N 逐条印 ⚠（E4·待到限之纸）。"""
+    if 类 == '废':
+        return '真'
+    if x.get('机证不能'):
+        t = '机'
+    else:
+        t = '纸' if 纸证之法(x) else '真'
+    return '缓' if 缓 and t != '真' else t
+
+
+def _传纸(态们):
+    """令／条所据诸项之态 → 纸否：俱纸或机、且至少一纸（唯据机证不能者⛔计：其据已书由、另守於「机证不能 ≤ 四之一」；
+    计之即每落一条纯理之作者令即逾底——拦「作者令当场落盘」·第一律）；据有一真即非（〔复核〕待⛔看限：未到限之纸证之待亦纸）。"""
+    return bool(态们) and all(t in ('纸', '机') for t in 态们) and '纸' in 态们
+
+
+def 纸证(册, root=ROOT, n=None, 缓免=True):
+    """→ (数, [(分, 数)], {分: [名…]})。〔1119 执行之审·治2〕
+    法：纸证之法（机证不能者亦计·计数而不求降；⛔看时、⛔看起：新立之法同计；段、十之法亦计）；
+    待：纸证者（〔复核〕⛔看限——数⛔随 n 而动，底与数同尺；n 唯定「缓」之内否）；
+    令：作者常令 1021 起之令，其所据（法用# 所引；无引即其落所盖·常令之验之盖出）之项俱纸／机而至少一纸者；
+    条：总章之条，点之之法／待／废／册「机证不能」俱纸／机而至少一纸者。无据之令／条不在此（完备另红）；唯据机证不能者另印（机）。
+    缓免：缓（≤三章带由）之内之法／待⛔计（印作「缓 k」）——立底、降底时 缓免=False（⛔借缓降底）。"""
+    if n is None:
+        n = 末封(root) or 起章
+    法, 待, 废 = 册.get('法') or [], 册.get('待') or [], 册.get('废') or []
+    诸项 = [(x, _纸态(x, k, n, 缓免 and k != '废' and bool(缓之(册, x.get('id'), n)))) for k, 们 in (('法', 法), ('待', 待), ('废', 废)) for x in 们]
+    纸法 = [x.get('id', '?') for x, t in 诸项[:len(法)] if t in ('纸', '机')]
+    纸待 = [x.get('id', '?') for x, t in 诸项[len(法):len(法) + len(待)] if t == '纸']
+    缓们 = [x.get('id', '?') for x, t in 诸项 if t == '缓']
+    态 = {x.get('id'): t for x, t in 诸项}
+    之引 = []
+    for x, t in 诸项:
+        _, 档s, 跑s = 册之引({'法': [x]})
+        之引.append((str(x.get('据', '')), 档s, 跑s, t))
+    # 令→法（常令之验之所据·⛔另算一把尺）
+    盖出 = {}
+    常令之验(册, root, 盖出)
+    纸令, 机令 = [], []
+    for i, (首, 引, 盖) in sorted(盖出.items()):
+        if 引:
+            诸 = [态.get(k, '真') for k in 引]
+        elif 盖:
+            诸 = [t for p in 盖 for 据s, 档s, 跑s, t in 之引
+                 if p in 据s or any(p == d or fnmatch.fnmatchcase(p, d) for d in 档s)
+                 or (p.startswith('工具/') and os.path.basename(p) in 跑s)]
+        else:
+            continue                                                  # 无据：令立无证（完备另红）
+        if _传纸(诸):
+            纸令.append('L%d（%s）' % (i, 首))
+        elif 诸 and all(t == '机' for t in 诸):
+            机令.append('L%d' % i)
+    # 条→法（总章之盖之所点·同 _据引之、_条中）
+    盖们 = [(_据引之([str(x.get('据', ''))]), t) for x, t in 诸项] \
+        + [(_据引之([str(x.get('据', ''))]), '机') for x in 册.get('机证不能') or [] if isinstance(x, dict)]
+    纸条, 机条 = [], []
+    for k, 文 in 总章之条(root):
+        诸 = [t for 键词, t in 盖们 if _条中(k, 文, 键词)]
+        if _传纸(诸):
+            纸条.append(k)
+        elif 诸 and all(t == '机' for t in 诸):
+            机条.append(k)
+    详 = {'法': 纸法, '待': 纸待, '令': 纸令, '条': 纸条}
+    分 = [(k, len(v)) for k, v in 详.items()]
+    if 缓们:
+        详['缓'] = 缓们
+    详['机'] = 机令 + 机条
+    return sum(v for _, v in 分), 分 + ([('缓', len(缓们))] if 缓们 else []), 详
+
+
+def _纸数(册, root, n):
+    """纸证之数（--验 之用）：算不得即 None（纸证之判作 ⚠·⛔因此器之崩拦封）。"""
+    try:
+        return 纸证(册, root, n)[0]
+    except Exception:
+        return None
+
+
+def 纸证之判(数, 册):
+    """棘轮（同 未行之判 之式；底在册之「纸证」）：数 ＞ 底 即 ⛔（只拦新添之纸证）；＜ 底 报可降；册未立其底即 ⚠（只印·⛔今即红）。→ (态, 语)。"""
+    d = 册.get('纸证')
+    底 = d.get('底') if isinstance(d, dict) else None
+    if 数 is None:
+        return '⚠', '纸证之数算不得'
+    if not isinstance(底, int) or isinstance(底, bool):
+        return '⚠', '纸证之棘轮未立（只印）：册添「纸证」{底: %d}——python3 工具/法用之守.py --纸证 --立' % 数
+    if 数 > 底:
+        return '⛔', '纸证之数 %d ＞ 底 %d——新添之法／待／令／条须带行为之证（跑／git 含改坐异·枝须新／报／量、章之迹；⛔钩、⛔席记之自证、⛔只验枝在）；详 python3 工具/法用之守.py --纸证' % (数, 底)
+    if 数 < 底:
+        return '✓', '纸证之数 %d ＜ 底 %d——可降：python3 工具/法用之守.py --纸证 --降' % (数, 底)
+    return '✓', '纸证之数 %d ＝ 底 %d' % (数, 底)
+
+
+def 纸证之印(数, 分, 册):
+    态, 语 = 纸证之判(数, 册)
+    d = 册.get('纸证')
+    return '%s 纸证之数 %s（%s）（底 %s）｜%s' % (态, '?' if 数 is None else 数, '、'.join('%s %s' % kv for kv in 分),
+                                         d.get('底') if isinstance(d, dict) and isinstance(d.get('底'), int) else '未立', 语)
 
 
 def 废旧之验(root=ROOT):
@@ -895,6 +1092,10 @@ def 完备(册, root=ROOT):
             验式(c['若'], 名); 验式(c.get('则'), 名)
         if c.get('git') and c['git'] not in ('含', '改', '枝', '坐异'):
             红.append('⛔ 册坏：%s 之 git 式不识 %s' % (名, c['git']))
+        if '纸' in c and not (isinstance(c['纸'], int) and not isinstance(c['纸'], bool) and c['纸'] >= 0):
+            红.append('⛔ 册坏：%s 之「纸」须非负整数（纸证之数 ≤ 底 − 纸）：%s' % (名, json.dumps(c, ensure_ascii=False)[:60]))   # 〔1119 执行之审·治2〕
+        if '新' in c and not (c.get('git') == '枝' and isinstance(c['新'], int) and not isinstance(c['新'], bool) and c['新'] > 0):
+            红.append('⛔ 册坏：%s 之「新」只许於 git 枝、须正整数（分）：%s' % (名, json.dumps(c, ensure_ascii=False)[:60]))   # 〔1119 执行之审·治2(a)〕
     据们 = []
     for x in 法:
         名 = x.get('id', '?')
@@ -941,6 +1142,9 @@ def 完备(册, root=ROOT):
     底 = 册.get('未行')
     if 底 is not None and not (isinstance(底, dict) and isinstance(底.get('底'), int)):
         红.append('⛔ 册坏：「未行」须 {底: 数, 记: [...]}（未行之数之棘轮·唯一处）')
+    纸 = 册.get('纸证')                 # 〔1119 执行之审·治2(e)〕形坏之底⛔悄悄作「未立」（棘轮即空）
+    if 纸 is not None and not (isinstance(纸, dict) and isinstance(纸.get('底'), int) and not isinstance(纸.get('底'), bool)):
+        红.append('⛔ 册坏：「纸证」须 {底: 数, 记: [...]}（纸证之数之棘轮·--纸证 --立 立之）')
     return 红, 黄
 
 
@@ -969,6 +1173,7 @@ def 验(n, 前=False, root=ROOT, 册=None, 境_=None, 执=True):
     """→ (ok, 诸行)。执：并验执行之守·丝滑之守（废、写者、同功、演）。"""
     册 = 册 or 读册(root)
     e = 境_ or 境(n, root, 前)
+    e.册 = 册                            # 〔1119 执行之审·治2〕纸之证以本回之册算（⛔另读盘）
     红, 黄 = 完备(册, root)
     完红数 = len(红)
     演果, 执计 = {}, None
@@ -976,6 +1181,11 @@ def 验(n, 前=False, root=ROOT, 册=None, 境_=None, 执=True):
         e.取引('备份/报')
         执红, 执黄, 演果, 执计 = 执之验(册, e, n, root, 取=False)
         红, 黄 = 红 + 执红, 黄 + 执黄
+    # 〔1119 执行之审·治2(e)〕纸证之数（〔复核〕⛔随 n：待⛔看限，底与数同尺）——册立其底即棘轮：＞底 ⛔拦封（只拦新添之纸证）；未立只印於头
+    纸数 = _纸数(册, root, n)
+    纸态, 纸语 = 纸证之判(纸数, 册)
+    if 纸态 == '⛔':
+        红.append('⛔ ' + 纸语)
     行, 计 = [], {'✓': 0, '⛔': 0, '⚠': 0}
     应 = [x for x in 册.get('法') or [] if 当验(x, n)]
     for x in 应:
@@ -989,7 +1199,7 @@ def 验(n, 前=False, root=ROOT, 册=None, 境_=None, 执=True):
         if 态 != '✓':
             语 = '；'.join(语 for a, 语 in 果 if a in ('⛔', '⚠', '？'))
             行.append('%s %s（%s）：%s' % (态, x['id'], _据短(x['据']), 语[:200]))
-    待到, 待红 = 0, 0
+    待到, 待红, 待纸 = 0, 0, 0
     for x in 册.get('待') or []:
         if n < x['限']:
             continue
@@ -1000,12 +1210,18 @@ def 验(n, 前=False, root=ROOT, 册=None, 境_=None, 执=True):
         if 态 != '✓':
             待红 += 态 == '⛔'
             行.append('%s 待·%s（限 %d）：%s——%s' % (态, x['id'], x['限'], '；'.join(语 for a, 语 in 果 if a != '✓')[:160], x.get('示', '')[:40]))
+        elif 纸证之法(x):            # 〔1119 执行之审·复核〕E4：到限之待须行为之证——逐条见之（⛔借纸证之一数）；只印（⚠·⛔拦封：今十条，设计未令拦）
+            待纸 += 1
+            行.append('⚠ 待·%s（限 %d）：到限而证只验串在（纸证·E4）——补行为之证（跑／git 含改坐异·枝须新／报／量、章之迹）方算真施' % (x['id'], x['限']))
     ok = not 红 and 计['⛔'] == 0 and not 待红
-    头 = '%s 法用之守 --验 %d%s：应验 %d 法（✓%d ⛔%d ⚠%d）｜待到期 %d（⛔%d）｜完备 %s' % (
-        '✓' if ok else '⛔', n, '·前' if 前 else '', len(应), 计['✓'], 计['⛔'], 计['⚠'], 待到, 待红, '✓' if not 完红数 else '⛔%d' % 完红数)
+    头 = '%s 法用之守 --验 %d%s：应验 %d 法（✓%d ⛔%d ⚠%d）｜待到期 %d（⛔%d%s）｜完备 %s' % (
+        '✓' if ok else '⛔', n, '·前' if 前 else '', len(应), 计['✓'], 计['⛔'], 计['⚠'], 待到, 待红, '·纸 %d' % 待纸 if 待纸 else '',
+        '✓' if not 完红数 else '⛔%d' % 完红数)
     if 执计:
         头 += '｜执：废而未除 %d、写者之红 %d、同功两处 %d、流程未演 %d' % (执计['废红'], 执计['二写'], 执计['同'],
                                                       sum(1 for a, _ in 演果.values() if a == '⛔'))
+    纸底_ = (册.get('纸证') or {}).get('底') if isinstance(册.get('纸证'), dict) else None
+    头 += '｜纸证 %s（底 %s）' % ('?' if 纸数 is None else 纸数, 纸底_ if isinstance(纸底_, int) else '未立')
     return ok, [头] + 红 + 行 + 黄
 
 
@@ -1026,7 +1242,8 @@ def 开(n, root=ROOT, 册=None, 执=True):
     for x in sorted(册.get('待') or [], key=lambda x: x['限']):
         if x['限'] <= n + 1:
             态 = 验法(x, e)[0] if e else '·'
-            项.append('%s 待·%s（限%d）→ %s' % ('✓' if 态 == '✓' else '⛔' if x['限'] <= n else '…', x['id'], x['限'], x.get('示', '')[:46]))
+            纸 = '·纸证' if 纸证之法(x) else ''        # 〔1119 执行之审·治2(b)〕到限之待证只验串在：入纸证之数（册立底即逾底拦封）——开章即见
+            项.append('%s 待·%s（限%d%s）→ %s' % ('✓' if 态 == '✓' else '⛔' if x['限'] <= n else '…', x['id'], x['限'], 纸, x.get('示', '')[:46]))
     if e and 执:                       # 执行之守·丝滑之守：本章封前须尽之废、须演之流程之法、写者与同功之红——开章即见（⛔候封版方红）
         try:
             执红, 执黄, 演果, _ = 执之验(册, e, n, root, 取=False)        # n：本章封前须尽者（待合之限 ≤ n）即红
@@ -1139,7 +1356,8 @@ def 未行(root=ROOT, 册=None, 完红=None, 逾数=None, 废红数=None):
     def _复():
         import 总编辑复核
         return sum(1 for x in 总编辑复核.查(印=False)[1] if str(x).startswith('甲'))
-    for 名, f in (('进化链无守', _链), ('裁未生效', _裁), ('坑已治未守', _坑), ('令无证', _令), ('待逾限', _待),
+    # 〔1119 执行之审·治2(d)〕进化链之源（体检账、病族账）冻於 1027：其分标为史，其 0 ⛔充活守之证
+    for 名, f in (('进化链无守（史·冻於1027）', _链), ('裁未生效', _裁), ('坑已治未守', _坑), ('令无证', _令), ('待逾限', _待),
                  ('废而未除', _废), ('复核未行', _复)):
         取(名, f)
     数 = None if any(v is None for _, v in 分) else sum(v for _, v in 分)
@@ -1185,9 +1403,9 @@ def 降底(root=ROOT):
     return 0
 
 
-def _改底(s, 底, 数, 日):
-    """册之文 → 改「未行」之底为 数、记首添「日 底→数」之新文（⛔重排其式；只许降）；形不识或 数 ≥ 底 即 None。"""
-    m = re.search(r'("未行":\s*\{\s*"底":\s*)(\d+)(,\s*"记":\s*\[)', s)
+def _改底(s, 底, 数, 日, 键='未行'):
+    """册之文 → 改「未行」（〔1119 执行之审·治2(e)〕或「纸证」：键）之底为 数、记首添「日 底→数」之新文（⛔重排其式；只许降）；形不识或 数 ≥ 底 即 None。"""
+    m = re.search(r'("%s":\s*\{\s*"底":\s*)(\d+)(,\s*"记":\s*\[)' % re.escape(键), s)
     if not m or int(m.group(2)) != 底 or 数 >= 底:
         return None
     记 = json.dumps('%s %d→%d' % (日, 底, 数), ensure_ascii=False)
@@ -1196,7 +1414,53 @@ def _改底(s, 底, 数, 日):
         d = json.loads(s)
     except ValueError:
         return None
-    return s if d.get('未行', {}).get('底') == 数 else None
+    return s if d.get(键, {}).get('底') == 数 else None
+
+
+def _立纸底(s, 数, 记):
+    """〔1119 执行之审·治2(e)〕册之文 → 於「未行」之前添 "纸证": {"底": 数, "记": [记]}（⛔重排其式）；已立、形不识即 None。"""
+    m = re.search(r'(?m)^(\s*)"未行":\s*\{', s)
+    if not m or re.search(r'"纸证":\s*\{', s):
+        return None
+    s = s[:m.start()] + '%s"纸证": {"底": %d, "记": [%s]},\n' % (m.group(1), 数, json.dumps(记, ensure_ascii=False)) + s[m.start():]
+    try:
+        d = json.loads(s)
+    except ValueError:
+        return None
+    return s if (d.get('纸证') or {}).get('底') == 数 else None
+
+
+def 纸底(root=ROOT, 立=False):
+    """〔1119 执行之审·治2(e)〕纸证之棘轮之写（唯一处·同 降底）：立＝册未有「纸证」即以今之数（末封·⛔缓免）立其底；
+    否则今 ＜ 底 即降其底；⛔升。→ rc。"""
+    册 = 读册(root)
+    数, 分, _ = 纸证(册, root, 缓免=False)
+    print(纸证之印(数, 分, 册))
+    d = 册.get('纸证')
+    底 = d.get('底') if isinstance(d, dict) else None
+    p = os.path.join(root, 册名)
+    日 = time.strftime('%m%d', time.gmtime())
+    if 立:
+        if isinstance(底, int):
+            print('· 未立（已立：底 %d；只许 --纸证 --降）' % 底)
+            return 0
+        s = _立纸底(open(p, encoding='utf-8').read(), 数, '%s 立：%d（%s·已封至 %d）' % (日, 数, '、'.join('%s %s' % kv for kv in 分), 末封(root)))
+        if s is None:
+            print('⛔ 册之形不识（无「未行」之键可依），⛔改')
+            return 1
+        open(p, 'w', encoding='utf-8').write(s)
+        print('✓ 纸证之底立：%d' % 数)
+        return 0
+    if not isinstance(底, int) or 数 >= 底:
+        print('· 未降（%s）' % ('未立：--纸证 --立' if not isinstance(底, int) else '今 %d ≥ 底 %d' % (数, 底)))
+        return 1 if isinstance(底, int) and 数 > 底 else 0
+    s = _改底(open(p, encoding='utf-8').read(), 底, 数, 日, '纸证')
+    if s is None:
+        print('⛔ 册之「纸证」之形不识，⛔改')
+        return 1
+    open(p, 'w', encoding='utf-8').write(s)
+    print('✓ 纸证之底降：%d → %d' % (底, 数))
+    return 0
 
 
 def 报首(root=ROOT):
@@ -1210,10 +1474,14 @@ def 报首(root=ROOT):
         废红, 废黄 = 验废(册, e.盘, 末 or None)
         数, 分 = 未行(root, 册, 完红=红, 逾数=len(逾), 废红数=len(废红))
         态, 语 = 未行之判(数, 册)
-        ok = not 红 and not 逾 and not 废红 and 态 != '⛔'
-        return '%s 法用之守（已封至 %d）：法 %d·待 %d｜完备 %s｜待逾限 %d｜废而未除 %d（待合 %d）｜未行之数 %s（底 %s）%s' % (
+        纸数 = _纸数(册, root, 末 or None)                # 〔1119 执行之审·治2(e)〕一行之要亦印纸证之数（算不得即 ?·⛔失全行）
+        纸态, _ = 纸证之判(纸数, 册)
+        纸底_ = (册.get('纸证') or {}).get('底') if isinstance(册.get('纸证'), dict) else None
+        ok = not 红 and not 逾 and not 废红 and 态 != '⛔' and 纸态 != '⛔'
+        return '%s 法用之守（已封至 %d）：法 %d·待 %d｜完备 %s｜待逾限 %d｜废而未除 %d（待合 %d）｜未行之数 %s（底 %s）｜纸证之数 %s（底 %s）%s' % (
             '✓' if ok else '⛔', 末, len(册.get('法') or []), len(册.get('待') or []), '✓' if not 红 else '⛔%d' % len(红), len(逾),
             len(废红), len(废黄), '?' if 数 is None else 数, (册.get('未行') or {}).get('底'),
+            '?' if 纸数 is None else 纸数, 纸底_ if isinstance(纸底_, int) else '未立',
             '' if ok else '——详 python3 工具/法用之守.py --报')
     except Exception as ex:
         return '⚠ 法用之守·首印不出：%s' % str(ex)[:80]
@@ -1235,22 +1503,30 @@ def 报(root=ROOT):
     数, 分 = 未行(root, 册, 完红=红, 逾数=len(逾), 废红数=计['废红'])
     行态, _ = 未行之判(数, 册)
     行印 = 未行之印(数, 分, 册)
+    try:                                                         # 〔1119 执行之审·治2(e)〕纸证之数（法、待、令、条）与其底；算不得即 ?（⚠·⛔崩全测之格）
+        纸数, 纸分, _ = 纸证(册, root, 末 or None)
+    except Exception as ex:
+        纸数, 纸分 = None, [('算不得', str(ex)[:40])]
+    纸态, _ = 纸证之判(纸数, 册)
+    纸印 = 纸证之印(纸数, 纸分, 册)
+    纸底_ = (册.get('纸证') or {}).get('底') if isinstance(册.get('纸证'), dict) else None
     演红, 演黄 = [], []
     for x in 册.get('法') or []:
         a, 语 = 演果.get(x['id'], ('免', ''))
         if a == '⛔':
             已 = 末 >= int(x.get('起', 起章))
             (演红 if 已 else 演黄).append('%s 演·%s（起 %s%s）：%s' % ('⛔' if 已 else '⚠', x['id'], x.get('起'), '·已起' if 已 else '·将起', 语[:120]))
-    ok = not 红 and not 逾 and not 执红 and not 演红 and 行态 != '⛔'
+    ok = not 红 and not 逾 and not 执红 and not 演红 and 行态 != '⛔' and 纸态 != '⛔'
     令红, 令数 = 常令之验(册, root)
     条数 = len(总章之条(root))
-    return ok, 红 + 逾 + 执红 + 演红 + 黄 + 执黄 + 演黄 + [行印] + [
+    return ok, 红 + 逾 + 执红 + 演红 + 黄 + 执黄 + 演黄 + [行印, 纸印] + [
         '%s 法用之守·报：法 %d、待 %d；完备 %s（作者常令 %d 条%s、总章之条 %d 俱有据）；逾限之待 %d｜废 %d（未除 %d·待合 %d）｜写者 推 %d 处·演 %d（写者之红 %d）｜同功两处 %d｜'
-        '流程之法 %d（演 %d·演免 %d·未演 %d）｜未行之数 %s（底 %s）（已封至 %d）' % (
+        '流程之法 %d（演 %d·演免 %d·未演 %d）｜未行之数 %s（底 %s）｜纸证之数 %s（底 %s）（已封至 %d）' % (
             '✓' if ok else '⛔', len(册['法']), len(册.get('待') or []), '✓' if not 红 else '⛔%d' % len(红), 令数,
             '' if not 令红 else '·⛔%d' % len(令红), 条数, len(逾),
             计['废'], 计['废红'], 计['待合'], 计['写'], 计['演'], 计['二写'], 计['同'],
-            计['流程'], 计['演过'], 计['演免'], len(演红) + len(演黄), '?' if 数 is None else 数, (册.get('未行') or {}).get('底'), 末)]
+            计['流程'], 计['演过'], 计['演免'], len(演红) + len(演黄), '?' if 数 is None else 数, (册.get('未行') or {}).get('底'),
+            '?' if 纸数 is None else 纸数, 纸底_ if isinstance(纸底_, int) else '未立', 末)]
 
 
 # ───────── 回放（以史） ─────────
@@ -2115,9 +2391,51 @@ def 验演(x, 录, 界=None):
 
 
 # ───────── 五、报之读（自走之首·问题早见） ─────────
-def 未消之坏(诸, 在主=lambda s: False):
-    """报/推 之 红／拒／败：同枝後有成、或其 sha 已入主枝、或係治枝而其後有成 → 已消；报/演 之果非 同／过／成 → 坏，
-    同所演之枝（ref，无即名）其後有 同／过 之演 → 已消（治而再演，⛔永印旧坏）。新者在前。"""
+_sha式 = re.compile(r'[0-9a-f]{7,40}')
+
+
+def 经闸入主(d, 诸, 是祖, 在主=None):
+    """〔1119 执行之审·治5(a)〕报/推 之一报 d（果非 成／已在）其 sha 经 GitHub 之闸入主枝否 → 证之之报（dict）｜None。
+    经闸：其後（时 ＞ d 之时）某份 报/推 之报（〔复核〕⛔限治枝：章-(N+1) 之成报亦过同一全闸——旧器「其 sha 入主即消」认之，限治即退步）
+    果 成／已在，其 main_after 含 d 之 sha（是祖(sha, main_after)）；同枝之报（d 自身、同 ref）⛔算；
+    在主（可缺·今之盘传之）：sha 今为主枝之祖。只经直推入主（其後无成报含之）→ None——仍红（同自测⑦之三所拒：沙盒兜底推掩 autopush 之败）。
+    报之证（_验证）与 未消之坏（报之读）同用此函——⛔两把尺（旧：报之证只认果之字面、未消之坏一见入主即消，二器对同一份报判得相反）。"""
+    s = str((d or {}).get('sha') or '')
+    if not _sha式.fullmatch(s) or (在主 is not None and not 在主(s)):
+        return None
+    t = str(d.get('时') or '')
+    for y in sorted(诸, key=lambda y: str(y.get('时') or '')):
+        a = str(y.get('main_after') or '')
+        if y is d or y.get('类', '推') != '推' or y.get('ref') == d.get('ref') \
+                or y.get('果') not in 果默 or str(y.get('时') or '') <= t or not _sha式.fullmatch(a):
+            continue
+        if 是祖(s, a):
+            return y
+    return None
+
+
+def _经闸之证(e, 引, d):
+    """报之证之果不在所许之列时：其 sha 经闸入主否（经闸入主）→ 证之之报｜None。今：并验 sha 今在 origin 主枝；
+    回放（史至）：其时之 备份/报 之笔里其後之成报之 main_after 含之即其时已入主（⛔以今之主枝判史）。
+    〔1119 执行之审·复核〕报/推 之读经 推报.诸报（引＝其笔·⛔取）——⛔另造 ls-tree＋cat-file 之读器（推报.py:235「⛔另造一把尺」）。"""
+    if not isinstance(d, dict) or not _sha式.fullmatch(str(d.get('sha') or '')):
+        return None
+    import 推报
+    诸 = 推报.诸报(e.root, 取=False, 类=('推',), 引=引)
+    if not 诸:
+        return None
+    是祖 = lambda a, b: _git(e.root, 'merge-base', '--is-ancestor', a, b)[0] == 0
+    在主 = None
+    if e.史至 is None:
+        e.取引(主枝)
+        在主 = lambda s: 是祖(s, 'refs/remotes/origin/%s' % 主枝)
+    return 经闸入主(d, 诸, 是祖, 在主)
+
+
+def 未消之坏(诸, 在主=lambda s: False, 是祖=None):
+    """报/推 之 红／拒／败：同枝後有成、或係治枝而其後有成、或其 sha 经治闸入主（经闸入主：其後 治-* 之成报之 main_after 含之且今在主）→ 已消；
+    报/演 之果非 同／过／成 → 坏，同所演之枝（ref，无即名）其後有 同／过 之演 → 已消（治而再演，⛔永印旧坏）。新者在前。
+    〔1119 执行之审·治5(b)〕旧之「其 sha 已入主枝即消」（直推入主亦消）与报之证（只认果之字面）两把尺——今同用 经闸入主；是祖缺即⛔认经闸。"""
     推 = [d for d in 诸 if d.get('类') == '推']
     出 = []
     for d in 推:
@@ -2125,8 +2443,8 @@ def 未消之坏(诸, 在主=lambda s: False):
             continue
         t = str(d.get('时') or '')
         後成 = [y for y in 推 if y is not d and y.get('果') in 果默 and str(y.get('时') or '') > t]
-        if any(y.get('ref') == d.get('ref') for y in 後成) or (d.get('sha') and 在主(d['sha'])) \
-                or (str(d.get('ref', '')).startswith('治-') and 後成):
+        if any(y.get('ref') == d.get('ref') for y in 後成) or (str(d.get('ref', '')).startswith('治-') and 後成) \
+                or (是祖 is not None and 经闸入主(d, 推, 是祖, 在主)):
             continue
         出.append(d)
     演 = [d for d in 诸 if d.get('类') == '演']
@@ -2137,7 +2455,7 @@ def 未消之坏(诸, 在主=lambda s: False):
 
 
 def 报之读(root=ROOT, 取=True, 顶=3, 诸=None):
-    """自走之首（零 token·一取）：云端 备份/报 之 报/推、报/演 里未消之 红／拒／败（後之成、或其 sha 已入主枝者即消）→ ≤顶 行（行首 ⛔）。"""
+    """自走之首（零 token·一取）：云端 备份/报 之 报/推、报/演 里未消之 红／拒／败（同枝後之成、治枝後之成、或经治闸入主者即消·经闸入主）→ ≤顶 行（行首 ⛔）。"""
     try:
         if 诸 is None:
             import 推报
@@ -2146,8 +2464,8 @@ def 报之读(root=ROOT, 取=True, 顶=3, 诸=None):
         return ['⚠ 报之读不得：%s' % str(e)[:80]]
     if 取 and _git(root, 'rev-parse', '--is-shallow-repository')[1].strip() == 'true':
         _git(root, 'fetch', '-q', '--deepen=300', 'origin', 主枝, 限=120)   # 浅克隆：旧 sha 不可证入主→误印已消之红（1107 查得）
-    坏 = 未消之坏(诸, lambda s: bool(re.fullmatch(r'[0-9a-f]{7,40}', str(s)))
-                  and _git(root, 'merge-base', '--is-ancestor', s, 'refs/remotes/origin/%s' % 主枝)[0] == 0)
+    是祖 = lambda a, b: bool(_sha式.fullmatch(str(a))) and _git(root, 'merge-base', '--is-ancestor', a, b)[0] == 0
+    坏 = 未消之坏(诸, lambda s: 是祖(s, 'refs/remotes/origin/%s' % 主枝), 是祖)     # 〔1119 执行之审·治5(b)〕经闸入主·同报之证
     行 = []
     for d in 坏:
         枝 = d.get('ref') or os.path.basename(str(d.get('路', '')))[:-5]
@@ -2384,7 +2702,7 @@ def 自测_执(T, 全):
                   '报/推/章-8.json': json.dumps({'ref': '章-8', 'sha': 乙sha, '果': '红', '时': 时(2), '红': ['✗ 甲之项坏']}),
                   '报/推/章-7.json': json.dumps({'ref': '章-7', 'sha': 甲sha, '果': '败', '时': 时(1)}),
                   '报/推/治-x.json': json.dumps({'ref': '治-x', 'sha': 'f' * 40, '果': '红', '时': 时(3)}),
-                  '报/推/治-y.json': json.dumps({'ref': '治-y', 'sha': 'e' * 40, '果': '成', '时': 时(4)}),
+                  '报/推/治-y.json': json.dumps({'ref': '治-y', 'sha': 'e' * 40, '果': '成', '时': 时(4), 'main_after': 甲sha}),   # 〔1119 执行之审·治5〕其 main_after 含 甲（章-7 经此治闸入主）
                   '报/推/治-z.json': json.dumps({'ref': '治-z', 'sha': 'd' * 40, '果': '成', '时': 时(5), '片': {'数': 3}})})
         g('add', '-A'); g('commit', '-qm', '报')
         g('push', '-q', 'origin', 'HEAD:refs/heads/备份/报')
@@ -2405,10 +2723,22 @@ def 自测_执(T, 全):
           and 验演(dict(流, 演=[{'报': '演/*', '含': '"片"'}]), _伪('成', False))[0] == '⛔')
         # ⑫报之读（自走之首）
         L = 报之读(工, 取=True)
-        T('⑫报之读（真取·临时之裸库）：章-8 红（sha 未入主）未消 → ⛔；章-7 败而 sha 已入主 → 消；治-x 红而其後 治-y 成 → 消；≤三行',
+        T('⑫报之读（真取·临时之裸库）：章-8 红（sha 未入主）未消 → ⛔；章-7 败而 sha 经治闸入主（其後 治-y 成、main_after 含之）→ 消；治-x 红而其後 治-y 成 → 消；≤三行',
           len(L) == 1 and L[0].startswith('⛔ 报·推 章-8 果「红」') and '甲之项坏' in L[0])
+        # 〔1119 执行之审·治5(b)〕一把尺：章-8 之 sha 只经直推入主（其後无成报含之）→ 报之读仍⛔、报之证（--验）亦⛔；其後 治-w 成而含之 → 俱消、俱 ✓
         g('push', '-q', 'origin', 'HEAD:refs/heads/' + 主枝)
-        T('⑫之二 章-8 之 sha 入主枝（治而并）→ 消、印空', 报之读(工, 取=True) == [])
+        报证 = {'报': '推/章-8', '果': ['成', '已在']}
+        L直, 证直 = 报之读(工, 取=True), 验证(报证, 境(9, 工, 承=False))
+        T('⑫之二 章-8 之 sha 只经直推入主（其後无成报之 main_after 含之）→ 报之读仍⛔、报之证亦⛔（旧器：一见入主即消，与报之证两把尺）',
+          len(L直) == 1 and L直[0].startswith('⛔ 报·推 章-8') and 证直[0] == '⛔')
+        g('checkout', '-q', '报')
+        _写档(工, {'报/推/治-w.json': json.dumps({'ref': '治-w', 'sha': 乙sha, '果': '成', '时': 时(6), 'main_after': 乙sha})})
+        g('add', '-A'); g('commit', '-qm', '报·治-w')
+        g('push', '-q', 'origin', 'HEAD:refs/heads/备份/报')
+        g('checkout', '-q', 主枝)
+        证并 = 验证(报证, 境(9, 工, 承=False))
+        T('⑫之二b 章-8 之 sha 入主枝（治而并：其後 治-w 成、main_after 含之）→ 消、印空；报之证 ✓「经治闸入主」（同一函）',
+          报之读(工, 取=True) == [] and 证并[0] == '✓' and '经治闸入主（治-w' in 证并[1])
         多 = [{'类': '推', 'ref': '章-%d' % k, 'sha': 'a', '果': '红', '时': 时(k)} for k in range(1, 6)] + \
             [{'类': '演', '路': '报/演/封版.json', '果': '异', '时': 时(6)}]
         L多 = 报之读(工, 诸=多)
@@ -2684,6 +3014,181 @@ def 自测_核(T, 全):
       and 0.05 < (q.get('记占') or 0) < 0.2 and 大审费(387) == 85.71 and 大审费(9999) is None)
 
 
+def 自测_审(T, 全):
+    """〔1119 执行之审〕㉓ 治2 纸证之数（严之行为之证、令／条之传、到限之待、缓、棘轮、底之写、回灌 a6c9f7a04 之册）；
+    ㉔ 治5 经闸入主（一把尺：报之证与未消之坏同用；回灌 备份/报 之史·章-472）——各带真伪两局，⛔空验。"""
+    import tempfile, shutil, io, contextlib
+    # ㉓ 严之行为之证
+    席 = {'档': '版本/第{N-1}章/_席记.json', '含': '"法用"', '起': 412}
+    钩 = {'钩': '存底守.py --起', '于': 'SessionStart'}
+    枝 = {'git': '枝', '枝': '备份/报'}
+    存 = {'跑': '存底守.py', '参': '--一回', '近': 60}
+    f = lambda i, 证, **k: 全(dict({'id': i, '名': i, '据': 'x', '起': 9, '时': '封後', '证': 证}, **k))
+    T('㉓纸证之法：只「席记含法用」（他法）→ 纸、法用之守自身 → 非；只钩（钩自跑⛔免）→ 纸；{git:枝} 无新 → 纸、带新 → 非；'
+      '{跑: 存底守.py, 参: --一回, 近: 60} → 非；或之一支纸 → 纸；章之迹 → 非；机证不能 → 纸（计）；行为之验之底线⛔变（钩自跑照过·⛔今即红）',
+      纸证之法(f('执行之守', [{'档': '工具/封版.py', '含': 'x'}, 席])) and not 纸证之法(f('法用之守', [{'档': '工具/封版.py', '含': 'x'}, 席]))
+      and 纸证之法(f('钩法', [钩], 钩自跑='Stop（每回合）')) and 纸证之法(f('枝法', [{'档': 'a'}, 枝]))
+      and not 纸证之法(f('新枝', [dict(枝, 新=1440)])) and 纸证之法(f('坏新', [dict(枝, 新=True)])) and not 纸证之法(f('存', [钩, 存]))
+      and 纸证之法(f('或', [{'或': [存, {'档': 'a'}]}])) and not 纸证之法(f('迹', [{'档': '版本/第{N}章/_轮记.md'}]))
+      and 纸证之法(f('机', [], 机证不能=True, 由='纯理纯理纯理纯理')) and 行为之验({'法': [f('钩法', [钩], 钩自跑='Stop')]}) == []
+      and any('「新」只许於 git 枝' in x for x in 完备({'法': [f('坏新', [dict(存, 新=5)])]}, ROOT)[0]))
+    t = tempfile.mkdtemp(prefix='法用纸_')
+    try:
+        _写档(t, {'a.md': 'x\n', 总章名: '# 总章\n**★七大主义**：\n1. **虫洞**：省\n2. **虹吸**：引\n3. **完美**：满\n4. **丝滑**：顺\n\n## 八、例\n',
+                  常令名: ('# 常令\n- 1101 作者令：「甲」——落：某（法用#纸甲）\n- 1102 作者令：「乙」——落：某（法用#真乙）\n'
+                           '- 1103 作者令：「丙」——落：某（法用#机丙）\n- 1104 作者令：「丁」——落：某（法用#纸甲、法用#机丙）\n'
+                           '- 1105 作者令：「戊」——落：某（法用#待戊）\n')})
+        册0 = {'法': [全({'id': '纸甲', '名': 'x', '据': '五大主义·虫洞、虹吸', '起': 9, '时': '段', '证': [{'档': 'a.md', '含': 'x'}]}),
+                     全({'id': '真乙', '名': 'x', '据': '五大主义·虹吸、丝滑', '起': 99, '时': '段', '证': [{'跑': 'x.py'}]}),
+                     全({'id': '机丙', '名': 'x', '据': '五大主义·完美', '起': 9, '时': '开', '机证不能': True, '由': '纯理：器只见事後之费'}),
+                     全({'id': '真丁', '名': 'x', '据': 'x', '起': 99, '时': '段', '证': [{'git': '改', '档': 'a.md'}]})],
+               '待': [{'id': '待戊', '名': 'x', '据': 'x', '限': 10, '证': [{'档': 'a.md', '含': 'x'}]}], '废': [], '未行': {'底': 0, '记': []}}
+        n9, 分9, 详9 = 纸证(册0, t, 9)
+        n10, _, 详10 = 纸证(册0, t, 10)
+        n99 = 纸证(册0, t, 99)[0]
+        T('㉓之二 纸证之数（假仓）：法 纸甲＋机丙（机证不能亦计）；待戊（限 10·证只档含）→ 9、10 俱计（〔复核〕⛔看限：数⛔随 n）；'
+          '令：引纸 → 纸、引真 → 非、唯引机 → ⛔计（印作机）、纸＋机 → 纸、引纸证之待（未到限亦然）→ 纸；条：唯纸 → 纸、纸＋真 → 非、唯机 → ⛔计（9：%s；10：%s；99：%s）'
+          % (n9, n10, n99),
+          n9 == n10 == n99 == 7 and 详9['法'] == ['纸甲', '机丙'] and 详9['待'] == 详10['待'] == ['待戊']
+          and [x.split('（')[0] for x in 详9['令']] == [x.split('（')[0] for x in 详10['令']] == ['L2', 'L5', 'L6']
+          and 详9['条'] == ['五大·虫洞'] and 详9['机'] == ['L4', '五大·完美'])
+        册缓 = dict(册0, 缓=[{'id': '纸甲', '立': 9, '至': 10, '由': '补证在途'}])
+        nh, 分h, _ = 纸证(册缓, t, 9)
+        T('㉓之三 缓（≤三章带由）之法⛔计、其所传之令／条亦⛔计（印「缓 1」·余 机丙、待戊、L6）；立底降底（缓免=False）照计——⛔借缓降底',
+          nh == 3 and ('缓', 1) in 分h and 纸证(册缓, t, 9, 缓免=False)[0] == 7)
+        e = 境(9, t, 取=False, 承=False)
+        立 = dict(册0, 纸证={'底': n9, '记': []})
+        新纸 = 全({'id': '新纸', '名': 'x', '据': 'x', '起': 9, '时': '段', '证': [{'档': 'a.md', '含': 'x'}]})
+        ok1, L1 = 验(9, root=t, 册=立, 境_=e, 执=False)
+        ok2, L2 = 验(9, root=t, 册=dict(立, 法=立['法'] + [新纸]), 境_=e, 执=False)
+        ok3, L3 = 验(9, root=t, 册=dict(册0, 法=册0['法'] + [新纸]), 境_=e, 执=False)
+        ok4, _ = 验(9, root=t, 册=dict(立, 法=立['法'] + [dict(新纸, id='新真', 起=99, 证=[{'跑': 'x.py'}])]), 境_=e, 执=False)
+        T('㉓之四 棘轮（负测）：册立底（今数 %d）→ --验 ✓；新添一条纸证之法 → --验 ⛔「纸证之数 %d ＞ 底 %d」；新添之法带行为之证 → ✓；'
+          '册未立底 → 只印於头（「底 未立」·⛔今即红）' % (n9, n9 + 1, n9), ok1 and '纸证 %d（底 %d）' % (n9, n9) in L1[0] and not ok2
+          and any(l.startswith('⛔ 纸证之数 %d ＞ 底 %d' % (n9 + 1, n9)) for l in L2) and ok3 and '纸证 %d（底 未立）' % (n9 + 1) in L3[0] and ok4)
+        # 〔1119 执行之审·复核〕底与数同尺（must-fix）：旧 待 未到限⛔计，--立 於末封（9）而 --验 10 时待戊到限 → 数 5→7 ＞ 底 5，⛔新添一字即拦封；
+        #   今 同一之册 --验 10 照 ✓（数⛔随 n）；到限之纸证之待逐条印 ⚠（E4·只印⛔拦）——9 ⛔印、10 印
+        e10 = 境(10, t, 取=False, 承=False)
+        ok10, L10 = 验(10, root=t, 册=立, 境_=e10, 执=False)
+        T('㉓之四b〔复核〕底与数同尺：册立底於 9（%d）→ --验 10（待戊方到限）照 ✓、头「纸证 %d（底 %d）」（旧：7 ＞ 5 ⛔拦封）；'
+          '到限而证只验串在之待 → ⚠「待·待戊（限 10）：到限而证只验串在（纸证·E4）」一行、头「待到期 1（⛔0·纸 1）」、⛔拦；9 ⛔印' % (n9, n9, n9),
+          ok10 and '纸证 %d（底 %d）' % (n9, n9) in L10[0] and any(l.startswith('⚠ 待·待戊（限 10）：到限而证只验串在（纸证·E4）') for l in L10)
+          and '待到期 1（⛔0·纸 1）' in L10[0] and not any('E4' in l for l in L1))
+        T('㉓之五 纸证之判：＞底 ⛔、＝ ✓、＜ ✓（印可降）、未立 ⚠（⛔今即红）、算不得 ⚠（册坏而器崩 → None·⛔拦封）；「纸证」形坏 → 册坏（⛔悄悄作未立）',
+          [纸证之判(k, {'纸证': {'底': 5}})[0] for k in (6, 5, 4, None)] == ['⛔', '✓', '✓', '⚠'] and 纸证之判(9, {})[0] == '⚠'
+          and '可降' in 纸证之判(4, {'纸证': {'底': 5}})[1] and _纸数({'法': [{'id': '坏', '证': 5}]}, t, 9) is None
+          and any('「纸证」须' in x for x in 完备(dict(册0, 纸证={'底': '58'}), t)[0]) and not any('「纸证」须' in x for x in 完备(立, t)[0]))
+        e纸 = 境(9, t, 取=False, 承=False)
+        纸态们 = []
+        for 册_ in (立, dict(立, 法=[x for x in 立['法'] if x['id'] != '纸甲']), 册0):
+            e纸.册 = 册_
+            纸态们.append(验证({'纸': 1}, e纸)[0])
+        T('㉓之十一 纸之证（待「执行之审」之证：纸证之数 ≤ 底 − 1）：未降（%d ≤ %d 否）⛔、去一纸证之法即降 ✓、棘轮未立 ⛔；' % (n9, n9 - 1) +
+          '纸之证本身计为纸证（⛔充行为之证）；形坏 → 册坏', 纸态们 == ['⛔', '✓', '⛔'] and 纸证之法({'id': '执行之审', '证': [{'纸': 1}]})
+          and any('「纸」须非负整数' in x for x in 完备({'法': [f('坏纸', [{'纸': -1}])]}, ROOT)[0]))
+        s0 = '{\n "法": [],\n "未行": {"底": 0, "记": ["1027 立"]},\n "废": []\n}\n'
+        s1 = _立纸底(s0, 58, '1119 立：58')
+        s2 = _改底(s1, 58, 50, '1120', '纸证') if s1 else None
+        T('㉓之六 纸证之底之文：立（於「未行」之前添、余文⛔动；已立⛔再立）、降（记首添「1120 58→50」·⛔升）；未行之底⛔动',
+          s1 is not None and json.loads(s1)['纸证'] == {'底': 58, '记': ['1119 立：58']}
+          and s1.replace(' "纸证": {"底": 58, "记": ["1119 立：58"]},\n', '') == s0 and _立纸底(s1, 40, 'x') is None
+          and s2 is not None and json.loads(s2)['纸证'] == {'底': 50, '记': ['1120 58→50', '1119 立：58']}
+          and _改底(s2, 50, 60, '1121', '纸证') is None and json.loads(s2)['未行'] == {'底': 0, '记': ['1027 立']})
+        p = os.path.join(t, 册名)
+        json.dump(册0, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+        出 = io.StringIO()
+        with contextlib.redirect_stdout(出):
+            r1 = 纸底(t, 立=True)
+            底1 = 读册(t).get('纸证', {}).get('底')
+            r2 = 纸底(t, 立=True)
+            r3 = 纸底(t)
+            d = 读册(t)
+            d['法'] = [x for x in d['法'] if x['id'] != '纸甲']
+            json.dump(d, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+            r4 = 纸底(t)
+            底4 = 读册(t).get('纸证', {}).get('底')
+        期 = 纸证(册0, t, 起章, 缓免=False)[0]
+        T('㉓之七 --纸证 --立／--降（册之文·唯一处）：未立即以今数（%s）立；已立⛔再立；今＝底⛔降；去一纸证之法 → 降（%s → %s）' % (期, 底1, 底4),
+          r1 == 0 and 底1 == 期 and r2 == 0 and r3 == 0 and r4 == 0 and isinstance(底4, int) and 底4 < 底1)
+    finally:
+        shutil.rmtree(t, ignore_errors=True)
+    # ㉓之八 git 枝之「新」（末提交在限时之内）：假仓（⛔推：取=False 只读远端之引，update-ref 立之——写者唯一之静析⛔另添写者）
+    t = tempfile.mkdtemp(prefix='法用枝_')
+    try:
+        工 = os.path.join(t, '工')
+        env = dict({k: v for k, v in os.environ.items() if not k.startswith('GIT_')}, GIT_CONFIG_GLOBAL=os.devnull,
+                   GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+        g = lambda *a, d=None, **k: subprocess.run(['git'] + list(a), cwd=d or 工, capture_output=True, text=True, env=dict(env, **k))
+        g('init', '-q', 工, d=t)
+        _写档(工, {'r.txt': '报'})
+        t0 = 1790000000
+        g('add', '-A'); g('commit', '-qm', '报', GIT_AUTHOR_DATE='@%d +0000' % t0, GIT_COMMITTER_DATE='@%d +0000' % t0)
+        g('update-ref', 'refs/remotes/origin/备份/报', 'HEAD')
+        e今 = 境(9, 工, 取=False, 承=False, 今=t0 + 600)
+        e史 = 境(9, 工, 史至=t0 + 600, 取=False, 承=False)
+        V = lambda c, e_: 验证(c, e_)[0]
+        T('㉓之八 git 枝之新（分）：末提交距今 10 分——新 60 ✓、新 5 ⛔；无新只验枝在 ✓；回放（史至）同判',
+          V(dict(枝, 新=60), e今) == '✓' and V(dict(枝, 新=5), e今) == '⛔' and V(枝, e今) == '✓'
+          and V(dict(枝, 新=60), e史) == '✓' and V(dict(枝, 新=5), e史) == '⛔' and V(dict(枝, 枝='备份/无', 新=60), e今) == '⛔')
+    finally:
+        shutil.rmtree(t, ignore_errors=True)
+    # ㉓之九 回灌（执行之审之设计所据之 HEAD a6c9f7a04 之册）：纸证之法 17、到限（472）之纸证之待 10
+    审笔 = 'a6c9f7a04'
+    if _有笔(ROOT, 审笔):
+        旧册 = json.loads(subprocess.run(['git', 'show', '%s:%s' % (审笔, 册名.replace(os.sep, '/'))], cwd=ROOT, capture_output=True, text=True).stdout)
+        纸17 = [x['id'] for x in 旧册['法'] if 纸证之法(x)]
+        待10 = [x['id'] for x in 旧册['待'] if x['限'] <= 472 and _纸态(x, '待', 472) == '纸']     # 〔复核〕_纸态⛔看限：到限之数以限滤之
+        T('㉓之九 回灌 %s 之册：纸证之法 %d（执行之守、演练之证、机器提醒、GitHub先、云巡、修缮之律…；法用之守、盘坏之哨⛔入）、到限（472）之纸证之待 %d'
+          % (审笔, len(纸17), len(待10)), len(纸17) == 17 and len(待10) == 10 and '法用之守' not in 纸17 and '盘坏之哨' not in 纸17
+          and {'执行之守', '演练之证', '机器提醒', 'GitHub先', '云巡', '修缮之律', '令由会话直落', '自决之守', '书不停三锁'} <= set(纸17))
+    else:
+        T('㉓之九 回灌之笔 %s 寻不着（浅克隆补史亦不得）' % 审笔, False)
+    册 = 读册(ROOT)
+    n真, 分真, _ = 纸证(册, ROOT)
+    首 = 报首(ROOT)
+    # 〔1119 执行之审·复核〕⛔恒验「n真 > 0」：纸证之数降至 0 係治2 之的——恒验 >0 即此阻推之闸（负测·法用之守 在 读者可见之闸）於功成之日转红；
+    #   「首回之数 >0 方立」係上线之一回之验（立底之时验之），⛔常设之律
+    末真 = 末封(ROOT) or 起章
+    _同尺 = [纸证(册, ROOT, 末真 + k, 缓免=False)[0] for k in (0, 1, 2, 4, 8, 12, 28)]
+    T('㉓之十 真册：纸证之数 %s（%s）係非负整数；可复算（再算同数）；--报 --首 一行带之；'
+      '〔复核〕底与数同尺——真册於 %d、+1、+2、+4、+8、+12、+28 章（⛔缓）同数 %s（旧：473→58、474→67、476→79、500→91·待到限即升）'
+      % (n真, '、'.join('%s %s' % kv for kv in 分真), 末真, _同尺[0]),
+      isinstance(n真, int) and not isinstance(n真, bool) and n真 >= 0 and 纸证(册, ROOT)[0] == n真 and '纸证之数' in 首 and '\n' not in 首
+      and len(set(_同尺)) == 1)
+    # ㉔ 经闸入主（一把尺）
+    时 = lambda k: '2026-11-19T1%d:00:00Z' % k
+    章 = {'类': '推', 'ref': '章-472', 'sha': 'f7' * 20, '果': '败', '时': 时(5)}
+    治前 = {'类': '推', 'ref': '治-aa', 'sha': 'aa' * 20, '果': '成', '时': 时(4), 'main_after': 'aa' * 20}
+    治後 = {'类': '推', 'ref': '治-79', 'sha': '79' * 20, '果': '成', '时': 时(6), 'main_after': '79' * 20}
+    含 = lambda a, b: (a, b) in {('f7' * 20, '79' * 20), ('f7' * 20, 'aa' * 20)}
+    章473 = dict(治後, ref='章-473')
+    T('㉔经闸入主：败而其後 治-* 成、main_after 含其 sha → 认（返其报）；其前之成报含之⛔认；其後之成不含 → ⛔；其後之治红 → ⛔；'
+      '其後之成係章标（章-473·同过全闸）→ 认（〔复核〕旧限治枝即退步）；同枝（同 ref）之後报 → ⛔（自证）；在主否 → ⛔；sha 坏 → ⛔',
+      经闸入主(章, [治前, 治後], 含) is 治後 and 经闸入主(章, [治前], 含) is None and 经闸入主(章, [治後], lambda a, b: False) is None
+      and 经闸入主(章, [dict(治後, 果='红')], 含) is None and 经闸入主(章, [章473], 含) is 章473
+      and 经闸入主(章, [dict(治後, ref='章-472')], 含) is None and 经闸入主(章, [章], lambda a, b: True) is None
+      and 经闸入主(章, [治後], 含, lambda s: False) is None and 经闸入主(dict(章, sha='x'), [治後], 含) is None)
+    T('㉔之二 未消之坏同用之：败而只经直推入主（在主而其後无成报含之）→ 未消；其後 治-* 成含之 → 消；'
+      '〔复核〕其後 章-473 成而 main_after 含之、且在主 → 消（同 HEAD 旧器·⛔退步）；旧调（无是祖）→ ⛔认经闸',
+      [d['ref'] for d in 未消之坏([章], lambda s: True, 含)] == ['章-472'] and 未消之坏([章, 治後], lambda s: True, 含) == []
+      and 未消之坏([章, 章473], lambda s: True, 含) == [] and [d['ref'] for d in 未消之坏([章, 章473], lambda s: False, 含)] == ['章-472']
+      and [d['ref'] for d in 未消之坏([章, 治後], lambda s: True)] == ['章-472'])
+    # ㉔之三 回灌 472（本仓 备份/报 之史）：15:38（3326608d6·章-472 败、治-79ef 未报）→ ⛔；15:58（95ab637a0·治-79ef08a55 成、main_after 含 f743735c6）
+    #   → ✓「经治闸入主」——旧器至 17:56 手派 章-472（已在）方解，473 封版 --後 白拦两时
+    笔们 = ('3326608d6', '95ab637a0')
+    if not all(_git(ROOT, 'cat-file', '-e', '%s^{commit}' % c)[0] == 0 for c in 笔们):
+        _git(ROOT, 'fetch', '-q', 'origin', '+refs/heads/备份/报:refs/remotes/origin/备份/报', 限=300)
+    if all(_git(ROOT, 'cat-file', '-e', '%s^{commit}' % c)[0] == 0 for c in 笔们):
+        果 = []
+        for c in 笔们:
+            t_ = int(_git(ROOT, 'log', '-1', '--format=%ct', c)[1].strip())
+            果.append(验证({'报': '推/章-{N-1}', '果': ['成', '已在', '红']}, 境(473, ROOT, 史至=t_, 取=False, 承=False)))
+        T('㉔之三 回灌 章-472（备份/报 之史）：15:38 败而未经闸 → ⛔；15:58 治-79ef08a55 成、main_after 含 f743735c6 → ✓「经治闸入主」（%s｜%s）'
+          % (果[0][1][:40], 果[1][1][:60]), 果[0][0] == '⛔' and '果＝败' in 果[0][1] and 果[1][0] == '✓' and '经治闸入主（治-79ef08a55da2' in 果[1][1])
+    else:
+        T('㉔之三 回灌之笔 %s 寻不着（备份/报 之史未取）' % '、'.join(笔们), False)
+
+
 def 自测():
     import tempfile, shutil
     R = []
@@ -2881,6 +3386,7 @@ def 自测():
         验证({'git': '含', '甲': '章-%d' % n, '乙': '{主枝}'}, e410)[0] == '✓' for n in range(406, 411)))
     自测_执(T, 全)
     自测_核(T, 全)
+    自测_审(T, 全)                     # 〔1119 执行之审·治2、治5〕
     ok = sum(R)
     print('── 负测·法用之守 %d/%d %s ──' % (ok, len(R), '全通' if ok == len(R) else '未过'))
     return ok == len(R)
@@ -2907,6 +3413,14 @@ if __name__ == '__main__':
     if '--报' in a:
         ok, L = 报()
         print('\n'.join(L)); sys.exit(0 if ok else 1)
+    if '--纸证' in a:                  # 〔1119 执行之审·治2〕纸证之数之详；--立（册未有其底即立）、--降（只许降）
+        if '--立' in a or '--降' in a:
+            sys.exit(纸底(立='--立' in a))
+        册 = 读册()
+        数, 分, 详 = 纸证(册)
+        for k, v in 详.items():
+            print('· %s %d：%s' % ('唯据机证不能之令／条（⛔计）' if k == '机' else k, len(v), '、'.join(v)))
+        print(纸证之印(数, 分, 册)); sys.exit(1 if 纸证之判(数, 册)[0] == '⛔' else 0)
     if '--未行' in a:
         if '--降' in a:
             sys.exit(降底())

@@ -18,7 +18,8 @@
   ③ 持锁者推完一次，若见 `.git/推.待`（直推：或本地仍超前远端）→ **再交／再推一次**（至多 5 回）。
   ④ 推送被全测拦（失败）→ **不重试、不循环**，印出红的那几项，返回非零——治红是人的事，⛔空转。
   ⑥ 主环等推：`python3 工具/推.py --等`（阻塞取一回锁，推毕即返；⛔pgrep／sleep 轮询——坑⑮）。
-  ⑤ 每次推前先跳心跳（防「接力」误红）、枝正、速检、先存底（1008：存底环受两时之限与容器重启而死，存底枝旧则推闸之活态之检红）；全程记 `.git/推.log`。
+  ⑤ 每次推前先跳心跳（防「接力」误红）、枝正、速检、先存底（1008：存底环受两时之限与容器重启而死，存底枝旧则推闸之活态之检红）、
+     装两写者之账之并器（1119 治6·`工具/账并.py --装`·幂等）；全程记 `.git/推.log`。
   ⑦ `--候 <sha>`：⛔pgrep、⛔sleep 环之手候——一进程阻塞：每回一取（主枝与 备份/报 同取，至多每分一回），主枝含 sha 即快进返 0；
      报（同 sha）为红／拒／败即印其红返 3；逾限返 2（GitHub 或停摆 → `--直`）。
   ⑧ （1117·法用#停钩空转）交成即本地泊於「治-<sha12>」（推报.泊：平台 Stop 钩以 origin/<当前枝> 量未推，泊後 0、⛔每回合空转）；
@@ -253,6 +254,17 @@ def 枝正(root=ROOT, 交=False):
     return None
 
 
+def 装并器(root=ROOT):
+    """〔1119 执行之制 治6·坑63〕每推之前装两写者之账之并器（`工具/账并.py --装`：git config --local merge.账并.driver 只此一键，幂等、写毕重读）——
+    本地之并（总编辑之手并）与 GitHub 之备候同用一器；装不成只印 ⚠（⛔拦推：未装即退回内建之三方并，同旧）。"""
+    try:
+        r = _跑([sys.executable, os.path.join(ROOT, '工具', '账并.py'), '--装', root], root, timeout=30)
+        if r.returncode != 0:
+            print('⚠ 账并 --装 不成（退回内建之并）：%s' % ((r.stdout or '') + (r.stderr or '')).strip()[-200:])
+    except Exception as e:
+        print('⚠ 账并 --装 不成（退回内建之并）：%s' % e)
+
+
 def 直推(root=ROOT, 推法=None, 最多=5):
     """兜底（--直·旧法）：直推主枝、本地 pre-push 全闸。→ 0 推平｜1 被拦｜2 已有人在推（已登记待推）。"""
     待 = os.path.join(_git目录(root), '推.待')
@@ -280,6 +292,7 @@ def 直推(root=ROOT, 推法=None, 最多=5):
                     return 1
             if 推法 is None:   # ★1008：先存底——存底枝新、章数齐，推闸之活态之检（负测·自进化环①之二、②）方不因存底环死而红
                 _跑([sys.executable, os.path.join(ROOT, '工具', '存底.py'), '--存'], root, timeout=280)
+                装并器(root)
             try:
                 r = (推法 or (lambda: _跑(['git', 'push', '-u', 'origin', 枝], root, timeout=5400)))()
             except subprocess.TimeoutExpired:
@@ -383,6 +396,7 @@ def 交(root=ROOT, 交法=None, 最多=5):
                     _记(root, '速检红：' + '｜'.join(速红)[:500])
                     return 1
                 _跑([sys.executable, os.path.join(ROOT, '工具', '存底.py'), '--存'], root, timeout=280)
+                装并器(root)
             sha = _跑(['git', 'rev-parse', 'HEAD'], root).stdout.strip()
             if not sha:
                 print('⛔ 取不到 HEAD'); return 1

@@ -1968,6 +1968,15 @@ def _一眼块(文):
     return m.group(0).rstrip('\n') if m else ''
 
 
+def 败图(root, 迹):
+    """器崩之最小之图：题「至第 N 章」（N＝全书记忆之末章）、⓪ 书器败与其迹之末——令封版之提交照随末章（⛔静默、⛔拦封）。"""
+    末 = max([int(m.group(1)) for f in glob.glob(os.path.join(root, 记, '第*章.md'))
+             for m in [re.search(r'第(\d+)章\.md$', f)] if m] or [0])
+    尾 = '\n'.join((迹 or '').strip().split('\n')[-6:])
+    return ('# 剧情全图（至第 %d 章）\n\n> ⛔ 器败：工具/剧情全图.py 生图时崩——此为最小之图（脊、环、漏、升俱缺）；治器後重跑即复。\n\n'
+            '## ⓪ 源之鲜\n\n- ⛔ 器败：\n\n```\n%s\n```\n' % (末, 尾))
+
+
 def 自测():
     import tempfile, shutil
     R = []
@@ -2277,6 +2286,17 @@ def 自测():
        and all(热(漏_x) == {} for 漏_x in ([(1, '记录者·不改', '', '', 3)], [(1, '读错·有意', '', '', 2)])))
     钉('㊲④定序（判者⑤c）：升序首为重造、次大审已挂；附④ 照其序', 升序[:3] == ('重造', '大审已挂', '先审')
        and 文.index('- **重造**') < 文.index('- **大审已挂而未收**') < 文.index('- **二稿先审之章**') if '- **重造**' in 文 else True)
+    import tempfile as _tf, shutil as _sh
+    _d = _tf.mkdtemp(prefix='图败_')
+    try:
+        os.makedirs(os.path.join(_d, 记))
+        for _n in (1, 2, 476):
+            open(os.path.join(_d, 记, '第%d章.md' % _n), 'w', encoding='utf-8').write('x')
+        _b = 败图(_d, 'Traceback\n  File x\nZeroDivisionError: 假')
+        钉('㊳器崩之护（1119 作者令「随写完自动添加」）：败图之题照末章（至第 476 章）、⓪书器败与其迹', _b.startswith('# 剧情全图（至第 476 章）')
+           and '⛔ 器败' in _b and 'ZeroDivisionError' in _b)
+    finally:
+        _sh.rmtree(_d, ignore_errors=True)
     坏 = [n for n, ok in R if not ok]
     for n, ok in R:
         print('  %s %s' % ('✓' if ok else '⛔', n))
@@ -2297,7 +2317,13 @@ if __name__ == '__main__':
     if a:
         print(__doc__)
         sys.exit(2)
-    t, 统, ctx = 生()
+    try:
+        t, 统, ctx = 生()
+    except Exception:                                  # 〔1119 作者令「随写完自动添加」·法用#剧情全图之行为之证〕器崩亦写最小之图——题照末章、⓪书器败；
+        import traceback                               #   rc 1 而封版之步非必：⛔拦写书之封；GitHub 全测之 --自测／--验 照红入器红账
+        open(os.path.join(ROOT, 图档), 'w', encoding='utf-8').write(败图(ROOT, traceback.format_exc()))
+        print('⛔ 剧情全图 器败——已写最小之图（题照末章、⓪书其迹）；治器後重跑 python3 工具/剧情全图.py')
+        sys.exit(1)
     open(os.path.join(ROOT, 图档), 'w', encoding='utf-8').write(t)
     for 源, _, _, 病 in ctx['鲜']:                     # ⓪每次重生必印（源之病⛔静默）
         if 病 != '✓':

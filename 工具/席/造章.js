@@ -189,12 +189,15 @@ phase('造')
 //   agent() 遇终错返 null（⛔throw）、parallel ⛔reject，故 .catch 恒⛔行、拒因恒空、安全拒 恒 false（2f02beeef 总编辑复核「大师之关」→改 所逮）；
 //   420—466 一回未发（X79「已行」者实係 足()）。N≥468 废其滤（N≤467 之令逐字同·467 在写；N≤419 旧行不变）；拒因、安全拒、.catch 照留（464—466 拦号之支、负测·造章令 ⑬ 赖之）。
 //   定策：只不足三稿时同令补一回；再续归主环（承.py 续跑）；⛔因拒改令之措辞、⛔换路（⛔绕检）——负测·造章令 ⑭ 守之
+// ★1119 X118（468 执笔·甲 交 {draft:{file:"",words:0}}——draft 键在即认已交、补派⛔起，整稿只二而流程续至记席）：N≥470 稿须 file 非空、words>0 方算已交，
+//   否则作未交（先查盘稿、不足三再补）；N≤469 一字不变（已封之章）
+const 实稿 = r => !r || N < 470 || (typeof r.file === 'string' && r.file.trim() !== '' && r.words > 0) ? r : null
 const 拒因 = {}
 const 安全拒 = 名 => /safeguard|AUP|acceptable use|usage polic|content polic|安全之检|安全分类|分类器/i.test(拒因[名] || '')
 let 诸稿 = 承.诸稿 ? 承.诸稿.map(r => { const x = 执笔们.find(x => r && r.file && r.file.endsWith(蒙档(x.名))); return x ? { ...r, 名: x.名, 路: x.路.k } : null }).filter(Boolean) : (await parallel(执笔们.map(x => () =>
   agent(键令(交缺(执笔令(x)), 'draft'), { phase: '造', label: '执笔·' + x.名 + '·' + x.路.k, schema: 式(稿式), effort: 'max' })
     .catch(e => { 拒因[x.名] = String((e && e.message) || e); return null })
-    .then(r => (r = 取(r, 'draft')) ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean)
+    .then(r => (r = 实稿(取(r, 'draft'))) ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean)
 // ★1017 承.补（397 逮：容器重启於执笔之半——三席已交、一席稿半、一席未起；承只认已交者而⛔补派，或 resume 重跑三席）：
 //   承.补 = true 者，承.诸稿 之外缺席之执笔照常另派（label 带「补」）；不传者旧行不变
 // ★1022 W64（403 逮：七宽二席撞安全之器而补派，补之二稿皆未胜、费 $14.5）：N≥404 起，已交 ≥5 稿且段案之魂路俱已交者⛔补——宽已足、所令之路俱在
@@ -210,7 +213,7 @@ if (通 && (!承.诸稿 || 承.补 === true) && 诸稿.length < 宽 && !足()) {
   log('造：执笔·' + 欠.map(x => x.名).join('、') + ' 未交——补派之前先查其盘稿（查席）')
   诸稿.push(...(await parallel(欠.map(x => () =>
     agent(键令(查令(x), 'draft', '照抄器之所印'), { phase: '造', label: '执笔·' + x.名 + '·查', schema: 通式, effort: 'low' })
-      .then(r => (r = 取(r, 'draft')) && r.file === 蒙档(x.名) ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean))
+      .then(r => (r = 实稿(取(r, 'draft'))) && r.file === 蒙档(x.名) ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean))
 }
 const 宽足 = 足()
 if (宽足 && 诸稿.length < 宽) log('造：交 ' + 诸稿.length + ' 稿、段案之路俱在——缺席⛔补（1022 W64）')
@@ -220,7 +223,7 @@ if ((!承.诸稿 || 承.补 === true) && 诸稿.length < 宽 && !宽足) {   // 
   log('造：执笔·' + 欠.map(x => x.名).join('、') + ' 未交——另派一回')
   诸稿.push(...(await parallel(欠.map(x => () =>
     agent(键令(交缺(执笔令(x)), 'draft'), { phase: '造', label: '执笔·' + x.名 + '·补', schema: 式(稿式), effort: 'max' })
-      .then(r => (r = 取(r, 'draft')) ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean))
+      .then(r => (r = 实稿(取(r, 'draft'))) ? { ...r, 名: x.名, 路: x.路.k } : null)))).filter(Boolean))
 }
 if (诸稿.length < 3) throw new Error('造：交稿不足三（' + 诸稿.length + '）——造式之实必不全，停（主环查明再续：python3 工具/承.py ' + N + ' --重 ' + 重 + ' --魂路 ' + 段案路.join(',') + ' → 其 _承.js；⛔resumeFromRunId 直续·坑㊻）')
 log('造：' + 诸稿.map(d => 蒙号(d.名) + '·' + d.路 + '·' + d.words + '字·抄' + (d.copy_rate === undefined ? '见选' : d.copy_rate + '%')).join('｜'))

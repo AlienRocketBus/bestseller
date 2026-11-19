@@ -65,7 +65,9 @@ const 交 = (label) => {
 const 空们 = 空 ? 空.split(',') : []
 const 通键 = l => l.startsWith('执笔') ? 'draft' : l.startsWith('选') ? 'pick' : l.startsWith('合稿') ? 'merge' : l.startsWith('盲读') ? 'blind'
   : l.startsWith('逻辑审') ? 'audit' : l.startsWith('记席') ? 'record' : 'rewrite'
+const 空稿们 = process.env.ZJ_空稿 ? JSON.parse(process.env.ZJ_空稿) : []   // ★1119 X118：[label 之前缀]——其执笔交 draft 而 file 空、words 0
 const 交通 = (label, prompt) => {
+  if (空稿们.some(k => label.startsWith(k))) return { draft: { file: '', beats: 0, words: 0, soul: '' }, flaws: '无' }
   if (label.endsWith('·查')) { const m = /--查 \S+ (\S+)/.exec(prompt); return 空们.includes('查收') && m ? { draft: { file: m[1], beats: 3, words: 2600, soul: '魂' }, flaws: '无' } : { flaws: '无稿' } }
   if (空们.some(x => label === x || (x.endsWith('*') && label.startsWith(x.slice(0, -1))))) return { flaws: '无' }
   if (label.startsWith('记席')) return { record: { done: true, left: '无' }, flaws: '无' }
@@ -127,11 +129,11 @@ _基三 = {"420中净": "01b60a816dd2177e", "420中拒乙": "b2e55ed7a32ac018", 
        "467轻净": "63530afd77b6d74e"}
 
 
-def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False, 加=None, 拒=None, 死=None):
-    环 = dict(os.environ, **({'ZJ_ARGS': json.dumps(加, ensure_ascii=False)} if 加 else {}), **({'ZJ_拒': json.dumps(拒, ensure_ascii=False)} if 拒 else {}),
+def 渲(器, n, 重='中', 病='病', js=JS, 厚='否', 空='', 果=False, 加=None, 拒=None, 死=None, 空稿=None):
+    环 = dict(os.environ, **({'ZJ_空稿': json.dumps(空稿, ensure_ascii=False)} if 空稿 else {}), **({'ZJ_ARGS': json.dumps(加, ensure_ascii=False)} if 加 else {}), **({'ZJ_拒': json.dumps(拒, ensure_ascii=False)} if 拒 else {}),
               **({'ZJ_死': json.dumps(死, ensure_ascii=False)} if 死 else {}))
     o = subprocess.run(['node', 器, js, str(n), 重, 病, 厚, 空], capture_output=True, text=True, cwd=ROOT, timeout=60,
-                       env=环 if (加 or 拒 or 死) else None)
+                       env=环 if (加 or 拒 or 死 or 空稿) else None)
     if o.returncode:
         raise RuntimeError('造章.js 渲染不起（%d %s %s）：%s' % (n, 重, 病, o.stderr.strip()[:300]))
     d = json.loads(o.stdout)
@@ -515,6 +517,21 @@ def 跑():
                   and 补之席(混468废) == '甲丙' and 指(混468) != 指(混468废)))
         R.append(('X79 R·轻（宽三）乙一席被拒：467 照停（交稿不足三·其滤犹在）；468 先查後补乙而足三（补%s%s）' % (补之席(轻468), '｜⛔468 停' if 停468 else ''),
                   '交稿不足三（2）' in 停467 and not 停468 and 补之席(轻468) == '乙' and '执笔·乙·查' in [c['label'] for c in 轻468]))
+        # ⑮★1119 X118：468 执笔·甲交 {draft:{file:"",words:0}} 而认已交、丁戊死，整稿只二、补派⛔起——N≥470 空稿作未交：
+        #   470 甲空稿＋丁戊死 → 先查甲、再补甲丁戊（交稿足三）；甲空稿而余四席俱交 → ⛔补（足三）、选之列⛔含甲；469 同局照旧（甲认已交、⛔查⛔补）
+        def _首(n, 重='中'):
+            净收 = 渲(器, n, 重, '净')
+            return {x: next(c['label'] for c in 净收 if c['label'].startswith('执笔·' + x + '·')) for x in '甲乙丙丁戊'}
+        f470, f469 = _首(470), _首(469)
+        收470 = 渲(器, 470, '中', '净', 空稿=[f470['甲']], 死=[f470['丁'], f470['戊']])
+        收469 = 渲(器, 469, '中', '净', 空稿=[f469['甲']], 死=[f469['丁'], f469['戊']])
+        收470足 = 渲(器, 470, '中', '净', 空稿=[f470['甲']])
+        标470 = [c['label'] for c in 收470]; 标469 = [c['label'] for c in 收469]; 标足 = [c['label'] for c in 收470足]
+        补470 = ''.join(sorted((l[3] for l in 标470 if l.startswith('执笔·') and l.endswith('·补')), key='甲乙丙丁戊'.index))
+        R.append(('X118·470 甲空稿（file 空、words 0）＋丁戊死 → 查甲、补%s；469 同局照旧（⛔查⛔补）；470 甲空稿余四俱交 → ⛔补（足三）'
+                  % (补470 or '无'),
+                  '执笔·甲·查' in 标470 and 补470 == '甲丁戊' and not any(l.endswith('·查') or l.endswith('·补') for l in 标469)
+                  and not any(l.endswith('·补') for l in 标足)))
     except Exception as e:
         R.append(('⛔渲染不起：%s' % e, False))
     finally:

@@ -54,7 +54,7 @@ def _线之表():
         s = io.open(p, encoding='utf-8', errors='replace').read()
     except OSError:
         return 出
-    for m in re.finditer(r'\|\s*(\d+)\s*\|\s*(主|暗)\s*·\s*\d+\s*\|', s):
+    for m in re.finditer(r'\|\s*(\d+)\s*\|\s*(主|暗)\s*·\s*\d+(?:—\d+)?\s*\|', s):
         出[int(m.group(1))] = m.group(2)
     return 出
 

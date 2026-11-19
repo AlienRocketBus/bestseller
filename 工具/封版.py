@@ -88,7 +88,7 @@ def 数(n, root=ROOT):
             d['诸版'] = ['%s %s「%s」' % (v.get('版'), v.get('时', ''), str(v.get('说明', ''))[:40]) for v in 版们]
             末档 = os.path.join(root, '版本', '第%d章' % n, '%s.md' % 末.get('版'))
             d['与末版同'] = os.path.exists(末档) and open(末档, encoding='utf-8').read() == 文
-    m = re.search(r'\|\s*%d\s*\|\s*([主暗]·\d+)\s*\|' % n, open(os.path.join(root, 总纲), encoding='utf-8').read())   # 两栏排，整行逐栏认
+    m = re.search(r'\|\s*%d\s*\|\s*([主暗]·\d+(?:—\d+)?)\s*\|' % n, open(os.path.join(root, 总纲), encoding='utf-8').read())   # 两栏排，整行逐栏认
     d['总纲'] = '| %d | %s |' % (n, m.group(1)) if m else None
     return d
 

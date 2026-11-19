@@ -1,0 +1,27 @@
+{
+ "ref": "治-c0cf7f6237ae",
+ "sha": "c0cf7f6237aef82ee74d8bdf0cf19473a10d3844",
+ "果": "成",
+ "红": [],
+ "main_after": "c0cf7f6237aef82ee74d8bdf0cf19473a10d3844",
+ "时": "2026-11-19T19:10:24Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44594812923",
+ "因": "",
+ "试": 0,
+ "器红": [
+  "负测·自进化环"
+ ],
+ "逾": [],
+ "候": "c0cf7f6237aef82ee74d8bdf0cf19473a10d3844",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 85.15,
+   "2": 86.99,
+   "3": 99.54
+  }
+ },
+ "免": [
+  "接力"
+ ]
+}

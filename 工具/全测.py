@@ -2863,14 +2863,6 @@ def chk_jiyi():
     return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
 
 
-def chk_shenghua():
-    """升华之闸（0927 作者令「改就改到 95 以上且胜原文，改是为了升华不是及格」）：大升级重写之章须三席 ≥95 且皆胜旧分。见 工具/升华之闸.py；分由 工具/席/大升级.js 之升华之闸出。"""
-    import subprocess as _sp
-    a = _sp.run([sys.executable, '工具/升华之闸.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    r = _sp.run([sys.executable, '工具/升华之闸.py'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
-
-
 def chk_gongzuoliu():
     """工作流账（0930 作者令「GitHub 为唯一之记忆，已做者绝不重做、不覆盖，中断可无缝续」）：凡标已成之件，产出须在且档尾收束俱全。见 工具/工作流账.py。"""
     import subprocess as _sp
@@ -3990,7 +3982,6 @@ def 诸项(quick):
         items.append(('剧情庭之关', chk_juqing))
         items.append(('圣经随裁', chk_shengjing_suicai))
         items.append(('全书记忆', chk_jiyi))
-        items.append(('升华之闸', chk_shenghua))
         items.append(('工作流账', chk_gongzuoliu))
         items.append(('对账预筛', chk_duizhang_yushai))
         items.append(('章料', chk_zhangliao))

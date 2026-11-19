@@ -21,6 +21,7 @@
 
 用法：
     python3 工具/席法.py
+    python3 工具/席法.py <稿.js> [...]   # 〔1119 坑10 复踩〕Workflow 之稿：先写於 scratchpad、过本闸、再以 scriptPath 开
     python3 工具/席法.py --自测
 """
 import os as _o, sys as _s
@@ -145,12 +146,13 @@ def 二代之检(t):
     return 坏
 
 
-def 查(印=True):
-    fs = sorted(glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))
+def 查(印=True, fs=None):
+    # 〔1119 坑10 复踩·W907/W908 三席 400〕fs 可由参给：Workflow 之稿（总编辑写於 scratchpad 之 .js）开跑前亦须过本闸
+    fs = sorted(fs) if fs else sorted(glob.glob(os.path.join(ROOT, '工具', '席', '*.js')))
     红 = []
     for f in fs:
         k, b = 查一(_读(f))
-        rp = os.path.relpath(f, ROOT)
+        rp = os.path.relpath(f, ROOT) if os.path.abspath(f).startswith(ROOT) else f
         # ★丙路先於甲乙印：**跑不起来这一件，比写法上的任何一处都大**
         c = 起得来(f)
         if c:
@@ -264,6 +266,24 @@ def 自测():
     T('⑨之三 缺料律 → 红', any('只读章料' in x for x in 二代之检(_好.replace('\n${料律}\n', '\n'))))
     T('⑨之四 非二代之席（无 const 限）不查', 二代之检('const 甲 = () => `${令}\n你是甲`') == [])
     T('⑨之五 今仓 造章.js 俱合', 二代之检(_读(os.path.join(ROOT, '工具', '席', '造章.js'))) == [])
+    # ⑩ 1119 坑10 复踩：Workflow 之稿（任意路之 .js）以参给即查——顶层 schema 键汉字须红、好稿⛔红
+    _d = _tf.mkdtemp(prefix='席法参_')
+    _f坏 = os.path.join(_d, 'w坏.js'); _f好 = os.path.join(_d, 'w好.js')
+    open(_f坏, 'w', encoding='utf-8').write("export const meta = {name:'x',description:'y'}\nconst r = await agent('a', { schema: { type: 'object', properties: { 方案: { type: 'string' } }, required: ['方案'] } })\nreturn r\n")
+    open(_f好, 'w', encoding='utf-8').write("export const meta = {name:'x',description:'y'}\nconst r = await agent('a', { schema: { type: 'object', properties: { plan: { type: 'string' } }, required: ['plan'] } })\nreturn r\n")
+    try:
+        T('⑩ 参给之 Workflow 稿·顶层 schema 键汉字须红', any('方案' in x for x in 查(印=False, fs=[_f坏])))
+        T('⑩之二 参给之 Workflow 稿·ASCII 之键不许红', not 查(印=False, fs=[_f好]), '；'.join(查(印=False, fs=[_f好]))[:120])
+    finally:
+        for _x in (_f坏, _f好):
+            try:
+                os.remove(_x)
+            except Exception:
+                pass
+        try:
+            os.rmdir(_d)
+        except Exception:
+            pass
     print('── 负测·席法 %d/%d %s ──' % (ok, ok + len(bad), '全通' if not bad else '｜未过：' + '；'.join(bad)))
     return not bad
 
@@ -271,4 +291,5 @@ def 自测():
 if __name__ == '__main__':
     if '--自测' in sys.argv:
         sys.exit(0 if 自测() else 1)
-    sys.exit(1 if 查() else 0)
+    _参 = [a for a in sys.argv[1:] if a.endswith('.js')]
+    sys.exit(1 if 查(fs=_参 or None) else 0)

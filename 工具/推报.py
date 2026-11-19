@@ -230,12 +230,13 @@ def 坏(d):
     return bool(d) and d.get('果') in 坏果 and not (d.get('果') == '败' and d.get('因') == '重派')
 
 
-def 诸报(root=ROOT, 取=True, 类=('推', '演'), 并=()):
+def 诸报(root=ROOT, 取=True, 类=('推', '演'), 并=(), 引=None):
     """→ 云端 备份/报 里 报/<类>/*.json 之诸 dict（各添「路」「类」）；一取（并之枝同一回 fetch）；无枝、读不出即 []（⛔作绿·⛔抛）。
-    法用之守之 报之读（自走之首）与 演录（GitHub 之演）俱经此——⛔另造一把尺。"""
-    远 = 'refs/remotes/origin/' + 报枝
+    法用之守之 报之读（自走之首）与 演录（GitHub 之演）俱经此——⛔另造一把尺。
+    引（〔1119 执行之审·复核〕可缺）：读此引／笔（如 备份/报 之史笔）而⛔取——法用之守之 经闸之证（报之证·回放其时）经此，⛔另造读器。"""
+    远 = 引 or 'refs/remotes/origin/' + 报枝
     try:
-        if 取:
+        if 取 and not 引:
             参 = ['+refs/heads/%s:refs/remotes/origin/%s' % (b, b) for b in (报枝,) + tuple(并)]
             if _git(['fetch', '-q', 'origin'] + 参, root).returncode != 0 and 并:
                 _git(['fetch', '-q', 'origin'] + 参[1:], root)      # 云端尚无 备份/报：同取全败——并者单取（同 推._取）
@@ -1681,6 +1682,8 @@ def 自测():
                 r['诸'] = 诸报(r['沙'], 取=True)
                 if 景 == '成':
                     r['读'] = 读(r['R'], r['沙'], 取=False)
+                    _引 = _git(['rev-parse', 'refs/remotes/origin/' + 报枝], r['沙']).stdout.strip()     # 〔1119 执行之审·复核〕引：读其笔（史笔之回放）
+                    r['诸引'] = (诸报(r['沙'], 取=False, 类=('推',), 引=_引), 诸报(r['沙'], 取=False, 引='refs/无此引'))
             if 景 in ('成', '章'):
                 r['快进'], r['快进旧'] = 快进(r['沙']), 快进(r['沙旧'])
                 r['沙主'] = _git(['rev-parse', 'HEAD'], r['沙']).stdout.strip()
@@ -1720,6 +1723,10 @@ def 自测():
     T('④之一c 诸报（一取·cat-file 一批）：得 报/推/<枝>.json 之全、带路与类；无 报/演 之目即只推%s' % 示(e), len(_诸) == 1
       and _诸[0].get('路') == 报径(e.get('R', '')) and _诸[0].get('类') == '推' and _诸[0].get('果') == '成'
       and not [d for d in _诸 if d.get('类') == '演'])
+    _引诸 = e.get('诸引') or ([], None)
+    T('④之一e〔1119 执行之审·复核〕诸报 之 引（备份/报 之笔）：读其笔之 报/推 与一取之读同（路、果）；引无 → []（法用之守 经闸之证 之回放经此·⛔另造读器）',
+      [(d.get('路'), d.get('类'), d.get('果')) for d in _引诸[0]] == [(d.get('路'), d.get('类'), d.get('果')) for d in _诸 if d.get('类') == '推']
+      and len(_引诸[0]) == 1 and _引诸[1] == [])
     _诸 = 演['演'].get('诸') or []
     T('④之一d 诸报 读 报/演：演练之录带路与类（法用之守·演录之源）', [(d.get('路'), d.get('类'), d.get('果')) for d in _诸]
       == [(演径('试一'), '演', '过')])

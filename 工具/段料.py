@@ -82,6 +82,18 @@ def 汇(a, b, root=ROOT, 出=None, 顶=限):
         if 行们:
             段.append(('主案·%s 涉本段之行' % os.path.basename(f)[:-3], '\n'.join(行们)))
     段.append(('悬线·钉在本段之行', '\n'.join(行於(读('设定/全书记忆/悬线.md'), a, b))))
+    # ★1119 总编辑：悬念哨三账之期入段料（零 token）——段庭／段案须於窗内排其复提；461 段赖大审 460 转入，今机器直供（467、468 封後之补，俱因段案或记席不知其期）
+    try:
+        import 悬念哨 as _哨
+        _末, _报 = _哨.判()
+        _诸 = {x.get('id'): x for x in json.loads(读('设定/到期账.json') or '{}').get('items', [])}
+        _行 = ['每 %d 章至少一处复提（悬念哨）；段案须於本段之窗内排其拍（⛔答死、⛔一章挤二笔、⛔专开一拍）；排不进者於到期账写明改挂之章与由。以已封第%d章计：' % (_哨.限, _末)]
+        for _k, _见, _距, _逾 in _报:
+            _x = _诸.get(_k, {})
+            _行.append('- %s｜末见第%s章｜至迟第%s章须复提｜哨 %s｜哨之记因：%s' % (_k, _见 or '—', (_见 + _哨.限 + 1) if _见 else '—', _x.get('哨', '—'), str(_x.get('哨之记因', ''))[:60].replace('\n', ' ')))
+        段.append(('悬念哨三账之期（到期账 SUS-A／B／C·零 token）', '\n'.join(_行)))
+    except Exception as _e:
+        段.append(('悬念哨三账之期（到期账 SUS-A／B／C·零 token）', '（取之不成：%s）' % _e))
     库 = json.loads(读('设定/canon事实库.json') or '{}')
     卡 = []
     for f in 库.get('facts', []):
@@ -107,6 +119,15 @@ def 汇(a, b, root=ROOT, 出=None, 顶=限):
     # ★1117（461 段料 152KB·守令 4.4KB）：一级舍後仍逾顶 → 拍库四十拍去其原句引文行（留目、绝、学；原句在 设定/叫绝之拍库.md·grep 之）——⛔舍诸账
     if 顶 and sum(len((t or '').encode()) for _, t in 段) > 顶 - 2048:
         段 = [(n, t) if n != '叫绝之拍库（全）' else ('叫绝之拍库（去引文·逾顶）', '（段料逾顶·坑③：四十拍之原句引文去之；须者 grep -n 设定/叫绝之拍库.md）\n' + re.sub(r'(?m)^「[^\n]*\n', '', t or '')) for n, t in 段]
+    # ★1119（471 段料：470 封後添前文 470 全、段势立後添守令 ~4—5KB，二级舍後仍将逾顶）：三级舍 → 悬线之行只留其首（至首「：」）与涉本段之分句（以「｜」分），⛔舍行（每行仍在，全文在 设定/全书记忆/悬线.md·grep 其首即得）——⛔舍诸账
+    if 顶 and sum(len((t or '').encode()) for _, t in 段) > 顶 - 2048:
+        _pat = re.compile(r'(?<!\d)(%s)(?!\d)' % '|'.join(str(k) for k in range(a, b + 1)))
+        def _缩(l):
+            i = l.find('：')
+            头, 身 = (l[:i + 1], l[i + 1:]) if i >= 0 else ('', l)
+            留 = [x for x in 身.split('｜') if _pat.search(x)]
+            return 头 + '｜'.join(留) if 留 else l
+        段 = [(n, t) if n != '悬线·钉在本段之行' else ('悬线·钉在本段之行（只留涉本段之分句·逾顶）', '（段料逾顶·坑③：每行只留其首与涉第%d—%d章之分句；全行 grep -n 设定/全书记忆/悬线.md）\n' % (a, b) + '\n'.join(_缩(l) for l in (t or '').split('\n'))) for n, t in 段]
     文 = ['# 第%d—%d章·段料（工具/段料.py 零 token 汇；设计席只读此档，料外只许 grep 核一处、上下三行）\n' % (a, b)]
     for 名, t in 段:
         文.append('## 〔%s〕\n\n%s\n' % (名, (t or '（无）').strip()))
@@ -146,6 +167,16 @@ def 自测():
         共 += 1; ok += (_档.endswith('剧情庭_势_第391段.md') and '⛔「回信」' in _令 and '## 二、' not in _令
                        and '二线律' in _令2 and z.split('\n## 〔')[1].startswith('剧情庭之守令') and '⛔「回信」' in z.split('〔余章总案·解歧之裁〕')[0]
                        and 守令(9991)[1] == '' and 段首(411) == 411 and 段首(420) == 411)
+        # ★1119：三级舍——悬线之行只留首与涉本段之分句（顶小则舍之；每行仍在、涉本段之分句俱在）
+        with contextlib.redirect_stdout(io.StringIO()):
+            r3 = 汇(471, 480, ROOT, os.path.join(t, 'w.md'), 顶=140 * 1024)
+        w = open(os.path.join(t, 'w.md'), encoding='utf-8').read()
+        _全 = 行於(open(os.path.join(ROOT, '设定', '全书记忆', '悬线.md'), encoding='utf-8').read(), 471, 480)
+        _节 = w.split('〔悬线·钉在本段之行（只留涉本段之分句·逾顶）〕')[1].split('\n## 〔')[0] if '只留涉本段之分句' in w else ''
+        共 += 1; ok += (bool(_节) and len(_节.strip().split('\n')) - 1 == len(_全) and len(_节.encode()) < sum(len(x.encode()) for x in _全)
+                       and all(re.search(r'(?<!\d)(47[1-9]|480)(?!\d)', x) for x in _节.strip().split('\n')[1:]))
+        # ★1119：悬念哨三账之期入段料——三账俱列、各有「至迟第N章须复提」
+        共 += 1; ok += ('〔悬念哨三账之期' in z and all(k in z.split('〔悬念哨三账之期')[1].split('\n## 〔')[0] for k in ('SUS-A-那六天', 'SUS-B-磨窝', 'SUS-C-照着做', '至迟第', '取之不成') if k != '取之不成') and '取之不成' not in z)
     finally:
         shutil.rmtree(t)
     print('段料·自测 %d/%d' % (ok, 共))

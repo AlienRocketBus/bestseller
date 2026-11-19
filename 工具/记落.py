@@ -462,12 +462,19 @@ def 重填(n, root=ROOT, 印=print):
         t = 读(q, root)
         if t is None:
             continue
-        x, k = 换值(t, 对, js=q.endswith('.json'))
+        # ★1119 总编辑复核「全书记忆」→改：详记之 sha ⛔盲换（含 sha 之复合格亦⛔）——下以 全书记忆.随章 比白文：无残片方器随、有则红
+        x, k = 换值(t, [(a, b) for a, b in 对 if not (名 == '全书记忆' and 旧.get('sha1') and 旧['sha1'] in a)], js=q.endswith('.json'))
         if k:
             open(os.path.join(root, q), 'w', encoding='utf-8').write(x); 共 += k
             印('  · %s：换 %d 处' % (名, k))
     印('· 重填 %d：变之格 %d（%s）、换 %d 处' % (n, len(对), '、'.join(k for k in 新 if k in 旧 and 旧[k] != 新[k]) or '无', 共))
-    return 落(n, root, 印=印)
+    import 全书记忆 as _记
+    状, 残 = _记.随章(n, root)
+    if 状 == '随':
+        印('  · 全书记忆：sha 器随（所记之稿与现白文比，无残片）')
+    for l in 残:
+        印('⛔ 全书记忆：' + l)
+    return 落(n, root, 印=印) + [('全书记忆', l) for l in 残]
 
 
 # ── 回放（--自测）──
@@ -647,6 +654,20 @@ def 自测():
         _红 = 重填(410, 目, 印=lambda s: None)
         _新v = json.load(open(os.path.join(目, 值档 % 410), encoding='utf-8'))
         验('重填·绿而回执载新 sha1、⛔留旧', _红 == [] and _新v['sha1'] != 旧v['sha1'] and _新v['sha1'] in 读(回, 目) and 旧v['sha1'] not in 读(回, 目), str(_红)[:300])
+        import 全书记忆 as _记
+        验('重填·详记之 sha 由 全书记忆.随章 器随（白文只改一标点、无残片·⛔盲换）', _记.随章(410, 目, 写=False) == ('合', [])
+            and _新v['sha1'] in 读('设定/全书记忆/第410章.md', 目))
+        # ★1119 负例：白文删一句而详记要句仍记之 → 重填红（全书记忆·残片）、详记之 sha ⛔动
+        _记文 = 读('设定/全书记忆/第410章.md', 目)
+        _白 = _记.去标(_记.白文(读(_d['正文'], 目)))
+        _片 = next((x for i, l in _记.正记行(_记文) if '要句' not in l for x in _记.片们(l) if _记.白文(读(_d['正文'], 目)).count(x) == 1), None)
+        if _片:
+            shutil.copyfile(os.path.join(目, '版本', '第410章', '%s.md' % _d['末版']), os.path.join(目, '版本', '第410章', '_测旧稿.md'))   # 改前之稿留一份（真改必存新版、旧版在）
+            for q in {_d['正文'], os.path.join('版本', '第410章', '%s.md' % _d['末版'])}:
+                _t = 读(q, 目)
+                open(os.path.join(目, q), 'w', encoding='utf-8').write(_t.replace(_片, '', 1))
+        _红2 = 重填(410, 目, 印=lambda s: None)
+        验('重填·删句而详记仍记 → 红（全书记忆·残片）、sha ⛔动', _片 and any(x[0] == '全书记忆' and _片 in x[1] for x in _红2) and 读('设定/全书记忆/第410章.md', 目) == _记文, str(_红2)[:300])
         验('重填·纯数短格⛔单换', not 可换('107') and not 可换('2,629') and 可换(旧v['sha1']) and 换值('a107b', [('107', '9')]) == ('a9b', 1))
         os.remove(os.path.join(目, 值档 % 410))
         验('重填·无席时之值即红', 重填(410, 目, 印=lambda s: None) == [('重填', '无席时之值')])

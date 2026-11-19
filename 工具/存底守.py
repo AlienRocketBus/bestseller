@@ -10,7 +10,7 @@
      旧时诸席禁 git 写、⛔报心跳，写书之中锁逾四十五分即「死」，别坐看来无人在跑。
   最坏只失五分之工。进程随机生灭：机在则守在，机收则同收。日志 `.git/存底守.log`。
 用法：
-  python3 工具/存底守.py --起     # 钩用：未起则起（已起即免），即返；守书之坐（只读之巡）只印盘坏之哨、⛔承账⛔起守（1027 A2）
+  python3 工具/存底守.py --起     # 钩用：未起则起（已起即免），即返；守书之坐⛔承账而存底守照起（1119 作者令·及时备份）
   python3 工具/存底守.py --一回   # 跑一回（人手或验用）
   python3 工具/存底守.py --状     # 在跑否、末回何时
   python3 工具/存底守.py --自测
@@ -158,16 +158,19 @@ def 起(开=subprocess.Popen, 盘=None, 守书=None):
             守书 = 席在跑吗.守书之坐()
     except Exception:
         守书 = False
+    # 1119 作者令「所有的东西都要及时备份……防止沙盒突然重启，东西就丢了」（法用#防失稿三锁）：守书之坐亦有其工（改器、改账、裁档）——
+    #   1119 实踩：守书之坐施工逾一时半、工作树五十一档未存底（A2 ⛔起守之隙）。故守书之坐⛔承账，而存底守照起：树未改即不推、
+    #   他坐持写书之锁即推己之旁枝（备份/存底-<坐>）、锁⛔续（守书之坐⛔持写书之锁）——只存己之工，⛔扰写书之坐。
     if 守书:
-        print('· 守书之坐（只读之巡）：⛔承账、⛔起存底守')
-        return 0
-    # 1022：会话开头先承云端诸存底之跑账（新机之账空，封版之跑账闸判「从没跑过」而停——404 实踩）；後台、⛔候
-    try:
-        with open(日志, 'a') as lf:
-            开([sys.executable, os.path.join(ROOT, '工具', '跑账.py'), '--承'], cwd=ROOT, stdin=subprocess.DEVNULL,
-               stdout=lf, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
-    except Exception:
-        pass
+        print('· 守书之坐：⛔承账；存底守照起（己之工五分一存旁枝·1119）')
+    else:
+        # 1022：会话开头先承云端诸存底之跑账（新机之账空，封版之跑账闸判「从没跑过」而停——404 实踩）；後台、⛔候
+        try:
+            with open(日志, 'a') as lf:
+                开([sys.executable, os.path.join(ROOT, '工具', '跑账.py'), '--承'], cwd=ROOT, stdin=subprocess.DEVNULL,
+                   stdout=lf, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
+        except Exception:
+            pass
     if 在跑():
         print('✓存底守在跑（每五分自存底·.git/存底守.log）')
         return 0
@@ -237,7 +240,8 @@ def 自测():
         起们.clear()
         with contextlib.redirect_stdout(io.StringIO()) as 印:
             _rc = 起(开=lambda *a, **k: 起们.append(a), 盘=lambda: '⛔ 盘坏：试', 守书=True)
-        T('⑧守书之坐（只读之巡）→ 盘坏之哨照印，而⛔承账、⛔起守（1027 A2）', _rc == 0 and not 起们
+        T('⑧守书之坐 → 盘坏之哨照印、⛔承账，而存底守照起（1119 作者令·及时备份；旧 1027 A2 ⛔起守之隙）', _rc == 0
+          and len(起们) == 1 and '--跑' in 起们[0][0] and not any('跑账.py' in str(x) for x in 起们[0][0])
           and 印.getvalue().startswith('⛔ 盘坏：试') and '守书之坐' in 印.getvalue())
     锁档, 日志 = 旧锁, 旧志
     T('⑥锁与日志落 git 之公目（全测之工作副本里 .git 係一档亦通）', 锁档.startswith(_仓目()) and os.path.isdir(_仓目()))

@@ -149,6 +149,7 @@ jobs:
           fi
           if [ -z "$GUO" ]; then
             git checkout -q --detach "$B0"
+            python3 工具/账并.py --装 || true   # 〔1119 治6〕两写者之账之并器（.gitattributes merge=账并）；主之树无本器即 || true——退回内建之并（同旧）
             if ! git merge --no-edit -m "autopush：并入 $R" "$T"; then git merge --abort; GUO=败; YIN=merge; fi
           fi
           if [ -z "$GUO" ] && [ "$MODE" = 推 ] && [ -n "$(git diff --name-only "$B0" HEAD -- .github/workflows)" ]; then

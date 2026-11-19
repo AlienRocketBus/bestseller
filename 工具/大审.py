@@ -184,22 +184,12 @@ def 账():
         #   ★**即一句写在册上的话，盘上没有一只手兑它**（本册 ㊚ 之同骨：**账断了一头**）；
         #   ★★**而这一路比那一路更难见**：**它不是报错了，是它从头到尾没在看。**
         #   ⛔**故补此问：凡「已挂·限N」而末章已过 N 者，当场报逾期。**
-        逾 = []
-        for x in _rows:
-            if '已挂' not in x:
-                continue
-            # ⛔**立日即自栽一回**：头一版拿整行去找「限N」并取其最小
-            #   ——**而一笔之「其由」那一格里常引着别的限**（0913 第11笔引 FS 之旧限 309），
-            #   **於是它把别人的旧限当成了这一笔的限，当场报了一个假逾期。**
-            #   ★**其治**：**一笔之限只认「已挂」所在那一格**（裁之格），⛔**其由之格一个数也不取**。
-            _cells = [c for c in x.split('|') if '已挂' in c]
-            ms = re.findall(r'限\s*(\d+)', _cells[0]) if _cells else []
-            if not ms:
-                continue
-            lim = min(int(y) for y in ms)
-            if 末 >= lim:
-                号 = x.split('|')[1].strip() if x.count('|') > 1 else '?'
-                逾.append((号, lim))
+        # ⛔**立日即自栽一回**：头一版拿整行去找「限N」并取其最小
+        #   ——**而一笔之「其由」那一格里常引着别的限**（0913 第11笔引 FS 之旧限 309），
+        #   **於是它把别人的旧限当成了这一笔的限，当场报了一个假逾期。**
+        #   ★**其治**：**一笔之限只认「已挂」所在那一格**（裁之格），⛔**其由之格一个数也不取**。
+        # ★1119（W907 复核·同功两处）：逾之读归 限於 → 三之行（一析：裁之格取其限、「〔原：…〕」⛔取、三栏之旧笔表与「改挂」俱认）
+        逾 = [(号, lim) for 号, lim, _ in 限於(末)]
         if 逾:
             判.append('⛔上一册（至第%d章）之「已挂」逾限 %d 笔（今为第%d章）：%s'
                       '——**挂带着限，到期不裁即是逾期**；'
@@ -211,21 +201,133 @@ def 账():
 
 def 限於(n):
     """★1016（394 逮：393 记席照 大问表 之印填 394 卡问七，⛔见大审册「已挂·限394」之 #23——开镜卡漏、封版必逾）：
-    上一册§三里「已挂」之格其限（取最小，同上「逾」之读法）≤ n 之笔 → [(号, 限, 其行之要)]。"""
+    上一册§三里「已挂」之笔其限 ≤ n 者 → [(号, 限, 其裁格之文)]。
+    ★1119（W907 复核·同功两处）：逐行之读归 三之行（一析）——旧读只认五管以上之行、字面「已挂」，
+      於是 录() 所写之「上册逾限之笔·当面裁」三栏之表（四管）、「改挂·限N」俱⛔见，开镜卡问七与下一回之旧笔⛔及。"""
     cs = 诸册()
     if not cs:
         return []
     t = io.open(cs[-1][1], encoding='utf-8', errors='replace').read()
-    _sec = t.split('## 三·')[-1].split('\n## ')[0] if '## 三·' in t else ''
-    出 = []
-    for x in _sec.splitlines():
-        if not (x.strip().startswith('|') and x.count('|') >= 5 and '已挂' in x):
+    return [(r['号'], r['限'], re.sub(r'\s+', ' ', r['裁']).strip())    # ★1020：⛔截二百字（399 卡问七抄得半句）——卡须逐字抄其全裁
+            for r in 三之行(t) if r['类'] == '已挂' and r['限'] is not None and r['限'] <= n]
+
+
+_裁之词 = ('待裁', '判不治', '半治', '改挂', '已挂', '已治', '判驳', '留痕')
+_隔式 = re.compile(r'^\s*\|[\s\-:|]+\|\s*$')
+
+
+def _去原(s):
+    """裁格去其「〔原：…〕」（可嵌：387 之「〔原：**旧期**（…〔原：…〕）〕」）——原裁係旧，⛔作今裁。"""
+    出, 深 = [], 0
+    i = 0
+    while i < len(s):
+        if 深 == 0 and s.startswith('〔原', i):
+            深 = 1
+            i += 2
             continue
-        _cells = [c for c in x.split('|') if '已挂' in c]
-        ms = re.findall(r'限\s*(\d+)', _cells[0]) if _cells else []
-        if ms and min(int(y) for y in ms) <= n:
-            出.append((x.split('|')[1].strip(), min(int(y) for y in ms), re.sub(r'\s+', ' ', _cells[0]).strip()))   # ★1020：⛔截二百字（399 卡问七抄得半句·#47 截於「随改状态册钱满、东」）——卡须逐字抄其全裁
+        if 深:
+            深 += {'〔': 1, '〕': -1}.get(s[i], 0)
+        else:
+            出.append(s[i])
+        i += 1
+    return ''.join(出)
+
+
+def 裁之类(裁):
+    """裁格 → (类, 限)。类取首见之词（「待裁」作他、「改挂」作已挂）；而首见非挂、「〔原：…〕」之外仍书「已挂／改挂…限N」者作已挂——
+    397 #11「**半治**——删…；**已挂·限 W11 之 391 节（器上·限407）**」、#72「已治之部照记；…三处已挂·…·限417」：所挂之余⛔丢。
+    限＝类为已挂者，「〔原：…〕」之外「限N」之最小（⛔取其由之格；无数者 None＝限非数）。"""
+    净 = _去原(裁 or '')
+    位 = sorted((净.find(w), w) for w in _裁之词 if w in 净)
+    类 = 位[0][1] if 位 else '他'
+    类 = {'待裁': '他', '改挂': '已挂'}.get(类, 类)
+    if 类 not in ('已挂', '他') and re.search(r'(?:已挂|改挂)[^；;。|]{0,40}?限\s*\d', 净):
+        类 = '已挂'
+    ms = re.findall(r'限\s*(\d+)', 净) if 类 == '已挂' else []
+    return 类, (min(int(y) for y in ms) if ms else None)
+
+
+def 三之行(t):
+    """★1119（W907 判者②·细④：剧情全图另写之§三之析并入本器·⛔同功两处）册之文 → §三裁定表逐行
+    [{'号', '类', '判', '据', '裁', '限', '行'}]——限於、账、诸挂、剧情全图 俱读此一析。
+    表头每表重取（其下一行係「|---|」者为头：337 首表「合｜撞上它的席｜其事」、407／410 次表「旧号｜裁｜其由」；
+    表中插「>」之注而续者⛔作新表，续用前头）；无「裁」栏之表跳过（337「合」、324「刀」）。
+    栏以表头定（判／据／裁／其由之首字；无判栏者判取其由）；类、限见 裁之类；行＝档之行（1 起）。"""
+    L = (t or '').split('\n')
+    出, 在, 头 = [], False, None
+    for i, l in enumerate(L):
+        if l.startswith('## '):
+            在, 头 = l.startswith('## 三'), None
+            continue
+        if not (在 and l.startswith('|')) or _隔式.match(l):
+            continue
+        c = [x.strip() for x in l.strip().strip('|').split('|')]
+        if i + 1 < len(L) and _隔式.match(L[i + 1]):
+            头 = c
+            continue
+        k = next((j for j, x in enumerate(头 or []) if x.startswith('裁')), None)
+        if k is None:
+            continue
+        p = next((j for j, x in enumerate(头) if x.startswith('判')), None)
+        q = next((j for j, x in enumerate(头) if x.startswith('据')), None)
+        由 = next((j for j, x in enumerate(头) if x.startswith('其由')), None)
+        p = p if p is not None else 由
+        裁 = c[k] if k < len(c) else ''
+        类, 限 = 裁之类(裁)
+        出.append({'号': c[0], '类': 类, '判': c[p] if p is not None and p < len(c) else '',
+                  '据': c[q] if q is not None and q < len(c) else '', '裁': 裁, '限': 限, '行': i + 1})
     return 出
+
+
+def 诸挂(末=None):
+    """★1119（W907 判者②：大审440 #1—12「已挂·限451」十一笔无人看）诸册§三之「已挂」而无人收者 →
+    [{'至', '档', '号', '限', '裁', '判', '据', '行', '下册', '旧笔不及', '收於'}]，照册、号排。
+    旧笔之隙：限於(b) 只读上一册——册 V 之笔限 > 其下一册之至者，下一册之旧笔不及（彼时未到限），再下一册又不读 V，⛔无人看。
+    又（W907 复核）：1119 前之 限於 只读五管以上、字面「已挂」之行——三栏之旧笔表（407 次表「前册#11…限417」十四笔）、
+      「改挂·限N」（410:114）其下一册之包⛔见；故此等行限虽 ≤ 下一册之至，亦作不及（⛔假定下一册已见）。
+    所出：末册之「已挂」（限於 管之，照出）；前诸册之「已挂」而旧笔不及或限非数（None）者，
+    後诸册§三未提其号（「大审V #号」「至第V章…#号」，或下一册之「前册#号」）、本册别行亦未已裁其号（「前册#N」之笔：
+    410 #18「旧笔前册#16 到期未兑｜已治·414」）方出——提者即「收於」该册（⛔猜其裁）。
+    末：只出 限 ≤ 末 者与限非数者（None＝俱出）。"""
+    cs = 诸册()
+    文 = {至: io.open(路, encoding='utf-8', errors='replace').read() for 至, 路 in cs}
+
+    def 三节(t):
+        m = re.search(r'(?ms)^## 三.*?(?=^## |\Z)', t)
+        return m.group(0) if m else ''
+    出 = []
+    for i, (至, 路) in enumerate(cs):
+        下 = cs[i + 1][0] if i + 1 < len(cs) else None
+        L = 文[至].split('\n')
+        行们 = 三之行(文[至])
+        for r in 行们:
+            if r['类'] != '已挂':
+                continue
+            原 = L[r['行'] - 1]
+            旧见 = 原.count('|') >= 5 and '已挂' in 原              # 1119 前 限於 之二门（史之实：下一册之包係旧读所出）
+            不及 = 下 is not None and (r['限'] is None or r['限'] > 下 or not 旧见)
+            if 下 is not None and not 不及:
+                continue                                    # 下一册之旧笔（或账之逾限）已见之
+            if 末 is not None and r['限'] is not None and r['限'] > 末:
+                continue
+            号 = re.escape(re.sub(r'[*\s]', '', r['号']))
+            收 = [w for w, _ in cs[i + 1:] if re.search(r'(?:大审\s*%d|至第\s*%d\s*章)[^#|\n]{0,8}#\s*%s(?!\d)' % (至, 至, 号), 三节(文[w]))]
+            if not 收 and 下 is not None and re.search(r'前册\s*#\s*%s(?!\d)' % 号, 三节(文[下])):
+                收 = [下]
+            if not 收 and 号.startswith('前册') and any(
+                    x is not r and x['类'] in ('已治', '判驳', '判不治', '半治') and re.search(号 + r'(?!\d)', x['判'] + x['据'] + x['裁'])
+                    for x in 行们):
+                收 = [至]
+            if 收 and 下 is not None:
+                continue
+            出.append(dict(r, 至=至, 档=os.path.relpath(路, ROOT), 下册=下, 旧笔不及=不及, 收於=收[0] if 收 else None))
+    return 出
+
+
+def 号之名(至, 号):
+    """「大审V #号」；号係次表之「前册#N」者书「大审V 前册#N」（⛔「#前册#N」）。"""
+    号 = re.sub(r'\*', '', str(号)).strip()
+    return '大审%d %s' % (至, 号) if 号.startswith('前册') else '大审%d #%s' % (至, 号)
 
 
 def 立(n):
@@ -355,6 +457,14 @@ def 包(a, b):
         if '本章无一句' not in o and o.strip():
             L.append('- **整句复述哨·%d**：' % n)
             L += ['    ' + x.strip()[:240] for x in o.splitlines()[2:10] if x.strip()]
+    # ★1119（W907 用之审·作者「做出来的东西都执行和用起来」）：全书之图（剧情全图·零 token·封版 --後 重生）之「一眼」入包——
+    #   诸席先见全书之脊、未闭之环、漏之热、可升之位，⛔各翻散账；一章之全 `python3 工具/剧情全图.py --章 N`、一线 `--线 词`
+    图 = os.path.join(ROOT, '设定', '全书记忆', '剧情全图.md')
+    if os.path.exists(图):
+        m = re.search(r'(?ms)^## 一眼\n(.*?)(?=^## |\Z)', io.open(图, encoding='utf-8', errors='replace').read())
+        if m:
+            L += ['\n## 甲之二·全书之图（`设定/全书记忆/剧情全图.md`「一眼」逐字；②开环、③漏、④升之全条见其档；'
+                  '一章 `python3 工具/剧情全图.py --章 N`、一线 `--线 词`）\n', m.group(1).strip(), '']
     L.append('\n## 乙·十章白文（带原行号；引句一律「章:行」）与各章已付之盲读、逻辑审之末判\n')
     缺 = []
     for n in range(a, b + 1):
@@ -384,10 +494,21 @@ def 包(a, b):
     io.open(p, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
     # 上册「已挂」限 ≤b 之笔（逐字·裁席当面裁之，⛔静静顺延）
     旧 = 限於(b)
+    # ★1119（W907 判者②）前诸册之「已挂」而旧笔不及者（限 > 其下一册之至：下一册时未到限、再下一册又只读上一册——大审440 十一笔「限451」实证）
+    #   照 诸挂(b) 补入（限非数者⛔入：其裁待人）；裁席照「大审V #号」逐笔当面裁
+    末册 = (诸册() or [(None, None)])[-1][0]
+    try:
+        隙 = [x for x in 诸挂(b) if x['至'] != 末册 and x['限'] is not None]
+    except Exception as e:                       # 诸挂析不得⛔崩包：照旧只出上册之笔，并印其由
+        print('⚠ 诸挂析不得（%s）——旧笔只取上册' % str(e)[:80])
+        隙 = []
     io.open(os.path.join(包目(b), '旧笔.md'), 'w', encoding='utf-8').write(
         '# 上册「已挂」限 ≤%d 之笔（%d 笔·逐字自上册三节）\n\n' % (b, len(旧)) + '\n\n'.join(
-            '- 前册#%s 限%d｜%s' % (号, l, c) for 号, l, c in 旧) + '\n')
-    print('★上册逾限之笔：%d 笔 → %s' % (len(旧), os.path.relpath(os.path.join(包目(b), '旧笔.md'), ROOT)))
+            '- %s 限%d｜%s' % (('前册之' + 号) if 号.lstrip('*').startswith('前册') else ('前册#' + 号), l, c) for 号, l, c in 旧) + '\n'
+        + (('\n## 前诸册「已挂」而旧笔不及之笔（%d 笔·限 ≤%d·逐字自其册三节；裁时书「大审V #号」）\n\n' % (len(隙), b)
+            + '\n\n'.join('- %s 限%d｜%s' % (号之名(x['至'], x['号']), x['限'], re.sub(r'\s+', ' ', x['裁'])) for x in 隙) + '\n') if 隙 else ''))
+    print('★上册逾限之笔：%d 笔%s → %s' % (len(旧), ('；前诸册旧笔不及 %d 笔' % len(隙)) if 隙 else '',
+                                     os.path.relpath(os.path.join(包目(b), '旧笔.md'), ROOT)))
     print('★大审之包：%s（%d 字）' % (os.path.relpath(p, ROOT), sum(len(x) for x in L)))
     return p
 

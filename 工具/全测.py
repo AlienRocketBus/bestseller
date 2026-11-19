@@ -2854,10 +2854,12 @@ def chk_shengjing_suicai():
 
 
 def chk_jiyi():
-    """全书记忆（0927 作者令「通读一回全书记住，以後直接调取」）：总览立後，每章详记须在且与正文 sha1 相符。见 工具/全书记忆.py；记由 工具/席/全书记忆.js。"""
+    """全书记忆（0927 作者令「通读一回全书记住，以後直接调取」）：总览立後，每章详记须在且与正文 sha1 相符。见 工具/全书记忆.py；记由 工具/席/全书记忆.js。
+    ★1119 总编辑复核→改：sha 只认其格；不符则比所记之稿与现白文，所删之句仍在详记正记者红（残片·凡章俱红——封版 --後 只拦本章，他章之残片於此入器红账·三章治）；
+    --只查：本格⛔写（可器随者亦红，治＝python3 工具/全书记忆.py）。"""
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/全书记忆.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
-    r = _sp.run([sys.executable, '工具/全书记忆.py'], cwd=ROOT, capture_output=True, text=True)
+    r = _sp.run([sys.executable, '工具/全书记忆.py', '--只查'], cwd=ROOT, capture_output=True, text=True)
     return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
 
 

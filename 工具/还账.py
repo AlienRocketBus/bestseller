@@ -632,18 +632,38 @@ def 存版之境(单名=''):
     return dict(os.environ, ZM_DRIFT_WHY='还账施改已封之章（工具/还账.py --施%s·大审之裁·改单在前）' % (('·' + 单名) if 单名 else ''))
 
 
-def 施後同步(章们, root=ROOT, 单名=''):
-    """★1014 W26 三回手跑、漏一回（283 净重差 2 而推闸红）：施毕一条命令办毕——全书记忆 sha1、净重对表 --补、阅读器、全书记忆之验。"""
-    import hashlib, subprocess
+def 详记之随(章们, root=ROOT, 文=None, 印=print):
+    """★1119 总编辑复核「全书记忆」→改：旧以 re.sub 盲换详记之 sha（史上 125 次详记之改只动 sha 一行；W26 後 24 章残留原片 123 处而闸恒绿）——⛔。
+    今：①「换」类之改，旧行→新行之同片（≥8 汉字、一字不差）先於详记器换（全书记忆.器换·零 token·备审之注⛔动）；
+    ②後以 全书记忆.随章 比所记之稿与现白文：所删之句仍在详记正记者红（残片），无则器随 sha。
+    文：{章: (档, 旧行们, 新行们)}（--施 之模拟；缺则以详记所记 sha 之稿为旧）。→ 残片之红（列·交主环治）。"""
+    import 全书记忆 as _记
+    红 = []
     for 章 in sorted(章们):
-        f, _ = 读章(章, root)
-        sha = hashlib.sha1(open(f, 'rb').read()).hexdigest()[:12]
-        p = os.path.join(root, '设定', '全书记忆', '第%d章.md' % 章)
-        if os.path.exists(p):
-            t = open(p, encoding='utf-8').read()
-            t2 = re.sub(r'sha1：[0-9a-f]{12}', 'sha1：' + sha, t, count=1)
-            if t2 != t:
-                open(p, 'w', encoding='utf-8').write(t2)
+        f, 今们 = 读章(章, root)
+        if not f:
+            continue
+        if 文 and 章 in 文:
+            旧 = '\n'.join(文[章][1])
+        else:
+            p = os.path.join(root, '设定', '全书记忆', '第%d章.md' % 章)
+            sha = _记.所记(open(p, encoding='utf-8').read())[0] if os.path.exists(p) else None
+            旧 = _记.旧稿(章, sha, root, f)[0] if sha else None
+        if 旧 is not None:
+            for 行, x, y in _记.器换(章, 旧, '\n'.join(今们), root):
+                印('  施後·详记器换 第%d章 详记:%d「%s」→「%s」' % (章, 行, x, y))
+        状, r = _记.随章(章, root)
+        if 状 == '随':
+            印('  施後·全书记忆 第%d章：sha 器随（所记之稿与现白文比，无残片）' % 章)
+        红 += r
+    return 红
+
+
+def 施後同步(章们, root=ROOT, 单名='', 文=None):
+    """★1014 W26 三回手跑、漏一回（283 净重差 2 而推闸红）：施毕一条命令办毕——全书记忆（详记之随）、净重对表 --补、阅读器、全书记忆之验。
+    ★1119：详记 ⛔盲换 sha，改调 全书记忆（见 详记之随）；残片之红当面列、回之（--施 以之 rc=1，交主环）。"""
+    import subprocess
+    残红 = 详记之随(章们, root, 文)
     for 章 in sorted(章们):      # ★1015 W42 所逮：施改封版之章而⛔存版，正文与末版遂不一（版档指纹不符之积）——施毕即逐章存一版
         r = subprocess.run([sys.executable, '工具/跑轮.py', '--存', str(章), '还账施改（工具/还账.py --施）'], cwd=root, capture_output=True, text=True, env=存版之境(单名))
         print('  施後·存版 第%d章：rc=%d' % (章, r.returncode))
@@ -654,6 +674,11 @@ def 施後同步(章们, root=ROOT, 单名=''):
     for 令 in (['工具/净重对表.py', '--补'], ['工具/同步全本阅读器.py'], ['工具/剧情链.py'], ['工具/全书记忆.py']):
         r = subprocess.run([sys.executable] + 令, cwd=root, capture_output=True, text=True)
         print('  施後·%s：%s' % (os.path.basename(令[0]), (r.stdout.strip().split('\n') or [''])[-1][:80]))
+    if 残红:
+        print('⛔ 施後·全书记忆：%d 处（正文已改而详记正记仍记原片／所记之稿无处可取——照现正文改详记、python3 工具/全书记忆.py 验；⛔盲换 sha）：' % len(残红))
+        for l in 残红:
+            print('    ' + l)
+    return 残红
 
 
 # ───────── 料 ─────────
@@ -823,6 +848,34 @@ def 自测():
     _因 = 存版之境('G1020-01.json')['ZM_DRIFT_WHY']
     共 += 1; ok += _跑.漂移记因之判(_因)[0] and 'G1020-01.json' in _因 and 'ZM_FORCE' not in 存版之境()
     共 += 1; ok += 护[201] == {17, 155} and 140 in 护[263] and 460 in 护[263] and 272 not in 全 and {101, 293, 301} <= 护[272] and 1509 not in 护[272] and 许[283] == {13, 33} and 13 in 许[201]   # ★1020：272 照十·一裁收窄
+    # ★1119 总编辑复核「全书记忆」→改：施後之详记 ⛔盲换 sha——「换」之旧句在要句 → 器换新句、sha 器随；所删之句仍在按拍 → 红列、sha ⛔动
+    import hashlib as _h
+    with tempfile.TemporaryDirectory() as _t:
+        for _d in ('设定/全书记忆', '正文', '版本/第107章'):
+            os.makedirs(os.path.join(_t, _d), exist_ok=True)
+        _正 = os.path.join(_t, '正文', '镇冢秘术_第一百零七章_某.md')
+        _记档 = os.path.join(_t, '设定', '全书记忆', '第107章.md')
+        _旧 = ['他把那一截线头攥在了手心里，没有松。', '门缝底下那一点鞋尖没有了，留下一小块湿。', '【本章亮点】', '甲']
+        open(_正, 'w', encoding='utf-8').write('\n'.join(_旧))
+        _s = _h.sha1('\n'.join(_旧).encode('utf-8')).hexdigest()[:12]
+        open(_记档, 'w', encoding='utf-8').write('# 第107章\n- 正文档：正文/镇冢秘术_第一百零七章_某.md｜sha1：%s｜字数约 9\n## 发生了什么（按拍）\n'
+                                              '1. 门缝底下那一点鞋尖没有了，留下一小块湿（:2）。\n## 要句（原句照录）\n- :1「他把那一截线头攥在了手心里，没有松。」\n' % _s)
+        open(os.path.join(_t, '版本', '第107章', 'v01.md'), 'w', encoding='utf-8').write('\n'.join(_旧))
+        _新 = ['他把那一截线头攥进了袖口的那一圈里，没有松。'] + _旧[1:]           # 「换」：原「攥在了手心里」→ 新「攥进了袖口的那一圈里」
+        open(_正, 'w', encoding='utf-8').write('\n'.join(_新))
+        _印 = []
+        _红 = 详记之随([107], _t, {107: (_正, _旧, _新)}, 印=_印.append)
+        _文 = open(_记档, encoding='utf-8').read()
+        共 += 1; ok += (_红 == [] and '- :1「他把那一截线头攥进了袖口的那一圈里，没有松。」' in _文 and _h.sha1('\n'.join(_新).encode('utf-8')).hexdigest()[:12] in _文
+                       and _s not in _文 and any('器换' in x for x in _印) and any('器随' in x for x in _印))
+        _再 = [_新[0], '', '【本章亮点】', '甲']                                  # 「清」：门缝那一句删，按拍仍记 → 红、sha ⛔动
+        open(_正, 'w', encoding='utf-8').write('\n'.join(_再))
+        open(os.path.join(_t, '版本', '第107章', 'v02.md'), 'w', encoding='utf-8').write('\n'.join(_新))
+        _前 = open(_记档, encoding='utf-8').read()
+        _红 = 详记之随([107], _t, {107: (_正, _新, _再)}, 印=lambda s: None)
+        共 += 1; ok += (len(_红) == 1 and '第107章 详记:4 ← 「门缝底下那一点鞋尖没有了」' in _红[0] and open(_记档, encoding='utf-8').read() == _前)
+        _红 = 详记之随([107], _t, None, 印=lambda s: None)                        # 无 文（D1施 之调）：以详记所记 sha 之稿为旧，同判
+        共 += 1; ok += len(_红) == 1 and '门缝底下那一点鞋尖没有了' in _红[0]
     print('还账·自测 %d/%d' % (ok, 共))
     return ok == 共
 
@@ -916,7 +969,9 @@ if __name__ == '__main__':
                     print('  施 第%d章 %d 行' % (章, 动[章]))
             记账([o for _, o in 读单们([x for x in a[1:] if x != '--全'])], [os.path.basename(x) for x in a[1:] if x != '--全'])
             _单名 = '、'.join(os.path.basename(x) for x in a[1:] if x != '--全')
-            施後同步([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今], 单名=_单名)
+            残 = 施後同步([章 for 章, (f, 旧, 今) in 文.items() if 旧 != 今], 单名=_单名, 文=文)
+            if 残:
+                print('还账·施：已落盘；详记残片 %d 处待治（见上·rc=1 交主环）' % len(残)); sys.exit(1)
         sys.exit(1 if 红 else 0)
     print(__doc__)
     sys.exit(2)

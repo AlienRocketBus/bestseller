@@ -9,6 +9,8 @@
   python3 工具/工作流账.py --开 W16 8 "停止线" "重造之法" "有效之据" "预估"   # 开一件：先印 D6 之痛与开法四问，缺一拒开
   python3 工具/工作流账.py --裁 W15 取|重造|续 "由" [新时限]   # 到点必裁：达标则取；不达标则毁了重造（取其精华、换法、重起计时）；续至多一回
   python3 工具/工作流账.py --自测
+  〔1119 执行之审·治4(a)(b)〕参数不合（--开 非七参、--裁 非四五、--标 非三、或不识之参）即印此用法、rc 2——⛔落入印（旧 rc 0、一字不警：
+    473 之坐 `--开 W147` 两回落空，W130—W146 十五章无一件入账）；--开 之件账中无而 设定/方案/<W>.md 在 → 依方案建件（名取方案之题），再走旧验。
 ★D6 之痛·止损闸（1008 作者令「三十小时零结果，永远的痛；必须有应对机制，灵活变通」）：
   凡「进行」之件须有 起、时限、停止线、换法（开法三问）；逾时限而未裁 → --查 红（入全测，推不上去），
   逼总编辑到点必裁：取（达标）／重造（毁了重造，取其精华）／续（至多一回）。⛔烂尾：没有「守原了事」「不干了」这一出口——
@@ -210,6 +212,38 @@ def 估之验(i, 名, 预估, 有效之据='', root=ROOT):
                    % (估, 类之(名), len(诸), '、'.join(诸), 均))
 
 
+def 方案之件(i, root=ROOT):
+    """〔1119 执行之审·治4(b)〕账无其件而 设定/方案/<i>.md 在 → 依方案拟一件（⛔存；开() 诸验过方入账）；无方案或题不合 → None。
+    名取方案之题（「# 方案·W146·第472章（…）」→「第472章（…）」——封版 X86 之「名起第N章」认之）；目的取「> 本章之重：」（无则取名）；
+    预估取「## 合计」之时与费；停止线取「## 前定之验」之「质」（章则冠「封版#N 且」）。预估、停止线係备（自开者用之）——--开 之参照旧必给、照旧覆之。"""
+    p = os.path.join(root, '设定', '方案', '%s.md' % i)
+    if not os.path.isfile(p):
+        return None
+    try:
+        文 = io.open(p, encoding='utf-8').read()
+    except (OSError, UnicodeDecodeError):
+        return None
+    m = re.match(r'#\s*方案·%s·\s*(\S.*?)\s*$' % re.escape(i), 文.split('\n', 1)[0])
+    if not m:
+        return None
+    名 = m.group(1)
+    章 = re.match(r'第(\d+)章', 名)
+    节 = lambda 头: (re.search(r'^##\s*%s[^\n]*\n(.*?)(?=^## |\Z)' % 头, 文, re.M | re.S) or [None, ''])[1]
+    重 = re.search(r'^>\s*本章之重[：:]\s*(.+)$', 文, re.M)
+    合 = 节('合计')
+    时 = re.search(r'时[：:]\s*([^；;，,。\n]+)', 合)
+    费 = re.search(r'费[：:][^；;\n]*?(\$\s*\d+(?:\.\d+)?)', 合)
+    预估 = '、'.join(x for x in ((时.group(1).strip() if 时 else ''), (费.group(1).replace(' ', '') if 费 else '')) if x)
+    质 = re.search(r'\*\*质\*\*[：:]\s*(.+)', 节('前定之验'))
+    return {'id': i, '名': 名, '目的': re.sub(r'\*\*', '', 重.group(1)).strip()[:400] if 重 else 名, '状态': '未始',
+            '产出': [{'档': '设定/方案/%s.md' % i, '说明': '方案'}],
+            '验': ('封版#%s；' % 章.group(1) if 章 else '') + '照 设定/方案/%s.md「前定之验」' % i, '依': [],
+            '续之令': '照 设定/方案/%s.md 逐环续' % i + ('；容器重启而断：python3 工具/承.py %s → 跑 版本/第%s章/_承.js（⛔resumeFromRunId 直续）'
+                                                     % (章.group(1), 章.group(1)) if 章 else ''),
+            '裁': [], '预估': ('%s（方案 %s「合计」）' % (预估, i)) if 预估 else '',
+            '停止线': (('封版#%s 且' % 章.group(1)) if 章 else '') + 质.group(1).strip() if 质 else ''}
+
+
 def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今=None):
     print(D6之痛); print('开法四问：' + 开法三问)
     try:
@@ -218,6 +252,13 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
         时限 = 0
     if 时限 <= 0 or not all((x or '').strip() for x in (停止线, 换法, 有效之据, 预估)):
         print('⛔ 拒开：四问未答全（时限须 >0 时；停止线、重造之法、有效之据、预估皆须写）'); return False
+    # 〔1119 执行之审·治4(b)〕账无其件而 设定/方案/<i>.md 在 → 依方案拟件（名、目的、续之令；⛔先存——下列旧验俱过方入账）；
+    #   无方案者照旧「无此件」。旧：W130—W146 有方案而无件，开() 走完诸验末报「无此件」；且名空 → 费哨判之「非写书」、估之验判「余」类
+    _账件 = next((x for x in 读(root)['件'] if x['id'] == i), None)
+    _新件 = None if _账件 else 方案之件(i, root)
+    if _账件 is None and _新件 is None:
+        print('⛔ 无此件：%s（工作流账无其件，设定/方案/%s.md 亦无——先立方案：python3 工具/方案.py --模板 %s <题>）' % (i, i, i)); return False
+    _件名 = (_账件 or _新件).get('名', '')
     # ★1009 坑⑭：作者之暂停令在盘上——在即拒开（⛔靠人记得）
     try:
         import 暂停令
@@ -232,8 +273,7 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
     # ★1021 费哨（裁_1021_省律）：末十件写书之占 <七成时，非写书之件须带「挡路：」或「读者可见：」之由方开
     try:
         import 费哨
-        _名 = next((x.get('名', '') for x in 读(root)['件'] if x['id'] == i), '')
-        _许, _由 = 费哨.许开('%s·%s' % (i, _名), 有效之据, root)
+        _许, _由 = 费哨.许开('%s·%s' % (i, _件名), 有效之据, root)
     except Exception as _e:
         _许, _由 = True, '费哨跑不得（%s）——只报不拦' % _e
     if not _许:
@@ -241,8 +281,7 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
     if _由:
         print('⚠ ' + _由)
     # ★1027 执行之审 #81 #93（坑⑧·立停之前一道）：预估照费账同类之实——低者拒开，除非写「低估之由：」
-    _名2 = next((x.get('名', '') for x in 读(root)['件'] if x['id'] == i), '')
-    _估许, _估语 = 估之验(i, _名2, 预估, 有效之据, root)
+    _估许, _估语 = 估之验(i, _件名, 预估, 有效之据, root)
     if not _估许:
         print('⛔ 拒开：' + _估语); return False
     if _估语:
@@ -272,6 +311,9 @@ def 开(i, 时限, 停止线, 换法, 有效之据='', 预估='', root=ROOT, 今
     if '零token之检' not in 有效之据.replace(' ', ''):
         print('⛔ 拒开：有效之据须写「零token之检：……」——此件哪些机器能办（归脚本、⛔开席）、哪些非模型不可、为何；先设计方法，再开'); return False
     账 = 读(root)
+    if _新件 and not any(x['id'] == i for x in 账['件']):   # 〔治4(b)〕诸验俱过，依方案之件方入账
+        账['件'].append(dict(_新件))
+        print('✓ %s 依方案建件（设定/方案/%s.md·1119 执行之审·治4(b)）：%s' % (i, i, _新件['名']))
     for x in 账['件']:
         if x['id'] == i:
             x.update({'状态': '进行', '起': (今 or _今()).strftime('%Y-%m-%dT%H:%MZ'), '时限': 时限,
@@ -374,6 +416,15 @@ def 裁(i, 法, 由, 新时限=None, root=ROOT, 今=None):
     print('⛔ 无此件：' + i); return False
 
 
+def 参不合之语(a):
+    """〔1119 执行之审·治4(a)〕参数不合之印：所缺何参、用法全文（取本器头注之「本器：」节）。"""
+    须 = {'--开': '七参：--开 W<k> <时限·时> "<停止线>" "<重造之法>" "<有效之据·含坑之检、零token之检>" "<预估·时与 $>"',
+          '--裁': '四或五参：--裁 W<k> 取|重造|续 "<由>" [新时限]', '--标': '三参：--标 W<k> <状态>'}.get(a[0] if a else '', '')
+    m = re.search(r'本器：\n(.*?)\n★', __doc__ or '', re.S)
+    return '⛔ 工作流账：参数不合（%s·%d 参）%s——⛔落入印、⛔静默；照下式重跑（rc 2）：\n%s' % (
+        ' '.join(str(x)[:30] for x in a)[:120], len(a), '：%s 须%s' % (a[0], 须) if 须 else '：不识之参', m.group(1) if m else '')
+
+
 def 自测():
     ok = 共 = 0
     t = tempfile.mkdtemp()
@@ -466,6 +517,37 @@ def 自测():
             r9 = 开('W9', 6, '停', '换', '据；零token之检：须模型', '约 4 时、$30', t, H(30))
             r10 = 开('W9', 6, '停', '换', '据；零token之检：须模型', '约 4 时、$65', t, H(30))
         共 += 1; ok += (r9 is False and r10 is True)
+        # 〔1119 执行之审·治4(b)〕真迹回放：本仓 设定/方案/W146.md（472 之坐有方案而无件）——账无 W146 → 依方案建件、状进行、有起时、名起「第472章」；
+        #   费账红（名空之 Run $500·治3 之尺计之）而「有效之据」无挡路／读者可见：名取方案 → 判写书 → 许（旧名空 → 判非写书 → 拒）
+        json.dump({'行': json.load(open(os.path.join(t, '设定', '费账.json'), encoding='utf-8'))['行'] + [{'键': 'wf_n', '名': '', '美元': 500}]},
+                  open(os.path.join(t, '设定', '费账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        import subprocess as _sp
+        _案文 = _sp.run(['git', 'show', 'a6c9f7a04:设定/方案/W146.md'], cwd=ROOT, capture_output=True, text=True).stdout   # 钉於执行之审所据之树
+        open(os.path.join(t, '设定', '方案', 'W146.md'), 'w', encoding='utf-8').write(
+            _案文 or open(os.path.join(ROOT, '设定', '方案', 'W146.md'), encoding='utf-8').read())
+        _案 = 方案之件('W146', t)
+        with _cl.redirect_stdout(_io.StringIO()):
+            r11 = 开('W146', 8, '封版#472 且致命 0', '换', '据；零token之检：须模型', '约 3 时、$62', t, H(40))
+        _W = next((x for x in 读(t)['件'] if x['id'] == 'W146'), {})
+        共 += 1; ok += (_案 is not None and _案['名'] == '第472章（造式二代·重·主·194·一站）' and '$62' in _案['预估']
+                       and _案['停止线'].startswith('封版#472 且致命 0（合後）') and '承.py 472' in _案['续之令']
+                       and r11 is True and _W.get('状态') == '进行' and _W.get('起') == '2026-01-02T16:00Z'
+                       and _W.get('名', '').startswith('第472章') and _W.get('预估') == '约 3 时、$62' and not any('W146' in x for x in 查(t, H(41))))
+        # 治4(b) 守牙：方案在而方案未过（有未确证）→ 拒、⛔入账；方案亦无 → 「无此件」、账不动
+        open(os.path.join(t, '设定', '方案', 'W147.md'), 'w', encoding='utf-8').write(
+            open(os.path.join(t, '设定', '方案', 'W146.md'), encoding='utf-8').read().replace('W146', 'W147').replace('## 未确证\n- 无', '## 未确证\n- 某环；试：跑一回'))
+        _前 = len(读(t)['件'])
+        _o12 = _io.StringIO()
+        with _cl.redirect_stdout(_o12):
+            r12 = 开('W147', 8, '停', '换', '据；零token之检：须模型', '$62', t, H(42))
+            r13 = 开('W148', 8, '停', '换', '据；零token之检：须模型', '$62', t, H(42))
+        共 += 1; ok += (r12 is False and r13 is False and len(读(t)['件']) == _前 and '方案未过' in _o12.getvalue()
+                       and '无此件：W148' in _o12.getvalue() and 方案之件('W148', t) is None)
+        # 〔1119 执行之审·治4(a)〕--开 只给二参（473 之坐 16:05 `--开 W147` 之形）→ rc 2、印用法；⛔落入印（旧 rc 0）
+        _p =_sp.run([sys.executable, os.path.abspath(__file__), '--开', 'W147'], capture_output=True, text=True, timeout=60)
+        _q = _sp.run([sys.executable, os.path.abspath(__file__), '--裁', 'W147', '取'], capture_output=True, text=True, timeout=60)
+        共 += 1; ok += (_p.returncode == 2 and '参数不合' in _p.stdout and '--开 W16 8' in _p.stdout and '工作流账 ════' not in _p.stdout
+                       and _q.returncode == 2 and '--裁 须四或五参' in _q.stdout)
     finally:
         shutil.rmtree(t)
     print('工作流账·自测 %d/%d' % (ok, 共))
@@ -487,4 +569,6 @@ if __name__ == '__main__':
         sys.exit(0 if 裁(a[1], a[2], a[3], a[4] if len(a) == 5 else None) else 1)
     if len(a) == 3 and a[0] == '--标':
         sys.exit(0 if 标(a[1], a[2]) else 1)
+    if a:   # 〔1119 执行之审·治4(a)〕参数不合即印用法、rc 2——⛔落入 印()（旧 rc 0、一字不警：473 之坐 `--开 W147` 两回落空）
+        print(参不合之语(a)); sys.exit(2)
     印()

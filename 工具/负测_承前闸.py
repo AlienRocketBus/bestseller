@@ -11,7 +11,10 @@
 　·★★取二组数：第200章起共测95章，旧式报红40章（42%）；滤去定宽切片後仍红27章（28%）——**非切片之过**。
 　·★★★而并入此档不另立一份，其由二：**①一个数不许有两把尺，一族测亦不许有两本账**；
 　　**②今日我曾以 cat > 覆盖此档（289所立），落刀之前未走可逆之路**——**其号 R0020，已存**；
-　　**故不但要并回来，还要把这一笔记在这里**。"""
+　　**故不但要并回来，还要把这一笔记在这里**。
+
+〔1119 死规之审·gates20〕⑮ 入 `_软报`：上列侦之格一字不动（「红」即侦得）；另添 ⑰：
+　⑮ 於真盘仍红之章侦得而 `run()` ⛔计入拦（rc 0）｜⛔守牙：硬检（⑬）一红照旧拦（rc 2），--静 败单⛔混进 ⑮。"""
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
 try:
@@ -338,6 +341,37 @@ for _c, _p in ((389, 387), (391, 389)):
     chk2('⑯X19 第%d章还原毕·⑮复绿、盘上轮记未动' % _c,
          (_新判(_c), io.open(_lj3, encoding='utf-8').read() == _o3), (True, True))
 
+
+# ⑰〔1119 死规之审·gates20〕⑮ 只报：取真盘仍红之一章（⑭之b 之群），真跑 check15，余检换桩，看 run() 拦不拦
+import contextlib as _cl
+def _跑闸(真检, cur, 硬红=False):
+    """余检一律换作恒绿之桩，只留「真检」照跑；硬红=True 另令 ⑬ 红（守牙）。返 (rc, --静 之印)。"""
+    诸 = ('check3', 'check5', 'check7', 'check10', 'check11', 'check12', 'check13',
+          'check15', 'check16', 'check17', 'check18', 'check19', 'check20')
+    旧 = dict((kk, getattr(K, kk)) for kk in 诸)
+    try:
+        for kk in 诸:
+            if kk != 真检:
+                setattr(K, kk, lambda *a, _k=kk: [('桩·' + _k, True, '桩')])
+        if 硬红:
+            K.check13 = lambda *a: [('⑬·亮点段', False, '⛔桩：无亮点段')]
+        _buf = io.StringIO()
+        with _cl.redirect_stdout(_buf):
+            rc = K.run([cur], True)
+        return rc, _buf.getvalue()
+    finally:
+        for kk, v in 旧.items():
+            setattr(K, kk, v)
+if 仍红:
+    _c17 = 仍红[0]
+    _rc17, _印17 = _跑闸('check15', _c17)
+    chk2('⑰第%d章 ⑮侦得（ok=False）而 run() ⛔计入拦：rc 0、印「通过」' % _c17,
+         (K.check15(_c17)[0][1], _rc17, '开轮十六检通过' in _印17), (False, 0, True))
+    _rc17b, _印17b = _跑闸('check15', _c17, 硬红=True)
+    chk2('⑰之b ⛔守牙：同章而硬检（⑬）一红 → rc 2，--静 败单只列 ⑬、⛔混进 ⑮',
+         (_rc17b, '⑬' in _印17b, '⑮' in _印17b), (2, True, False))
+else:
+    chk2('⑰真盘有仍红之章可取', False, True)
 
 坏 = [x for x in 案 if not x[1]]
 

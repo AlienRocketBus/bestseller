@@ -56,8 +56,15 @@ def 跑():
     # ③⛔造一本「真的一成不变」之局：新尺照旧当场红
     局 = dict((n, '窄') for n in range(331, 350))
     局红 = m.查(局, 封版者=set(局), 认={})
-    R.append(('③⛔造局·连 19 章同型（皆已封版），新尺当场红 %d 章——'
+    R.append(('③⛔造局·连 19 章同型（皆已封版），新尺当场侦得 %d 章——'
               '**换尺⛔不是把眼睛闭上**' % len(局红), len(局红) > 0))
+    # ③之三〔1119 死规之审·gates12〕侦得者只印 ⚠、全书 rc 0（⛔再拦推）
+    import contextlib
+    _buf = io.StringIO()
+    with contextlib.redirect_stdout(_buf):
+        _rc = m.全书(诸=局, 封版者=set(局))
+    R.append(('③之三·〔1119·gates12〕同局全书 rc 0，其 %d 章逐章印 ⚠（只报）' % len(局红),
+              _rc == 0 and _buf.getvalue().count('⚠第') == len(局红) and '⛔第' not in _buf.getvalue()))
     局2 = dict((n, '窄' if n % 3 else '宽') for n in range(331, 350))
     R.append(('③之二·同样十九章而型在变者不红（⛔证③非一律判否）',
               not m.查(局2, 封版者=set(局2), 认={})))

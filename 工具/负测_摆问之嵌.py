@@ -8,7 +8,9 @@
   ★**其数（0923 全书亲扫）**：**嵌者 279 处、分布 161 章｜真摆问 289 处**——**旧式所数之「问」，近半不是问。**
 ⛔⛔**而本测头一格所守者，不是「新式对不对」，是「本坐动它之时它正拦着本坐的推」**：
   **故 ①格以全书回灌钉死其误伤之广（161 章），⛔证此改非自赦**；
-  **②③格守其不许放松（真摆问照旧数得着）。**"""
+  **②③格守其不许放松（真摆问照旧数得着）。**
+〔1119 死规之审·gates19〕⑳ 入 `_软报`：上列数问之格一字不动；另添 ⑦：⑳ 所出之行名落在软报之列（⛔计入拦），
+  而硬检之名（⑬）不落（守牙）——run() 之拦与否另由 负测_未答闸 ⑧⑨ 真跑验之。"""
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
 try:
@@ -86,6 +88,23 @@ if _f358:
 _src = io.open(os.path.join(_D, '开轮六检.py'), encoding='utf-8').read()
 chk('⑥⛔器里 `_嵌式` 已在，且 `check20` 用着它',
     ('_嵌式 = re.compile' in _src and '_嵌式.search' in _src), True)
+
+# ⑦〔1119 死规之审·gates19〕⑳ 只报：check20 真出之行名（造一真摆二问不答之局）落在 _软报；⑬ 不落（守牙仍硬）
+import tempfile as _tf, shutil as _sh
+_tmp = _tf.mkdtemp(prefix='负测_摆问之嵌_')
+_旧F = _m.F
+try:
+    _p = os.path.join(_tmp, '第九百章.md')
+    io.open(_p, 'w', encoding='utf-8').write(
+        '他把那一样东西递过来。这是什么。\n' + '\n'.join('走了一步。' for _ in range(25))
+        + '\n他不肯说。为什么。\n' + '\n'.join('走了一步。' for _ in range(25)) + '\n')
+    _m.F = {900: _p}
+    _行 = _m.check20(900)[0]
+finally:
+    _m.F = _旧F
+    _sh.rmtree(_tmp, ignore_errors=True)
+chk('⑦真摆二问不答 → ⑳侦得（ok=False），其行名落在 _软报（⛔计入拦）；⑬ 之名不落（守牙）',
+    (_行[1], _m._是软报(_行[0]), _m._是软报('⑬·亮点段')), (False, True, False))
 
 坏 = [x for x in 案 if not x[1]]
 print('════ 负测·摆问之嵌 ════（守：⑳ 所数的那个「问」，是不是真的一个问）')

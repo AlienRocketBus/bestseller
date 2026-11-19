@@ -15,8 +15,13 @@
   ② 章型连锁     —— 单章指标查不出「九章同一个纹理」
   ③ 账之净额     —— 每清一笔便立一笔者，永不收束
   ④ 日数速率     —— 报而不闸
-  ⑤ 距终点与账之余额 —— 未清之账须清得完
+  ⑤ 距终点与账之余额 —— 账之余额与估之距（〔1119 终局之令〕报而不闸：终点係估、由事定）
   ⑥ 轮记开销比   —— 报而不闸
+〔1119 死规之审·gates10/12〕①② 改为只报（⚠）、⛔入「不过」：距非判据（人账.py:47-53 作者0905驳正）、
+  型之轮换係机械之额；⑤ 见下条。
+〔1119 死规之审·gates漏2·终局之令〕⑤ 三判（已达或逾终点／清不完／到期章逾终点）亦改只印 ⚠、⛔入「不过」：
+  终点係估、由事定（作者 1119「没有一个绝对的硬性规定到第510章就会结局」；0826 令零⛔以「离总数还差多少」裁定）；
+  只令总编辑与段庭见账之余额与估之距，⛔逼收、⛔逼凑章数。
 
 用法：
   python3 工具/书级体检.py            # 跑六检，报并闸
@@ -57,10 +62,15 @@ VER_DIR = os.path.join(ROOT, '版本')
 #   ★★逮出之刻：397 大审孤钩四笔照「入余章总案、带章」之裁落账（443、507、507、509，到期账转 open），
 #     **兑章 507／509 一落，⑤「到期章逾终点」即报红——拦的不是一笔清不完的账，是一个旧终点。**
 #   ⛔而只改这一个数：⑤ 三判照旧（已逾终点／清不完／到期章逾终点），负测照 m.END_CH 取数，一格不松。
+# 〔1119 死规之审·gates漏2·终局之令〕END_CH 今只係「今之估」，⛔目标、⛔指标：终局由事定（作者 1119：「有可能写到400多章结局，
+#   也有可能510多、520多、530多……千万不要烂尾」）；待「终局之位」（法用册·限 480·骊山段剧情庭开题前总编辑判）判後随改。
+#   名⛔改（负测之钉、书级基线之「终点章」俱读此名）；⑤ 三判俱只印 ⚠、⛔入「不过」。
+#   今之估（终局由事定·作者 1119·待终局之位判後随改）：
 END_CH = 510
 
 # ── 主线人物之在场限（章）──────────────────────────────
 # 缺席不得逾此数；逾之而无账者，闸报。
+# 〔1119 死规之审·gates10〕今此限只定「印 ⚠」之门槛，⛔入「不过」（距非判据；下落由 人账「投注×下落」判）
 PRESENCE_LIMIT = {
     '老头': 3,
     '钱满': 5,
@@ -70,6 +80,7 @@ PRESENCE_LIMIT = {
     '苏衍': 60,
 }
 # 同型连锁之限（章）
+# 〔1119 死规之审·gates12〕今只係印 ⚠ 之门槛，⛔入「不过」
 TYPE_CHAIN_LIMIT = 12
 # 自此章起，近十章之账须净减
 NET_DUE_FROM = 192
@@ -229,12 +240,11 @@ def check_presence(chs, due):
                     note = '已挂账·限%s章' % due_ch
                     ok = True
                 else:
-                    note = '⛔已挂账（限%s）而缺席逾%d章：须补回切或插暗线章' % (due_ch, lim * 2)
-                    bad.append('%s缺席%d章（挂账限%s，然逾二倍之界%d）——★须补一处回切或插一篇暗线章'
-                               % (who, gap, due_ch, lim * 2))
+                    # 〔1119 死规之审·gates10〕逾 lim×2 只印 ⚠、⛔入 bad：距从来不是判据（人账.py:47-53 作者0905驳正），照旧罚辞「补回切／插暗线章」即硬塞人声（332之裁）
+                    note = '⚠已挂账（限%s）而缺席逾%d章——只报；其人之下落由 人账「投注×下落」判' % (due_ch, lim * 2)
             else:
-                note = '⛔逾限而无账'
-                bad.append('%s缺席%d章（限%d）且未挂账' % (who, gap, lim))
+                # 〔1119 死规之审·gates10〕逾限而无账亦只印 ⚠、⛔入 bad（同上由；CHAR-315A→332A 之展期链即为过此闸而生）
+                note = '⚠逾限而无账——只报；其人之下落由 人账「投注×下落」判'
         rows.append((who, ln, gap, lim, ok, note))
     return rows, bad, last
 
@@ -334,9 +344,7 @@ def check_type_chain(chs):
         else:
             chain, last_kind, start = 1, k, c
     bad = []
-    if chain > TYPE_CHAIN_LIMIT:
-        bad.append('同型「%s」已连锁 %d 章（第%d—%d章，限%d）'
-                   % (last_kind, chain, start, seq[-1][0], TYPE_CHAIN_LIMIT))
+    # 〔1119 死规之审·gates12〕连锁逾限只由 main 印 ⚠、⛔入 bad：型係段长之类，按链轮换係机械之额（换型令:9-10 砍均段之伤）；单调归刻意之疲／大审连读客判
     return seq[-14:], (last_kind, chain, start), bad
 
 
@@ -412,19 +420,20 @@ def check_pace(chs):
 
 
 # ── ⑤ 距终点与账之余额 ────────────────────────────────
+# 〔1119 死规之审·gates漏2·终局之令〕三判照旧各管一样、照旧算出，其第三项今为「信号」（main 只印 ⚠、⛔入「不过」）：终点係估、由事定
 def check_endgame(due, cur):
     op = [x for x in due if x.get('状态') == 'open']
     left = END_CH - cur
-    bad = []
+    sig = []   # 〔1119 终局之令〕原名 bad：今只係 ⚠ 之信号，⛔逼收、⛔逼凑章数
     if left <= 0:
-        bad.append('已达或逾终点第%d章而未收' % END_CH)
+        sig.append('已达或逾终点（今之估第%d章）而账未收' % END_CH)
     elif len(op) > left:
-        bad.append('未清之账 %d 笔 > 距终点 %d 章（清不完）' % (len(op), left))
+        sig.append('未清之账 %d 笔 > 距终点（今之估）%d 章（照估清不完）' % (len(op), left))
     over = [x for x in op if isinstance(x.get('到期章'), int) and x['到期章'] > END_CH]
     if over:
-        bad.append('有 %d 笔账之到期章逾终点：%s'
-                   % (len(over), '、'.join(x['id'] for x in over[:5])))
-    return op, left, bad
+        sig.append('有 %d 笔账之到期章逾终点（今之估第%d章）：%s'
+                   % (len(over), END_CH, '、'.join(x['id'] for x in over[:5])))
+    return op, left, sig
 
 
 # ── ⑥ 轮记开销比 ──────────────────────────────────────
@@ -574,8 +583,7 @@ def main():
     rows_d, net_d, bad_d = check_due_net(due, cur)
     allbad += bad_d
     pace = check_pace(chs)
-    op, left, bad_e = check_endgame(due, cur)
-    allbad += bad_e
+    op, left, sig_e = check_endgame(due, cur)   # 〔1119 死规之审·gates漏2·终局之令〕⑤ 三判只印 ⚠、⛔入 allbad：终点係估、由事定
     ovh = check_overhead(chs)
     rows_l, loss_run, loss_best = check_loss(chs)
 
@@ -585,16 +593,17 @@ def main():
         print('  全书 %d 章｜正文净重 %d 字｜均 %.0f 字/章'
               % (len(chs), total, total / len(chs)))
         print()
-        print('① 人物在场衰减（缺席不是罪，缺席而无账才是罪）')
+        print('① 人物在场衰减（只报·〔1119 死规之审·gates10〕距与账之状照印；下落由 人账 判）')
         for who, ln, gap, lim, ok, note in rows_p:
             print('   %-4s 末次第%-4s章｜缺席%3d章（限%2d）%s %s'
                   % (who, ln if ln else '—', gap, lim,
-                     '✓' if ok else '⛔', note))
+                     '✓' if ok else '⚠', note))   # 〔1119 死规之审·gates10〕逾限印 ⚠（信号），⛔印 ⛔
         print()
-        print('② 章型连锁（限%d章）' % TYPE_CHAIN_LIMIT)
+        print('② 章型连锁（只报·〔1119 死规之审·gates12〕限%d章係信号之门槛）' % TYPE_CHAIN_LIMIT)
         print('   近十四章：', ' '.join('%d%s' % (c, k) for c, k, a, t in seq))
         print('   ★当前「%s」型已连 %d 章（自第%s章起）%s'
-              % (chain[0], chain[1], chain[2], '⛔' if bad_t else '✓'))
+              % (chain[0], chain[1], chain[2],
+                 '⚠逾限——只报；纹理单调否归 刻意之疲／大审 连读客 判' if chain[1] > TYPE_CHAIN_LIMIT else '✓'))   # 〔1119 死规之审·gates12〕逾限印 ⚠，⛔印 ⛔
         print()
         print('③ 账之净额（自第%d章起须 ≤0）' % NET_DUE_FROM)
         print('   ' + ' '.join('%d:%+d' % (c, n) for c, m, k, n in rows_d))
@@ -607,9 +616,12 @@ def main():
             print('   第%d章＝入山第%d日 → 第%d章＝入山第%d日｜%.2f 日/章'
                   % (c0, d0, c1, d1, r))
             print()
-        print('⑤ 距终点与账之余额（终点第%d章）' % END_CH)
-        print('   未清 %d 笔｜距终点 %d 章｜须净减 %.2f 笔/章 %s'
-              % (len(op), left, len(op) / max(1, left), '⛔' if bad_e else '✓'))
+        # 〔1119 死规之审·gates漏2·终局之令〕只报：终点係今之估、由事定；「须净减」改「账距之比」（数照印，⛔逼收、⛔逼凑章数）
+        print('⑤ 距终点与账之余额（只报·〔1119 终局之令〕终点係估、由事定——今之估第%d章）' % END_CH)
+        print('   未清 %d 笔｜距今之估 %d 章｜账距之比 %.2f 笔/章 %s'
+              % (len(op), left, len(op) / max(1, left), '⚠' if sig_e else '✓'))
+        for s in sig_e:
+            print('   ⚠%s——只报；终点係估、由事定（作者 1119），⛔为此逼收、⛔为此凑章数' % s)
         for x in sorted(op, key=lambda y: y.get('到期章') or 999):
             print('     %-14s 限%-4s %s' % (x['id'], x.get('到期章'), str(x.get('事'))[:40]))
         print()

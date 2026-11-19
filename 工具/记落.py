@@ -375,6 +375,7 @@ def 落(n, root=ROOT, 试=False, 印=print):
 # ── X109（1117·460 起）：回执之骨——记席 455—459 回执一 Write 通篇自拟（$2.9—3.1、12 回、逾配额 5%），器先立骨、记席只填判 ──
 骨起 = 460
 判占 = re.compile(r'‹判[^›\n]{0,24}›')
+死规审自 = 473   # 〔1119 死规之审·gates14〕回执骨之「五钩」标自此改作可无之「收势」；N<473 之骨照旧（已封之回执⛔动）
 
 
 def 骨(n, root=ROOT, 日=None):
@@ -421,7 +422,9 @@ def 骨(n, root=ROOT, 日=None):
                 出.append(号(l)); 有 = 1
             continue
         m = re.match(r'^(- \*\*[^*]+\*\*|\d+\. \*\*[^*]+\*\*)', l)
-        if m:
+        if m and n >= 死规审自 and m.group(1) in ('- **五钩**', '- **收势**'):   # 〔1119 死规之审·gates14〕前章之「五钩」标⛔袭：改作可无之「收势」（许书「无」）；N<473 照旧
+            出.append('- **收势**：‹判·可书「无」›'); 有 = 1
+        elif m:
             出.append(号(m.group(1)) + ('——' if m.group(1)[0].isdigit() else '：') + '‹判›'); 有 = 1
         elif not l.strip() and 有 and 出[-1] != '':
             出.append('')
@@ -673,14 +676,25 @@ def 自测():
         验('重填·无席时之值即红', 重填(410, 目, 印=lambda s: None) == [('重填', '无席时之值')])
         # ★X109：回执之骨——节目随前章、§一器格、判占未填即红、已有回执⛔覆
         _骨目 = tempfile.mkdtemp(); os.makedirs(os.path.join(_骨目, '设定'))
-        open(os.path.join(_骨目, '设定', '回执_20261101_第409章封版席.md'), 'w', encoding='utf-8').write(
-            '# 回执 · 第409章《甲》封版席\n\n> **式：虫洞**：乙\n\n## 一·本章之数（器出）\n\n- 白文 **1—9** 行\n\n## 二·检察官回执诸项\n\n- **章魂**：丙\n'
+        _前文 = ('# 回执 · 第409章《甲》封版席\n\n> **式：虫洞**：乙\n\n## 一·本章之数（器出）\n\n- 白文 **1—9** 行\n\n## 二·检察官回执诸项\n\n- **章魂**：丙\n'
             '- **五钩**：丁\n\n## 四·本章之失\n\n1. **读误**——戊\n\n## 八·锁定行逐拍之落处\n\n器拍：己\n\n## 十三·410 开镜卡\n\n- **锚之取**：庚\n\n'
             '## 十六·归 `封版.py` 之事（本坐⛔办）\n\n- 俱归 `python3 工具/封版.py 409 --後`。\n')
+        open(os.path.join(_骨目, '设定', '回执_20261101_第409章封版席.md'), 'w', encoding='utf-8').write(_前文)
         _p = 骨(410, _骨目, '20261102'); _t = 读(_p, _骨目)
         验('骨·立', _p and '‹器:回执之数›' in _t and '- **章魂**：‹判›' in _t and '## 十三·411 开镜卡' in _t and '封版.py 410 --後' in _t
             and '读误' not in _t and '丙' not in _t and '‹器:拍界›' in _t and 骨(410, _骨目) is None, _t[:300])
         验('骨·判未填即红', any('‹判›' in x[1] for x in 核(410, {'回执': _t}, v, [], _骨目)))
+        # 〔1119 死规之审·gates14〕N<473 之骨照旧袭「五钩」；N≥473 改作可无之「收势」（许书「无」·再下一章仍袭其可无之占）；余键（章魂）照袭、判未填照红
+        验('骨·N<473 照旧袭五钩', '- **五钩**：‹判›' in _t, _t[:300])
+        open(os.path.join(_骨目, '设定', '回执_20261119_第472章封版席.md'), 'w', encoding='utf-8').write(_前文.replace('409', '472').replace('410', '473'))
+        _p4 = 骨(473, _骨目, '20261120'); _t4 = 读(_p4, _骨目) if _p4 else ''
+        _填 = _t4.replace('‹判·可书「无」›', '无')
+        验('骨·473 五钩→可无之收势', _p4 and '五钩' not in _t4 and '- **收势**：‹判·可书「无」›' in _t4 and '- **章魂**：‹判›' in _t4
+            and '- **收势**：无' in _填 and not any('收势' in x or '可书' in x for x in 判占.findall(_填)), _t4[:300])
+        open(os.path.join(_骨目, _p4), 'w', encoding='utf-8').write(_填)
+        _p5 = 骨(474, _骨目, '20261121'); _t5 = 读(_p5, _骨目) if _p5 else ''
+        验('骨·474 袭可无之收势、守牙照红', _p5 and '五钩' not in _t5 and '- **收势**：‹判·可书「无」›' in _t5
+            and any('‹判›' in x[1] for x in 核(474, {'回执': _t5}, v, [], _骨目)), _t5[:300])
         shutil.rmtree(_骨目, ignore_errors=True)
         验('N≤410 ⛔写', subprocess.run([sys.executable, os.path.abspath(__file__), '410'], capture_output=True, text=True).returncode == 2)
     finally:

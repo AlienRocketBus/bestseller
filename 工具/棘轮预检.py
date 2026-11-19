@@ -7,6 +7,8 @@
 　　　★故此器所报，与 --存版 之棘轮闸逐字同源，不会出现「预检绿而存版红」。
 　用：python3 工具/棘轮预检.py N      ← 落盘之後、--存版 之前跑
 　　　rc=0 放行｜rc=1 会回退｜rc=2 无此章
+〔1119 死规之审·gates21〕RATCHET_MAX（嗅／沈鸢不降）与 RATCHET_V01（四感不低於起草）之退 → 入 drift（⚠·只报），⛔入 worse（⛔·rc 1）：
+　其係改稿之内容底线，只逼补偿之笔（跑轮:244-249·289）；沈鸢之名之棘轮更与暗线称谓之约相抵。RATCHET_MIN（四字串三现、顿悟起手）防复防癖，照旧硬。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -243,7 +245,8 @@ def 跑(n, 报=True):
             drift.append((k, best[k], soft[k], '升'))
     for k in RATCHET_MAX:
         if k in 末 and soft[k] < 末[k]:
-            (拆退 if 末前拆 else worse).append((k, 末[k], soft[k], '降'))
+            # 〔1119 死规之审·gates21〕嗅／沈鸢之降（对末版）入 drift（⚠），⛔入 worse：内容之底只逼补偿之笔（289）
+            (拆退 if 末前拆 else drift).append((k, 末[k], soft[k], '降·对末版'))
         elif k in best and soft[k] < best[k]:
             drift.append((k, best[k], soft[k], '降'))
     v01 = 起草版(n)
@@ -255,7 +258,7 @@ def 跑(n, 报=True):
             if m and 共 and 有 * 2 >= 共:
                 搬.append((k, v01[k], soft[k], 有, 共, m))
             else:
-                worse.append((k, v01[k], soft[k], '低於起草'))
+                drift.append((k, v01[k], soft[k], '低於起草'))   # 〔1119 死规之审·gates21〕四感低於起草入 drift（⚠），⛔入 worse
     if 报:
         print('════ 棘轮预检 · 第%d章 ════' % n)
         if not 末 and not best:
@@ -278,11 +281,21 @@ def 跑(n, 报=True):
                   '有 %d 条在第%d章正文里（第%d章係自本章拆出）。句没有少，只是搬到隔壁去了，不拦。'
                   % (k, a, b, k, 共, 有, m, m))
         for k, a, b, d in drift:
+            if d in ('降·对末版', '低於起草'):
+                # 〔1119 死规之审·gates21〕内容之底（嗅／沈鸢／四感）之退只印 ⚠ 並其删证；判其降伤不伤文，归人（此行⛔带「⛔」字：起草闸.红行 见⛔即红）
+                句 = _四感删证(n, txt, k) if k in _感式 else []
+                print('  ⚠ 内容之底（只报·〔1119·gates21〕）：%s %d→%d(%s)%s——判其降伤不伤文归人；勿为补数而补字'
+                      % (k, a, b, d, ('｜本轮删去而含「%s」之句 %d 条：' % (k, len(句))
+                                      + '｜'.join('「%s」' % x[:34] for x in 句[:3])) if 句 else ''))
+                continue
             print('  ⚠ 漂移（对历来最优·非本笔之责）：%s %d→%d(%s)　★历来最优之净重 %s，当前 %s——'
                   '两版长短不同则绝对计数本不可比，此行只作参考，不拦。'
                   % (k, a, b, d, best.get('净重', '?'), soft.get('净重', '?')))
         if not worse:
             print('  ✓ 与末版比无回退；此刻存版，棘轮不会报回退。')
+            if any(d in ('降·对末版', '低於起草') for _k, _a, _b, d in drift):
+                # 〔1119 死规之审·gates21〕✓ 只及 RATCHET_MIN（防复防癖）；上列内容之底之 ⚠ 照旧在，只报不拦
+                print('    （此 ✓ 只及 %s；上列「内容之底」之 ⚠ 只报不拦。）' % '／'.join(RATCHET_MIN))
             if 末前拆:
                 print('    （末档係拆章前之版，故上列诸项只作参考。本章之棘轮须待下一次存版方能重立底。）')
         for k, a, b, d in worse:
@@ -332,8 +345,7 @@ def 全书(报=True):
         有 += 1
         _h, soft = score(io.open(p, encoding='utf-8').read())
         n搬, _邻 = _末版係拆章前(n)
-        if n搬 < 8 and (any(k in 末 and soft[k] > 末[k] for k in RATCHET_MIN)
-                        or any(k in 末 and soft[k] < 末[k] for k in RATCHET_MAX)):
+        if n搬 < 8 and any(k in 末 and soft[k] > 末[k] for k in RATCHET_MIN):   # 〔1119 死规之审·gates21〕新式之⛔只数 RATCHET_MIN（MAX 之降今只 ⚠）
             新红 += 1
             新单.append(n)
         if (any(k in best and soft[k] > best[k] for k in RATCHET_MIN)

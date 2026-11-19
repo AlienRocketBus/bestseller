@@ -4,7 +4,9 @@
   ★★而放宽之闸若口子开大了，等於把闸拆了。
 ★★★故此测专问三样：①旧式所红而新式仍红者，须还在（其防未动）；
   ②新式所松者，须逐章拿得出「其限已明写」之凭据（不是凭空放行）；
-  ③一个假章：摆了问而二十拍内一个字也不交代者，新式仍须报红。"""
+  ③一个假章：摆了问而二十拍内一个字也不交代者，新式仍须报红。
+〔1119 死规之审·gates19〕⑳ 入 `_软报`：上列侦之格一字不动（「红」即侦得）；另添 ⑧⑨：
+  ⑳ 侦得之红经 `run()` ⛔计入拦（rc 0）｜⛔守牙：硬检（⑬）一红照旧拦（rc 2）。"""
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
 try:
@@ -84,6 +86,45 @@ qs2 = [(i, x) for i, x in enumerate(假2)
        if re.search(r'(是什么|在哪儿|几时|怎么办|为什么|多少|哪一样|哪一条)[。？]', x)]
 un2 = [i for i, q in qs2 if not re.search(旧词 + '|' + 新加, ''.join(假2[i + 1:i + 21]))]
 chk('⑦「≤1 未答」之限未动（摆二问答其一 → 放行）', len(un2) <= 1, True)
+
+# ⑧⑨〔1119 死规之审·gates19〕⑳ 只报：真跑 check20 於一假章（摆二问、二十拍内一字不交代），侦得而 run() ⛔拦
+import contextlib, io as _io, os as _os, tempfile as _tf, shutil as _sh
+def _跑闸(真检, cur, 硬红=False):
+    """余检一律换作恒绿之桩，只留「真检」照跑；硬红=True 另令 ⑬ 红（守牙）。返 (rc, --静 之印)。"""
+    诸 = ('check3', 'check5', 'check7', 'check10', 'check11', 'check12', 'check13',
+          'check15', 'check16', 'check17', 'check18', 'check19', 'check20')
+    旧 = dict((k, getattr(K, k)) for k in 诸)
+    try:
+        for k in 诸:
+            if k != 真检:
+                setattr(K, k, lambda *a, _k=k: [('桩·' + _k, True, '桩')])
+        if 硬红:
+            K.check13 = lambda *a: [('⑬·亮点段', False, '⛔桩：无亮点段')]
+        buf = _io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = K.run([cur], True)
+        return rc, buf.getvalue()
+    finally:
+        for k, v in 旧.items():
+            setattr(K, k, v)
+_tmp = _tf.mkdtemp(prefix='负测_未答闸_')
+_旧F = K.F
+try:
+    _p = _os.path.join(_tmp, '第九百章.md')
+    open(_p, 'w', encoding='utf-8').write(
+        '他站在水里等的是什么。\n' + '\n'.join('走了一步。' for _ in range(25))
+        + '\n她手里攥的是什么。\n' + '\n'.join('走了一步。' for _ in range(25)) + '\n')
+    K.F = {900: _p}
+    _侦 = K.check20(900)[0]
+    _rc, _印 = _跑闸('check20', 900)
+    chk('⑧⑳侦得假章之红（ok=False）而 run() ⛔计入拦：rc 0、印「通过」',
+        (_侦[1], _rc, '开轮十六检通过' in _印), (False, 0, True))
+    _rc2, _印2 = _跑闸('check20', 900, 硬红=True)
+    chk('⑨⛔守牙：同局而硬检（⑬）一红 → rc 2，--静 败单只列 ⑬、⛔混进 ⑳',
+        (_rc2, '⑬' in _印2, '⑳' in _印2), (2, True, False))
+finally:
+    K.F = _旧F
+    _sh.rmtree(_tmp, ignore_errors=True)
 
 坏 = [x for x in 案 if not x[1]]
 for 名, 过, 详 in 案:

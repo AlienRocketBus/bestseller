@@ -84,6 +84,12 @@ def 跑():
         chs[mm.group(1)] = None
     R.append(('⑥盘上正文 ≥300 章（本测之料在）', len(chs) >= 300))
 
+    # ⑦〔1119 死规之审·gates12〕连锁逾限照旧侦得（链长照算），⛔入「不过」——只由 main 印 ⚠
+    文 = '《书》\n\n第九十九章　假\n\n' + '\n\n'.join(['甲' * 50] * 4) + '\n'
+    _sq, _ch, _bad = m.check_type_chain(dict((n, 文) for n in range(400, 420)))
+    R.append(('⑦二十章同纹理：链长 %d 照旧侦得（＞限 %d），而⛔入 bad' % (_ch[1], m.TYPE_CHAIN_LIMIT),
+              _ch[1] > m.TYPE_CHAIN_LIMIT and _bad == []))
+
     print('════ 负测 · 章型连锁之「相对之型」 ════')
     过 = 0
     for 名, ok in R:

@@ -32,6 +32,7 @@
     python3 工具/大审.py --立 293    ← 造一份大审之册（其模在下）
     python3 工具/大审.py --包 398 407 ← 瘦式·零 token 先行：诸器之红＋十章白文＋已付之盲读、逻辑审 → 设定/_草/大审407/包.md
     python3 工具/大审.py --录 <runId> ← 瘦式·录册归器（X27）：自 journal 排册之一、二、三节，⛔一席抄档
+    python3 工具/大审.py --自测      ← 零先计红之钉（470 包回放）、诸摘、增之顶、器事之分流（W908 环8）；--闸 亦跑之
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -325,6 +326,180 @@ def _节(t, 题, 末=True):
 零先之器 = [('抄袭闸', ['抄袭闸.py', '--段']), ('刻意之疲', ['刻意之疲.py']), ('悬念哨', ['悬念哨.py']),
           ('线限哨', ['线限哨.py']), ('清偿章哨', ['清偿章哨.py'])]
 
+# ★W908 环8（1119·用之审）：零先之器之⛔行，须带其所指方计红——账号（SUS-B-磨窝、CHAR-282A）、「限 N」、「第N章」
+#   （抄袭闸之红以章为指，⛔漏）；头注之⛔（「⛔本器只报不拦」「⛔不许专开一拍」）⛔计。旧守 '只报不拦' not in x[:6]，
+#   而 x 带行首之空、守不着：大审470 包悬念哨「红 3 行」真者 1、线限哨「红 1 行」真者 0。⚠✗红 之行照旧。
+_所指 = re.compile(r'(?<![A-Za-z])[A-Z]{2,}-[0-9A-Za-z一-龥]|限\s*\d|第\s*\d+\s*章')
+
+
+def 计红(x):
+    """零先之器之一行计红否（纯判）。"""
+    if not re.search(r'⛔|⚠|✗|红', x) or '只报不拦' in x[:6]:
+        return False
+    return '⛔' not in x or bool(_所指.search(x))
+
+
+# ★W908 环8：半用之器接入——外声闸、改记（常令:43 之读路）入包：读者可见之旁证（出声几句；封後改了哪几行——已付之
+#   盲读、逻辑审判於改前），四席用之。窗界哨之未答（裁八「改入大审包之报（不拦）」）、处方旗哨、末十章 _器之迹.md 之
+#   rc≠0 係器之事：其报只印 --包 之出，与段末囤灰普查同块（主环读之、当段裁）；⛔入 包.md——1027 之裁「四席⛔读器之事」，
+#   入则四席各读约 1KB 而⛔用，主环不读包、裁席不读包（W908 验·坑6／坑52）。增之顶 3KB（包与主环之出合计；守瘦式 ≤$25）：
+#   逾即自价最低者删，删者留一行之指。⛔入章料、开镜卡：外声之静是戏，⛔成配额。
+增顶 = 3 * 1024
+
+
+def _跑器(令, 时=300):
+    import subprocess
+    try:
+        r = subprocess.run(['python3', os.path.join(ROOT, '工具', 令[0])] + 令[1:], cwd=ROOT,
+                           capture_output=True, text=True, timeout=时)
+        return (r.stdout or '') + (r.stderr or '')
+    except Exception as e:
+        return '（跑不成：%s）' % e
+
+
+def 外声之摘(o, a, b):
+    """外声闸之印（其表：章 出声句 出声字 别人问他 句）→ a—b 出声几句几字、最长连零（只报）。"""
+    行 = {}
+    for x in o.splitlines():
+        m = re.match(r'\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)[ \t]*(.*)$', x)
+        if m and a <= int(m.group(1)) <= b:
+            行[int(m.group(1))] = (int(m.group(2)), int(m.group(3)), m.group(5).strip())
+    if not 行:
+        return ['- **外声闸**：（未得 %d—%d 之数：%s）' % (a, b, (o.strip().splitlines() or ['无印'])[-1][:60])]
+    长 = 今 = 0
+    for n in range(a, b + 1):
+        今 = 今 + 1 if n in 行 and 行[n][0] == 0 else 0
+        长 = max(长, 今)
+    引 = '；'.join('%d「%s」' % (n, re.sub(r'[「」“”]', '', v[2].split('｜')[0])[:12])
+                  for n, v in sorted(行.items()) if v[0] and v[2])
+    判 = [x.strip() for x in o.splitlines() if re.match(r'\s*[⛔⚠] 逾', x)][:1]
+    return ['- **外声闸**（只报·静是戏，⛔配额）：%d—%d 出声 %d 句 %d 字%s｜最长连零 %d 章%s' % (
+        a, b, sum(v[0] for v in 行.values()), sum(v[1] for v in 行.values()),
+        ('（%s）' % 引[:120]) if 引 else '', 长, ('｜' + 判[0][:40]) if 判 else '')]
+
+
+def 改记之摘(印们):
+    """{章: `改记.py --章 N` 之印} → 封後改正文之摘：同一提交并一行（章:行）。封版之笔及其前（稿之成）⛔录。"""
+    提 = {}
+    for n in sorted(印们):
+        块 = re.split(r'(?m)^■ ', 印们[n])[1:]                       # 新者在前
+        封 = [i for i, k in enumerate(块) if re.search(r'第%d章《[^》\n]*》封版' % n, k.split('\n', 1)[0])]
+        if not 封:                                                  # 无封版之笔：正文之最旧一笔即其成
+            封 = [i for i, k in enumerate(块) if '· 正文/' in k] or [0]
+        封 = 封[-1]                                                 # 首封（重封前之改亦录）
+        for k in 块[:封]:
+            头, _, 身 = k.partition('\n')
+            m = re.search(r'(?m)· 正文/.*?行：(.+)$', 身)
+            if not m:
+                continue
+            时, 号, 说 = (头.split('｜', 2) + ['', ''])[:3]
+            提.setdefault(号, [时, 说, []])[2].append('%d:%s' % (n, m.group(1).strip()[:40]))
+    if not 提:
+        return ['- **改记**：封後正文无改。']
+    序 = sorted(提.items(), key=lambda kv: kv[1][0], reverse=True)
+    L = ['- **改记·封後改正文**（`改记.py --章 N`；已付之盲读、逻辑审判於改前）：%d 笔' % len(序)]
+    L += ['    %s %s「%s」→ %s' % (v[0][5:10], 号, v[1][:28], '｜'.join(v[2]))[:300] for 号, v in 序[:6]]
+    return L
+
+
+def 窗界之摘(rows, txt):
+    """窗界哨.扫() 之行与窗界账之文 → 未答之摘（以 窗界哨.对档 判答否，⛔另立其式）。"""
+    import 窗界哨
+    未 = [r for r in rows if not 窗界哨.对档(txt, [r])[0]]
+    L = ['- **窗界哨**（裁八：未答者入大审之报、⛔拦）：缺界之窗 %d、答过 %d、未答 %d%s' % (
+        len(rows), len(rows) - len(未), len(未), '' if 未 else ' ✓')]
+    L += ['    `%s` 行%d·缺%s' % (r[5][:70], r[1], r[4]) for r in 未[:8]]
+    return L
+
+
+def 处方旗之摘(o):
+    m = re.search(r'处方里点名之旗 (\d+) 处', o)
+    红 = [x.strip() for x in o.splitlines() if re.match(r'\s*⛔ 工具/', x)]
+    if 红:
+        return ['- **处方旗哨**：红 %d 行（旗不认即照默认路走）' % len(红)] + ['    ' + x[:160] for x in 红[:6]]
+    return ['- **处方旗哨**：%s' % (('✓（处方之旗 %s 处，器俱认）' % m.group(1)) if m
+                                  else '（未得其数：%s）' % (o.strip().splitlines() or ['无印'])[-1][:60])]
+
+
+def 器之迹之摘(a, b, root=None):
+    """a—b 之 版本/第N章/_器之迹.md 之 rc≠0 行 → 一摘：败多者八，例中器自坏（exc）者尽列。闸之红亦计败，真假由主环分。
+    与囤灰普查之「候修·败多」（_器之迹.jsonl 全史）係一信两窗：主环之块以此紧接其上，⛔另处再报（坑53）。"""
+    聚, 缺 = {}, []
+    for n in range(a, b + 1):
+        p = os.path.join(root or ROOT, '版本', '第%d章' % n, '_器之迹.md')
+        if not os.path.exists(p):
+            缺.append(n)
+            continue
+        for l in io.open(p, encoding='utf-8', errors='replace'):
+            c = [x.strip() for x in l.strip().strip('|').split('|')]
+            if len(c) < 7 or not (c[1].isdigit() and c[2].isdigit()) or int(c[2]) == 0:
+                continue
+            x = 聚.setdefault(re.sub(r'\.(py|js)$', '', c[0]), {'跑': 0, '败': 0, '章': 0, '异': []})
+            x['跑'] += int(c[1])
+            x['败'] += int(c[2])
+            x['章'] += 1
+            x['异'] += re.findall(r'rc=exc:(\w+)', '|'.join(c[6:]))
+    if not 聚:
+        return ['- **器之迹·败**：%d—%d 无 rc≠0 之行%s' % (a, b, ('（缺迹：%s）' % '、'.join(map(str, 缺))) if 缺 else '')]
+    序 = sorted(聚.items(), key=lambda kv: (-kv[1]['败'], kv[0]))
+    L = ['- **器之迹·败**（本段 %d—%d 之 `_器之迹.md` rc≠0；全史之败多即下普查「候修」；闸之红亦计，真假由主环分）：器 %d、败 %d' % (
+        a, b, len(聚), sum(v['败'] for v in 聚.values()))]
+    L.append('    败多：' + '、'.join('%s %d/%d（%d 章）' % (k, v['败'], v['跑'], v['章']) for k, v in 序[:8]))
+    异 = {}
+    for k, v in 序:
+        for e in v['异']:
+            异.setdefault(e, [])
+            if k not in 异[e]:
+                异[e].append(k)
+    if 异:
+        L.append('    例中器自坏：' + '；'.join('%s（%s）' % (e, '、'.join(ks[:4])) for e, ks in sorted(异.items())))
+    if 缺:
+        L.append('    缺迹：' + '、'.join(map(str, 缺)))
+    return L
+
+
+def 字节(行们):
+    return len(('\n'.join(行们) + '\n').encode('utf-8')) if 行们 else 0
+
+
+def 限增(块们, 顶=增顶):
+    """块们：[(名, 行们, 指)]，前者价高 → (留之行们, 省之名们)。总字节逾顶即自末删，删者代以一行之指。"""
+    块们 = [list(x) for x in 块们]
+    省 = []
+    for x in reversed(块们):
+        if sum(字节(y[1]) for y in 块们) <= 顶:
+            break
+        x[1] = ['- **%s**：逾增之顶（%dB）而省——主环自跑 %s' % (x[0], 顶, x[2])]
+        省.append(x[0])
+    return 块们, 省
+
+
+def 排(外, 改, 窗, 旗, 迹, 顶=增顶):
+    """诸摘 → (入包之行们, 印主环之行们, 省之名们)。价序 外声、改记、窗界、处方旗、器之迹（逾顶自末删）；
+    器之迹居器事之末，主环之块里紧接囤灰普查之「候修」。"""
+    块们, 省 = 限增([('外声闸', 外, '`外声闸.py`'), ('改记', 改, '`改记.py --章 N`'), ('窗界哨', 窗, '`窗界哨.py`'),
+                    ('处方旗哨', 旗, '`处方旗哨.py`'), ('器之迹', 迹, '`囤灰闸.py --迹 N`')], 顶)
+    return 块们[0][1] + 块们[1][1], 块们[2][1] + 块们[3][1] + 块们[4][1], 省
+
+
+def 主环之块(器事, 普查):
+    """--包 之出之末块（只主环读：四席⛔读、⛔入包）：器之事在前，囤灰普查在後——器之迹（本段）紧接普查之「候修」（全史）。"""
+    return '\n'.join(['── 主环·段末器之事与囤灰普查（零 token·只报；候者当段裁：删、修或留由）──'] + 器事
+                     + [(普查 or '').strip() or '（普查无出）'])
+
+
+def 接入(a, b):
+    """→ (入包之行们, 印主环之行们, 省之名们)。"""
+    外 = 外声之摘(_跑器(['外声闸.py', str(max(_末章(), b) - a + 1)]), a, b)
+    改 = 改记之摘({n: _跑器(['改记.py', '--章', str(n)], 120) for n in range(a, b + 1)})
+    try:
+        import 窗界哨
+        zh = os.path.join(ROOT, '设定', '窗界账.md')
+        窗 = 窗界之摘(窗界哨.扫(), io.open(zh, encoding='utf-8', errors='replace').read() if os.path.exists(zh) else '')
+    except Exception as e:
+        窗 = ['- **窗界哨**：（跑不成：%s）' % str(e)[:80]]
+    return 排(外, 改, 窗, 处方旗之摘(_跑器(['处方旗哨.py'])), 器之迹之摘(a, b))
+
 
 def 包(a, b):
     """★1023 X51·瘦式之一「零 token 先行」与之三「虹吸」：诸器先跑、其红汇一页；十章白文（带行号）与各章已付之盲读、
@@ -340,7 +515,7 @@ def 包(a, b):
             o = (r.stdout or '') + (r.stderr or '')
         except Exception as e:
             o = '（跑不成：%s）' % e
-        红 = [x for x in o.splitlines() if re.search(r'⛔|⚠|✗|红', x) and '只报不拦' not in x[:6]]
+        红 = [x for x in o.splitlines() if 计红(x)]
         L.append('- **%s**：%s' % (名, ('红 %d 行' % len(红)) if 红 else '✓'))
         L += ['    ' + x.strip()[:240] for x in 红[:12]]
         # ★1118 总编辑复核·刻意之疲 改（0ad2fad7c）：只照镜之器（恒绿）以「镜·」起之行照录——镜给大审之通读者，⛔算红
@@ -355,6 +530,11 @@ def 包(a, b):
         if '本章无一句' not in o and o.strip():
             L.append('- **整句复述哨·%d**：' % n)
             L += ['    ' + x.strip()[:240] for x in o.splitlines()[2:10] if x.strip()]
+    try:
+        旁, 器事, 省 = 接入(a, b)   # ★W908 环8：半用之器接入（合顶 3KB）；旁证入包、器之事只印主环；败⛔碍包之成
+    except Exception as e:
+        旁, 器事, 省 = [], ['- **半用之器接入**：（跑不成：%s）' % str(e)[:80]], []
+    L += 旁
     L.append('\n## 乙·十章白文（带原行号；引句一律「章:行」）与各章已付之盲读、逻辑审之末判\n')
     缺 = []
     for n in range(a, b + 1):
@@ -389,7 +569,9 @@ def 包(a, b):
             '- 前册#%s 限%d｜%s' % (号, l, c) for 号, l, c in 旧) + '\n')
     print('★上册逾限之笔：%d 笔 → %s' % (len(旧), os.path.relpath(os.path.join(包目(b), '旧笔.md'), ROOT)))
     print('★大审之包：%s（%d 字）' % (os.path.relpath(p, ROOT), sum(len(x) for x in L)))
-    return p
+    print('★半用之器接入：包增 %dB、主环之出 %dB（合顶 %dB）%s' % (字节(旁), 字节(器事), 增顶,
+                                                              ('；逾顶而省：' + '、'.join(省)) if 省 else ''))
+    return p, 器事
 
 
 def 连带(引):
@@ -540,7 +722,139 @@ def 录(run, a=None, b=None):
     print('★大审之册已录：%s（席 %d、裁 %d 行、旧笔 %d）' % (os.path.relpath(p, ROOT), len(席果), len(裁果.get('rows') or []), len(cs)))
     return p
 
+
+# ★W908 环8：计红之钉（纯判·⛔读盘）——大审470 包甲节之原行回放，并真红不漏。自测② 用之；--闸 跑整个 自测()（见下）。
+_四七零 = [('悬念哨', '  ⛔ SUS-B-磨窝       末见第462章｜已隔 8 章（限 3）', True),
+         ('悬念哨', '  ⛔**不许专开一拍去提、不许把它答死、不许用同一句式**；', False),
+         ('悬念哨', '  ⛔**而「这一章没位子」不是由**：没位子即改挂到走得到的那一章，当场写明。', False),
+         ('线限哨', '  ── ⛔本器只报不拦：改一笔账之限是一庭的事 ──', False),
+         ('清偿章哨', '  ⚠CHAR-282A（其章 285）：了结而无清偿章｜**旧账·只报不拦**', True),
+         ('清偿章哨', '  ⚠DEBT-297E（其章 307）：了结而无清偿章｜**旧账·只报不拦**', True),
+         ('清偿章哨', '  ⚠CHAR-309A（其章 313）：了结而无清偿章｜**旧账·只报不拦**', True),
+         ('清偿章哨', '  ⚠CHAR-317A（其章 319）：了结而无清偿章｜**旧账·只报不拦**', True)]
+_真红 = ['  ⛔ 第461章 12.0%',                                              # 抄袭闸 --段
+        '  ⛔ PLOT-301：限 470 ＝ 甲线，而本笔係 乙线——那一章碰它即破线。',   # 线限哨
+        '  ⛔CHAR-470A（其章 470）：了结而无清偿章',                          # 清偿章哨之新账
+        '  ⚠ SUS-B-磨窝      末见第462章｜已隔 8 章（逾 3·只报）']            # 悬念哨今式
+
+
+def _钉():
+    """→ 坏者之述（空即全过）。"""
+    坏 = ['470包%s「%s」' % ('漏真红' if 期 else '误计', x.strip()[:16]) for _, x, 期 in _四七零 if 计红(x) != 期]
+    坏 += ['漏真红「%s」' % x.strip()[:16] for x in _真红 if not 计红(x)]
+    数 = {}
+    for 名, x, _ in _四七零:
+        数[名] = 数.get(名, 0) + 计红(x)
+    if 数 != {'悬念哨': 1, '线限哨': 0, '清偿章哨': 4}:
+        坏.append('470包之数 %s≠悬念哨 1、线限哨 0、清偿章哨 4' % 数)
+    return 坏
+
+
+def 自测(印=True):
+    """→ 坏者之名（空即全过）。纯判＋tempdir（⑧⑬），⛔读真盘之态、⛔跑他器（⑬ 只起一空跑之 python3）。
+    ★--闸 亦跑之（全测·大审闸、封版 --前）：W908 验——旧只钉计红，诸摘与限增、器事之分流无一闸跑之。"""
+    import contextlib
+    import shutil
+    import tempfile
+    R = []
+    旧 = lambda x: bool(re.search(r'⛔|⚠|✗|红', x)) and '只报不拦' not in x[:6]
+    旧数 = {}
+    for 名, x, _ in _四七零:
+        旧数[名] = 旧数.get(名, 0) + 旧(x)
+    R.append(('①旧式回放 470 包：悬念哨 3、线限哨 1、清偿章哨 4（误计之证）',
+              旧数 == {'悬念哨': 3, '线限哨': 1, '清偿章哨': 4}))
+    R.append(('②新式：悬念哨 1、线限哨 0、清偿章哨 4；真红（第N章、账号、限 N、⚠）⛔漏', not _钉()))
+    o = ('════ 外声闸 · 只报不拦 ════\n  章      出声句      出声字      别人问他      \n'
+         '  9      1        3        0          剩一站。\n  10     0        0        0          \n'
+         '  11     0        0        0          \n  12     2        6        1          「还有几站？」｜明早。\n'
+         '  13     0        0        0          \n  ── 末尾连续出声为零：1 章 ──\n  ✓ 未逾五章。\n'
+         '     1—99章 2933｜100—199章 2473\n')
+    外 = 外声之摘(o, 10, 13)
+    R.append(('③外声之摘：只取 a—b（2 句 6 字、最长连零 2、引 12「还有几站？」）',
+              len(外) == 1 and '出声 2 句 6 字' in 外[0] and '最长连零 2 章' in 外[0] and '12「还有几站？」' in 外[0]
+              and '剩一站' not in 外[0]))
+    印们 = {10: '■ 2026-11-19 11:46｜aaa1111｜治章-12 推闸（改单#X）\n   · 正文/书_第十章_甲.md　+1／−1　行：15\n'
+                '■ 2026-11-19 05:43｜bbb2222｜大审 1—10 还账\n   · 版本/第10章/v02.md　+9／−0　行：1—9\n'
+                '   · 正文/书_第十章_甲.md　+2／−2　行：15、59\n'
+                '■ 2026-11-19 04:54｜ccc3333｜第10章《甲》封版（造式二代）\n   · 正文/书_第十章_甲.md　+157／−0　行：1—157\n'
+                '■ 2026-11-19 01:59｜ddd4444｜开第10章：方案\n   · 版本/第10章/_料.md　+325／−0　行：1—325\n',
+           9: '■ 2026-11-19 05:43｜bbb2222｜大审 1—10 还账\n   · 正文/书_第九章_乙.md　+1／−1　行：25\n'
+              '■ 2026-11-18 05:43｜eee5555｜第9章《乙》封版（造式二代）\n   · 正文/书_第九章_乙.md　+2／−2　行：127、131\n'
+              '■ 2026-11-18 05:22｜fff6666｜第9章《乙》稿（存底·封版前）\n   · 正文/书_第九章_乙.md　+147／−0　行：1—147\n',
+           8: '■ 2026-11-17 09:00｜ggg7777｜还账 8\n   · 正文/书_第八章_丙.md　+1／−1　行：3\n'
+              '■ 2026-11-17 05:00｜hhh8888｜旧式之成\n   · 正文/书_第八章_丙.md　+99／−0　行：1—99\n'}
+    改 = '\n'.join(改记之摘(印们))
+    R.append(('④改记之摘：封後之笔同提交并一行（bbb2222→9:25｜10:15、59），封版及其前、版本之档⛔录；无封版者以正文之成为界',
+              '3 笔' in 改 and 'bbb2222' in 改 and '9:25｜10:15、59' in 改 and 'aaa1111' in 改 and '8:3' in 改
+              and not any(k in 改 for k in ('ccc3333', 'eee5555', 'fff6666', 'hhh8888', '1—9'))))
+    R.append(('⑤改记之摘：无封後之改即一行', 改记之摘({7: '■ 2026-11-17 05:00｜iii9999｜第7章《丁》封版\n   · 正文/书_第七章_丁.md　+9／−0　行：1—9\n'})
+              == ['- **改记**：封後正文无改。']))
+    甲窗, 乙窗 = '甲.py ‖ [' + '^。]{0,8} ‖ #1', '乙.py ‖ [' + '^x]{0,6} ‖ #1'   # ⛔写死其形：窗界哨扫本档即认作真窗（当场拼出）
+    rows = [('甲.py', 10, '。', 8, '换行', 甲窗), ('乙.py', 20, 'x', 6, '。＋换行', 乙窗)]
+    窗 = 窗界之摘(rows, '| ✅ 判对 | `%s` | 只在一行 |\n' % 甲窗)
+    R.append(('⑥窗界之摘：以 窗界哨.对档 判，答过者⛔列、未答者列其名与行', '答过 1、未答 1' in 窗[0] and len(窗) == 2
+              and '乙.py' in 窗[1] and '行20' in 窗[1]))
+    旗 = 处方旗之摘('════ 处方旗哨 ════\n  处方里点名之旗 7 处｜⛔其器一字未提者 1 处\n  ⛔ 工具/甲器.py 之 --假旗 ← 见於 设定/令.md\n')
+    R.append(('⑦处方旗之摘：总数之行（带⛔）⛔计红，真红列之；全绿一行',
+              旗[0].endswith('红 1 行（旗不认即照默认路走）') and len(旗) == 2 and '--假旗' in 旗[1]
+              and 处方旗之摘('  处方里点名之旗 7 处｜⛔其器一字未提者 0 处\n  ✓ 处方里点名的旗，器器皆认得。\n')
+              == ['- **处方旗哨**：✓（处方之旗 7 处，器俱认）']))
+    tmp = tempfile.mkdtemp(prefix='大审自测_')
+    try:
+        os.makedirs(os.path.join(tmp, '版本', '第10章'))
+        io.open(os.path.join(tmp, '版本', '第10章', '_器之迹.md'), 'w', encoding='utf-8').write(
+            '# 器之迹·第10章\n\n| 器 | 跑 | 败 | 总秒 | 最长 | 重跑 | 败例 |\n|---|---|---|---|---|---|---|\n'
+            '| 甲闸.py | 5 | 4 | 1.0 | 0.5 | （无参） ×3 | 01:00  rc=1；01:02  rc=1 |\n'
+            '| 乙器.py | 3 | 1 | 0.1 | 0.1 |  | 02:00 --help rc=exc:BrokenPipeError |\n'
+            '| 丙器.py | 9 | 0 | 0.1 | 0.1 |  |  |\n')
+        迹 = '\n'.join(器之迹之摘(9, 10, tmp))
+        R.append(('⑧器之迹之摘：只取 rc≠0 之行（败 0 者⛔录），exc 尽列，缺迹之章列之',
+                  '器 2、败 5' in 迹 and '甲闸 4/5（1 章）' in 迹 and 'BrokenPipeError（乙器）' in 迹
+                  and '丙器' not in 迹 and '缺迹：9' in 迹))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    大 = ['- 行' + '字' * 60] * 40
+    块们, 省 = 限增([('高', ['- 高'], 'x'), ('中', 大, 'y'), ('低', 大, 'z')], 3072)
+    R.append(('⑨限增：逾 3KB 即自价最低者删、代以一行之指；价高者留',
+              省 == ['低', '中'] and 块们[0][1] == ['- 高'] and '逾增之顶' in 块们[2][1][0]
+              and sum(len(('\n'.join(x[1]) + '\n').encode('utf-8')) for x in 块们) <= 3072))
+    块们, 省 = 限增([('高', ['- 高'], 'x'), ('低', ['- 低'], 'z')], 3072)
+    R.append(('⑩限增：未逾顶即一字不删', 省 == [] and 块们[1][1] == ['- 低']))
+    旁, 器事, 省 = 排(['- 外'], ['- 改'], ['- 窗'], ['- 旗'], ['- 迹'])
+    R.append(('⑪排：外声、改记入包；窗界、处方旗、器之迹只印主环（器之迹居末）', 旁 == ['- 外', '- 改']
+              and 器事 == ['- 窗', '- 旗', '- 迹'] and 省 == []))
+    块 = 主环之块(器事, '════ 囤灰闸 --普查 ════\n  候修 1\n    · 甲 —— 败多\n').split('\n')
+    R.append(('⑫主环之块：器之事与普查同块，器之迹（本段）紧接普查之「候修」（全史）',
+              块[0].startswith('── 主环·') and 块[1:4] == ['- 窗', '- 旗', '- 迹'] and 块[4].startswith('════ 囤灰闸')
+              and 块[5] == '  候修 1' and 主环之块([], '').endswith('（普查无出）')))
+    g, 旧g = globals(), {}
+    tmp = tempfile.mkdtemp(prefix='大审自测包_')
+    try:                                                    # ⑬ 包() 之实写：桩其诸源，看 包.md 与其回
+        for k, v in (('ROOT', tmp), ('零先之器', []), ('接入', lambda a, b: (['- 旁证之桩'], ['- 器事之桩'], [])),
+                     ('章档', lambda n: os.path.join(tmp, '正文', '书_桩.md')), ('白文', lambda n: '1\t桩'),
+                     ('限於', lambda n: [])):
+            旧g[k] = g[k]
+            g[k] = v
+        with contextlib.redirect_stdout(io.StringIO()):
+            回 = 包(1, 1)
+        文 = io.open(os.path.join(tmp, '设定', '_草', '大审1', '包.md'), encoding='utf-8').read()
+        R.append(('⑬包()：旁证入 包.md，器之事⛔入（1027 之裁·四席⛔读）而回给 --包 印主环',
+                  '旁证之桩' in 文 and '器事之桩' not in 文 and 回[1] == ['- 器事之桩']))
+    except (Exception, SystemExit) as e:
+        R.append(('⑬包()之实写：跑不成（%s）' % str(e)[:60], False))
+    finally:
+        g.update(旧g)
+        shutil.rmtree(tmp, ignore_errors=True)
+    if 印:
+        for 名, ok in R:
+            print(('  ✓ ' if ok else '  ⛔ ') + 名)
+        print('大审·自测 %d/%d' % (sum(1 for _, ok in R if ok), len(R)))
+    return [名 for 名, ok in R if not ok]
+
+
 if __name__ == '__main__':
+    if '--自测' in sys.argv:
+        raise SystemExit(1 if 自测() else 0)
     if '--限' in sys.argv:                 # 开镜卡问七：python3 工具/大审.py --限 N → 上一册「已挂」限 ≤N 之笔
         n = int(sys.argv[sys.argv.index('--限') + 1])
         r = 限於(n)
@@ -551,18 +865,24 @@ if __name__ == '__main__':
         raise SystemExit(0)
     if '--包' in sys.argv:
         i = sys.argv.index('--包')
-        包(int(sys.argv[i + 1]), int(sys.argv[i + 2]))
+        _, 器事 = 包(int(sys.argv[i + 1]), int(sys.argv[i + 2]))
         # ★1027（执行之审 #55 #103·线 D 之遗）：段末一回之囤灰普查——只印主环（⛔入包：四席⛔读器之事），候退、档之囤灰由总编辑当段裁（删、修或留由）
+        # ★W908 环8：器之事（窗界哨之未答、处方旗哨、本段器之迹）同印此块（主环之块），⛔入包
         import subprocess
         try:
             r = subprocess.run(['python3', os.path.join(ROOT, '工具', '囤灰闸.py'), '--普查'], cwd=ROOT, capture_output=True, text=True, timeout=120)
-            print('── 主环·段末囤灰普查（零 token；候者当段裁：删、修或留由）──\n' + (r.stdout or r.stderr or '（无出）').strip())
+            普 = r.stdout or r.stderr or '（无出）'
         except Exception as e:
-            print('⚠ 囤灰普查跑不成：%s' % e)
+            普 = '⚠ 囤灰普查跑不成：%s' % e
+        print(主环之块(器事, 普))
         raise SystemExit(0)
     if '--录' in sys.argv:
         录(sys.argv[sys.argv.index('--录') + 1])
         raise SystemExit(0)
     if '--立' in sys.argv:
         raise SystemExit(0 if 立(int(sys.argv[sys.argv.index('--立') + 1])) else 2)
-    raise SystemExit(1 if 印('--闸' in sys.argv) else 0)
+    判 = 印('--闸' in sys.argv)
+    坏 = 自测(印=False) if '--闸' in sys.argv else []      # ★W908 环8：整个自测随闸（纯判＋tempdir，约 0.1 秒），坏即器红
+    for x in 坏:
+        print('  ⛔ 大审·自测坏（器之事·⛔关本章；器红账限三章治 工具/大审.py）：%s——--自测 详之' % x[:60])
+    raise SystemExit(1 if 判 or 坏 else 0)

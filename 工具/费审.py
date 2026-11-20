@@ -247,6 +247,7 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
     构思稿回 = []
     用, 序, 模, 终, 截 = {}, [], {}, {}, set()
     原, 抄 = {}, 0
+    终因, 拒, 错 = '', 0, []   # ★X126（W906 环2）：执笔之终——末回之 stop_reason、refusal 之回、API 错回（isApiErrorMessage／apiErrorStatus）
     for i, ff in enumerate(fs):
         本原 = {}
         for l in open(ff, encoding='utf-8'):
@@ -269,6 +270,13 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
                 起 = 起 or ts[11:16]; 止 = ts[11:16]
                 起全 = 起全 or ts
             m = e.get('message') or {}
+            if e.get('type') == 'assistant' and (e.get('isApiErrorMessage') or e.get('apiErrorStatus')):
+                错.append(str(e.get('apiErrorStatus') or e.get('error') or 'API错'))
+                终因 = 'API错:' + 错[-1]
+            elif e.get('type') == 'assistant' and m.get('stop_reason'):
+                终因 = m['stop_reason']
+                if m['stop_reason'] == 'refusal':
+                    拒 += 1
             u = m.get('usage')
             if u and e.get('type') == 'assistant':
                 k = (i, m.get('id') or ('_%d' % len(用)))
@@ -296,7 +304,7 @@ def 审一(f, 名, 自=None, 至=None, root=ROOT):
         for u_, d in 本原.items():   # 本档之行入「原」——只供後档认抄（本档内⛔自认）
             for 键, v in d.items():
                 原.setdefault(u_, {})[键] = 原.get(u_, {}).get(键, False) or v
-    r = dict(名=名, 回=len(用), 具=具, 取=取 // 1024, 起=起, 止=止, 未终=sum(1 for k in 用 if not 终.get(k)), 可见=可见, 截=len(截), 抄=抄,
+    r = dict(名=名, 终因=终因, 拒=拒, 错=错, 回=len(用), 具=具, 取=取 // 1024, 起=起, 止=止, 未终=sum(1 for k in 用 if not 终.get(k)), 可见=可见, 截=len(截), 抄=抄,
              写1h=sum((u.get('cache_creation') or {}).get('ephemeral_1h_input_tokens', 0) for u in 用.values()),
              写5m=sum((u.get('cache_creation') or {}).get('ephemeral_5m_input_tokens', 0) for u in 用.values()),
              构思=_分(起全, 构思时们[0]) if (起全 and 构思时们) else None,
@@ -464,6 +472,10 @@ def 印(行, rid=None, 档们=None):
     if s['截']:   # ★1020 W53·X26：撞 128k 而截（stop_reason=max_tokens）——392—397 三十四席 21 回、15 席；截下之思即废（每回 128k 产出约 $2.6）
         print('  ⛔撞产出之顶而截（max_tokens）：%d 回／%d 席：%s' % (s['截'], sum(1 for r in 行 if r.get('截')),
               '、'.join('%s %d' % (r['名'], r['截']) for r in 行 if r.get('截'))))
+    败 = [r for r in 行 if r.get('拒') or r.get('错') or (r.get('终因') and r['终因'] not in ('end_turn', 'tool_use', 'stop_sequence'))]
+    if 败:   # ★X126：执笔席之败因机录（平台之拒／API 错／撞顶）——⛔手书
+        print('  ⛔席之终非常：%s' % '、'.join('%s %s%s%s' % (r['名'], r.get('终因') or '?', ('·拒%d' % r['拒']) if r.get('拒') else '',
+              ('·错' + '/'.join(r['错'][:3])) if r.get('错') else '') for r in 败))
     if s['写1h'] or s['写5m']:   # ★1014·坑㉘：席之缓存档（subagentPromptCacheTtl=1h 後须俱一时档）
         print('  缓存写之档：一时 %d（%.0f%%）｜五分 %d' % (s['写1h'], 100.0 * s['写1h'] / (s['写1h'] + s['写5m']), s['写5m']))
     if s['未终']:
@@ -612,7 +624,14 @@ def 自测():
             f.write(json.dumps({'type': 'assistant', 'message': {'id': 'p', 'model': 'claude-opus-5-5', 'usage': u, 'content': [{'type': 'tool_use', 'input': {'a': '一二三'}}]}}) + '\n')
             f.write(json.dumps({'type': 'assistant', 'message': {'id': 'q', 'model': 'claude-opus-5-5', 'usage': u, 'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': '四五'}]}}) + '\n')
         r = 审一(g, 'x')
-        共 += 1; ok += (r['未终'] == 1 and r['可见'] == len(json.dumps({'a': '一二三'}, ensure_ascii=False)) + 2)
+        共 += 1; ok += (r['未终'] == 1 and r['可见'] == len(json.dumps({'a': '一二三'}, ensure_ascii=False)) + 2 and r['终因'] == 'end_turn' and not r['拒'] and not r['错'])
+        # ★X126：refusal 之回计「拒」、末一 API 错回之终因作「API错:<status>」
+        g2 = os.path.join(t2, 'b.jsonl')
+        with open(g2, 'w', encoding='utf-8') as f:
+            f.write(json.dumps({'type': 'assistant', 'message': {'id': 'r1', 'model': 'claude-opus-5-5', 'usage': u, 'stop_reason': 'refusal', 'content': []}}) + '\n')
+            f.write(json.dumps({'type': 'assistant', 'isApiErrorMessage': True, 'apiErrorStatus': 529, 'message': {'id': 'r2', 'content': [{'type': 'text', 'text': 'Overloaded'}]}}) + '\n')
+        r2 = 审一(g2, '执笔·甲')
+        共 += 1; ok += (r2['拒'] == 1 and r2['错'] == ['529'] and r2['终因'] == 'API错:529')
         # ★1020 W53·X26：「构思首落−席起」与「构思隔」（诸写之最长隔）——席首行 11:00：
         #   甲＝照令：首条消息 Read 料与 Bash cat > 构思同发（0.2 分），其後 4.0、9.0 分各追记 → 首落 0.2、隔 5.0；
         #   乙＝旧病：heredoc 体里写着「> 起草_乙_构思.md」之字⛔认、读档⛔认，36 分方以 Write 落 → 36.0／36.0；

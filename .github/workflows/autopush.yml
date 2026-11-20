@@ -9,6 +9,9 @@
 #   ③器红账落 备份/报 之 报/器红账.json（首见、末见；并判读之、判毕写回）——器红首见之後逾三章仍红即拦（X55 之本意）；
 #   ④章-N 之真克隆（代沙盒 存底 --演 之章标一半）：可跑之仓（正文、设定、工具）之判入报之「演」。
 # 诸果（成／已在／红／拒／败）俱写 备份/报 之 报/推/<枝>.json 与 .txt（always），会话 git fetch 读之（推.py --候、接棒守 --候主）。
+# W908 环4（GitHub 运营满分）：报步出 summary（推报 --摘·一跑一眼知果与因）与 ::error 注实因（推报 --注）；merge 之败带冲突之档（gate 之 output chong → --冲突）；
+#   已在係果⛔因（旧记「gate」）；--信 带因；运营之卡（工具/运营卡.py·环5）於 --写 之後、--落 之前算（timeout 60、败不碍落·卡留旧）；
+#   uses 钉 40 位 sha（Node24 原生之版·注其版）；演章之 base64 头 ::add-mask::。
 name: autopush
 on:
   push:
@@ -45,13 +48,14 @@ jobs:
       GO: ${{ needs.gate.outputs.go }}
       CAND: ${{ needs.gate.outputs.cand }}
       B0: ${{ needs.gate.outputs.base }}
+      CHONG: ${{ needs.gate.outputs.chong }}
       TRIES: ${{ inputs.tries || '0' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         if: needs.gate.outputs.go == '1'
         with:
           path: ${{ runner.temp }}/件
@@ -73,12 +77,14 @@ jobs:
           { echo "GUO=$GUO"; echo "YIN=$YIN"; } >> "$GITHUB_ENV"     # 本步逾时被杀亦有果（报步读之）；毕时之值後写而覆之
           case "$GO$GUO" in
             1*) ;;
-            *已在) echo "✓已在：$R（${T:0:12}）已为主枝之祖——免闸" >> "$O" ;;
+            *已在) YIN=; echo "✓已在：$R（${T:0:12}）已为主枝之祖——免闸" >> "$O" ;;     # 已在係果⛔因（旧承 gate 之空因而记「gate」）
             *拒) echo "⛔拒：所并之树改 .github/workflows——GITHUB_TOKEN 无 workflows 之权、推必被拒（⛔白跑闸）；沙盒兜底 python3 工具/推.py --直" >> "$O" ;;
             *) echo "⛔备候不成（因 $YIN）——未入片闸；看 run_url" >> "$O" ;;
           esac
           if [ "$GO" = 1 ]; then
             W="$RUNNER_TEMP/件"
+            # download-artifact v5 起：唯一件即平铺於 件/（v4 恒 件/<名>/）——诸片俱无件时唯 cand 一件，复其层（判同旧）
+            if [ ! -d "$W/cand" ] && [ -f "$W/secs.json" ]; then mkdir -p "$W/cand" && mv "$W/secs.json" "$W/cand/" && { [ ! -f "$W/cand.bundle" ] || mv "$W/cand.bundle" "$W/cand/"; }; fi
             if [ -f "$W/cand/cand.bundle" ]; then git bundle unbundle "$W/cand/cand.bundle" > /dev/null; fi
             git checkout -q --detach "$CAND"
             A="$RUNNER_TEMP/器红账.json"
@@ -140,13 +146,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
-          H="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          B="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$B"
+          H="AUTHORIZATION: basic $B"
           GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraheader GIT_CONFIG_VALUE_0="$H" \
             python3 工具/存底.py --演章 "${GITHUB_REF_NAME#章-}" --源 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" > "$RUNNER_TEMP/演" 2>&1
           cat "$RUNNER_TEMP/演"
-      - name: 报（备份/报·报/推/<枝>.json 与 .txt；器红账、均秒）
+      - name: 报（备份/报·报/推/<枝>.json 与 .txt；器红账、均秒；summary 与注；运营之卡）
         if: always()
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set +e
           R="$GITHUB_REF_NAME"; T="$GITHUB_SHA"
@@ -157,7 +167,14 @@ jobs:
           D="$RUNNER_TEMP/报"
           python3 工具/推报.py --写 --ref "$R" --sha "$T" --果 "${GUO:-败}" --因 "${YIN:-}" --试 "${TRIES:-0}" \
             --印 "$RUNNER_TEMP/推之印" --主 "$MA" --跑 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --出 "$D" \
-            --候 "$CAND" --判 "$RUNNER_TEMP/判.json" --演 "$RUNNER_TEMP/演" || exit 1
+            --候 "$CAND" --判 "$RUNNER_TEMP/判.json" --演 "$RUNNER_TEMP/演" --冲突 "${CHONG:-}" || exit 1
+          if grep -q '^def 摘(' 工具/推报.py; then                        # 本树之推报有观之口（旧枝之树无之：⛔印其用法入 summary）
+            python3 工具/推报.py --注 "$D"                                # ::error／::warning 注实因（红行即见其因：冲突之档、红行）
+            python3 工具/推报.py --摘 "$D" >> "$GITHUB_STEP_SUMMARY"      # 一跑一眼：果、因、红行、冲突之档、run
+          fi
           if [ -f "$RUNNER_TEMP/器红账.新.json" ]; then cp "$RUNNER_TEMP/器红账.新.json" "$D/报/器红账.json"; fi
           if [ -f "$RUNNER_TEMP/均秒.新.json" ]; then cp "$RUNNER_TEMP/均秒.新.json" "$D/报/均秒.json"; fi
-          python3 工具/推报.py --落 "$D" --信 "报：$R（${T:0:12}）→ ${GUO:-败}"
+          if [ -f 工具/运营卡.py ]; then                                  # 运营之卡（W908 环5）：只读只算、⛔拦推；败或逾六十秒即报照落、卡留旧
+            timeout 60 python3 工具/运营卡.py --算 --出 "$D" --摘 >> "$GITHUB_STEP_SUMMARY" || echo "卡·算败（报照落、卡留旧）" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          python3 工具/推报.py --落 "$D" --信 "报：$R（${T:0:12}）→ ${GUO:-败}${YIN:+（因 $YIN）}"

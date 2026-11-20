@@ -4,7 +4,11 @@
 #   会话调之（二路）：①推「备份/演/<名>」（pre-push 免闸；推之触⛔待默认枝有此档）——所演即其树；
 #     ②gh workflow run 演练.yml --ref <有此档之枝> -f ref=<枝> -f name=<名>（workflow_dispatch 须 GitHub 已识此档）。
 #   读之：python3 工具/推报.py --读演 <名>（rc 0 过｜3 红｜1 无）。
+# W908 环4（治17）：入参「期」（qi：过｜红；空＝过·推之触恒过）——报带「期」，果≠期方 exit 1（跑之色＝果对期：对照之演期红而红即绿）；
+#   期红唯对并判之红：带因之红（备候败、片崩、逾时、判未跑）係器之红——⛔作意之红，照 exit 1、报之期作过（原期存「期之原」·推报.成演报）；
+#   run-name 带名与期；report ⛔取消之跑落红报（if: !cancelled()）；summary（推报 --摘）；uses 钉 40 位 sha（Node24 原生之版·注其版）。
 name: 演练
+run-name: ${{ format('演练·{0}（期 {1}）', inputs.name || github.ref_name, inputs.qi || '过') }}
 on:
   push:
     branches: ['备份/演/*']
@@ -17,6 +21,11 @@ on:
       name:
         description: 演之名（报/演/<名>.json）
         required: true
+        type: string
+      qi:
+        description: 期（过｜红；空＝过）——对照之演（A/B 之「旧」）期红；果≠期方红
+        required: false
+        default: '过'
         type: string
 permissions:
   contents: write
@@ -35,21 +44,22 @@ jobs:
       mode: 演
   report:
     needs: gate
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
+      QI: ${{ inputs.qi == '红' && '红' || '过' }}
       GO: ${{ needs.gate.outputs.go }}
       CAND: ${{ needs.gate.outputs.cand }}
       T: ${{ needs.gate.outputs.sha }}
       NAME: ${{ inputs.name || github.ref_name }}
       REF: ${{ inputs.ref || github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ needs.gate.outputs.sha || github.sha }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         if: needs.gate.outputs.go == '1'
         with:
           path: ${{ runner.temp }}/件
@@ -65,6 +75,8 @@ jobs:
             YIN=逾时
             echo "GUO=$GUO" >> "$GITHUB_ENV"; echo "YIN=$YIN" >> "$GITHUB_ENV"
             W="$RUNNER_TEMP/件"
+            # download-artifact v5 起：唯一件即平铺於 件/（v4 恒 件/<名>/）——诸片俱无件时唯 cand 一件，复其层（判同旧）
+            if [ ! -d "$W/cand" ] && [ -f "$W/secs.json" ]; then mkdir -p "$W/cand" && mv "$W/secs.json" "$W/cand/" && { [ ! -f "$W/cand.bundle" ] || mv "$W/cand.bundle" "$W/cand/"; }; fi
             if [ -f "$W/cand/cand.bundle" ]; then git bundle unbundle "$W/cand/cand.bundle" > /dev/null; fi
             git checkout -q --detach "$CAND"
             A="$RUNNER_TEMP/器红账.json"
@@ -78,15 +90,24 @@ jobs:
           fi
           echo "GUO=$GUO" >> "$GITHUB_ENV"; echo "YIN=$YIN" >> "$GITHUB_ENV"
           tail -n 80 "$O"
-      - name: 报（备份/报·报/演/<名>.json）
-        if: always()
+      - name: 报（备份/报·报/演/<名>.json；summary；果≠期即红）
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set +e
           git config user.name autopush
           git config user.email autopush@users.noreply.github.com
           [ -f "$RUNNER_TEMP/演之印" ] || echo "⛔判一步未跑（取码或装机先败）" > "$RUNNER_TEMP/演之印"
+          [ -n "${GUO:-}" ] || YIN="${YIN:-未判}"                          # 判一步未落果：器之红（⛔作期红之意中之红）
           D="$RUNNER_TEMP/报"
-          python3 工具/推报.py --写演 --名 "$NAME" --ref "$REF" --sha "$T" --候 "$CAND" --果 "${GUO:-红}" --因 "${YIN:-}" \
+          python3 工具/推报.py --写演 --名 "$NAME" --ref "$REF" --sha "$T" --候 "$CAND" --果 "${GUO:-红}" --因 "${YIN:-}" --期 "$QI" \
             --印 "$RUNNER_TEMP/演之印" --判 "$RUNNER_TEMP/判.json" --跑 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --出 "$D" || exit 1
-          python3 工具/推报.py --落 "$D" --信 "演：$NAME（$REF ${T:0:12}）→ ${GUO:-红}"
+          GUAN=; grep -q '^def 摘(' 工具/推报.py && GUAN=1               # 所演之树之推报有观之口（旧枝之树无之）
+          [ -z "$GUAN" ] || python3 工具/推报.py --摘 "$D" >> "$GITHUB_STEP_SUMMARY"   # 一跑一眼：果、期、因、红行
+          python3 工具/推报.py --落 "$D" --信 "演：$NAME（$REF ${T:0:12}）→ ${GUO:-红}${YIN:+（因 $YIN）}·期 $QI"
+          # 治17：果≠期方红（意之红——对照期红——⛔成败跑）；期红而 YIN 非空（备候败、片崩、逾时、未判）係器之红——⛔作意之红，照红
+          if [ "${GUO:-红}" != "$QI" ] || { [ "$QI" = 红 ] && [ -n "$YIN" ]; }; then
+            [ -z "$GUAN" ] || python3 工具/推报.py --注 "$D"
+            echo "::error title=演练·果≠期或器红::果「${GUO:-红}」而期「$QI」${YIN:+（因 $YIN：器之红⛔作意之红）}——红行见 summary"
+            exit 1
+          fi

@@ -351,9 +351,11 @@ def 判(入, 根=None, root=None, 收=None, 记=None):
     包 = os.path.join(root or ROOT, '版本', '第%d章' % n, '_承.js')
     缺 = '、'.join([os.path.basename(str(d.get('file', ''))) for d in 缺稿] + 缺段)
     共病 = (已.get('选') or {}).get('common_fatal') if isinstance(已.get('选'), dict) else ''
-    if 共病:
-        return True, ('⛔续跑之守（坑㊻）：第%d章所成之选有共病（%s）——承之即复停於共病，⛔走承.py。治料之後以 args 加 重造:true 新派'
-                      '（总编辑之裁；承.py 自此⛔收旧轮）。' % (n, str(共病)[:80]))
+    已销 = isinstance(承.get('选'), dict) and bool(承['选'].get('共病之裁')) and not 承['选'].get('common_fatal')
+    if 共病 and not 已销:
+        return True, ('⛔续跑之守（坑㊻）：第%d章所成之选有共病（%s）——承之即复停於共病。病只在料之一处（X120）：治料（段案／开镜卡改、'
+                      '`python3 工具/章料.py %d` 重出）→ `python3 工具/承.py %d --共病已治 "<治料之凭>"`（留选与诸稿续合）；病在诸稿之骨方以 args 加 重造:true 新派'
+                      '（总编辑之裁；承.py 自此⛔收旧轮）。' % (n, str(共病)[:80], n, n))
     if not 承:
         return True, ('⛔续跑之守（坑㊻）：第%d章已有已成之段（%s）——新派造章即重写之。走承之路：%s → Workflow({scriptPath:\'%s\'})；'
                       '确要毁稿重造，args 加 重造:true（总编辑之裁；承.py 自此⛔收旧轮）。' % (n, 缺, _令(n, x), 包))
@@ -495,7 +497,11 @@ def 自测():
           and not 判({'tool_name': 'Workflow', 'tool_input': {'scriptPath': 包档2, 'resumeFromRunId': 'wf_done-001'}}, 根=d)[0])
         病 = lambda n: {'诸稿': [{'file': '/x/版本/第9章/起草_稿甲.md'}], '选': {'common_fatal': '料之病'}}
         拦, 由 = 判(F(), 收=病, 记=记)
-        T('⑯所成之选有共病 → 拦而只指 重造（承之即复停於共病）', 拦 and '重造:true' in 由 and 'python3 工具/承.py' not in 由)
+        T('⑯所成之选有共病 → 拦而指 承.py --共病已治（料之一处）或 重造（骨病）', 拦 and '重造:true' in 由 and '--共病已治' in 由)
+        病2 = lambda n: {'诸稿': [{'file': '/x/版本/第9章/起草_稿甲.md'}, {'file': '/x/版本/第9章/起草_稿乙.md'}], '选': {'common_fatal': '料之病'}}
+        销承 = {'诸稿': [{'file': '/x/版本/第9章/起草_稿甲.md'}], '选': {'ranking': ['稿甲'], 'common_fatal': '', '共病之裁': '已治於料'}}
+        拦销, 由销 = 判(F(承=销承), 收=病2, 记=记)
+        T('⑯之二 X120 承之选已销共病（共病之裁在）→ ⛔以共病拦（余照常：缺稿仍指承已旧）', 拦销 and '共病' not in 由销.split('——')[0] and '承已旧' in 由销)
         # ⑰（1027·开轮六检⑭ 移此）已封之章新派造章 → 拦，重造:true 亦拦；凭二：_十一轮.json、「章-N」之标（真建一库验之）
         封根 = os.path.join(d, 'sealed')
         os.makedirs(os.path.join(封根, '版本', '第9章'))

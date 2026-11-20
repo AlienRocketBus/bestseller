@@ -1,0 +1,23 @@
+{
+ "名": "W908",
+ "ref": "备份/演/W908",
+ "sha": "7065eca5912df45fa6e29dbc944b30a3ecb214a5",
+ "果": "过",
+ "红": [],
+ "时": "2026-11-20T01:48:50Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44655894329",
+ "候": "7065eca5912df45fa6e29dbc944b30a3ecb214a5",
+ "因": "",
+ "期": "过",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 144.75,
+   "2": 56.29,
+   "3": 74.91
+  }
+ },
+ "免": [
+  "接力"
+ ]
+}

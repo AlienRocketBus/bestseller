@@ -551,13 +551,14 @@ def chk_presc_flag():
     　**默认那一条路要是写口，就落盘了**（0917 本坐以 `--dry-run` 当场栽过一回，其记在器之档首）。
     ⛔**本项只报不拦**：旗不认之轻重须人读那一条默认路方判得出；其红只有「那个器自己坏了」。"""
     neg = run('处方旗哨·自测', ['工具/处方旗哨.py', '--自测'])
-    if neg is None or '8/8' not in neg:
+    _m = re.search(r'自测 (\d+)/(\d+)', neg or '')
+    if neg is None or not _m or _m.group(1) != _m.group(2):          # 〔1120〕⛔写死「8/8」：其格增（⑨废之旗）即误红——认 n/n 全满
         return False, (neg or '').strip().split('\n')[-1] or '自测运行失败'
     out = run('处方旗哨', ['工具/处方旗哨.py'])
     if out is None:
         return False, '运行失败'
     ln = [x.strip() for x in out.split('\n') if '处方里点名之旗' in x]
-    return True, (ln[0] if ln else '已跑') + '｜⛔只报不拦｜自测 8/8'
+    return True, (ln[0] if ln else '已跑') + '｜⛔只报不拦｜自测 %s/%s' % (_m.group(1), _m.group(2))
 
 
 

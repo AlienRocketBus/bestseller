@@ -1,0 +1,2508 @@
+diff --git a/.gitattributes b/.gitattributes
+index 34f3e4743..224d6bf46 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -3,6 +3,7 @@
+ # merge.账并 之段全无则 git 退回内建之三方并（与无此档同）——⛔只有 merge.账并.name 而无 driver（git merge 直 fatal）。
+ # 方法账.md 两写者俱有改旧行之提交（8521b402f、575371a19、d45ae4107…）——⛔内建 union（改旧行与邻行之增相并即复活旧行），归 账并 之 md表。
+ # 回：`python3 工具/账并.py --卸`（git config --remove-section merge.账并），或删其行。
++# 〔W912 环2①〕生成之图：设定/体系总图.md 由 封版 --後 与总编辑之 --随治 两写者俱重画——账并 认之即取 ours 原样（⚠ 待下回重生·⛔逐行并），坑63 之冲突即去。
+ 设定/费账.json merge=账并
+ 设定/法用册.json merge=账并
+ 设定/工作流账.json merge=账并
+@@ -10,3 +11,4 @@
+ 设定/改单账.json merge=账并
+ 设定/总编辑复核账.json merge=账并
+ 设定/方法账.md merge=账并
++设定/体系总图.md merge=账并
+diff --git a/工具/体系总图.py b/工具/体系总图.py
+index 9e2346aaf..59f6a06e3 100644
+--- a/工具/体系总图.py
++++ b/工具/体系总图.py
+@@ -36,12 +36,29 @@
+   GitHub 之卡（报/卡.json·W908 环5）：只录於「☁」之行（随 备份/报 而变，--验 ⛔比）；无卡即书「卡未立」。
+ ⛔本器之文⛔书诸件之全名（器带 .py、账带 .md 或六字以上之干）：囤灰闸之闭包、候退、档之囤灰俱以「名在活档」为引——
+   器自己的文字亦在其所量之盘（囤灰闸 自测⑦之二之教）；故表中器只书其干、长档名以「+」断之，载时复之。
+-写者唯一：设定/体系总图.md 唯 封版 --後 重写（坑63：总编辑⛔手跑入主——两写必并冲突）；人手欲看即 --印（只印、⛔写）。
++写者：设定/体系总图.md 由 封版 --後 与总编辑之治（--随治）重写；两写之并由 账并 之生成之图一支（两侧俱改即取 ours、⚠ 待下回重生·坑63 之冲突即去）；
++  方法一变图即随（W912 环2）：总编辑之坐之治改器、席、流、法用册而图旧 → 推.py 图之闸 rc 3 ⛔交（写书之坐⛔拦）；人手欲看即 --印（只印、⛔写）。
+   ⛔依 git 全史（浅克隆亦能生）。
++〔W912·1120 作者令「全图也要随之更新」「执行主义……都去执行起来」「只要执行起来……它不会发亮吗？它或者变绿」〕：
++  ⑥ 机制之流：mermaid（GitHub 即绘）＋文本之链——节＝平台之件（作者、总编辑之坐、写书之坐、【派】、治／章之枝、主枝、备份/报、巡印、巡应、哨 PR、
++    兜底之令、钟之令〔在方立〕）与诸器；边：流之触与 job（.github/workflows/*.yml 之 on 与 job 之 if·uses）、接棒守 之表（兜底之令、钟之令、
++    巡警枝、总编辑：ast 取其字面·⛔另抄）机取而注其源；余照 流之边 之表（甲, 乙, 语, 源档, 须含之串）逐边验其串在其档——失据即 ⓪ 报、书虚线（⛔崩）。
++  ⑦ 近之进化：工作流账「件」W9xx 之裁之末八（件、名、裁、时、所废／较旧之摘 ≤80 字）。
++  活之色：每件、每流之节带灯——🟢 当跑而已跑（末跑 ≤ 期×1.5）｜🟡 迟（≤ 期×3）｜🔴 当跑而未跑（逾期×3）或末跑败｜⚪ 按需、账、或迹不可取（⛔猜）。
++    期：何时跑之机判（期之：常驻每 N 分、cron、每章〔近十章之均隔·取自 HEAD 与 origin/<主枝> 之「封版#N」之提交之时〕、每十章）；末跑：迹之源
++    （_迹表：备份/巡印、巡应、心跳、存底〔按改·⛔作末跑〕、报/推〔autopush 之果；推取 治-* 之报、推报取报在〕、报/演、报/卡、章之封、图之重画；
++    余取 _器之迹〔树无而主枝有之章 git show 取之〕、封版所跑、gate 之全测〔唯「全测·X」所跑而无真路之件·其格⛔在报之「免」·在「红」即败〕、
++    流所调〔只承其时〕；载於有迹之器者随之一层）。共迹⛔借：诸 job 共写一枝（巡印）唯最密者认之、兜底之令借巡应 → ⚪「迹不可取」。
++    末报「败·因 merge」书「合入之卡」。暂停中随写书与兜底之期 ⚪「暂停中」（GitHub 之 cron 照判），解停之後首期自解停起算。
++    灯随时、随 origin/* 而变——--验 ⛔比（_比之文 去其符、一眼之红名之尾与 class 之行）；--摘、--件、--印、--随治 先取其旧之迹枝（限八秒·败即注「本地未取」），
++    写（封版 --後）与 --验 ⛔取；ZM_TU_NOFETCH=1 即⛔取。本地之引或旧（⛔取之巡印／巡应／巡钟、取败）而逾期 → ⚪「迹未取」（⛔作当跑而未跑）。
++  执行之查以图为据：--摘（今树即算·≤25 行）由 接棒守 --巡（总编辑之沙盒）於补印之後印之；法用之守 --报 末行书 图·用之红、⚠、🔴。
+ 用法：
+-  python3 工具/体系总图.py            # 重生 设定/体系总图.md（rc 0）——封版 --後 之步；⛔手跑入主
++  python3 工具/体系总图.py            # 重生 设定/体系总图.md（rc 0）——封版 --後 之步
++  python3 工具/体系总图.py --随治     # 总编辑之治：方法一变图即随（唯总编辑之坐·他坐 rc 2）——并交其图（推.py 图之闸）
+   python3 工具/体系总图.py --印       # 印到屏、⛔写（人手之看）
+-  python3 工具/体系总图.py --验       # 再算与档比：旧只 ⚠ rc 0｜用之红 ⛔ rc 1｜析崩 ⛔ rc 1
++  python3 工具/体系总图.py --摘       # 执行之查之据：今树即算·一眼之数、⛔即红、🔴🟡 之件与其由、⚠、半用／未用、图档旧否（≤25 行）
++  python3 工具/体系总图.py --验       # 再算与档比（灯与 ☁ ⛔比）：旧只 ⚠ rc 0｜用之红 ⛔ rc 1｜析崩 ⛔ rc 1｜流之边失据 ⚠
+   python3 工具/体系总图.py --件 名    # 一件之全（名：存底守、法用册.json、设定/段案/……）
+   python3 工具/体系总图.py --自测     # 小样之料钉诸析，印「体系总图·自测 N/N」
+ """
+@@ -51,7 +68,7 @@ try:
+     import _账  # 跑账·自记（工具/跑账.py）
+ except Exception:
+     pass
+-import os, sys, re, ast, json, glob, time, shutil, tempfile, subprocess
++import os, sys, re, ast, json, glob, time, shutil, tempfile, subprocess, urllib.parse
+ 
+ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ 图名 = os.path.join('设定', '体系总图.md')
+@@ -60,7 +77,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ 列限 = 4                       # 谁跑、谁读各至多列四，余书「等 N」
+ 职限 = 60                      # 何职：至多六十字
+ 云记 = '☁'                     # 随 备份/报 而变之行：--验 ⛔比
+-首行 = ('> 本档由 `工具/体系总图.py` 生成（零 token·随 封版 --後），⛔手改；改其表即改其器之码或其源档。'
++首行 = ('> 本档由 `工具/体系总图.py` 生成（零 token·随 封版 --後 与总编辑之 --随治），⛔手改；改其表即改其器之码或其源档。'
+       '判之义照 W908「用之审之果」（用／半用／未用／死）；名单外者机判：有跑且有读＝用、有一缺＝半用、俱无＝未用。每行带其源档。')
+ 他读之档 = (('README', 'README.md'), ('总圣经', os.path.join('设定', '00_镇冢秘术_唯一总圣经.md')),
+           ('canon', os.path.join('设定', 'canon事实库.json')))   # 席所读之总档（同 囤灰闸.档之囤灰 之「他」）
+@@ -888,6 +905,10 @@ def 读源(根):
+     except Exception:
+         源['法'] = None
+     源['卡'] = _卡(根)
++    源['接表'] = 接棒之表(根, 源['器'].get('接棒守' + '.py'))      # 〔W912〕机制之流之表（总编辑、巡警枝、兜底之令、钟之令…）·ast 取·⛔另抄
++    心 = 析py(源['器'].get('心跳' + '.py') or '')
++    源['心跳之限'] = _常(心['赋']['限'].value, 心['赋']) if 心 and '限' in 心['赋'] else None
++    源['近'] = 近之进化(根)
+     return 源
+ 
+ 
+@@ -1335,6 +1356,955 @@ def 判之(源, 件):
+     return 件
+ 
+ 
++# ═══ ⑥ 机制之流·⑦ 近之进化·活之色（W912）═══
++# 1120 作者令「方法上的更新和不断的进化……整体的那个全图也要随之更新」；续令（四）「只要执行起来，这个全图里面这个东西它不会发亮吗？
++#   它或者变绿……执行主义它就要通过这个方式去判断」——图之件须与其真跑之迹相应：跑即亮绿（W912 环5）。
++# 节之名、边之语、诸表俱⛔书器之全名（器带 .py：同上文之律）——器书其干，载时以 _展件／_展档 复之；md 之账书「干#md」。
++def _展件(x):
++    """表中之件 → 件名：「干#md」→ 干.md；带 .js／.yml／.json 者照书；余（器之干）补 .py；None 照返。"""
++    if x is None:
++        return None
++    x = x.replace('+', '')
++    if x.endswith('#md'):
++        return x[:-3] + '.md'
++    return x if x.endswith(('.js', '.yml', '.json', '.md')) else x + '.py'
++
++
++def _展档(x):
++    """源档之表（工具/接棒守、设定/甲+乙#md、.github/workflows/巡.yml）→ 仓内之路。"""
++    x = x.replace('+', '')
++    if x.endswith('#md'):
++        return x[:-3] + '.md'
++    if x.startswith('工具/') and not re.search(r'\.(py|js|json|md|yml)$', x):
++        return x + '.py'
++    return x
++
++
++# 节：(键, 名, 部, 件〔其灯随此件·器书其干〕, 迹〔平台之件之迹之源·见 _迹之源〕, 期〔'章'｜'兜底'｜'钟'｜'心跳'｜'巡'·None＝按需〕)
++_流节 = (
++    ('作者', '作者', None, None, None, None),
++    ('总编辑', '总编辑之坐', '觉', None, '巡应', '兜底'),
++    ('兜底', '兜底之令', '觉', None, '巡应', '兜底'),
++    ('钟', '钟之令', '觉', None, '巡钟', '钟'),                     # 接棒守 有 钟之令 方立（W911）
++    ('派', '【派】create_session', '觉', None, None, None),
++    ('写书', '写书之坐', '心', None, '心跳', '心跳'),
++    ('造章', '造章之席', '心', '造章.js', None, None),
++    ('封版', '封版', '脉', '封版', None, None),
++    ('推', '推（交 治-sha12）', '脉', '推', None, None),
++    ('治章枝', '治／章之枝', '脉', None, '报推', '章'),
++    ('autopush', 'autopush（gate 分片）', '脉', 'autopush.yml', None, None),
++    ('gate', 'gate（分片之闸）', '脉', 'gate.yml', None, None),
++    ('主枝', '主枝', '脉', None, '主枝', '章'),
++    ('报', '备份/报', '脉', None, '报枝', '章'),
++    ('心跳', '心跳', '脉', '心跳', None, None),
++    ('存底守', '存底守', '脉', '存底守', None, None),
++    ('演练', '演练', '脉', '演练.yml', None, None),
++    ('云巡', '云巡（接棒守 --云巡）', '觉', None, '巡印', '巡'),
++    ('巡印', '备份/巡印', '觉', None, '巡印', '巡'),
++    ('哨PR', '哨 PR', '觉', None, None, None),
++    ('巡应', '备份/巡应', '觉', None, '巡应', '兜底'),
++    ('巡钟', '备份/巡钟', '觉', None, '巡钟', '钟'),                 # 钟之令在、或流之推之触含其枝 方立
++    ('方案', '方案（图之用）', '长', '方案', None, None),
++    ('复盘', '复盘', '长', '复盘', None, None),
++    ('方法账', '方法账', '长', '方法账#md', None, None),
++    ('进化树', '进化树', '长', '进化树', None, None),
++    ('法用之守', '法用之守', '长', '法用之守', None, None),
++    ('图', '体系总图', '长', '体系总图', None, None),
++)
++# 流之边（非机取者）：(甲, 乙, 语, 源档, 须含之串)——逐边验其串在其档，不在即 ⓪ 报「流之边失据 N」、其边书虚线（⛔崩）。
++#   机取者（⛔入此表）：流之触与 job（.github/workflows/*.yml 之 on 与 job 之 if·uses）、兜底之令／钟之令（接棒守 之表）。
++_流边 = (
++    ('作者', '总编辑', '令（常令·对谈）', '设定/00_作者常令+_不停之律#md', '总编辑'),
++    ('总编辑', '派', '派章（--派令 之参原样）', '工具/接棒守', 'create_session'),
++    ('派', '写书', '新坐接写书之锁', '工具/接棒守', 'def 派之参('),
++    ('写书', '心跳', '心跳之锁（存底守续之）', '工具/存底守', '续本坐之锁'),
++    ('写书', '存底守', '开头之钩起之（每五分）', '.claude/settings.json', '存底守'),
++    ('写书', '造章', 'Workflow 派席（自走之印令）', '工具/自走', '造章.js'),
++    ('造章', '封版', '料成→封版 --後', '工具/席/造章.js', '封版'),
++    ('封版', '法用之守', '--後 --验 N', '工具/封版', '法用之守'),
++    ('封版', '进化树', '--後 随三账', '工具/封版', "('进化树随', [器("),
++    ('封版', '图', '--後 重画', '工具/封版', "('体系总图', [器("),
++    ('封版', '治章枝', '存底 --标 N（推 章-N）', '工具/封版', "'--标'"),
++    ('写书', '推', '治之推', '工具/封版', '交治枝'),
++    ('总编辑', '推', '治之推（方法之变）', '工具/推', '拦总编辑之纸'),
++    ('推', '治章枝', '交 治-sha12', '工具/推', "'HEAD:refs/heads/' + 名"),
++    ('法用之守', '推', '纸证之闸（交前）', '工具/推', 'def 纸证之闸('),
++    ('图', '推', '图之闸（总编辑之治·交前）', '工具/推', 'def 图之闸('),
++    ('autopush', '主枝', '闸过即并（advance）', '.github/workflows/autopush.yml', 'advance:'),
++    ('autopush', '报', '果入 报/推', '.github/workflows/autopush.yml', 'REPORT: 备份/报'),
++    ('演练', '报', '果入 报/演', '.github/workflows/演练.yml', '报/演'),
++    ('云巡', '巡印', '每跑 force 写', '工具/接棒守', "巡印枝 = '备份/巡印'"),
++    ('云巡', '哨PR', '非止即唤（一言）', '工具/接棒守', 'def 哨PR('),
++    ('哨PR', '总编辑', 'subscribe_pr_activity 唤之', '工具/接棒守', 'subscribe_pr_activity'),
++    ('巡印', '总编辑', '--巡 验巡印（旧即 rc 5）', '工具/接棒守', 'def 巡印之由('),
++    ('总编辑', '巡应', '--巡 落巡应', '工具/接棒守', 'def 落巡应('),
++    ('巡应', '云巡', '验其应（闭环）', '工具/接棒守', 'def 应判('),
++    ('总编辑', '手派', 'run_workflow 补起（rc 5）', '工具/接棒守', 'run_workflow'),
++    ('复盘', '方法账', '升级链之行（草）', '工具/复盘', 'def 方法账之草('),
++    ('方案', '图', '--图 W 取图之用（每设计必用图）', '工具/方案', '图之用'),
++    ('法用之守', '图', '--报 末行·图之红与灯（今算）', '工具/法用之守', '图·用之红'),
++    ('总编辑', '图', '--随治（方法一变图即随）', '工具/体系总图', "'--随治'"),
++    ('图', '总编辑', '执行之图（--巡 印其 --摘）', '工具/接棒守', '── 执行之图 ──'),
++)
++_接表之键 = ('总编辑', '主枝', '巡警枝', '巡印枝', '巡印档', '巡应枝', '兜底之令', '钟之令', '巡钟枝')
++
++
++def 接棒之表(根, 文=None):
++    """工具/接棒守 之码之表（总编辑、主枝、巡警枝、巡印枝、巡应枝、兜底之令、钟之令〔W911·在方取〕、巡钟枝）——ast 取其字面
++    （⛔另抄·⛔载其模：他根之样亦可析）；读不得或析不得 → {}（⓪ 书之）。"""
++    文 = 文 if 文 is not None else _读(os.path.join(根, '工具', '接棒守' + '.py'))
++    出 = {}
++    try:
++        树 = ast.parse(文 or '')
++    except (SyntaxError, ValueError):
++        return 出
++    for n in 树.body:
++        if isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name) and n.targets[0].id in _接表之键:
++            try:
++                出[n.targets[0].id] = ast.literal_eval(n.value)
++            except (ValueError, SyntaxError, TypeError):
++                pass
++    return 出
++
++
++def _去前(x):
++    return re.sub(r'^(session_|cse_)', '', str(x or '').strip())[:32]
++
++
++def 本坐():
++    """本会话之号：取 心跳.坐（CLAUDE_CODE_REMOTE_SESSION_ID → CLAUDE_SESSION_ID → CLAUDE_CODE_SESSION_ID，去 session_／cse_·⛔另写·坑53）；
++    载不得或「未名」→ ''（--随治 即拒）。"""
++    try:
++        import 心跳
++        x = 心跳.坐()
++        return '' if x == '未名' else x
++    except Exception:
++        return ''
++
++
++def cron之期(式):
++    """cron 五栏 → 两跑之隔（秒）：「*/N * * * *」→N 分；「M * * * *」→一时（M 列 k 数→一时／k）；「M */H * * *」→H 时；「M H * * *」→一日；余 None。"""
++    f = str(式 or '').split()
++    if len(f) != 5 or f[2:] != ['*', '*', '*']:
++        return None
++    分, 时 = f[0], f[1]
++    m = re.fullmatch(r'\*/(\d+)', 分)
++    if m and 时 == '*' and int(m.group(1)):
++        return int(m.group(1)) * 60
++    if re.fullmatch(r'\d+(?:,\d+)*', 分):
++        k = len(分.split(','))
++        if 时 == '*':
++            return 3600 // k
++        m = re.fullmatch(r'\*/(\d+)', 时)
++        if m and int(m.group(1)):
++            return int(m.group(1)) * 3600 // k
++        if re.fullmatch(r'\d+(?:,\d+)*', 时):
++            return 86400 // (k * len(时.split(',')))
++    return None
++
++
++def _合期(诸):
++    """诸令之隔 → 合之隔（率相加：二令各一时 → 三十分）；无即 None。"""
++    诸 = [p for p in 诸 if p]
++    return int(round(1.0 / sum(1.0 / p for p in 诸))) if 诸 else None
++
++
++def _令之cron(x, 取开=False):
++    """兜底之令（名, 号, 常, 降, 开）／钟之令（名, 号, cron）之一行 → (名, cron, 开)；不识 → None。"""
++    if not isinstance(x, (tuple, list)) or not x:
++        return None
++    诸 = [c for c in x[1:] if isinstance(c, str) and cron之期(c)]
++    开 = x[-1] if isinstance(x[-1], bool) else True
++    return (str(x[0]), 诸[0], 开) if 诸 else None
++
++
++# ── 流之构：yml 之 on 与 jobs（缩进析·⛔依 yaml 之库）──
++def 流之构(文):
++    """yml → {'触': [(事, [参])], 'job': {名: {'if', 'uses', 'needs', '文'}}}（非注之行）。事：push（参＝枝式）、schedule（参＝cron）、
++    workflow_dispatch、workflow_call。"""
++    触, job = [], {}
++    段, 事, 名, 在枝 = None, None, None, False
++    for l in (文 or '').split('\n'):
++        if l.lstrip().startswith('#') or not l.strip():
++            continue
++        if re.match(r'^on:\s*$', l):
++            段 = 'on'
++            continue
++        if re.match(r'^jobs:\s*$', l):
++            段 = 'jobs'
++            continue
++        if re.match(r'^\S', l):
++            段 = None
++            continue
++        if 段 == 'on':
++            m = re.match(r'^  ([\w\-]+):', l)
++            if m:
++                事, 在枝 = m.group(1), False
++                触.append((事, []))
++                continue
++            if 事 == 'push':
++                m = re.search(r'branches:\s*\[([^\]]*)\]', l)
++                if m:
++                    触[-1][1].extend(x.strip().strip('\'"') for x in m.group(1).split(',') if x.strip())
++                    continue
++                if re.match(r'^\s+branches:\s*$', l):
++                    在枝 = True
++                    continue
++                m = re.match(r'^\s+-\s+(.+?)\s*$', l)
++                if 在枝 and m:
++                    触[-1][1].append(m.group(1).strip('\'"'))
++                    continue
++                在枝 = False
++            elif 事 == 'schedule':
++                m = re.search(r'cron:\s*[\'"]([^\'"]+)[\'"]', l)
++                if m:
++                    触[-1][1].append(m.group(1))
++        elif 段 == 'jobs':
++            m = re.match(r'^  ([\w\-]+):\s*$', l)
++            if m:
++                名 = m.group(1)
++                job[名] = {'if': '', 'uses': '', 'needs': [], '文': []}
++                continue
++            if 名 is None:
++                continue
++            job[名]['文'].append(l)
++            m = re.match(r'^    if:\s*(.+?)\s*$', l)
++            if m:
++                job[名]['if'] = re.sub(r'^\$\{\{\s*|\s*\}\}$', '', m.group(1))
++            m = re.match(r'^    uses:\s*\./\.github/workflows/(\S+)', l)
++            if m:
++                job[名]['uses'] = m.group(1)
++            m = re.match(r'^    needs:\s*(.+?)\s*$', l)
++            if m:
++                job[名]['needs'] = [x.strip(' []\'"') for x in m.group(1).split(',') if x.strip(' []\'"')]
++    for v in job.values():
++        v['文'] = '\n'.join(v['文'])
++    return {'触': 触, 'job': job}
++
++
++def _分(式, 符):
++    """顶层（括号外、引号外）以 符 分。"""
++    出, 深, 起, i, 引 = [], 0, 0, 0, None
++    while i < len(式):
++        c = 式[i]
++        if 引:
++            引 = None if c == 引 else 引
++        elif c in '\'"':
++            引 = c
++        elif c == '(':
++            深 += 1
++        elif c == ')':
++            深 -= 1
++        elif 深 == 0 and 式.startswith(符, i):
++            出.append(式[起:i])
++            i += len(符)
++            起 = i
++            continue
++        i += 1
++    出.append(式[起:])
++    return [x.strip() for x in 出]
++
++
++def _去外括(x):
++    x = x.strip()
++    while x.startswith('(') and x.endswith(')'):
++        深 = 0
++        for i, c in enumerate(x):
++            深 += 1 if c == '(' else -1 if c == ')' else 0
++            if 深 == 0 and i < len(x) - 1:
++                return x
++        x = x[1:-1].strip()
++    return x
++
++
++def _枝始(枝, 前):
++    if not 枝:
++        return None
++    字 = 枝.split('*')[0]
++    if 字.startswith(前):
++        return True
++    return None if '*' in 枝 and 前.startswith(字) else False
++
++
++def _式值(式, 事, 枝):
++    """GitHub 之式 → True／False／None（不定：inputs.*、always()、needs.* 等）。"""
++    式 = _去外括(式)
++    或 = _分(式, '||')
++    if len(或) > 1:
++        vs = [_式值(x, 事, 枝) for x in 或]
++        return True if True in vs else (None if None in vs else False)
++    且 = _分(式, '&&')
++    if len(且) > 1:
++        vs = [_式值(x, 事, 枝) for x in 且]
++        return False if False in vs else (None if None in vs else True)
++    if 式.startswith('!') and not 式.startswith('!='):
++        v = _式值(式[1:], 事, 枝)
++        return None if v is None else not v
++    m = re.fullmatch(r"github\.event_name\s*(==|!=)\s*'([^']*)'", 式)
++    if m:
++        return (事 == m.group(2)) == (m.group(1) == '==')
++    m = re.fullmatch(r"startsWith\(\s*github\.ref_name\s*,\s*'([^']*)'\s*\)", 式)
++    if m:
++        return _枝始(枝, m.group(1))
++    m = re.fullmatch(r"github\.ref_name\s*(==|!=)\s*'([^']*)'", 式)
++    if m and 枝:
++        等 = (枝 == m.group(2)) if '*' not in 枝 else (None if m.group(2).startswith(枝.split('*')[0]) else False)
++        return None if 等 is None else (等 == (m.group(1) == '=='))
++    return None
++
++
++def 若可(式, 事, 枝=None, 主=''):
++    """job 之 if 於某触（事、push 之枝式）可真否（不定之项作「或真」）；非 push 之事其 ref_name 作主枝（定时、手派俱於默枝）。"""
++    式 = re.sub(r'^\$\{\{\s*|\s*\}\}$', '', (式 or '').strip())
++    if not 式:
++        return True
++    return _式值(式, 事, 枝 if 事 == 'push' else 主) is not False
++
++
++_节名之禁 = str.maketrans({'"': '', "'": '', '`': '', '(': '（', ')': '）', '[': '［', ']': '］', '{': '｛', '}': '｝',
++                       '<': '〈', '>': '〉', '|': '／', '#': '＃', ';': '；', '\n': ' '})
++
++
++def 节名(x):
++    """mermaid 之节名、边语：⛔引号与括号乱其式（ASCII 之括作全角、引号去之）。"""
++    return str(x).translate(_节名之禁).strip()
++
++
++def 立流(源, 件):
++    """⑥ 机制之流 → {'节': {键: 节}, '序': [键], '边': [[甲, 乙, 语, 源, 机]], '失据': [..], '机': n, '表': n}。"""
++    表 = 源.get('接表') or {}
++    主 = 表.get('主枝') or ''
++    节, 序 = {}, []
++
++    def 加(键, 名, 部=None, 件名=None, 迹=None, 期=None):
++        if 键 not in 节:
++            节[键] = {'键': 键, '名': 名, '部': 部, '件': 件名, '迹': 迹, '期': 期}
++            序.append(键)
++        return 键
++    钟令 = [x for x in (_令之cron(y) for y in (表.get('钟之令') or ())) if x]
++    兜令 = [x for x in (_令之cron(y) for y in (表.get('兜底之令') or ())) if x]
++    钟枝 = 表.get('巡钟枝') or '备份/巡钟'
++    构 = {x: 流之构(文) for x, 文 in sorted(源['流'].items())}
++    推枝 = {b for c in 构.values() for e, 参 in c['触'] if e == 'push' for b in 参}
++    for 键, 名, 部, 件名, 迹, 期 in _流节:   # noqa
++        if (键 == '钟' and not 钟令) or (键 == '巡钟' and not (钟令 or 钟枝 in 推枝)):
++            continue
++        加(键, 名, 部, _展件(件名), 迹, 期)
++    if 表.get('总编辑'):
++        节['总编辑']['名'] = '总编辑之坐（%s）' % _去前(表['总编辑'])[:10]
++    if 表.get('巡警枝'):
++        节['哨PR']['名'] = '哨 PR（头枝 %s）' % 表['巡警枝']
++    if 兜令:
++        节['兜底']['名'] = '兜底之令（%s）' % '·'.join('%s%s' % (n, '' if k else '停') for n, _, k in 兜令)
++    if 钟令:
++        节['钟']['名'] = '钟之令（%s）' % '·'.join(n for n, _, _ in 钟令)
++    件键 = {x['件']: k for k, x in 节.items() if x['件']}
++    边 = []
++
++    def 连(甲, 乙, 语, 源_, 机):
++        for x in 边:
++            if x[0] == 甲 and x[1] == 乙 and x[3] == 源_ and x[4] == 机:
++                if 语 not in x[2].split('、'):
++                    x[2] += '、' + 语
++                return
++        边.append([甲, 乙, 语, 源_, 机])
++
++    def 触节(枝):
++        if re.match(r'(章|治)-\*', 枝):
++            return '治章枝'
++        if 枝 == 钟枝:
++            return 加('巡钟', '备份/巡钟', '觉', None, '巡钟', '钟')
++        return 加('push:' + 枝, 'push ' + 枝, None)
++    云巡令 = '接棒守' + '.py --云巡'
++    自派, 流之节们 = [], {}
++    for x, c in 构.items():
++        展 = len(c['job']) >= 2 and any('github.event_name' in j['if'] for j in c['job'].values())   # 诸 job 各依其触：逐 job 立节
++        流键 = None if 展 else (件键.get(x) or 加('流:' + x, x[:-4], (件.get(x) or {}).get('部'), x))
++        jk = {}
++        if 展:
++            for j in c['job']:
++                jk[j] = 加('%s#%s' % (x, j), '%s·%s' % (x[:-4], j), (件.get(x) or {}).get('部'), None, None, None)
++                节[jk[j]]['流'], 节[jk[j]]['job'] = x, j
++        for 事, 参 in c['触']:
++            诸 = [(触节(b), 'push ' + b, b) for b in 参] if 事 == 'push' else \
++                [('定时', 'cron ' + y, None) for y in 参] if 事 == 'schedule' else \
++                [('手派', '手派', None)] if 事 == 'workflow_dispatch' else []
++            for 甲, 语, 枝 in 诸:
++                if 甲 in ('定时', '手派'):
++                    加(甲, {'定时': 'GitHub 定时（cron）', '手派': '手派（workflow_dispatch）'}[甲])
++                if not 展:
++                    连(甲, 流键, 语, '%s on.%s' % (x, 事), True)
++                    continue
++                for j, v in c['job'].items():
++                    if not v['needs'] and 若可(v['if'], 事, 枝, 主):
++                        连(甲, jk[j], 语, '%s on.%s·%s.if' % (x, 事, j), True)
++        for j, v in c['job'].items():
++            自 = jk.get(j, 流键)
++            if v['uses'] and v['uses'] in 构:
++                连(自, 件键.get(v['uses']) or 加('流:' + v['uses'], v['uses'][:-4], (件.get(v['uses']) or {}).get('部'), v['uses']),
++                  'uses', '%s jobs.%s.uses' % (x, j), True)
++            for n in v['needs']:
++                if 展 and n in jk:
++                    连(jk[n], 自, 'needs', '%s jobs.%s.needs' % (x, j), True)
++            if 云巡令 in v['文']:
++                连(自, '云巡', '--云巡', '%s jobs.%s' % (x, j), True)
++                if 展:
++                    节[自]['迹'], 节[自]['云巡'] = '巡印', True     # 诸 job 共一迹（巡印⛔辨 job）：灯之 唯最密者认之、余 ⚪
++            if '/dispatches' in v['文']:                    # 自派（续／再起）：直连其所派之流（手派之节唯外来之派·⛔作诸流之中转）
++                m = re.search(r'workflows/([^/\s"\']+\.yml)/dispatches', v['文'])
++                自派.append((自, urllib.parse.unquote(m.group(1)) if m else x, '%s jobs.%s' % (x, j)))
++        流之节们[x] = (流键, jk, c)
++    for 自, 的, 源_ in 自派:
++        流键_, jk_, c_ = 流之节们.get(的) or (None, {}, None)
++        if 流键_:
++            连(自, 流键_, '自派（续／再起）', 源_, True)
++        elif jk_:
++            for j_, v_ in c_['job'].items():
++                if not v_['needs'] and 若可(v_['if'], 'workflow_dispatch', None, 主):
++                    连(自, jk_[j_], '自派（续／再起）', 源_, True)
++        else:
++            连(自, 加('手派', '手派（workflow_dispatch）'), '自派（续／再起）', 源_, True)
++    if 兜令:
++        连('兜底', '总编辑', '、'.join('%s %s%s' % (n, c, '' if k else '（停）') for n, c, k in 兜令), '接棒守.兜底之令', True)
++    if 钟令:
++        连('钟', '巡钟', '、'.join('%s %s' % (n, c) for n, c, _ in 钟令) + '·--钟 推之', '接棒守.钟之令', True)
++    机 = len(边)
++    失 = []
++    for 甲, 乙, 语, 档, 含 in _流边:
++        if 甲 not in 节 or 乙 not in 节:
++            continue
++        p = _展档(档)
++        文 = _读(os.path.join(源['根'], p))
++        if 文 is None or 含 not in 文:
++            失.append('%s→%s（%s 无「%s」）' % (节[甲]['名'], 节[乙]['名'], p, 含))
++            连(甲, 乙, 语 + '（失据）', p, False)
++        else:
++            连(甲, 乙, 语, p, False)
++    return {'节': 节, '序': 序, '边': 边, '失据': 失, '机': 机, '表': len(边) - 机, '构': 构}
++
++
++# ── 近之进化：工作流账 W9xx 之裁之末八 ──
++def _裁摘(由, 限=80):
++    """裁之由 → 「所废：…；较旧：…」之摘（无则由之首）·≤ 限 字。"""
++    由 = re.sub(r'\s+', ' ', str(由 or ''))
++    废 = re.search(r'所废[：:]\s*(.*?)(?=[；;。]\s*较旧|较旧[：:]|$)', 由)
++    旧 = re.search(r'较旧[：:]\s*(.*)$', 由)
++    s = '；'.join(x for x in (('所废：' + 废.group(1).strip(' ；;。')) if 废 else '', ('较旧：' + 旧.group(1).strip()) if 旧 else '') if x) or 由
++    return s if len(s) <= 限 else s[:限 - 1] + '…'
++
++
++def 近之进化(根, 数=8):
++    """设定/工作流账.json「件」中 W9xx（总编辑之件）之裁之末 数 → [(件, 名, 法, 时, 摘)]（新者先）；读不得 → None。"""
++    try:
++        d = json.load(open(os.path.join(根, '设定', '工作流账.json'), encoding='utf-8'))
++    except Exception:
++        return None
++    诸 = []
++    for x in (d.get('件') if isinstance(d, dict) else None) or []:
++        if not isinstance(x, dict) or not re.fullmatch(r'W9\d\d', str(x.get('id') or '')):
++            continue
++        for c in x.get('裁') or []:
++            if isinstance(c, dict) and c.get('时'):
++                诸.append((str(c['时']), str(x['id']), str(x.get('名') or ''), str(c.get('法') or '?'), _裁摘(c.get('由'))))
++    诸.sort(key=lambda z: (z[0], z[1]))
++    return [(i, 名, 法, 时, 摘) for 时, i, 名, 法, 摘 in 诸[-数:]][::-1]
++
++
++# ── 活之色：迹之源（件或件之类 → 迹之源与取法·零 token）──
++_迹之源 = {
++    '巡印': '枝 备份/巡印 之末提交（云巡每跑 force 写）；其 rc 1 ＝器自败',
++    '巡应': '枝 备份/巡应 之末提交（总编辑沙盒之 --巡 每跑写）',
++    '心跳': '枝 备份/心跳 之末提交（写书之坐之锁·存底守续之）',
++    '存底': '枝 备份/存底* 之末提交（树改方推：按改·⛔作末跑）',
++    '巡钟': '枝 备份/巡钟 之末提交（钟之令每跑推·W911）',
++    '主枝': '枝 主枝 之末提交',
++    '报枝': '枝 备份/报 之末提交',
++    '报推': '备份/报 之 报/推/*.json 之末（推报.读：时、果、因）——autopush 之跑（果「败」即末跑败；因 merge 书「合入之卡」）',
++    '报在': '备份/报 之 报/推/*.json 之末（不论其果）——推报之写已成（报在即成）',
++    '报治': '备份/报 之 报/推/治-*.json 之末（不论其果）——推.py 之交（治-sha12）已至 GitHub（章-N 由存底 --标 推·⛔算）',
++    '报闸': '备份/报 之 报/推/*.json 之末之「成／红」者——gate 真跑（备候不成〔因 merge〕、拒⛔算）',
++    '报演': '备份/报 之 报/演/*.json 之末（推报.读演：时）——演练之跑',
++    '卡': '备份/报 之 报/卡.json 之「算於」（运营卡）',
++    '封': '本树 HEAD 与 origin/<主枝> 之史并取「封版#N」之提交之时（章之封：封版、造章、封版所跑之器·树落後主枝亦⛔误迟）',
++    '图档': 'git log -1 HEAD 与 origin/<主枝> 并取 设定/体系总图.md（图之重画）',
++    '迹': '版本/第N章/_器之迹.md（写书之坐之器）→ 第N章之封时；树无而主枝有之章，git show origin/<主枝> 取之',
++    '全测': '备份/报 之 报/推 之末之「成／红」者——唯「全测·X」所跑而无真路之件（哨、负测）取之：其格在报之「免」（活态之格）⛔算、在报之「红」即末跑败；'
++            '有真路（口·、席·、封版·、流·、钩·、入口……）者取其真路之迹，⛔借闸而绿',
++}
++# 件之迹表（器书其干）：其件之末跑另取於此源（与「迹」「封」「全测」「流」之通取并，取其末）
++_迹表 = {
++    '巡.yml': ('巡印',), 'autopush.yml': ('报推',), 'gate.yml': ('报闸',), '演练.yml': ('报演',),
++    '接棒守': ('巡印', '巡应'), '心跳': ('心跳',), '存底守': ('存底',), '推': ('报治',), '推报': ('报在',),
++    '运营卡': ('卡',), '封版': ('封',), '造章.js': ('封',), '体系总图': ('图档',),
++}
++_流之迹 = {'autopush.yml': '报推', 'gate.yml': '报闸', '巡.yml': '巡印', '演练.yml': '报演'}
++_流迹之别 = {('流·autopush', '全测.py'): '报闸'}       # autopush 之 全测 --并果 唯 GO=1（gate 真跑）方跑：备候不成之报⛔作其跑
++_未鲜之源 = ('巡印', '巡应', '巡钟')                    # 总编辑之迹枝：写书之坐⛔取（取=False 而逾期 → ⚪「迹未取」·⛔作当跑而未跑）
++_借迹 = {'兜底': '借巡应⛔辨其触：兜底之令、哨 PR 之唤、手跑 --巡 俱写 备份/巡应'}   # 流之节：其迹为他者所共写 → ⚪ 迹不可取
++_灯 = ('🟢', '🟡', '🔴', '⚪')
++
++
++def _刻(t):
++    return time.strftime('%m-%d %H:%M', time.gmtime(t)) if t else '?'
++
++
++def _iso秒(s):
++    try:
++        import calendar
++        return calendar.timegm(time.strptime(str(s)[:19].replace('T', ' '), '%Y-%m-%d %H:%M:%S'))
++    except Exception:
++        return None
++
++
++def _期文(秒):
++    if not 秒:
++        return '?'
++    分 = 秒 / 60.0
++    return ('%g 分' % round(分)) if 分 < 90 else ('%g 时' % round(分 / 60, 1))
++
++
++def 可取():
++    """活之色先取其旧之迹否：ZM_TU_NOFETCH=1 即⛔（自测、施工之树）；--摘、--件、--印、--随治 默取，写（封版 --後）、--验 ⛔取（⛔拖累写书）。"""
++    return os.environ.get('ZM_TU_NOFETCH', '') not in ('1', 'true')
++
++
++def 读迹(源, 今, 取=False):
++    """迹之源 → {'值': {源: (时, 败, 注)}, '封': {N: 时}, '封末', '章期', '旧', '停', '解停', '枝名', '落後', '迹主', '闸免', '闸红'}——零 token：
++    git for-each-ref／log／show 於本地之 origin/*；取（--摘 等）：本地之 备份/* 迹枝旧於十五分者先 git fetch 其枝（限八秒·败即用旧而注「迹旧」·主枝⛔取）。
++    取不得之源⛔入（⚪「迹不可取」·⛔猜）；本地之引或旧者（取=False 之 巡印／巡应／巡钟、取败者）注「本地未取」——逾期 ⚪「迹未取」⛔作当跑而未跑。
++    封与图档取 HEAD 与 origin/<主枝> 之并（总编辑之树落後主枝、封版 --後 之树先於主枝，俱⛔误迟）。"""
++    根, 表 = 源['根'], 源.get('接表') or {}
++    主 = 表.get('主枝') or ''
++    枝名 = {'巡印': 表.get('巡印枝') or '备份/巡印', '巡应': 表.get('巡应枝') or '备份/巡应', '心跳': '备份/心跳',
++          '巡钟': 表.get('巡钟枝') or '备份/巡钟', '主枝': 主, '报枝': '备份/报'}
++    迹 = {'值': {}, '封': {}, '封末': None, '章期': None, '旧': set(), '停': False, '解停': None, '枝名': 枝名,
++         '落後': 0, '迹主': {}, '闸免': set(), '闸红': set()}
++    前 = 'refs/remotes/origin/'
++
++    def 枝时():
++        try:
++            r = _git(根, 'for-each-ref', '--format=%(refname)%09%(committerdate:unix)', 前, timeout=10)
++        except Exception:
++            return {}
++        出 = {}
++        for l in (r.stdout or '').split('\n') if r.returncode == 0 else []:
++            a, _, b = l.partition('\t')
++            if a.startswith(前) and b.strip().isdigit():
++                出[a[len(前):]] = int(b)
++        return 出
++    时们 = 枝时()
++    if 取:
++        旧 = [b for k, b in sorted(枝名.items()) if k != '主枝' and b in 时们 and 今 - 时们[b] > 15 * 60]
++        if 旧:
++            try:
++                r = _git(根, 'fetch', '-q', 'origin', *['+refs/heads/%s:%s%s' % (b, 前, b) for b in 旧], timeout=8)
++                if r.returncode == 0:
++                    时们 = 枝时()
++                else:
++                    迹['旧'] = set(旧)
++            except Exception:
++                迹['旧'] = set(旧)
++    for k in ('巡印', '巡应', '心跳', '巡钟', '主枝', '报枝'):
++        b = 枝名[k]
++        if b and b in 时们:
++            未鲜 = b in 迹['旧'] or (not 取 and k in _未鲜之源)
++            迹['值'][k] = (时们[b], False, b + ('·本地未取' if 未鲜 else ''))
++    if '巡印' in 迹['值']:                                # 云巡之末 rc 1 ＝器自败（末跑败）
++        try:
++            r = _git(根, 'show', '%s%s:%s' % (前, 枝名['巡印'], 表.get('巡印档') or '_巡印.json'), timeout=10)
++            d = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else {}
++            if isinstance(d, dict) and d.get('rc') == 1:
++                t, _, 注 = 迹['值']['巡印']
++                迹['值']['巡印'] = (t, True, 注 + '·末巡 rc 1（器自败）')
++        except Exception:
++            pass
++    存 = [(t, b) for b, t in 时们.items() if b.startswith('备份/存底')]
++    if 存:
++        t, b = max(存)
++        迹['值']['存底'] = (t, False, b)
++    主引 = [前 + 主] if 主 and 主 in 时们 else []           # HEAD 与 origin/<主枝> 之并（⛔唯 HEAD：树落後主枝即封、迹俱误迟）
++    if 主引:
++        try:
++            r = _git(根, 'rev-list', '--count', 'HEAD..' + 主引[0], timeout=10)
++            迹['落後'] = int(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip().isdigit() else 0
++        except Exception:
++            pass
++    try:                                                 # 章之封：「封版#N」之提交（HEAD 与主枝之史·新者先）
++        r = _git(根, 'log', '-n', '40', '--format=%ct%x09%s', '--grep=封版#', 'HEAD', *主引, timeout=10)
++        for l in (r.stdout or '').split('\n'):
++            m = re.match(r'(\d+)\t.*封版#(\d+)）', l)
++            if m:
++                迹['封'].setdefault(int(m.group(2)), int(m.group(1)))
++    except Exception:
++        pass
++    if 迹['封']:
++        末 = max(迹['封'])
++        迹['封末'] = (末, 迹['封'][末])
++        迹['值']['封'] = (迹['封'][末], False, '第%d章之封' % 末)
++        近 = [n for n in sorted(迹['封']) if n > 末 - 11]
++        if len(近) >= 2 and 迹['封'][近[-1]] > 迹['封'][近[0]]:
++            迹['章期'] = (迹['封'][近[-1]] - 迹['封'][近[0]]) / float(近[-1] - 近[0])
++    树章 = max(源.get('迹章') or [0])
++    for n in sorted(x for x in 迹['封'] if x > 树章)[-4:] if 主引 else []:   # 树无而主枝有之章之迹（git show·⛔动盘）
++        try:
++            r = _git(根, 'show', '%s:版本/第%d章/_器之迹.md' % (主引[0], n), timeout=10)
++        except Exception:
++            continue
++        for l in (r.stdout or '').split('\n') if r.returncode == 0 else []:
++            m = re.match(r'\|\s*([^|\s]+\.py)\s*\|\s*\d+\s*\|', l)
++            if m:
++                迹['迹主'][m.group(1)] = max(n, 迹['迹主'].get(m.group(1), 0))
++    for 类, 目 in (('报推', '报/推'), ('报演', '报/演')):   # 末数笔之报（新者先）：报推＝末报（败即末跑败）、报闸＝末之「成／红」（gate 真跑：备候不成、拒⛔算）
++        try:
++            r = _git(根, 'log', '-n', '12', '--format=%x01%ct', '--name-only', 前 + '备份/报', '--', 目, timeout=10)
++            名们, ct = [], None
++            for x in (r.stdout or '').split('\n') if r.returncode == 0 else []:
++                x = x.strip()
++                if x.startswith('\x01'):
++                    ct = int(x[1:]) if x[1:].isdigit() else None
++                elif x.startswith(目 + '/') and x.endswith('.json') and ct and x not in [y for _, y in 名们]:
++                    名们.append((ct, x))
++            候 = []
++            for ct, p in 名们[:16]:
++                名 = p[len(目) + 1:-5]
++                d = _报之读(根, 类, 名) or {}
++                果, 因 = d.get('果', '?'), d.get('因') or ''
++                候.append((_iso秒(d.get('时')) or ct, 类 == '报推' and 果 == '败' and 因 != '重派',
++                           '%s/%s（%s%s）' % (目, 名, 果, ('·因 ' + 因) if 因 else ''), 果, d, 名))
++            if 候:
++                迹['值'][类] = _取末([x[:3] for x in 候])
++            if 类 == '报推' and 候:
++                迹['值']['报在'] = _取末([(x[0], False, x[2]) for x in 候])
++                治 = [(x[0], False, x[2]) for x in 候 if x[5].startswith('治-')]
++                if 治:
++                    迹['值']['报治'] = _取末(治)
++            闸 = [x for x in 候 if 类 == '报推' and x[3] in ('成', '红')]
++            if 闸:
++                t, _, 注 = _取末([x[:3] for x in 闸])
++                d = max(闸, key=lambda x: x[0])[4]
++                迹['值']['报闸'] = (t, False, 注)
++                迹['值']['全测'] = (t, False, 'gate 之全测·' + 注)   # gate 之全测：唯「全测·X」而无真路之件取之（_件之候）
++                免 = d.get('免')
++                迹['闸免'] = set(免 if isinstance(免, list) else _活态之格(根))
++                迹['闸红'] = _报之红格(d)
++        except Exception:
++            pass
++    卡 = 源.get('卡') or {}
++    t = _iso秒(卡.get('算於'))
++    if t:
++        迹['值']['卡'] = (t, False, '报/卡.json 算於')
++    try:
++        r = _git(根, 'log', '-1', '--format=%ct', 'HEAD', *主引, '--', 图名.replace(os.sep, '/'), timeout=10)
++        if r.returncode == 0 and r.stdout.strip().isdigit():
++            迹['值']['图档'] = (int(r.stdout.strip()), False, '图之重画')
++    except Exception:
++        pass
++    迹['停'], 迹['解停'] = _停之迹(根)
++    return 迹
++
++
++def _停之迹(根):
++    """→ (停, 解停之时｜None)：暂停令在否（暂停令.在）；令已解者取其「解」之时（解停之後首章之期自解停起算·⛔即红）。"""
++    try:
++        import 暂停令 as _停
++        停 = bool(_停.在(根)[0])
++        d = _停.读令(根) or {}
++    except Exception:
++        return False, None
++    解 = d.get('解') if isinstance(d, dict) else None
++    if 停 or not isinstance(解, dict):
++        return 停, None
++    try:
++        import calendar
++        return False, calendar.timegm(time.strptime(str(解.get('时', ''))[:16], '%Y-%m-%d %H:%M'))
++    except Exception:
++        return False, None
++
++
++def _活态之格(根):
++    """全测.py 之「活态之格」（GitHub 之片闸免之）——报无「免」者以此为免（⛔载全测·只读其文）。"""
++    m = re.search(r'^活态之格\s*=\s*\(([^)]*)\)', _读(os.path.join(根, '工具', '全测.py')) or '', re.M)
++    return set(re.findall(r"'([^']+)'", m.group(1))) if m else set()
++
++
++def _报之红格(d):
++    """报之「红」之列 → 红之格名之集（「⛔全测未过：甲、乙」为先；无则取「✗ 格名」之行）。"""
++    红 = d.get('红') if isinstance(d.get('红'), list) else []
++    for l in 红:
++        m = re.match(r'\s*⛔全测未过[：:]\s*(.+?)\s*$', str(l))
++        if m:
++            return {x.strip() for x in re.split(r'[、,，]', m.group(1)) if x.strip()}
++    return {m.group(1) for l in 红 for m in [re.match(r'\s*✗\s+(\S+)', str(l))] if m}
++
++
++def _报之读(根, 类, 名):
++    """推报.读／读演（取=False·⛔网）；载不得即自 git show 读之。"""
++    try:
++        import 推报 as _报
++        return (_报.读 if 类 == '报推' else _报.读演)(名, 根, 取=False)
++    except Exception:
++        try:
++            r = _git(根, 'show', 'refs/remotes/origin/备份/报:%s/%s.json' % ('报/推' if 类 == '报推' else '报/演', 名), timeout=10)
++            d = json.loads(r.stdout) if r.returncode == 0 else None
++            return d if isinstance(d, dict) else None
++        except Exception:
++            return None
++
++
++def 期之(时, 章期):
++    """何时跑之一语 → (秒, 名)｜None（按需·无定期）：常驻每 N 分；cron（流之触）；含「每章」／自走每跑／每回合／会话之起／每调／push 章-*·治-* → 章期；
++    每推 → 章期（推必随章·宁宽）；每十章 → 章期×10；余（并账有冲突时、主环手跑、随 X、手派、每段……）→ None。"""
++    m = re.search(r'每 ([\d.]+) 分（常驻', 时)
++    if m:
++        return float(m.group(1)) * 60, '常驻·每 %s 分' % m.group(1)
++    诸 = [(cron之期(c), 'cron ' + c) for c in re.findall(r'cron ((?:[^\s，）]+ ){4}[^\s，）]+)', 时) if cron之期(c)]
++    if 章期:
++        if '每十章' in 时:
++            诸.append((章期 * 10, '每十章'))
++        elif 时.startswith('每推'):
++            诸.append((章期, '每推（≥ 每章）'))
++        elif '每章' in 时 or 时.startswith(('自走每跑', '每回合', '会话之起', '每调')) or re.search(r'push（[^）]*(?:章|治)-\*', 时):
++            诸.append((章期, '每章'))
++    return min(诸) if 诸 else None
++
++
++def _灯判(末, 败, 期, 今):
++    if 败:
++        return '🔴'
++    if 末 is None or 期 is None:
++        return '⚪'
++    d = 今 - 末
++    return '🟢' if d <= 期 * 1.5 else '🟡' if d <= 期 * 3 else '🔴'
++
++
++def _停可(期名):
++    """期之名随写书与兜底（暂停令停之）否：每章／每推／每十章（章期）、常驻、兜底之令合、心跳之限、钟之令合 → True；GitHub 之 cron → False（暂停中照跑）。"""
++    return bool(期名) and (期名 in ('每章', '每推（≥ 每章）', '每十章', '兜底之令合', '心跳之限', '钟之令合') or 期名.startswith('常驻'))
++
++
++def _灯由(灯, 候, 期, 按改=False, 停=False, 起=None):
++    """→ 由（⛔「〕」）：末跑之刻与其源、期、迟／逾期×3／末跑败（因 merge 书「合入之卡」）；停：暂停中；起：解停之刻（期自此起算）。"""
++    if not 候:
++        if 停:
++            return '暂停中（暂停令在·⛔当跑）·迹不可取'
++        return '迹不可取' + (('·期 %s（%s）' % (_期文(期[0]), 期[1])) if 期 else '·按需')
++    t, 败, 注 = 候
++    末 = '末 %s（%s）' % (_刻(t), 注)
++    败语 = '·合入之卡（因 merge·主枝与本推之账相冲）' if 败 and '·因 merge' in 注 else '·末跑败'
++    if 按改:
++        return '按改（树未改即⛔推·⛔作末跑）·' + 末
++    if 灯 == '⚪' and 期 and not 败 and '本地未取' in 注:
++        return '迹未取（本地之引或旧·⛔判迟·今算见 --摘）·%s·期 %s（%s）' % (末, _期文(期[0]), 期[1])
++    if 期 is None:
++        return ('暂停中（暂停令在·⛔当跑）·' if 停 else '按需·') + 末 + (败语 if 败 else '')
++    s = '%s·期 %s（%s）' % (末, _期文(期[0]), 期[1]) + (('·自解停 %s 起算' % _刻(起)) if 起 else '')
++    return s + {'🔴': 败语 if 败 else '·逾期×3', '🟡': '·迟'}.get(灯, '')
++
++
++def _灯定(末, 期, 今, 停, 解停):
++    """→ (灯, 期, 起)：暂停中随停之期作 None（⚪ 暂停中）；解停之後首期自解停起算（⛔因停而即红）；本地未取之迹逾期 → ⚪（迹未取·⛔猜）。"""
++    if 停 and 期 and _停可(期[1]):
++        期 = None
++    起 = 解停 if (解停 and 期 and 末 and _停可(期[1]) and 末[0] < 解停) else None
++    灯 = _灯判(起 or (末[0] if 末 else None), 末[1] if 末 else False, 期[0] if 期 else None, 今)
++    if 灯 in ('🟡', '🔴') and 末 and not 末[1] and '本地未取' in 末[2]:
++        灯 = '⚪'
++    return 灯, 期, 起
++
++
++def 灯文(灯, 由):
++    return '%s〔%s〕' % (灯, str(由).replace('〔', '（').replace('〕', '）').replace('\n', ' '))
++
++
++def _闸格(a):
++    """跑者「全测·X」→ X（gate 跑其本职之格）；「（唯自测）」「全测·X·自测」（唯跑其自测）、非全测 → None。"""
++    if not a.startswith('全测·') or '（唯自测）' in a or a.endswith('·自测'):
++        return None
++    return a[3:]
++
++
++def _真路(跑们):
++    """跑者有真路否：全测之格之外（口·、席·、封版·、流·、钩·、入口、派令、GitHub、自驱……）——有即其灯取其真路之迹，⛔借 gate 之全测。"""
++    return any(not a.startswith('全测·') for a in 跑们)
++
++
++def _件之候(源, 迹, k, v):
++    """件之末跑之诸候 → [(时, 败, 注)]：迹表所列者唯其专源；余取 迹（写书之坐之器·树无者取主枝之迹）、封（封版所跑）、
++    gate 之全测（唯无真路之件：其格⛔在报之「免」，在「红」即末跑败）、流（流所调：只承其时·⛔承其败）。"""
++    值, 候 = 迹['值'], []
++    干 = k[:-3] if k.endswith('.py') else k
++    if 干 in _迹表:                                      # 迹表所列者唯取其专源（其本职之迹：封版＝章之封、推＝报/推/治-*……）
++        return [值[s] for s in _迹表[干] if s in 值]
++    if v['类'] == '器':
++        n = max((源.get('迹全') or {}).get(k, 0), (迹.get('迹主') or {}).get(k, 0))
++        t = 迹['封'].get(n) if n else None
++        if t:
++            候.append((t, False, '迹·第%d章' % n))
++    跑名 = {a for a, _ in v['跑'] if '（唯自测）' not in a}
++    if any(a.startswith('封版·') for a in 跑名) and '封' in 值:
++        候.append(值['封'])
++    格们 = {g for g in (_闸格(a) for a in 跑名) if g} - set(迹.get('闸免') or ())
++    if 格们 and not _真路(跑名) and '全测' in 值:
++        t, _, 注 = 值['全测']
++        红 = sorted(格们 & set(迹.get('闸红') or ()))
++        候.append((t, bool(红), 注 + (('·其格红：' + '、'.join(红)) if 红 else '')))
++    for a in 跑名:
++        s = _流迹之别.get((a, k)) or (_流之迹.get(a[2:] + '.yml') if a.startswith('流·') else None)
++        if s and s in 值:
++            候.append((值[s][0], False, 值[s][2]))           # 流所调者只承其时、⛔承其败（流之败唯着其流与治章枝）
++    return 候
++
++
++def _取末(候):
++    if not 候:
++        return None
++    t = max(x[0] for x in 候)
++    同 = [x for x in 候 if x[0] == t]
++    败 = [x for x in 同 if x[1]]
++    return 败[0] if 败 else 同[0]
++
++
++def 灯之(源, 件, 流, 今):
++    """每件、每流之节之灯（🟢🟡🔴⚪）与其由 → v['灯']、v['灯由']、v['灯文']；流之节同。期：何时跑之机判（期之）；末跑：迹之源（_迹表 等）。
++    暂停中：随写书与兜底之期俱 ⚪（暂停中·⛔当跑），GitHub 之 cron 照判；解停之後首期自解停起算。"""
++    迹 = 源['活迹']
++    章期, 停, 解停 = 迹['章期'], bool(迹.get('停')), 迹.get('解停')
++    末们 = {k: _取末(_件之候(源, 迹, k, v)) for k, v in 件.items() if v['类'] not in ('账', '族')}
++    原 = dict(末们)                                    # 一层：载者之末取其本迹（⛔链传）
++    for k, v in 件.items():                           # 载於有迹之器者（口·自走（载）、封版·後（载））随其载者之末跑（一层）
++        if k not in 末们 or (k[:-3] if k.endswith('.py') else k) in _迹表:
++            continue
++        候 = [末们[k]] if 末们[k] else []
++        for a, _ in v['跑']:
++            者 = None if not a.endswith('（载）') else ('封版' + '.py') if a.startswith('封版·') else (a[2:-3] + '.py') if a.startswith('口·') else None
++            if 者 and 原.get(者):
++                候.append((原[者][0], False, '随载者 %s：%s' % (者[:-3], 原[者][2])))
++        末们[k] = _取末(候)
++    for k, v in 件.items():
++        if v['类'] in ('账', '族'):
++            v['灯'], v['灯由'] = '⚪', '账（⛔跑·随其读写之器）'
++        else:
++            跑们 = [(a, b) for a, b in v['跑'] if '（唯自测）' not in a]
++            真 = _真路([a for a, _ in 跑们])             # 有真路者：全测之格之期⛔算（每推之期唯 gate 之跑·⛔借以判其真路）
++            期们 = [p for p in (期之(b, 章期) for b in {b for a, b in 跑们 if not (真 and a.startswith('全测·'))}) if p]
++            期 = min(期们) if 期们 else None
++            末 = 末们.get(k)
++            按改 = '存底' in _迹表.get(k[:-3] if k.endswith('.py') else k, ())
++            if 按改:
++                灯, 期2, 起 = '⚪', 期, None
++            else:
++                灯, 期2, 起 = _灯定(末, 期, 今, 停, 解停)
++            v['灯'], v['灯由'] = 灯, _灯由(灯, 末, 期2, 按改, 停 and 期 is not None and 期2 is None, 起)
++        v['灯文'] = 灯文(v['灯'], v['灯由'])
++    if not 流:
++        return
++    表 = 源.get('接表') or {}
++    兜 = _合期([cron之期(c) for _, c, k in (x for x in (_令之cron(y) for y in (表.get('兜底之令') or ())) if x) if k])
++    钟 = _合期([cron之期(c) for _, c, _ in (x for x in (_令之cron(y) for y in (表.get('钟之令') or ())) if x)])
++    心 = 源.get('心跳之限')
++    期表 = {'章': (章期, '每章') if 章期 else None, '兜底': (兜, '兜底之令合') if 兜 else None, '钟': (钟, '钟之令合') if 钟 else None,
++          '心跳': (心, '心跳之限') if 心 else None}
++    for x in 流['节'].values():                           # 巡之 job：其触之期（cron→其隔；push 章-*／治-*→章期；余按需）
++        if x.get('job'):
++            诸 = []
++            for e in 流['边']:
++                if e[1] != x['键'] or not e[4]:
++                    continue
++                for 语 in e[2].split('、'):
++                    if 语.startswith('cron ') and cron之期(语[5:]):
++                        诸.append((cron之期(语[5:]), 语))
++                    elif re.match(r'push (?:章|治)-\*', 语) and 章期:
++                        诸.append((章期, '每章'))
++            x['期值'] = min(诸) if 诸 else None
++    云们 = [x for x in 流['节'].values() if x.get('job') and x.get('云巡')]
++    巡们 = [x['期值'] for x in 云们 if x.get('期值')]
++    期表['巡'] = min(巡们) if 巡们 else 期表['章']
++    if len(云们) >= 2:                                   # 诸 job 共写 备份/巡印（force·⛔辨 job）：唯最密者认其迹，余 ⚪（⛔借最密者之跑而绿）
++        最 = min(巡们) if 巡们 else None
++        for x in 云们:
++            if not (最 and x.get('期值') and x['期值'][0] <= 最[0]):
++                x['不辨'] = '巡印⛔辨 job：%s 共 force 写一枝，末者恒为最密者（%s）' % (
++                    '、'.join(sorted(y['名'] for y in 云们)), 最[1] if 最 else '?')
++    for x in 流['节'].values():
++        期 = (x['期值'] if x.get('job') else 期表.get(x['期'])) if x['迹'] else None
++        if x['件']:
++            v = 件.get(x['件'])
++            x['灯'], x['灯由'] = (v['灯'], v['灯由']) if v else ('⚪', '件不在盘')
++        elif not x['迹']:
++            x['灯'], x['灯由'] = '⚪', '按需（平台之件·无迹）'
++        elif x['键'] == '写书' and 停:
++            x['灯'], x['灯由'] = '⚪', '暂停中（暂停令在·⛔当跑）'
++        elif x.get('不辨') or x['键'] in _借迹:
++            由 = x.get('不辨') or _借迹[x['键']]
++            x['灯'], x['灯由'] = '⚪', '迹不可取（%s）' % 由 + (('·期 %s（%s）' % (_期文(期[0]), 期[1])) if 期 else '')
++        else:
++            末 = 迹['值'].get(x['迹'])
++            灯, 期2, 起 = _灯定(末, 期, 今, 停, 解停)
++            x['灯'], x['灯由'] = 灯, _灯由(灯, 末, 期2, False, 停 and 期 is not None and 期2 is None, 起)
++        x['灯文'] = 灯文(x['灯'], x['灯由'])
++
++
++def _灯计(们):
++    return [sum(1 for v in 们 if v.get('灯') == g) for g in _灯]
++
++
++def _灯计文(们):
++    return '·'.join('%s %d' % (g, n) for g, n in zip(_灯, _灯计(们)))
++
++
++_类色 = {'🟢': 'lg', '🟡': 'ly', '🔴': 'lr', '⚪': 'lw'}
++
++
++def 印流(源, 件):
++    """⑥ 机制之流：mermaid（GitHub 即绘·classDef 绿黄红灰著诸节之灯）＋文本之链＋流之节之灯。"""
++    流 = 源.get('流图')
++    if not 流:
++        return ['## ⑥ 机制之流', '', '- （流之构不得：见 ⓪）', '']
++    节, 序 = 流['节'], 流['序']
++    号 = {k: 'n%02d' % (i + 1) for i, k in enumerate(序)}
++    L = ['## ⑥ 机制之流（作者→总编辑→派→写书→封→推→GitHub 之闸→主枝；巡之环与其迹·灯＝其迹之鲜）', '',
++         '> 节＝平台之件与诸器（器之节随其件之灯）；边＝谁触谁：流之触与 job 自 `.github/workflows/*.yml` 之 on 与 job 之 if 机取，'
++         '兜底之令／钟之令／巡警枝 自 接棒守 之表机取，余照本器 流之边 之表（逐边验其串在其档·失据即 ⓪ 报、书虚线）。'
++         '灯（今算·--验 ⛔比）：🟢 当跑而已跑（末跑 ≤ 期×1.5）｜🟡 迟（≤ 期×3）｜🔴 当跑而未跑（逾期×3）或末跑败｜⚪ 按需、账、或迹不可取（⛔猜）。'
++         '迹之源与期见下「流之节之灯」与 ⓪。', '', '```mermaid', 'flowchart LR']
++    部名 = {'心': '心·作家', '脉': '脉·丝滑', '觉': '觉·守', '长': '长·进化', '学': '学', None: '平台与 GitHub 之触'}
++    for i, 部 in enumerate((None,) + 部序):
++        们 = [k for k in 序 if 节[k]['部'] == 部]
++        if not 们:
++            continue
++        L.append('  subgraph b%d["%s"]' % (i, 节名(部名[部])))
++        L += ['    %s["%s"]' % (号[k], 节名(节[k]['名'])) for k in 们]
++        L.append('  end')
++    for 甲, 乙, 语, _, 机 in 流['边']:
++        L.append('  %s %s|"%s"| %s' % (号[甲], '-->' if 机 or '（失据）' not in 语 else '-.->', 节名(语), 号[乙]))
++    L += ['  classDef lg fill:#d8f5d0,stroke:#2e7d32,color:#111', '  classDef ly fill:#fff3c4,stroke:#b8860b,color:#111',
++          '  classDef lr fill:#ffd6d6,stroke:#c62828,color:#111', '  classDef lw fill:#eeeeee,stroke:#888888,color:#111']
++    for g in _灯:
++        们 = [号[k] for k in 序 if 节[k].get('灯') == g]
++        if 们:
++            L.append('  class %s %s' % (','.join(们), _类色[g]))
++    L += ['```', '', '### 流之链（文本·终端可读；机＝机取，表＝流之边之表验过其串）', '']
++    for 甲, 乙, 语, 源_, 机 in 流['边']:
++        L.append('- %s →〔%s〕→ %s｜%s %s' % (节[甲]['名'], 语, 节[乙]['名'], '机' if 机 else '表', 源_))
++    L += ['', '### 流之节之灯（今算·--验 ⛔比）', '', '| 节 | 部 | 灯 | 迹之源 |', '|---|---|---|---|']
++    for k in 序:
++        x = 节[k]
++        源名 = ('随其件 ' + x['件']) if x['件'] else (_迹之源.get(x['迹'], '—') if x.get('迹') else '—（按需）')
++        L.append('| %s | %s | %s | %s |' % (_格(x['名']), x['部'] or '平台', _格(x.get('灯文', '⚪')), _格(源名)))
++    L.append('')
++    return L
++
++
++def 印近(源):
++    近 = 源.get('近')
++    L = ['## ⑦ 近之进化（设定/工作流账.json「件」W9xx 之裁·末八·新者先）', '']
++    if 近 is None:
++        return L + ['- 工作流账读不得（⓪ 书之）', '']
++    L += ['| 件 | 名 | 裁 | 时 | 所废／较旧（摘·≤80 字） |', '|---|---|---|---|---|']
++    L += ['| %s | %s | %s | %s | %s |' % (i, _格(名[:40] + ('…' if len(名) > 40 else '')), 法, 时, _格(摘)) for i, 名, 法, 时, 摘 in 近]
++    return L + ['']
++
++
+ # ═══ 印 ═══
+ def _格(s):
+     return str(s).replace('|', '｜').replace('\n', ' ').strip()
+@@ -1378,15 +2348,34 @@ def 行之文(v, 全=False):
+     if v['红']:
+         判s = v['红'] + ' ' + 判s
+     件s = v['名'] + ('（%d 档）' % v['数'] if v['类'] == '族' and v.get('数') else '')
+-    return [件s, v['部'] or '未归', v['职'], 跑s, 时s, 读s, 末s, 判s, v['路']]
++    return [件s, v['部'] or '未归', v['职'], 跑s, 时s, 读s, 末s, 判s, v['路'], v.get('灯文') or '⚪〔—〕']
+ 
+ 
+-def 生(根=None):
+-    """→ (档之文, 源, 件)。"""
++def 生(根=None, 今=None, 取=False):
++    """→ (档之文, 源, 件)。今：灯之今（默此刻·自测注之）；取：迹枝之旧者先 git fetch（--摘、--件、--印、--随治；写与 --验 ⛔取）。"""
+     源 = 读源(根 or ROOT)
+     件 = 立件(源)
+     析跑读(源, 件)
+     判之(源, 件)
++    今 = int(今 or time.time())
++    源['今'] = 今
++    try:                                         # 〔W912 环1〕⑥ 机制之流：崩即 ⓪ 书之（析崩）、余照出
++        源['流图'] = 立流(源, 件)
++    except Exception as e:
++        源['流图'] = None
++        源['崩'].append('机制之流（%s %s）' % (type(e).__name__, str(e)[:60]))
++    try:                                         # 〔W912 环5〕活之色：迹取不得⛔崩——其件 ⚪「迹不可取」
++        源['活迹'] = 读迹(源, 今, 取)
++    except Exception as e:
++        源['活迹'] = {'值': {}, '封': {}, '封末': None, '章期': None, '旧': set(), '停': False, '解停': None, '枝名': {}, '落後': 0, '迹主': {},
++                    '闸免': set(), '闸红': set(), '误': '%s %s' % (type(e).__name__, str(e)[:60])}
++    try:
++        灯之(源, 件, 源['流图'], 今)
++    except Exception as e:                       # 灯之算崩：俱 ⚪（⛔崩全图·⓪ 书之）
++        源['崩'].append('活之色（%s %s）' % (type(e).__name__, str(e)[:60]))
++        for v in list(件.values()) + list(((源['流图'] or {}).get('节') or {}).values()):
++            v['灯'], v['灯由'] = '⚪', '灯之算崩'
++            v['灯文'] = 灯文('⚪', '灯之算崩')
+     return 印图(源, 件), 源, 件
+ 
+ 
+@@ -1413,6 +2402,8 @@ def 印图(源, 件):
+     红 = sorted((v for v in 全 if v['红'] == '⛔'), key=lambda v: v['名'])
+     警 = sorted((v for v in 全 if v['红'] == '⚠'), key=lambda v: v['名'])
+     合 = _部计(全)
++    流, 近 = 源.get('流图'), 源.get('近') or []
++    流节 = list((流 or {}).get('节', {}).values())
+     L = ['# 体系总图（心—脉—觉—长—学·一件一行·用之审入图）', '', 首行, '',
+          '## 一眼', '',
+          '- 截至第 %d 章（正文之末章）；末真用之窗：%s。' % (源['末章'], ('第%d—%d章之 _器之迹.md' % (源['迹章'][0], 源['迹章'][-1])) if 源['迹章'] else '无迹'),
+@@ -1424,6 +2415,13 @@ def 印图(源, 件):
+          '- ⛔ 即红 %d%s' % (len(红), ('：' + '、'.join('%s（%s）' % (v['名'], v['判']) for v in 红)) if 红 else '：无'),
+          '- ⚠ 随治、候审 %d（W908 之治而未逾限 %d、账之机判未用 %d）——逐件见 ③' % (
+              len(警), 计(警, lambda v: bool(v.get('治'))), 计(警, lambda v: not v.get('治'))),
++         '- 机制之流（⑥）：节 %d、边 %d（机取 %d、表 %d）%s——mermaid（GitHub 即绘）与文本之链见 ⑥' % (
++             len(流节), len(流['边']), 流['机'], 流['表'], ('；⛔ 流之边失据 %d' % len(流['失据'])) if 流['失据'] else '；流之边俱有据')
++         if 流 else '- 机制之流（⑥）：流之构不得（见 ⓪）',
++         '- 近之进化之末（⑦）：%s' % (('%s %s「%s」（%s）——%s' % (近[0][0], 近[0][2], 近[0][1][:24], 近[0][3], 近[0][4][:48])) if 近 else '无（工作流账无 W9xx 之裁）'),
++         '- 灯（今算·--验 ⛔比·跑即亮）：件 %s；流之节 %s%s' % (_灯计文(全), _灯计文(流节), ('；' + 灯文('🔴', '、'.join(
++             [x['名'] for x in 流节 if x.get('灯') == '🔴' and not x['件']] + [v['名'] for v in 全 if v.get('灯') == '🔴'])))
++             if any(x.get('灯') == '🔴' for x in 流节 + 全) else ''),
+          '- 读法·判：照 W908「用之审之果」；名单外者机判（有跑且有读＝用、有一缺＝半用、俱无＝未用）。「悖」＝判死／未用而仍有跑口；'
+          '「今迹见……候复审」＝名单判半用而今迹已见。⛔＝器红级（全测之格「体系总图」报之、入器红账，⛔拦写书之封）；⚠＝只报。',
+          '- 读法·末真用：末十章 _器之迹.md 所见。其迹只录写书之坐「料成→器之迹之步」之跑（_账 记 __main__）——GitHub、他坐、封版闸後、'
+@@ -1469,7 +2467,16 @@ def 印图(源, 件):
+                                    ('块之误 %d（见「析不得」）' % len(名单['误'])) if 名单['误'] else '', '' if 名单['在'] else '档缺') if x) or '—'),
+           '| 部之表（本器） | 已归 %d | %s |' % (len(件) - len(未归), ('未归 %d：%s' % (len(未归), _列(未归, 12))) if 未归 else '—'),
+           '| 法用册 `设定/法用册.json` | %s | %s |' % (('法 %d、待 %d、废 %d；W908 治之限：废之条 %d 档、待「用之审」限 %s' % (
+-              源['法']['法'], 源['法']['待'], 源['法']['废'], len(源['废治']), 源['审限'] or '无')) if 源['法'] else '—', '—' if 源['法'] else '读不得')]
++              源['法']['法'], 源['法']['待'], 源['法']['废'], len(源['废治']), 源['审限'] or '无')) if 源['法'] else '—', '—' if 源['法'] else '读不得'),
++          '| 机制之流 `本器之流节、流边之表`＋流之 on／if＋`接棒守` 之表 | %s | %s |' % (
++              ('节 %d、边 %d（机取 %d：流之 on／job 之 if／uses、兜底之令%s；表 %d：逐边验其串在其档）；接棒守 之表 %s' % (
++                  len(流节), len(流['边']), 流['机'], '、钟之令' if '钟' in 流['节'] else '', 流['表'],
++                  '、'.join(k for k in _接表之键 if k in (源.get('接表') or {})) or '读不得')) if 流 else '—',
++              ('⛔ 流之边失据 %d：%s' % (len(流['失据']), _列(流['失据'], 3))) if 流 and 流['失据'] else ('—' if 流 else '析崩（见下）')),
++          '| 迹之源（活之色） `本器之迹表` | 源 %d 类：%s | 灯以本地 origin/* 算（--摘、--件、--印、--随治 先取其旧者；写、--验 ⛔取；'
++          'ZM_TU_NOFETCH=1 即⛔取）；取不得之件 ⚪「迹不可取」（⛔猜） |' % (len(_迹之源), '、'.join(_迹之源)),
++          '| 工作流账 `设定/工作流账.json` | %s | %s |' % (('W9xx 之裁之末 %d（⑦）' % len(近)) if 源.get('近') is not None else '—',
++                                                    '—' if 源.get('近') is not None else '读不得')]
+     for x in [y for y in 源['崩'] if y not in 器崩]:
+         L.append('| （析不得） | — | %s |' % _格(x))
+     if 源['缺']:
+@@ -1507,8 +2514,8 @@ def 印图(源, 件):
+         们 = sorted((v for v in 全 if v['部'] == 部), key=lambda v: ('器席流账族'.index(v['类']), v['名']))
+         if not 们:
+             continue
+-        L += ['### %s（%d）' % (部 or '未归', len(们)), '', '| 件 | 部 | 何职 | 谁跑 | 何时跑 | 谁读其出 | 末真用 | 判 | 其源档 |',
+-              '|---|---|---|---|---|---|---|---|---|']
++        L += ['### %s（%d）' % (部 or '未归', len(们)), '', '| 件 | 部 | 何职 | 谁跑 | 何时跑 | 谁读其出 | 末真用 | 判 | 其源档 | 灯 |',
++              '|---|---|---|---|---|---|---|---|---|---|']
+         L += ['| ' + ' | '.join(_格(x) for x in 行之文(v)) + ' |' for v in 们]
+         L.append('')
+     # ③
+@@ -1544,6 +2551,7 @@ def 印图(源, 件):
+         L.append('| %s | %s（%s） | %s | %s | %s |' % (v['名'], v['判'], _格(v['由'][5:]), v['机判'], _格(态),
+                                                    _治文(v['治'], '') if v.get('治') else ('W908 %s·无其限' % v['环']) if v.get('环') else '无'))
+     L.append('')
++    L += 印流(源, 件) + 印近(源)
+     # ☁
+     卡 = 源['卡']
+     L += ['## ☁ GitHub 之卡（报/卡.json·随 备份/报 而变，--验 ⛔比）', '']
+@@ -1560,8 +2568,15 @@ def 印图(源, 件):
+ 
+ 
+ # ═══ 令 ═══
++_灯式 = re.compile(r'[🟢🟡🔴⚪](?:〔[^〕\n]*〕| \d+)?')
++_色行式 = re.compile(r'^\s*class [\w,]+ l[gyrw]\s*$')
++_红尾式 = re.compile(r'；🔴〔[^〕\n]*〕$')      # 一眼之灯行：有 🔴 方附其名（红与不红之翻⛔作档旧）
++
++
+ def _比之文(文):
+-    return [l for l in (文 or '').split('\n') if not l.startswith(云记)]
++    """--验 之比：☁ 之行、灯（🟢〔…〕之符与其数）、一眼之红名之尾（「；🔴〔…〕」·有红方附）、mermaid 之 class 行（灯之色）⛔比——
++    随时、随 origin/* 而变，非档之旧。"""
++    return [_灯式.sub('灯', _红尾式.sub('', l)) for l in (文 or '').split('\n') if not l.startswith(云记) and not _色行式.match(l)]
+ 
+ 
+ def 败图(根, 迹):
+@@ -1584,13 +2599,14 @@ def 败图(根, 迹):
+             '## ⓪ 源之鲜\n\n- ⛔ 器败：\n\n```\n%s\n```\n' % (末, 尾))
+ 
+ 
+-def 写(根=None):
+-    """封版 --後 之步（写者唯一·坑63：总编辑⛔手跑入主）；rc 恒 0（⛔拦封），析崩只印——全测之格「体系总图」红之。"""
++def 写(根=None, 取=False):
++    """封版 --後 之步与总编辑之治（--随治）——两写者：封版 --後 与总编辑之治（--随治）；两写之并由 账并 之生成之图一支（取 ours·⚠ 待下回重生）。
++    rc 恒 0（⛔拦封），析崩只印——全测之格「体系总图」红之。取：迹枝之旧者先取（--随治；封版之步⛔取·⛔拖累写书）。"""
+     根 = 根 or ROOT
+     p = os.path.join(根, 图名)
+     os.makedirs(os.path.dirname(p), exist_ok=True)
+     try:
+-        文, 源, 件 = 生(根)
++        文, 源, 件 = 生(根, 取=取)
+     except Exception:                    # 〔1119·法用#体系总图之行为之证〕器崩亦写最小之图——题照末章、⓪书器败；rc 1 而封版之步非必：⛔拦封
+         import traceback
+         with open(p, 'w', encoding='utf-8') as f:
+@@ -1616,15 +2632,18 @@ def 验(根=None):
+     文, 源, 件 = 生(根)
+     旧 = _读(os.path.join(根, 图名))
+     if 旧 is None:
+-        print('  ⚠ 档旧：%s 不在——唯封版 --後 生之（写者唯一）；总编辑⛔手跑入主（坑63）——欲看即 --印（⛔写）' % 图名)
++        print('  ⚠ 档旧：%s 不在——封版 --後 与总编辑之治（--随治）生之；两写之并由 账并 之生成之图一支——欲看即 --印（⛔写）' % 图名)
+     else:
+         a, b = _比之文(旧), _比之文(文)
+         if a == b:
+             print('  ✓ 不旧：%s 与今盘再生逐字同（☁ 之行⛔比）' % 图名)
+         else:
+             i = next((k for k in range(min(len(a), len(b))) if a[k] != b[k]), min(len(a), len(b)))
+-            print('  ⚠ 档旧：首异在第 %d 行（档「%s」｜今「%s」）——唯封版 --後 重写（写者唯一）；总编辑⛔手跑入主（坑63）'
+-                  % (i + 1, (a[i] if i < len(a) else '（无）')[:50], (b[i] if i < len(b) else '（无）')[:50]))
++            x, y = _异窗(a[i] if i < len(a) else '（无）', b[i] if i < len(b) else '（无）', 50)
++            print('  ⚠ 档旧：首异在第 %d 行（档「%s」｜今「%s」）——封版 --後 与总编辑之治（--随治：python3 工具/体系总图.py --随治）重写；'
++                  '两写之并由 账并 之生成之图一支' % (i + 1, x, y))
++    for x in ((源.get('流图') or {}).get('失据') or []):
++        print('  ⚠ 流之边失据：%s（⓪ 书之、其边书虚线）' % x)
+     崩 = list(源['崩']) + ['%s（缺·核心之源）' % x for x in 源['缺'] if x in _核心之源]
+     for x in 崩:
+         print('  ⛔ 析崩：%s（⓪ 书之，余照出；析崩即红）' % x)
+@@ -1641,13 +2660,13 @@ def 验(根=None):
+ 
+ 
+ def 一件(名, 根=None):
+-    文, 源, 件 = 生(根 or ROOT)
++    文, 源, 件 = 生(根 or ROOT, 取=可取())
+     候 = [k for k in sorted(件) if 名 in (k, 件[k]['路']) or k in (名 + '.py', 名 + '.md', 名 + '.json', 名.rstrip('/') + '/')]
+     if not 候:
+         print('⛔ 无此件：%s（名：存底守、法用册.json、设定/段案/……）' % 名)
+         return 1
+     v = 件[候[0]]
+-    for h, x in zip(('件', '部', '何职', '谁跑', '何时跑', '谁读其出', '末真用', '判', '其源档'), 行之文(v, 全=True)):
++    for h, x in zip(('件', '部', '何职', '谁跑', '何时跑', '谁读其出', '末真用', '判', '其源档', '灯'), 行之文(v, 全=True)):
+         print('%-6s %s' % (h, x))
+     if v['类'] == '流':
+         print('%-6s %s' % ('所调', '、'.join(源['流调'].get(候[0], [])) or '—'))
+@@ -1658,6 +2677,97 @@ def 一件(名, 根=None):
+     return 0
+ 
+ 
++def _异窗(x, y, 宽=30):
++    """二行之首异处之窗（⛔只示同首：首异在行中者自其前八字起）。"""
++    j = next((k for k in range(min(len(x), len(y))) if x[k] != y[k]), min(len(x), len(y)))
++    k = max(0, j - 8)
++    return ('…' if k else '') + x[k:k + 宽], ('…' if k else '') + y[k:k + 宽]
++
++
++def _名由(们, 限=170, 由长=18):
++    """[件] → 「名（由）、…」·至多 限 字，余书「等 N」。"""
++    出, n = '', 0
++    for v in 们:
++        x = '%s（%s）' % (v['名'], _去括(re.sub(r'^(W908：|机判：)', '', v['由'])).strip()[:由长])
++        if 出 and len(出) + len(x) > 限:
++            break
++        出 += ('、' if 出 else '') + x
++        n += 1
++    return (出 + ('等 %d' % len(们) if n < len(们) else '')) or '无'
++
++
++def 摘(根=None, 今=None, 取=None):
++    """执行之查之据（W912 环4）：今树即算（⛔读旧档之数）——一眼之数、⛔即红、🔴🟡 之件与其由、⚠ 之件、半用／未用之件各带其由、
++    图档旧否与首异·≤25 行。→ [行]。"""
++    根 = 根 or ROOT
++    今 = int(今 or time.time())
++    t0 = time.time()
++    文, 源, 件 = 生(根, 今, 取=可取() if 取 is None else 取)
++    全 = sorted(件.values(), key=lambda v: v['名'])
++    流 = 源.get('流图') or {'节': {}, '边': [], '失据': [], '机': 0, '表': 0}
++    节们 = [流['节'][k] for k in 流.get('序', [])]
++    计 = lambda f: sum(1 for v in 全 if f(v))
++    红 = [v for v in 全 if v['红'] == '⛔']
++    警 = [v for v in 全 if v['红'] == '⚠']
++    活 = 源.get('活迹') or {}
++    注 = ''.join(x for x in (('·树落後主枝 %d 提交（封、迹取主枝）' % 活['落後']) if 活.get('落後') else '',
++                            '·暂停中（随写书与兜底之期 ⚪·⛔当跑）' if 活.get('停') else '') if x)
++    L = ['体系总图·摘（今算·截至第 %d 章·%s UTC·⛔读旧档%s）' % (源['末章'], _刻(今), 注),
++         '件 %d：用 %d、半用 %d、未用 %d、死 %d｜⛔ %d、⚠ %d｜灯 %s' % (len(全), 计(lambda v: v['判'] == '用'), 计(lambda v: v['判'] == '半用'),
++                                                         计(lambda v: v['判'] == '未用'), 计(lambda v: v['判'] == '死'), len(红), len(警), _灯计文(全)),
++         '流：节 %d、边 %d（机 %d、表 %d%s）｜流之节之灯 %s' % (len(节们), len(流['边']), 流['机'], 流['表'],
++                                                  ('·⛔失据 %d' % len(流['失据'])) if 流['失据'] else '', _灯计文(节们)),
++         '⛔ 即红 %d：%s' % (len(红), '、'.join('%s（%s）' % (v['名'], v['判']) for v in 红) if 红 else '无')]
++    for g, 题, 限 in (('🔴', '当跑而未跑或末跑败', 6), ('🟡', '迟', 4)):
++        诸 = [(x['名'], x['灯由']) for x in 节们 if x.get('灯') == g and not x['件']] + [(v['名'], v['灯由']) for v in 全 if v.get('灯') == g]
++        L.append('%s %s %d%s' % (g, 题, len(诸), '' if 诸 else '：无'))
++        L += ['  %s %s：%s' % (g, a, b) for a, b in 诸[:限]] + (['  …另 %d（python3 工具/体系总图.py --件 名）' % (len(诸) - 限)] if len(诸) > 限 else [])
++    L.append('⚠ 随治、候审 %d：%s' % (len(警), _列([v['名'] for v in 警], 8)))
++    L.append('半用 %d：%s' % (计(lambda v: v['判'] == '半用'), _名由([v for v in 全 if v['判'] == '半用'])))
++    L.append('未用 %d：%s' % (计(lambda v: v['判'] == '未用'), _名由([v for v in 全 if v['判'] == '未用'])))
++    旧 = _读(os.path.join(根, 图名))
++    if 旧 is None:
++        L.append('图档：⚠ 不在——python3 工具/体系总图.py --随治（总编辑之治）或候下一封版')
++    else:
++        a, b = _比之文(旧), _比之文(文)
++        i = next((k for k in range(min(len(a), len(b))) if a[k] != b[k]), None if len(a) == len(b) else min(len(a), len(b)))
++        if i is None:
++            L.append('图档：✓ 不旧（与今树再生同·灯与 ☁ ⛔比）')
++        else:
++            x, y = _异窗(a[i] if i < len(a) else '（无）', b[i] if i < len(b) else '（无）')
++            L.append('图档：⚠ 旧·方法已变——首异第 %d 行（档「%s」｜今「%s」）→ python3 工具/体系总图.py --随治' % (i + 1, x, y))
++    if 流['失据']:
++        L.append('⛔ 流之边失据 %d：%s' % (len(流['失据']), _列(流['失据'], 2)))
++    近 = 源.get('近') or []
++    if 近:
++        L.append('近之进化之末：%s %s「%s」（%s）' % (近[0][0], 近[0][2], 近[0][1][:20], 近[0][3]))
++    红灯 = sum(1 for x in 节们 if x.get('灯') == '🔴' and not x['件']) + 计(lambda v: v.get('灯') == '🔴')
++    L.append('%s 摘：用之红 %d、⚠ %d、🔴 %d、析崩 %d（%.1f 秒）' % ('⛔' if 红 or 红灯 or 源['崩'] else '✓', len(红), len(警), 红灯,
++                                                           len(源['崩']), time.time() - t0))
++    return L[:24] + L[-1:] if len(L) > 25 else L
++
++
++def 图之数(根=None, 今=None):
++    """→ {'红', '警', '🔴', '🟡', '崩'}（今树即算·⛔取：法用之守 --报 之末行用之·⛔另析）。"""
++    _, 源, 件 = 生(根 or ROOT, 今, 取=False)
++    节们 = [x for x in ((源.get('流图') or {}).get('节') or {}).values() if not x['件']]
++    数 = lambda g: sum(1 for v in list(件.values()) + 节们 if v.get('灯') == g)
++    return {'红': sum(1 for v in 件.values() if v['红'] == '⛔'), '警': sum(1 for v in 件.values() if v['红'] == '⚠'),
++            '🔴': 数('🔴'), '🟡': 数('🟡'), '崩': len(源['崩'])}
++
++
++def 随治(根=None):
++    """总编辑之治（W912 环2③）：方法一变图即随——唯总编辑之坐（接棒守.总编辑）写，他坐 rc 2 拒（写书之坐之图随封版 --後）。
++    两写者（封版 --後、总编辑之治）之并由 账并 之生成之图一支：两侧俱改图即取 ours、⚠ 待下回重生（坑63 之由即去）。"""
++    根 = 根 or ROOT
++    总 = _去前(接棒之表(根).get('总编辑'))
++    坐 = 本坐()
++    if not 总 or 坐 != 总:
++        print('⛔ --随治 唯总编辑之坐（接棒守.总编辑 %s）；本坐 %s——写书之坐之图随封版 --後，⛔手写' % (总 or '读不得', 坐 or '未名'))
++        return 2
++    return 写(根, 取=可取())
++
++
+ # ═══ 自测 ═══
+ _样代 = (('〔跑〕', 'python3 '), ('〔欠哨〕', '看官欠' + '哨'), ('〔进化树〕', '进化' + '树'))
+ 
+@@ -1921,7 +3031,7 @@ def 自测():
+         T('⑭之四 一眼：图首短而全——件数、五部之数、⛔之名、⚠之数、读法俱在 ⓪ 之前', '## 一眼' in 文 and 文.index('## 一眼') < 文.index('## ⓪')
+           and '- 件 ' in 文.split('## ⓪')[0] and '觉 ' in 文.split('## ⓪')[0] and ('⛔ 即红' in 文.split('## ⓪')[0] and P('孤器') in 文.split('## ⓪')[0])
+           and '读法·判' in 文.split('## ⓪')[0] and '读法·末真用' in 文.split('## ⓪')[0])
+-        T('⑮文之定：同盘再生逐字同', 生(t)[0] == 文)
++        T('⑮文之定：同盘再生逐字同（灯之今同）', 生(t, 源['今'])[0] == 文)
+         import io, contextlib
+ 
+         def _验():
+@@ -1942,8 +3052,10 @@ def 自测():
+           and rc1 == rc2 == rc3 == 1 and ('⛔ ③用之红：' + P('孤器')) in o1 and '体系总图·验' in o1, o3[-200:])
+         os.remove(p)
+         rc3b, o3b = _验()
+-        T('⑯之五 写者唯一之语（W909 复核④·坑63）：档旧、档缺俱书「唯封版 --後」与「总编辑⛔手跑入主（坑63）」，⛔「手跑……亦可」；缺档示 --印（⛔写）',
+-          all('唯封版 --後' in o and '总编辑⛔手跑入主（坑63）' in o and '亦可' not in o for o in (o3, o3b)) and '--印（⛔写）' in o3b, o3b[-200:])
++        T('⑯之五 写者之语（W912 环2③·坑63 之由即去）：档旧、档缺俱书「封版 --後 与总编辑之治（--随治）」与「两写之并由 账并 之生成之图一支」，'
++          '⛔「唯封版」「⛔手跑入主」之旧语、⛔「手跑……亦可」；档旧示 --随治 之令、缺档示 --印（⛔写）',
++          all('封版 --後 与总编辑之治（--随治' in o and '两写之并由 账并 之生成之图一支' in o and '亦可' not in o and '唯封版' not in o
++              and '手跑入主' not in o for o in (o3, o3b)) and 'python3 工具/体系总图.py --随治' in o3 and '--印（⛔写）' in o3b, o3b[-200:])
+         open(p, 'w', encoding='utf-8').write(s)
+         _旧根 = ROOT
+         globals()['ROOT'] = t
+@@ -2019,6 +3131,277 @@ def 自测():
+             shutil.rmtree(t2, ignore_errors=True)
+     finally:
+         shutil.rmtree(t, ignore_errors=True)
++    # ㉑—㉚〔W912〕机制之流、近之进化、活之色、--摘、--随治、执行之查之接线（小样之仓＋其枝之时）
++    _旧取 = os.environ.get('ZM_TU_NOFETCH')
++    os.environ['ZM_TU_NOFETCH'] = '1'
++    t3 = tempfile.mkdtemp(prefix='体系总图流_')
++    try:
++        _造仓(t3)
++        接 = '工具/接棒守' + '.py'
++        os.makedirs(os.path.join(t3, '工具'), exist_ok=True)
++        open(os.path.join(t3, 接), 'w', encoding='utf-8').write(
++            '"""接棒守（样）——巡与派。"""\n主枝 = \'主样\'\n总编辑 = \'session_总样号ABCDEFG\'\n巡警枝 = \'备份/巡警\'\n巡印枝 = \'备份/巡印\'\n'
++            '巡印档 = \'_巡印.json\'\n巡应枝 = \'备份/巡应\'\n巡钟枝 = \'备份/巡钟\'\n'
++            "兜底之令 = (('甲', 'trig_甲', '27 * * * *', '27 * * * *', True), ('乙', 'trig_乙', '57 * * * *', '47 * * * *', True),\n"
++            "         ('丙', 'trig_丙', '7 * * * *', '7 * * * *', False))\n钟之令 = (('子', '', '12 * * * *'), ('午', '', '42 * * * *'))\n"
++            "def 派之参(n):\n    return 'create_session'\n")
++        open(os.path.join(t3, '工具', '心跳' + '.py'), 'w', encoding='utf-8').write('"""心跳（样）——写书之坐之锁。"""\n限 = 25 * 60\n')
++        云令 = 'python3 工具/接棒守' + '.py --云巡'
++        open(os.path.join(t3, '.github', 'workflows', '巡.yml'), 'w', encoding='utf-8').write(
++            "# 巡（样）：章推之環与疏 cron\non:\n  schedule:\n    - cron: '*/30 * * * *'\n  workflow_dispatch:\n    inputs: {}\n  push:\n"
++            "    branches: ['备份/巡演', '备份/巡钟', '章-*']\njobs:\n  huan:\n"
++            "    if: (github.event_name == 'workflow_dispatch' && inputs.huan == '1') || (github.event_name == 'push' && startsWith(github.ref_name, '章-'))\n"
++            "    steps:\n      - run: %s\n  xun:\n"
++            "    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.huan != '1') || (github.event_name == 'push' && !startsWith(github.ref_name, '章-'))\n"
++            "    steps:\n      - run: %s\n      - run: curl -X POST \"$API/actions/workflows/%%E5%%B7%%A1.yml/dispatches\" -d \"$J\"\n" % (云令, 云令))
++        件们 = [{'id': 'W9%02d' % i, '名': '样件%d' % i, '裁': [{'时': '2026-11-%02dT10:00Z' % i, '法': '取' if i % 2 else '续',
++                                                             '由': '所废：旧法%d；较旧：效升%d' % (i, i) if i != 10 else '长' * 120}]} for i in range(1, 12)]
++        件们 += [{'id': 'W151', '名': '章件', '裁': [{'时': '2026-11-30T10:00Z', '法': '取', '由': '章'}]},
++                {'id': 'W90', '名': '旧号', '裁': [{'时': '2026-11-29T10:00Z', '法': '取', '由': '旧'}]}]
++        open(os.path.join(t3, '设定', '工作流账.json'), 'w', encoding='utf-8').write(json.dumps({'说明': '样', '件': 件们}, ensure_ascii=False))
++        T0 = 1795000000
++        环 = dict({k: v for k, v in os.environ.items() if k not in _定库之变}, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t',
++                 GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t', GIT_CONFIG_GLOBAL=os.devnull)
++
++        def gt(*a, 时=None):
++            e = dict(环, **({'GIT_COMMITTER_DATE': '@%d +0000' % 时, 'GIT_AUTHOR_DATE': '@%d +0000' % 时} if 时 else {}))
++            return subprocess.run(['git', '-c', 'core.quotepath=off'] + list(a), cwd=t3, capture_output=True, text=True, env=e)
++        gt('init', '-q', '-b', '主样')
++        gt('add', '-A')
++        gt('commit', '-q', '-m', '基', 时=T0 - 9000)
++        gt('commit', '-q', '--allow-empty', '-m', '第11章《样》封版（造式二代·封版#11）：诸闸', 时=T0 - 7200)
++        gt('commit', '-q', '--allow-empty', '-m', '第12章《样》封版（造式二代·封版#12）：诸闸', 时=T0 - 3600)
++        gt('update-ref', 'refs/remotes/origin/主样', 'HEAD')
++        gt('remote', 'add', 'origin', t3)                  # 本地之 origin（取=True 之 fetch 自取·⛔网）
++
++        def 枝(名, 档们, 时, 父=None):
++            """临时之枝（refs/remotes/origin/<名>）：其树唯 档们、其提交之时＝时（commit-tree·⛔动工作区）。"""
++            idx = os.path.join(t3, '.git', 'idx_' + 名.replace('/', '_'))
++            if os.path.exists(idx):
++                os.remove(idx)
++            e = dict(环, GIT_INDEX_FILE=idx)
++            for 档, 文 in 档们:
++                b = subprocess.run(['git', 'hash-object', '-w', '--stdin'], cwd=t3, input=文, capture_output=True, text=True, env=环).stdout.strip()
++                subprocess.run(['git', 'update-index', '--add', '--cacheinfo', '100644,%s,%s' % (b, 档)], cwd=t3, capture_output=True, env=e)
++            树 = subprocess.run(['git', 'write-tree'], cwd=t3, capture_output=True, text=True, env=e).stdout.strip()
++            c = gt('commit-tree', 树, '-m', 名, *(['-p', 父] if 父 else []), 时=时).stdout.strip()
++            gt('update-ref', 'refs/remotes/origin/' + 名, c)
++            gt('update-ref', 'refs/heads/' + 名, c)
++            return c
++        刻 = lambda x: time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(x))
++        枝('备份/巡印', [('_巡印.json', json.dumps({'rc': 0}))], T0 - 600)
++        枝('备份/巡应', [('_巡应.json', json.dumps({'rc': 0}))], T0 - 4000)
++        枝('备份/心跳', [('_心跳.json', json.dumps({'章': 13}))], T0 - 4600)
++        乙报 = ('报/推/治-样乙.json', json.dumps({'时': 刻(T0 - 1200), '果': '红', '因': '', '免': ['格免样'],
++                                                '红': ['✗ 格丁             ⛔样之红', '⛔全测未过：格丁']}, ensure_ascii=False))
++        c报 = 枝('备份/报', [乙报], T0 - 1200)
++        枝('备份/报', [乙报, ('报/推/治-样.json', json.dumps({'时': 刻(T0 - 300), '果': '败', '因': 'merge'}, ensure_ascii=False))], T0 - 300, c报)
++        文3, 源3, 件3 = 生(t3, T0, 取=True)                  # 取：迹枝旧於十五分者自本地之 origin 取（取=False 之局见 ㉗之四）
++        流3 = 源3['流图']
++        节3 = 流3['节']
++        边3 = {(a, b): 语 for a, b, 语, _, _ in 流3['边']}
++        机3 = {(a, b) for a, b, _, _, 机 in 流3['边'] if 机}
++        T('㉑ 机取之边（巡之 on 与 job 之 if）：push 章-* → huan（⛔xun）、cron → xun（⛔huan）、push 备份/巡演·备份/巡钟 → xun（⛔huan）、手派 → 二 job；'
++          'job 之 --云巡 → 云巡；push 章-* → autopush、uses → gate；兜底之令（名与 cron·停者注之）→ 总编辑、钟之令 → 巡钟（接棒守 之表·ast）',
++          {('治章枝', '巡.yml#huan'), ('定时', '巡.yml#xun'), ('push:备份/巡演', '巡.yml#xun'), ('巡钟', '巡.yml#xun'), ('手派', '巡.yml#huan'),
++           ('手派', '巡.yml#xun'), ('巡.yml#huan', '云巡'), ('巡.yml#xun', '云巡'), ('治章枝', 'autopush'), ('autopush', 'gate'),
++           ('兜底', '总编辑'), ('钟', '巡钟')} <= 机3
++          and not {('治章枝', '巡.yml#xun'), ('定时', '巡.yml#huan'), ('push:备份/巡演', '巡.yml#huan'), ('巡钟', '巡.yml#huan')} & set(边3)
++          and 边3[('兜底', '总编辑')] == '甲 27 * * * *、乙 57 * * * *、丙 7 * * * *（停）' and 边3[('定时', '巡.yml#xun')] == 'cron */30 * * * *'
++          and '流:巡.yml' not in 节3 and 节3['总编辑']['名'] == '总编辑之坐（总样号ABCDEFG）' and 节3['哨PR']['名'] == '哨 PR（头枝 备份/巡警）',
++          str(sorted(机3))[:300])
++        T('㉑之二 若可（GitHub 之式）：event_name、startsWith、!、&&、||、括号；inputs.* 不定作或真；非 push 之事 ref 作主枝',
++          若可("github.event_name == 'push' && !startsWith(github.ref_name, '章-')", 'push', '备份/巡钟')
++          and not 若可("github.event_name == 'push' && !startsWith(github.ref_name, '章-')", 'push', '章-*')
++          and 若可("(github.event_name == 'workflow_dispatch' && inputs.huan == '1') || x", 'workflow_dispatch')
++          and not 若可("github.event_name == 'schedule'", 'push', '章-*') and 若可('${{ always() }}', 'push', '治-*')
++          and 若可("startsWith(github.ref_name, '章-')", 'push', '章-*') and not 若可("startsWith(github.ref_name, '章-')", 'schedule', None, '主样')
++          and 若可("github.ref_name == '备份/巡钟'", 'push', '备份/巡钟') and not 若可("github.ref_name == '备份/巡钟'", 'push', '章-*'))
++        失3 = 流3['失据']
++        表边 = [(a, b) for a, b, _, _, _ in _流边 if a in 节3 and b in 节3]
++        有据 = [(a, b) for a, b in 表边 if '（失据）' not in 边3.get((a, b), '（失据）')]
++        T('㉒ 流之边之验：其串在其档者有据（样之接棒守含 create_session、def 派之参(、巡印枝，样之自走含 造章.js）、余俱「失据」——⓪ 报「流之边失据 N」、'
++          '其边书虚线、--验 只 ⚠（⛔崩）',
++          sorted(有据) == sorted([('总编辑', '派'), ('派', '写书'), ('写书', '造章'), ('云巡', '巡印')]) and len(失3) == len(表边) - 4
++          and any('哨 PR' in x and '无「def 哨PR(」' in x for x in 失3) and ('⛔ 流之边失据 %d' % len(失3)) in 文3 and '-.->' in 文3
++          and '（失据）' in 边3[('云巡', '哨PR')], str((有据, 失3[:2])))
++        块 = 文3.split('```mermaid\n', 1)[1].split('\n```', 1)[0].split('\n') if '```mermaid\n' in 文3 else []
++        合 = re.compile(r'^(?:flowchart LR|  subgraph b\d+\["[^"\[\](){}<>|]*"\]|    n\d+\["[^"\[\](){}<>|]*"\]|  end|'
++                       r'  n\d+ (?:-->|-\.->)\|"[^"\[\](){}<>|]*"\| n\d+|  classDef l[gyrw] [\w:#,]+|  class n\d+(?:,n\d+)* l[gyrw])$')
++        坏行 = [l for l in 块 if not 合.match(l)]
++        T('㉓ mermaid 之节名、边语合法（⛔ASCII 之括号与引号乱其式：节名() 作全角、去引号）；节 %d、边 %d、classDef 绿黄红灰' % (len(节3), len(流3['边'])),
++          块 and not 坏行 and 节名('甲（"乙"）[丙](丁)|戊') == '甲（乙）［丙］（丁）／戊' and all('  classDef l%s' % c in 文3 for c in 'gyrw'),
++          str(坏行[:2]))
++        近3 = 源3['近']
++        T('㉔ 近之进化：工作流账「件」W9xx 之裁之末八、新者先（W151、W90 ⛔入）；摘取「所废／较旧」·≤80 字（长者截而带…）；⑦ 之表、一眼之末件',
++          近3 is not None and [x[0] for x in 近3] == ['W911', 'W910', 'W909', 'W908', 'W907', 'W906', 'W905', 'W904']
++          and 近3[0][4] == '所废：旧法11；较旧：效升11' and len(近3[1][4]) == 80 and 近3[1][4].endswith('…') and 近3[0][2] == '取'
++          and '## ⑦ 近之进化' in 文3 and '| W911 | 样件11 | 取 | 2026-11-11T10:00Z | 所废：旧法11；较旧：效升11 |' in 文3
++          and '- 近之进化之末（⑦）：W911 取「样件11」' in 文3, str(近3[:2]))
++        T('㉕ 期之判：常驻每 5 分→300；cron */30→1800、27 */3→三时、二令（:27 :57）合→1800；每章／自走每跑／每回合／push 章-*→章期；每十章→章期×10；'
++          '每推→章期；并账有冲突时、主环手跑→None（按需）；源之章期取「封版#N」之提交（近十章之均隔）',
++          期之('後台每 5 分（常驻·自驱）', 3600) == (300.0, '常驻·每 5 分') and 期之('巡（cron */30 * * * *，手派，push（章-*））', 3600)[0] == 1800
++          and cron之期('27 */3 * * *') == 10800 and cron之期('7,37 * * * *') == 1800 and cron之期('0 0 1 * *') is None
++          and _合期([3600, 3600]) == 1800 and 期之('每章封时（封版 --後）', 3600) == (3600, '每章') and 期之('自走每跑（主环）', 3600)[0] == 3600
++          and 期之('autopush（push（章-*、治-*），手派）', 3600)[0] == 3600 and 期之('每十章（大审之包）', 3600)[0] == 36000
++          and 期之('每推（GitHub 全测）', 3600) == (3600, '每推（≥ 每章）') and 期之('并账有冲突时（git merge）', 3600) is None
++          and 期之('主环手跑', 3600) is None and 期之('每章封时', None) is None and 源3['活迹']['章期'] == 3600.0,
++          str(源3['活迹']['章期']))
++        T('㉖ 灯之界：末跑 ≤ 期×1.5 🟢｜≤ 期×3 🟡｜逾 🔴｜末跑败 🔴｜无期或无迹 ⚪', [_灯判(0, False, 100, d) for d in (150, 151, 300, 301)]
++          == ['🟢', '🟡', '🟡', '🔴'] and _灯判(0, True, 100, 1) == '🔴' and _灯判(0, False, None, 1) == '⚪' and _灯判(None, False, 100, 1) == '⚪')
++        灯3 = lambda k: (节3[k].get('灯'), 节3[k].get('灯由', ''))
++        T('㉗ 迹之取（临时仓之枝之时·取自本地之 origin）：巡印 10 分前→云巡 🟢（期 30 分·二 job 之最密）；巡应 4000 秒前→总编辑 🟡（兜底二令合 30 分）；'
++          '心跳逾 3×25 分→写书 🔴；末报「败·因 merge」→autopush 🔴「合入之卡」、gate 取其前之真跑之报（备候不成⛔算 gate 之跑）🟢；主枝 🟢；'
++          '甲前（封版·前·章之封 3600 秒前·章期 3600）🟢、封版（迹表·无定期）⚪ 按需；格乙（唯全测之格·gate 之全测）🟢；huan 之期＝章期、xun 之期＝cron',
++          灯3('云巡')[0] == '🟢' and '期 30 分' in 灯3('云巡')[1] and 灯3('总编辑')[0] == '🟡' and 灯3('写书')[0] == '🔴' and '逾期×3' in 灯3('写书')[1]
++          and 件3['autopush.yml']['灯'] == '🔴' and '合入之卡（因 merge' in 件3['autopush.yml']['灯由'] and 件3['gate.yml']['灯'] == '🟢'
++          and '治-样乙（红）' in 件3['gate.yml']['灯由'] and not 源3['活迹']['旧']
++          and 灯3('主枝')[0] == '🟢' and 件3[P('甲前')]['灯'] == '🟢' and '第12章之封' in 件3[P('甲前')]['灯由']
++          and 件3[P('封版')]['灯'] == '⚪' and 件3[P('封版')]['灯由'].startswith('按需·末') and '第12章之封' in 件3[P('封版')]['灯由']
++          and 件3[P('格乙')]['灯'] == '🟢' and 'gate 之全测' in 件3[P('格乙')]['灯由']
++          and 节3['巡.yml#huan']['期值'][0] == 3600 and 节3['巡.yml#xun']['期值'][0] == 1800,
++          str((灯3('云巡'), 灯3('总编辑'), 灯3('写书'), 件3[P('封版')]['灯由'], 件3['autopush.yml']['灯由']))[:300])
++        T('㉗之二 共迹⛔借（W912 怀疑之验）：huan、xun 共 force 写 备份/巡印 → 唯最密之 xun 认其迹（🟢）、huan ⚪「迹不可取（巡印⛔辨 job）」；'
++          '兜底之令之节 ⚪「借巡应⛔辨其触」（总编辑之坐仍取巡应）；xun 之自派直连本流之 job（⛔经手派之节中转）',
++          灯3('巡.yml#xun')[0] == '🟢' and 灯3('巡.yml#huan')[0] == '⚪' and '巡印⛔辨 job' in 灯3('巡.yml#huan')[1]
++          and 灯3('兜底')[0] == '⚪' and '借巡应⛔辨其触' in 灯3('兜底')[1] and 灯3('总编辑')[0] == '🟡'
++          and {('巡.yml#xun', '巡.yml#huan'), ('巡.yml#xun', '巡.yml#xun')} <= {(a, b) for a, b, 语, _, _ in 流3['边'] if '自派' in 语}
++          and not any(b == '手派' and '自派' in 语 for a, b, 语, _, _ in 流3['边']), str((灯3('巡.yml#huan'), 灯3('兜底')))[:300])
++        迹样 = {'值': {'报推': (T0 - 300, True, '报/推/章-样（败·因 merge）'), '报在': (T0 - 300, False, '报/推/章-样（败·因 merge）'),
++                     '报治': (T0 - 900, False, '报/推/治-样丙（成）'), '报闸': (T0 - 1200, False, '报/推/治-样乙（红）'),
++                     '全测': (T0 - 1200, False, 'gate 之全测·报/推/治-样乙（红）')}, '封': {}, '闸免': {'格免样'}, '闸红': {'格丁'}}
++        候样 = lambda k, 跑: _件之候(源3, 迹样, k, {'类': '器', '跑': set(跑)})
++        T('㉗之三 败报⛔连坐（W912 怀疑之验）：末报「败·因 merge」→ 唯 autopush 与治章枝 🔴「合入之卡」；推取 报/推/治-*（交已至）、推报取报在（⛔承败）；'
++          '流·autopush 所调者只承其时（⛔承败）、全测之 流·autopush 取 gate 真跑之报（备候不成⛔作其跑）',
++          候样('推.py', []) == [(T0 - 900, False, '报/推/治-样丙（成）')] and 候样('推报.py', [('流·autopush', 'x')]) == [迹样['值']['报在']]
++          and 候样('存底.py', [('流·autopush', 'x')]) == [(T0 - 300, False, '报/推/章-样（败·因 merge）')]
++          and 候样('全测.py', [('流·autopush', 'x')]) == [(T0 - 1200, False, '报/推/治-样乙（红）')]
++          and '合入之卡' in _灯由('🔴', 迹样['值']['报推'], (3600, '每章')) and '末跑败' in _灯由('🔴', (T0, True, '报/推/治-样（败·因 片）'), (3600, '每章'))
++          and 灯3('治章枝')[0] == '🔴' and '合入之卡' in 灯3('治章枝')[1] and 件3[P('流跑')]['灯'] == '🟢', str(候样('存底.py', [('流·autopush', 'x')])))
++        T('㉗之四 gate 之全测⛔借而静绿（W912 怀疑之验）：唯「全测·X」所跑而无真路之件取之；有真路（口·、席·、封版·……）者⛔取（其灯取其真路之迹）；'
++          '其格在报之「免」（活态之格）⛔算、「全测·X·自测」⛔算；其格在报之「红」→ 🔴（其格红）——真报之「免」「红」读入',
++          候样('格乙.py', [('全测·格乙', '每推')]) == [迹样['值']['全测']] and 候样('口样.py', [('口·自走', '自走每跑'), ('全测·口样', '每推')]) == []
++          and 候样('免样.py', [('全测·格免样', '每推')]) == [] and 候样('自测样.py', [('全测·自测样·自测', '每推')]) == []
++          and 候样('丁样.py', [('全测·格丁', '每推')]) == [(T0 - 1200, True, 'gate 之全测·报/推/治-样乙（红）·其格红：格丁')]
++          and 源3['活迹']['闸免'] == {'格免样'} and 源3['活迹']['闸红'] == {'格丁'} and 件3[P('看官欠' + '哨')]['灯'] == '🔴'
++          and '其格红：格丁' in 件3[P('看官欠' + '哨')]['灯由'] and 件3[P('助跑')]['灯'] == '🟢',
++          str((源3['活迹']['闸免'], 源3['活迹']['闸红'], 件3[P('看官欠' + '哨')].get('灯由'))))
++        文3f, 源3f, 件3f = 生(t3, T0, 取=False)
++        节3f = 源3f['流图']['节']
++        T('㉗之五 本地之引或旧（取=False：封版 --後 之写、--验、图之数）：巡应 逾期 → 总编辑之坐 ⚪「迹未取」（⛔作当跑而未跑）、巡印 在期内仍 🟢、'
++          '写书之坐之迹（心跳·其坐自取）照判 🔴',
++          节3f['总编辑']['灯'] == '⚪' and '迹未取' in 节3f['总编辑']['灯由'] and 节3f['云巡']['灯'] == '🟢' and 节3f['写书']['灯'] == '🔴'
++          and '本地未取' in 节3f['云巡']['灯由'], str((节3f['总编辑']['灯由'], 节3f['云巡']['灯由']))[:300])
++        T('㉘ 取不得 → ⚪「迹不可取」（⛔猜）：巡钟之枝无 → 钟、巡钟 ⚪；无期之件 ⚪ 按需；账 ⚪；② 之表带「灯」栏、mermaid 以 classDef 著色、一眼书四色之数',
++          灯3('巡钟')[0] == '⚪' and '迹不可取' in 灯3('巡钟')[1] and 灯3('钟')[0] == '⚪' and 件3[P('孤器')]['灯'] == '⚪'
++          and 件3['孤账.json']['灯'] == '⚪' and '| 其源档 | 灯 |' in 文3 and re.search(r'  class n\d+(,n\d+)* lr', 文3) is not None
++          and re.search(r'- 灯（今算·--验 ⛔比·跑即亮）：件 🟢 \d+·🟡 \d+·🔴 \d+·⚪ \d+', 文3) is not None, 灯3('巡钟')[1])
++        文3b = 生(t3, T0 + 10 ** 6)[0]
++        with open(os.path.join(t3, 图名), 'w', encoding='utf-8') as f:
++            f.write(文3)
++        import io as _io, contextlib as _cl
++        with _cl.redirect_stdout(_io.StringIO()) as _b:
++            _rc验 = 验(t3)
++        T('㉙ 灯随时而变而 --验 ⛔比（_比之文 去灯之符、四色之数与 class 之行）：今异之二图俱「✓ 不旧」；流之边失据只 ⚠',
++          文3b != 文3 and _比之文(文3b) == _比之文(文3) and '✓ 不旧' in _b.getvalue() and '⚠ 流之边失据' in _b.getvalue(), _b.getvalue()[-200:])
++        _存灯 = [(v, v.get('灯')) for v in list(件3.values()) + list(节3.values())]
++        for v, g in _存灯:
++            v['灯'] = '🟢' if g == '🔴' else g
++        文3绿 = 印图(源3, 件3)                                # 同树同时而无一 🔴 之图（一眼之灯行无「；🔴〔…〕」之尾）
++        for v, g in _存灯:
++            v['灯'] = g
++        with open(os.path.join(t3, 图名), 'w', encoding='utf-8') as f:
++            f.write(文3绿)
++        with _cl.redirect_stdout(_io.StringIO()) as _b2:
++            验(t3)
++        摘绿 = 摘(t3, T0, 取=False)
++        T('㉙之二 红与不红之翻⛔作档旧（W912 怀疑之验：一眼之灯行有 🔴 方附「；🔴〔…〕」）：档无红、今有红——_比之文 同、--验「✓ 不旧」、--摘「图档：✓ 不旧」',
++          '；🔴〔' in 文3 and '；🔴〔' not in 文3绿 and _比之文(文3绿) == _比之文(文3) and '✓ 不旧' in _b2.getvalue()
++          and any(x.startswith('图档：✓ 不旧') for x in 摘绿), _b2.getvalue()[-200:] + str([x for x in 摘绿 if x.startswith('图档')]))
++        with open(os.path.join(t3, 图名), 'w', encoding='utf-8') as f:
++            f.write(文3)
++        T12 = T0 + 12 * 3600
++        源3['活迹']['停'] = True
++        灯之(源3, 件3, 流3, T12)
++        停红 = sorted([k for k, x in 节3.items() if x.get('灯') == '🔴' and not x['件']] + [k for k, v in 件3.items() if v.get('灯') == '🔴'])
++        停灯 = (灯3('写书'), 灯3('总编辑'), 灯3('主枝'), 件3[P('甲前')]['灯'], 件3[P('甲前')]['灯由'], 灯3('云巡')[0], 灯3('治章枝')[0])
++        源3['活迹']['停'], 源3['活迹']['解停'] = False, T12 - 1800
++        灯之(源3, 件3, 流3, T12)
++        解灯 = (件3[P('甲前')]['灯'], 件3[P('甲前')]['灯由'], 灯3('写书')[0], 灯3('总编辑')[0])
++        源3['活迹']['解停'] = None
++        灯之(源3, 件3, 流3, T0)
++        open(os.path.join(t3, '设定', '暂停令.json'), 'w', encoding='utf-8').write(json.dumps(
++            {'立': 'x', '令': '作者令：样', '据': 'x:1', '解': {'时': '2026-11-09 17:14 UTC', '言': '作者令：解'}}, ensure_ascii=False))
++        _停解 = _停之迹(t3)
++        os.remove(os.path.join(t3, '设定', '暂停令.json'))
++        import calendar as _cal
++        T('㉙之三 暂停中⛔红潮（W912 怀疑之验）：停逾十二时——随写书与兜底之期（每章、每推、兜底之令合、心跳之限）俱 ⚪「暂停中」，'
++          'GitHub 之 cron（巡印、云巡、巡·xun）照判、末跑败（因 merge）、其格红照 🔴；解停之後首期自解停起算（⛔即红）；暂停令之「解」之时读入',
++          set(停红) <= {'云巡', '巡印', '巡.yml#xun', '巡.yml', '接棒守.py', 'autopush.yml', '治章枝', P('看官欠' + '哨')} and '云巡' in 停红
++          and 停灯[0][0] == '⚪' and '暂停中' in 停灯[0][1] and 停灯[1][0] == '⚪' and '暂停中' in 停灯[1][1] and 停灯[2][0] == '⚪'
++          and 停灯[3] == '⚪' and 停灯[4].startswith('暂停中') and 停灯[5] == '🔴' and 停灯[6] == '🔴'
++          and 解灯[0] == '🟢' and '自解停' in 解灯[1] and 解灯[2] == '🟢' and 解灯[3] == '🟢'
++          and _停解 == (False, _cal.timegm((2026, 11, 9, 17, 14, 0))), str((停红, 停灯, 解灯, _停解))[:400])
++        摘3 = 摘(t3, T0, 取=False)
++        T('㉚ --摘（今树即算·≤25 行）：一眼之数、⛔即红、🔴 之件带其由（写书之坐、autopush）、⚠、半用／未用带由、图档旧否、失据',
++          len(摘3) <= 25 and 摘3[0].startswith('体系总图·摘（今算·截至第 12 章') and any(x.startswith('🔴 当跑而未跑或末跑败') for x in 摘3)
++          and any('🔴 写书之坐：' in x for x in 摘3) and any('🔴 autopush.yml：' in x and '合入之卡' in x for x in 摘3)
++          and any(x.startswith('图档：✓ 不旧') for x in 摘3) and any(x.startswith('未用 ') and '（' in x for x in 摘3)
++          and any(x.startswith('⛔ 流之边失据') for x in 摘3) and 摘3[-1].startswith('⛔ 摘：'), '\n'.join(摘3)[-300:])
++        _坐旧 = {k: os.environ.get(k) for k in ('CLAUDE_CODE_REMOTE_SESSION_ID', 'CLAUDE_SESSION_ID', 'CLAUDE_CODE_SESSION_ID')}
++        os.remove(os.path.join(t3, 图名))
++        try:
++            for k in _坐旧:
++                os.environ.pop(k, None)
++            os.environ['CLAUDE_CODE_REMOTE_SESSION_ID'] = 'cse_他坐号XYZ'
++            with _cl.redirect_stdout(_io.StringIO()) as _b1:
++                _rc他 = 随治(t3)
++            _在他 = os.path.exists(os.path.join(t3, 图名))
++            os.environ['CLAUDE_CODE_REMOTE_SESSION_ID'] = 'session_总样号ABCDEFG'
++            with _cl.redirect_stdout(_io.StringIO()):
++                _rc总 = 随治(t3)
++            _在总 = os.path.exists(os.path.join(t3, 图名))
++        finally:
++            for k, v in _坐旧.items():
++                if v is None:
++                    os.environ.pop(k, None)
++                else:
++                    os.environ[k] = v
++        T('㉛ --随治 唯总编辑之坐（接棒守.总编辑·照 心跳.坐 取本坐）：他坐 rc 2 ⛔写；总编辑之坐 rc 0 写之', _rc他 == 2 and not _在他 and _rc总 == 0 and _在总
++          and '唯总编辑之坐' in _b1.getvalue(), _b1.getvalue()[:120])
++        头 = gt('rev-parse', 'HEAD').stdout.strip()            # 主枝先於本树一章（封版#13 与其 _器之迹 只在 origin/主样）
++        e13 = dict(环, GIT_INDEX_FILE=os.path.join(t3, '.git', 'idx_主13'))
++        subprocess.run(['git', 'read-tree', 头], cwd=t3, capture_output=True, env=e13)
++        b13 = subprocess.run(['git', 'hash-object', '-w', '--stdin'], cwd=t3, input='| 器 | 跑 | 败 |\n|---|---|---|\n| 孤器.py | 1 | 0 |\n',
++                             capture_output=True, text=True, env=环).stdout.strip()
++        subprocess.run(['git', 'update-index', '--add', '--cacheinfo', '100644,%s,版本/第13章/_器之迹.md' % b13], cwd=t3, capture_output=True, env=e13)
++        树13 = subprocess.run(['git', 'write-tree'], cwd=t3, capture_output=True, text=True, env=e13).stdout.strip()
++        c13 = gt('commit-tree', 树13, '-p', 头, '-m', '第13章《样》封版（造式二代·封版#13）：诸闸', 时=T0 - 600).stdout.strip()
++        gt('update-ref', 'refs/remotes/origin/主样', c13)
++        _, 源13, 件13 = 生(t3, T0)
++        摘13 = 摘(t3, T0, 取=False)
++        gt('update-ref', 'refs/remotes/origin/主样', 头)
++        T('㉛之二 树落後主枝（W912 怀疑之验：总编辑之树 --巡 ⛔ff）：封与图档取 HEAD 与 origin/<主枝> 之并（封末 13·⛔误迟）；树无而主枝有之章之迹 git show 取之；'
++          '--摘 首行注「树落後主枝 N 提交」',
++          源13['活迹']['封末'][0] == 13 and 源13['活迹']['落後'] == 1 and 源13['活迹']['迹主'] == {'孤器.py': 13}
++          and '迹·第13章' in 件13['孤器.py']['灯由'] and '第13章之封' in 件13[P('甲前')]['灯由'] and '树落後主枝 1 提交' in 摘13[0],
++          str((源13['活迹']['封末'], 源13['活迹']['落後'], 源13['活迹']['迹主'], 摘13[0]))[:300])
++    finally:
++        shutil.rmtree(t3, ignore_errors=True)
++        if _旧取 is None:
++            os.environ.pop('ZM_TU_NOFETCH', None)
++        else:
++            os.environ['ZM_TU_NOFETCH'] = _旧取
++    接文 = (_读(os.path.join(ROOT, '工具', '接棒守' + '.py')) or '').split("if __name__ == '__main__':")[-1]
++    巡段 = 接文.split("if '--巡' in a:", 1)[1].split('sys.exit(_rc)', 1)[0] if "if '--巡' in a:" in 接文 else ''
++    法文 = _读(os.path.join(ROOT, '工具', '法用之守' + '.py')) or ''
++    推文 = _读(os.path.join(ROOT, '工具', '推' + '.py')) or ''
++    T('㉜ 执行之查之接线（W912 环4）：接棒守 --巡 之沙盒之路於活守（补印）之後、巡(查印=True) 之前印「── 执行之图 ──」＋ --摘（timeout 20·逾即「⚠ 图之摘逾时」⛔拦）、'
++      'GitHub 之路（巡()）与 --代 ⛔印；法用之守 --报 於总结行之上添图之行（--无图 即免）、推.py 速检传 --无图（⛔拖累写书）',
++      巡段.find('_态 = 活守(') < 巡段.find('── 执行之图 ──') < 巡段.find('_rc = 巡(查印=True)') and "'--摘'" in 巡段 and 'timeout=20' in 巡段
++      and '图之摘逾时' in 巡段 and "if '--代' not in a" in 巡段 and '── 执行之图 ──' not in 巡段.split("if os.environ.get('GITHUB_ACTIONS') == 'true':")[1].split('sys.stderr.write(第一律之印()')[0]
++      and 'L.insert(len(L) - 1, 图之行())' in 法文 and "'--无图' not in a" in 法文 and "('法用之守', ['法用之守.py', '--报', '--无图'])" in 推文,
++      巡段[:80])
+     # ⑱真仓
+     t0 = time.time()
+     文R, 源R, 件R = 生(ROOT)
+@@ -2039,6 +3422,17 @@ def 自测():
+       源R['W908']['在'] and not 源R['W908']['误'] and len(W) >= 40 and set(源R['W908']['批'].values()) == {'甲', '乙'}
+       and not [x for x in 源R['崩'] if 'W908' in x], str((源R['W908']['误'], 源R['W908']['数'])))
+     T('⑱之五 真仓：析崩 0（囤灰闸 载得、末章得、诸器之码可析）', not 源R['崩'] and 源R['末章'] > 0, str(源R['崩'][:3]))
++    流R = 源R.get('流图') or {'节': {}, '边': [], '失据': []}
++    块R = 文R.split('```mermaid\n', 1)[1].split('\n```', 1)[0].split('\n') if '```mermaid\n' in 文R else []
++    合R = re.compile(r'^(?:flowchart LR|  subgraph b\d+\["[^"\[\](){}<>|]*"\]|    n\d+\["[^"\[\](){}<>|]*"\]|  end|'
++                    r'  n\d+ (?:-->|-\.->)\|"[^"\[\](){}<>|]*"\| n\d+|  classDef l[gyrw] [\w:#,]+|  class n\d+(?:,n\d+)* l[gyrw])$')
++    T('⑱之六 真仓·机制之流：mermaid 合法（节名⛔括号与引号）、平台之件俱入（总编辑、写书、派、兜底、哨 PR、巡印、巡应、治章枝、主枝、备份/报）、'
++      '巡之 job 逐立、机取之边自流与接棒守之表（兜底之令→总编辑）、⑦ 近之进化（W9xx 之裁）在',
++      块R and not [l for l in 块R if not 合R.match(l)] and {'总编辑', '写书', '派', '兜底', '哨PR', '巡印', '巡应', '治章枝', '主枝', '报'} <= set(流R['节'])
++      and sum(1 for k in 流R['节'] if k.startswith('巡.yml#')) >= 2 and any(a == '兜底' and b == '总编辑' and m for a, b, _, _, m in 流R['边'])
++      and len(源R.get('近') or []) == 8 and '## ⑦ 近之进化' in 文R, str([l for l in 块R if not 合R.match(l)][:2]))
++    if 流R['失据']:                                 # 失据只 ⚠（⛔崩·⛔红：源档之串变即其边书虚线，⓪ 与 --验 报之）
++        print('  ⚠ 真仓·流之边失据 %d：%s' % (len(流R['失据']), '；'.join(流R['失据'][:3])))
+     import tempfile as _tf, shutil as _sh
+     _d = _tf.mkdtemp(prefix='体系败_')
+     try:
+@@ -2058,9 +3452,14 @@ def main(argv):
+         return 0 if 自测() else 1
+     if '--验' in argv:
+         return 验()
+-    if '--印' in argv:                           # 人手之看：只印、⛔写（写者唯一·坑63）
+-        print(生()[0])
++    if '--印' in argv:                           # 人手之看：只印、⛔写（写者：封版 --後 与总编辑之 --随治）
++        print(生(取=可取())[0])
++        return 0
++    if '--摘' in argv:                           # 〔W912 环4〕执行之查之据：今树即算·≤25 行（接棒守 --巡 之执行之图印之）
++        print('\n'.join(摘()))
+         return 0
++    if '--随治' in argv:                         # 〔W912 环2③〕总编辑之治：方法一变图即随（他坐 rc 2）
++        return 随治()
+     if '--件' in argv:
+         k = argv.index('--件')
+         if k + 1 >= len(argv):
+diff --git a/工具/全测.py b/工具/全测.py
+index b0dd2a07c..b2ff7b46f 100644
+--- a/工具/全测.py
++++ b/工具/全测.py
+@@ -3268,7 +3268,7 @@ def chk_zijinhua():
+ 
+ def chk_tixi_zongtu():
+     """体系总图（1119 作者令「体系……分工……最完美地呈现」「做出来的都执行和用起来」·法用#体系总图·W909）：`工具/体系总图.py --自测` 全通、
+-    `--验`：档旧只 ⚠（唯封版 --後 重写·写者唯一·坑63 总编辑⛔手跑入主；下一封版即随）；③用之红（器之机判未用、W908 名单之死而无治、逾 W908 之限）
++    `--验`：档旧只 ⚠（封版 --後 与总编辑之治 --随治 重写·两写之并由 账并 之生成之图一支〔W912〕；下一封版或 --随治 即随）；③用之红（器之机判未用、W908 名单之死而无治、逾 W908 之限）
+     与析崩（rc 1：「⛔ 析崩」之行）即红。器红·⛔读者可见。"""
+     r = run('体系总图·自测', ['工具/体系总图.py', '--自测'], timeout=300, 带码=True)
+     if r is None:
+@@ -3289,7 +3289,7 @@ def chk_tixi_zongtu():
+         return False, '用之红 %d、析崩 %d：%s' % (len(红), len(崩), (崩 + 红 or ['验红 rc=%d' % rc2])[0][:150])
+     旧 = any(x.strip().startswith('⚠ 档旧') for x in out2.split('\n'))
+     警 = sum(1 for x in out2.split('\n') if x.strip().startswith('⚠'))
+-    return True, '自测 %s/%s｜验%s' % (m.group(1), m.group(2), ('：图待下一封版随（⚠ %d）' % 警) if 旧 else ('绿' + ('｜⚠ %d' % 警 if 警 else '')))
++    return True, '自测 %s/%s｜验%s' % (m.group(1), m.group(2), ('：图待下一封版或总编辑之 --随治 随（⚠ %d）' % 警) if 旧 else ('绿' + ('｜⚠ %d' % 警 if 警 else '')))
+ 
+ 
+ def chk_jinhuashu():
+@@ -4223,7 +4223,7 @@ def 诸项(quick):
+         items.append(('圣经引号', chk_shengjing_yin))
+         items.append(('自省哨', chk_zixing))
+         items.append(('负测·自进化环', chk_zijinhua))
+-        items.append(('体系总图', chk_tixi_zongtu))    # ★1119 作者令·体系总图（法用#体系总图·W909）：一件一行、用之审之红（器红级）；图旧只 ⚠·唯封版重写
++        items.append(('体系总图', chk_tixi_zongtu))    # ★1119 作者令·体系总图（法用#体系总图·W909）：一件一行、用之审之红（器红级）；图旧只 ⚠·封版与 --随治 重写（W912）
+         items.append(('进化树', chk_jinhuashu))         # ★1119 作者令·进化树（法用#进化树）：谱随三账、截至为 HEAD 之祖（谱旧只 ⚠·唯封版重写）
+         items.append(('剧情全图', chk_juqing_quantu))   # ★1119 W907 作者令（法用#剧情全图）：自测＋验（图旧只 ⚠·唯封版重写·照进化树）；⛔快测（写中之章诸源随轮而变）
+         items.append(('负测·上瘾四问', chk_shangyin))
+diff --git a/工具/封版.py b/工具/封版.py
+index 44859c796..0dc947a8b 100644
+--- a/工具/封版.py
++++ b/工具/封版.py
+@@ -724,7 +724,7 @@ def 後(n, 演=False, root=ROOT):
+          ('人物链', [器('人物链.py'), '--并记'], False),   # ★1015 作者议：每人从头到尾之链与每两人之关系——自记席之「在场之人」零 token 重并（虹吸）
+          ('进化树随', [器('进化树.py'), '--随'], False),   # ★1119 作者令「进化路线·进化树……保存在 GitHub 的主线」（法用#进化树）：谱随三账——唯封版重写（写者唯一·⛔总编辑之坐与写书之坐两边各写而并冲突）；--验 绿即⛔动
+          ('器之迹', [器('囤灰闸.py'), '--迹', str(n), '--写'], False),   # ★1015 作者议：每章从头到尾用了哪些器、每器之表现（败、慢、重跑）——自 _器之迹.jsonl 零 token
+-         ('体系总图', [器('体系总图.py')], False)]   # 〔1119·W909·法用#体系总图〕一件一行之体系总图（部、职、谁跑、谁读、末真用、用之审之判）——唯封版重写（写者唯一）；居器之迹之後：末真用之窗含本章之迹，⛔封後即旧
++         ('体系总图', [器('体系总图.py')], False)]   # 〔1119·W909·法用#体系总图〕一件一行之体系总图（部、职、谁跑、谁读、末真用、用之审之判）——封版 --後 与总编辑之 --随治 重写（两写之并由 账并 之生成之图一支·W912）；居器之迹之後：末真用之窗含本章之迹，⛔封後即旧
+     步 += [('回执对账', [器('回执对账.py')], True), ('开轮六检', [器('开轮六检.py'), str(n)], True),
+           ('第零轮开镜庭', [器('第零轮开镜庭.py')], True), ('造式之实', [器('造式.py'), str(n)], True)]
+     for 名, a, 必 in 步:
+diff --git a/工具/接棒守.py b/工具/接棒守.py
+index 269c20057..4b8b7913f 100644
+--- a/工具/接棒守.py
++++ b/工具/接棒守.py
+@@ -3161,6 +3161,15 @@ if __name__ == '__main__':
+                 _态 = 活守(守先在=_守先在)
+         except Exception as _e:
+             sys.stderr.write('⚠ 活守之验不成：%s——巡应⛔带三键（云巡作旧论）\n' % _e)
++        if '--代' not in a:          # 〔W912 环4〕执行之图：补印之後印 体系总图 --摘（今树即算·🔴 与用之红即红）於 stderr；逾二十秒即 ⚠（⛔拦巡）——云巡（GitHub）与 --代 之路⛔印
++            try:
++                _摘 = subprocess.run([sys.executable, os.path.join(ROOT, '工具', '体系总图.py'), '--摘'], cwd=ROOT, capture_output=True, text=True, timeout=20)
++                sys.stderr.write('── 执行之图 ──\n%s\n' % ((_摘.stdout or '').rstrip() or '⚠ 图之摘无出（rc %s）' % _摘.returncode))
++            except subprocess.TimeoutExpired:
++                sys.stderr.write('── 执行之图 ──\n⚠ 图之摘逾时（二十秒·⛔拦巡）\n')
++            except Exception as _e:
++                sys.stderr.write('── 执行之图 ──\n⚠ 图之摘不得：%s\n' % _e)
++            sys.stderr.flush()
+         _rc = 巡(查印=True)          # 沙盒（总编辑之坐）：验巡印、常对拍；每跑俱落巡应（云巡验其应）
+         上下文之印(_rc)               # 〔W911 重造 环1②〕「止」之次行：本坐上下文逾三十万即请作者 /compact（首行恒「止」、rc ⛔改；静则⛔印）
+         冷唤之印(_rc)                 # 〔W911 重造 环1④〕「止」之次行：本唤冷（隔逾一时·缓存读≈0）即请对兜底之令之实（⛔虚书之声明）
+diff --git a/工具/推.py b/工具/推.py
+index be4100398..309cfcee7 100644
+--- a/工具/推.py
++++ b/工具/推.py
+@@ -27,10 +27,13 @@
+   ⑨ （W908 环6·裁五·纸证之棘轮之拦处）交 治-* 前跑 `法用之守 --纸证`：数＞底、本推改其源（法用册、常令、总章）、⛔含封版之笔、
+      且本推增其数（HEAD 之树之数 ＞ max(底, 分叉点之树之数)·`--纸证 --于 <版>`）→ rc 3 ⛔交——拦总编辑之纸；`--强` 越之而记（.git/推.log）。
+      余俱只印（⛔拦写书）：未改其源、含「封版#N」之笔（写书之坐之推：章之纸由章封 ⚠）、逾底係前推所遗（本推未增）、底未立、算不得。
++  ⑩ （W912 环2②·图之闸·方法一变图即随）纸证之闸之後：本坐＝接棒守.总编辑（照 心跳.坐 取号），本推（与 origin/<主枝> 分叉以来）改
++     工具/*.py、工具/席/*.js、.github/workflows/*、设定/法用册.json，而 `体系总图.py --验` 印「⚠ 档旧」（或盘上之图已重画而未提交）
++     → rc 3 ⛔交、印「先 python3 工具/体系总图.py --随治 而并交」；`--强` 越之而记。他坐（写书之坐）、含封版之笔（章-N）、未改其源者俱放（⛔增写书之坐一字）。
+ 
+ 用法：
+-  python3 工具/推.py                  # 交 GitHub：推 治-<sha12>（後台跑亦可）→ 印候之令｜rc 3：纸证之闸 ⛔交
+-  python3 工具/推.py --强             # 同上，纸证逾底亦交（越而记 .git/推.log）
++  python3 工具/推.py                  # 交 GitHub：推 治-<sha12>（後台跑亦可）→ 印候之令｜rc 3：纸证之闸或图之闸 ⛔交
++  python3 工具/推.py --强             # 同上，纸证逾底、图旧亦交（越而记 .git/推.log）
+   python3 工具/推.py --候 <sha> [分]  # 零 token 候（run_in_background）：0 主枝已含（已快进）｜3 报红／拒／败｜2 逾限（默九十分）
+   python3 工具/推.py --直             # 兜底：直推主枝（本地 pre-push 全闸）——只於报「拒」或 GitHub 停摆
+   python3 工具/推.py --状             # 有无推送在跑、本地超前几笔
+@@ -132,7 +135,7 @@ def _记(root, s):
+ 速检之器 = [('改单', ['改单.py', '--查']), ('工作流账', ['工作流账.py', '--查']), ('复盘', ['复盘.py', '--验']),
+           ('方法坑账', ['方法坑账.py', '--验']), ('剧情庭之关', ['剧情庭之关.py']),
+           ('法用之废', ['法用之守.py', '--废']),   # ★1027 治-a5d6c101 实踩：新废之去证空验（废前之树亦不红）唯 GitHub 之闸逮（十余分）——四秒先跑
+-          ('法用之守', ['法用之守.py', '--报'])]   # ★1103 治-51874fd04c4a 实踩：常令新行缺「法用#」（完备 ⛔·令无证）速检不跑 --报，唯 GitHub 之闸逮——七秒先跑
++          ('法用之守', ['法用之守.py', '--报', '--无图'])]   # ★1103 治-51874fd04c4a 实踩：常令新行缺「法用#」（完备 ⛔·令无证）速检不跑 --报，唯 GitHub 之闸逮——七秒先跑
+ 
+ 
+ 覆写之界 = 0.8          # 坑⑱：已入 git 之档一推删其八成以上之行而换新者
+@@ -326,6 +329,78 @@ def 纸证之闸(root=ROOT, 强=False, 基=None):
+                '（详 python3 工具/法用之守.py --纸证）；确要越之：python3 工具/推.py --强（越而记）' % (语[:300], 前, 今, '、'.join(改)))
+ 
+ 
++图之源 = ('工具/*.py', '工具/席/*.js', '.github/workflows/*', '设定/法用册.json')   # 〔W912 环2②〕方法之件：本推改之而图旧 → 图之闸（总编辑之坐）
++图之档 = '设定/体系总图.md'
++
++
++def 本坐():
++    """本会话之号：取 心跳.坐（CLAUDE_CODE_REMOTE_SESSION_ID → CLAUDE_SESSION_ID → CLAUDE_CODE_SESSION_ID，去 session_／cse_·⛔另写·坑53）；
++    载不得或「未名」→ ''（图之闸只放）。"""
++    try:
++        import 心跳
++        x = 心跳.坐()
++        return '' if x == '未名' else x
++    except Exception:
++        return ''
++
++
++def 总编辑之号():
++    """接棒守.总编辑（去 session_／cse_）；载不得 → ''（⛔拦：图之闸只放）。"""
++    try:
++        import 接棒守
++        return re.sub(r'^(session_|cse_)', '', str(getattr(接棒守, '总编辑', '') or '').strip())[:32]
++    except Exception:
++        return ''
++
++
++def 图之闸(root=ROOT, 强=False, 基=None, 坐=None, 总=None, 验=None):
++    """〔W912 环2②〕交 治-* 前（纸证之闸之後·照其式）→ (rc, 语)：方法一变图即随，只拦总编辑之坐（坐＝接棒守.总编辑）。
++    本推（与 origin/<主枝> 分叉以来）改 图之源，而 `体系总图.py --验` 印「⚠ 档旧」（或盘上之图已重画而未提交）→ (3, 语) ⛔交；
++    强（--强）→ (0, ⚠语) 越之、记 .git/推.log。放 (0, '')：他坐（写书之坐之推·⛔增一字）、章-N 之枝或含封版之笔、未改其源、图不旧、器缺；
++    (0, ⚠语)：分叉点不得、--验 逾时或跑不得、--验 崩或无出（rc 非 0／1、无「体系总图·验」之头或其末之「件 N」之行·⛔拦）。验：注之（自测）→ (rc, 出)。"""
++    坐 = 本坐() if 坐 is None else 坐
++    总 = 总编辑之号() if 总 is None else 总
++    if not 总 or 坐 != 总:
++        return 0, ''
++    f = os.path.join(root, '工具', '体系总图.py')
++    if 验 is None and not os.path.exists(f):
++        return 0, ''
++    if re.fullmatch(r'章-\d+', _跑(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], root).stdout.strip()):
++        return 0, ''
++    mb = _跑(['git', 'merge-base', 基 or 'refs/remotes/origin/' + 枝, 'HEAD'], root).stdout.strip()
++    if not mb:
++        return 0, '⚠ 图之闸：分叉点不得，不辨本推改方法之件否（⛔拦）'
++    if any(封版之笔.search(x) for x in _跑(['git', 'log', '--format=%s', mb + '..HEAD'], root).stdout.split('\n')):
++        return 0, ''                                     # 写书之坐之推（章-N·封版之笔）：图随封版 --後
++    改 = [x for x in _跑(['git', '-c', 'core.quotepath=off', 'diff', '--name-only', mb, 'HEAD', '--'] + list(图之源), root).stdout.split('\n') if x.strip()]
++    if not 改:
++        return 0, ''
++    try:
++        if 验:
++            vrc, 出 = 验()
++        else:
++            r = _跑([sys.executable, f, '--验'], root, timeout=90)
++            vrc, 出 = r.returncode, r.stdout or ''
++    except subprocess.TimeoutExpired:
++        return 0, '⚠ 图之闸：体系总图 --验 逾九十秒（⛔拦）'
++    except Exception as e:
++        return 0, '⚠ 图之闸：体系总图 --验 跑不得（%s·⛔拦）' % str(e)[:80]
++    旧 = [l.strip() for l in 出.split('\n') if l.strip().startswith('⚠ 档旧')]
++    未提 = _跑(['git', 'diff', '--quiet', 'HEAD', '--', 图之档], root).returncode == 1
++    if (vrc not in (0, 1) or '体系总图·验' not in 出 or not re.search(r'^\s*[✓⛔] 件 \d+', 出, re.M)) and not 未提:
++        return 0, '⚠ 图之闸：体系总图 --验 崩或无出（rc %s·⛔拦）——先 python3 工具/体系总图.py --验 察之' % vrc   # ⛔静放：总编辑之治改坏本器即见
++    if not 旧 and not 未提:
++        return 0, ''
++    由 = 旧[0][:160] if 旧 else '盘上之图已重画而未提交（%s）' % 图之档
++    改s = '、'.join(改[:6]) + ('等 %d' % len(改) if len(改) > 6 else '')
++    if 强:
++        _记(root, '图之闸越（--强）：%s｜改 %s' % (由, 改s))
++        return 0, '⚠ 图之闸·--强 越之（已记 .git/推.log）：%s' % 由
++    return 3, ('⛔ 图之闸（W912·方法一变图即随·只拦总编辑之坐）：本推改方法之件（%s）而图旧——%s\n'
++               '  先 python3 工具/体系总图.py --随治 而并交（git add %s 提交，再 python3 工具/推.py）；确要越之：python3 工具/推.py --强（越而记）'
++               % (改s, 由, 图之档))
++
++
+ def 直推(root=ROOT, 推法=None, 最多=5):
+     """兜底（--直·旧法）：直推主枝、本地 pre-push 全闸。→ 0 推平｜1 被拦｜2 已有人在推（已登记待推）。"""
+     待 = os.path.join(_git目录(root), '推.待')
+@@ -433,7 +508,7 @@ def 泊之(名, root=ROOT):
+ 
+ def 交(root=ROOT, 交法=None, 最多=5, 强=False):
+     """默（1027 坑51）：推 HEAD 於 治-<sha12>（暂存之枝：pre-push 免闸），GitHub autopush 分片而闸、过即并入主枝（1027 坑54）。
+-    → 0 已交（或 HEAD 已在主枝）｜1 被拦（枝歪、速检红、推不上）｜2 已有人在推（已登记待推）｜3 纸证之闸 ⛔交（W908 环6·强 越之）。⛔本地全测。"""
++    → 0 已交（或 HEAD 已在主枝）｜1 被拦（枝歪、速检红、推不上）｜2 已有人在推（已登记待推）｜3 纸证之闸或图之闸 ⛔交（W908 环6、W912 环2·强 越之）。⛔本地全测。"""
+     待 = os.path.join(_git目录(root), '推.待')
+     锁 = 取锁(root)
+     if 锁 is None:
+@@ -462,6 +537,12 @@ def 交(root=ROOT, 交法=None, 最多=5, 强=False):
+                 if 纸rc:
+                     _记(root, '纸证之闸 ⛔交：' + 纸语.split('\n')[0][:300])
+                     return 纸rc
++                图rc, 图语 = 图之闸(root, 强)        # 〔W912 环2②〕总编辑之治改器／席／流／法用册而图旧即 ⛔交（--强 越而记；写书之坐⛔拦）
++                if 图语:
++                    print(图语)
++                if 图rc:
++                    _记(root, '图之闸 ⛔交：' + 图语.split('\n')[0][:300])
++                    return 图rc
+                 _跑([sys.executable, os.path.join(ROOT, '工具', '存底.py'), '--存'], root, timeout=280)
+                 装并器(root)
+             sha = _跑(['git', 'rev-parse', 'HEAD'], root).stdout.strip()
+@@ -608,7 +689,7 @@ def 自测():
+     open(os.path.join(_u, '工具', '复盘.py'), 'w').write("print('ok')")
+     _r = 速检(_u)
+     共 += 1; ok += (len(_r) == 1 and '改单' in _r[0] and '而无改单' in _r[0])
+-    共 += 1; ok += ('法用之守', ['法用之守.py', '--报']) in 速检之器   # ★1103：完备（令无证）推前即逮
++    共 += 1; ok += ('法用之守', ['法用之守.py', '--报', '--无图']) in 速检之器   # ★1103：完备（令无证）推前即逮；〔W912〕--无图：图之行约七秒·⛔拖累写书之推
+     共 += 1; ok += ('法用之废', ['法用之守.py', '--废']) in 速检之器   # ★1027：去证空验推前即逮（⛔候 GitHub 之闸）   # ★1016 速检：红者印其末行，绿者⛔报，缺器⛔跑
+     _g = tempfile.mkdtemp()                                                  # ★1022 枝正：游离之 HEAD、枝在其祖 → 挪枝检出
+     for _c in (['git', 'init', '-q', '-b', 枝], ['git', 'commit', '-q', '--allow-empty', '-m', 'a'], ['git', 'checkout', '-q', '--detach'],
+@@ -866,6 +947,66 @@ print('✓ 纸证之数 %d（待 %d）（底 %d）｜纸证之数 %d ＝ 底 %d'
+     if not all(_细.values()):
+         print('  ✗ ㉒ 纸证之闸：%s' % '、'.join(k for k, v in _细.items() if not v))
+     共 += 1; ok += all(_细.values())
++    # ㉓（W912 环2②）图之闸：临时之仓、桩之 --验（注 验）——总编辑之坐改器而图旧 → 3（印 --随治 之路）；写书之坐而旧 → 放（⛔增一字）；
++    #   鲜 → 放；--强 → 0、记 .git/推.log；含封版之笔、未改其源 → 放；盘上之图已重画而未提交 → 3；分叉点不得 → ⚠ 放；
++    #   本坐照 心跳.坐 之序取号、去 session_／cse_；总编辑取 接棒守.总编辑；交() 之序：纸证之闸 → 图之闸 → 存底
++    _y = tempfile.mkdtemp()
++    _gy = lambda *a: subprocess.run(['git'] + list(a), cwd=_y, capture_output=True, text=True, env=_e)
++    os.makedirs(os.path.join(_y, '工具')); os.makedirs(os.path.join(_y, '设定'))
++    def _落(p, 字, 提=None):
++        open(os.path.join(_y, p), 'w', encoding='utf-8').write(字 + '\n')
++        if 提:
++            _gy('add', '-A'); _gy('commit', '-q', '-m', 提)
++    _gy('init', '-q', '-b', 枝)
++    _落('工具/甲.py', 'x = 1'); _落(图之档, '# 图 甲'); _落('a.md', '正', '基')
++    _gy('update-ref', 'refs/remotes/origin/' + 枝, 'HEAD')
++    _旧验 = lambda: (0, '════ 体系总图·验 ════\n  ⚠ 档旧：首异在第 9 行（档「甲」｜今「乙」）——……\n  ✓ 件 9')
++    _鲜验 = lambda: (0, '════ 体系总图·验 ════\n  ✓ 不旧：设定/体系总图.md 与今盘再生逐字同\n  ✓ 件 9')
++    _正 = 图之闸(_y, 坐='总甲', 总='总甲', 验=_旧验)                       # 未改其源（基即分叉点）
++    _落('a.md', '正二', '写书之治（正文）'); _正二 = 图之闸(_y, 坐='总甲', 总='总甲', 验=_旧验)
++    _落('工具/甲.py', 'x = 2', '总编辑之治：改器')
++    _拦图 = 图之闸(_y, 坐='总甲', 总='总甲', 验=_旧验)
++    _写书 = 图之闸(_y, 坐='写乙', 总='总甲', 验=_旧验)
++    _鲜 = 图之闸(_y, 坐='总甲', 总='总甲', 验=_鲜验)
++    _强图 = 图之闸(_y, 强=True, 坐='总甲', 总='总甲', 验=_旧验)
++    _志图 = open(os.path.join(_y, '.git', '推.log'), encoding='utf-8').read() if os.path.exists(os.path.join(_y, '.git', '推.log')) else ''
++    _崩图 = [图之闸(_y, 坐='总甲', 总='总甲', 验=v) for v in (lambda: (1, 'Traceback (most recent call last):\n  File x\nZeroDivisionError'),
++                                                         lambda: (0, ''), lambda: (1, '════ 体系总图·验 ════\nTraceback (most recent call last):'))]
++    _落(图之档, '# 图 乙'); _未提 = 图之闸(_y, 坐='总甲', 总='总甲', 验=_鲜验)   # 盘上之图已随治而未提交
++    _gy('checkout', '-q', '--', 图之档)
++    _无基 = 图之闸(_y, 坐='总甲', 总='总甲', 验=_旧验, 基='refs/remotes/origin/无此枝')
++    _落('a.md', '正三', '第478章《某》封版（造式二代·封版#478）'); _封图 = 图之闸(_y, 坐='总甲', 总='总甲', 验=_旧验)
++    _sh.rmtree(_y, ignore_errors=True)
++    _旧环 = {k: os.environ.get(k) for k in ('CLAUDE_CODE_REMOTE_SESSION_ID', 'CLAUDE_SESSION_ID', 'CLAUDE_CODE_SESSION_ID')}
++    try:
++        for k in _旧环:
++            os.environ.pop(k, None)
++        os.environ['CLAUDE_CODE_SESSION_ID'] = 'fc87a25e-0000'
++        os.environ['CLAUDE_CODE_REMOTE_SESSION_ID'] = 'cse_ABC123xyz'
++        _坐号 = 本坐()
++    finally:
++        for k, v in _旧环.items():
++            if v is None:
++                os.environ.pop(k, None)
++            else:
++                os.environ[k] = v
++    try:
++        import 接棒守 as _接
++        _总约 = 总编辑之号() == re.sub(r'^(session_|cse_)', '', _接.总编辑) and len(总编辑之号()) >= 8
++    except Exception:
++        _总约 = False
++    _图细 = {'未改': _正 == (0, '') and _正二 == (0, ''),
++            '拦': _拦图[0] == 3 and '⛔ 图之闸' in _拦图[1] and 'python3 工具/体系总图.py --随治' in _拦图[1] and '工具/甲.py' in _拦图[1]
++                  and 'python3 工具/推.py --强' in _拦图[1],
++            '写书放': _写书 == (0, ''), '鲜放': _鲜 == (0, ''),
++            '强': _强图[0] == 0 and '越之' in _强图[1] and '图之闸越（--强）' in _志图 and '工具/甲.py' in _志图,
++            '未提': _未提[0] == 3 and '未提交' in _未提[1], '无基': _无基[0] == 0 and '分叉点不得' in _无基[1],
++            '封放': _封图 == (0, ''), '坐': _坐号 == 'ABC123xyz', '总': _总约,
++            '崩⚠': all(x[0] == 0 and '崩或无出' in x[1] for x in _崩图),
++            '序': _交体.index('纸证之闸(root, 强)') < _交体.index('图之闸(root, 强)') < _交体.index("'存底.py'")}
++    if not all(_图细.values()):
++        print('  ✗ ㉓ 图之闸：%s｜%s' % ('、'.join(k for k, v in _图细.items() if not v), str(_拦图)[:120]))
++    共 += 1; ok += all(_图细.values())
+     print('推·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' ⛔未过'))
+     return ok == 共
+ 
+diff --git a/工具/方案.py b/工具/方案.py
+index 001f6ea08..90295d9bc 100644
+--- a/工具/方案.py
++++ b/工具/方案.py
+@@ -17,6 +17,10 @@
+   - 无      （或：- <何事未确证>；试：<怎么小样实测>）
+   ## 合计
+   - 时：…；费：$…；据：…
++  ## 图之用        （W912 起·W9xx 总编辑之件；作者 1120 令「这不是每次都要用吗」：每件之设计必用体系总图）
++  | 件 | 部 | 谁跑 | 谁读 | 判 |
++    逐环「做什么」所书之件（工具/<x>.py、工具/席/<x>.js、.github/workflows/<x>.yml、设定/<x>.json|md）俱入其表（缺即坏；一件⛔书者⛔索其节）；
++    其节由 `--图 W` 自 体系总图 之析机出（import 之·⛔另析）；表之「谁读」与今析不合、逐环书裸名（推.py、接棒守）而⛔入表只 ⚠。W1xx（写书之件）⛔索。
+   ## 坑之检          （1027 起·W75 起之方案须有：逐坑写本法如何排除——坑㉛㊱）
+   - ⑤ 等推用 推.py --等；⑰ pipefail；㊱ 改尺：消费者：grep -rn '<函名>' 工具/ → 工具/甲.py、工具/乙.py
+     凡称改一把尺（取章、取镜、取线、计数之法……）者，须有「消费者：grep …」一行并列其档（坑㊱：一义跨器而漏其消费者）。
+@@ -32,6 +36,7 @@
+   python3 工具/方案.py --模板 W19 题      # 写 设定/方案/W19.md 之模板（已在则⛔覆）
+   python3 工具/方案.py --验 W19           # 验一份；不过 rc=1
+   python3 工具/方案.py --验全             # 验 设定/方案/ 下诸份（入全测）
++  python3 工具/方案.py --图 W912          # 印「## 图之用」之节（逐环所改之件之部、谁跑、谁读、判·体系总图今树即算）以供贴入
+   python3 工具/方案.py --预审之指 W913     # 印审之指（「## 预审」之「- 审之指：」书之）
+   python3 工具/方案.py --预审 W913 <Run>   # 印「## 预审」之稿：自其 Run 之 result 机出险行（施者填环与防、书判）
+   python3 工具/方案.py --自测
+@@ -537,12 +542,132 @@ def _号(W):
+     return int(m.group(1)) if m else 0
+ 
+ 
++图之用之起 = 912        # 1120 作者令（「跟执行主义不是都要结合起来会使用吗」·W912 环3）：W912 起之总编辑之件（W9xx）须有「## 图之用」——W1xx（写书之件）⛔索
++件式 = re.compile(r'(工具/席/[\w\-]+\.js|工具/[\w\-]+\.py|\.github/workflows/[\w\-.]+\.yml|设定/[^\s/|，。、；：:（）()「」`*<>]+\.(?:json|md))')
++
++
++def 要图(W):
++    """须「## 图之用」否：W9xx 而号 ≥ 图之用之起（写书之件 W1xx ⛔索：⛔拖累写书）。"""
++    return 总编辑之件(W, 图之用之起)            # 〔并 W911〕一判（坑53）：新律之界与图之用之界共 总编辑之件
++
++
++def 所改之件(文):
++    """「## 逐环」表「做什么」栏所书之件（源序·去重）：工具/<x>.py、工具/席/<x>.js、.github/workflows/<x>.yml、设定/<x>.json|md
++    （占位之「工具/<器>.py」⛔认）。"""
++    出 = []
++    for l in (节(文, '逐环') or '').split('\n'):
++        l = l.strip()
++        if not l.startswith('|') or re.fullmatch(r'\|[\s\-:|]+\|', l):
++            continue
++        c = [x.strip() for x in l.strip('|').split('|')]
++        if len(c) != len(列) or c == 列:
++            continue
++        for m in 件式.finditer(c[1]):
++            if m.group(1) not in 出:
++                出.append(m.group(1))
++    return 出
++
++
++def 图之用之表(文):
++    """「## 图之用」之表 → {件（去 `）: {栏: 值}}；无节 → None。"""
++    t = 节(文, '图之用')
++    if t is None:
++        return None
++    行 = [l.strip() for l in t.split('\n') if l.strip().startswith('|')]
++    if not 行:
++        return {}
++    头 = [c.strip() for c in 行[0].strip('|').split('|')]
++    出 = {}
++    for l in 行[1:]:
++        if re.fullmatch(r'\|[\s\-:|]+\|', l):
++            continue
++        c = [x.strip().strip('`') for x in l.strip('|').split('|')]
++        if c and c[0]:
++            出[c[0]] = dict(zip(头, c))
++    return 出
++
++
++def 图之用之坏(文):
++    """→ [坏]：逐环书件者须「## 图之用」一节、其件俱在其表（以路或档名认）——缺即「图之用缺 <件>」；逐环⛔书一件者⛔索其节（无件可图）。"""
++    表 = 图之用之表(文)
++    if 表 is None:
++        if not 所改之件(文):
++            return []
++        return ['无「## 图之用」一节（W%d 起·W9xx：逐环所改之件逐件书其部、谁跑、谁读、判——python3 工具/方案.py --图 W 自图机出其节）' % 图之用之起]
++    名们 = set(表) | {os.path.basename(k) for k in 表}
++    return ['图之用缺 %s（python3 工具/方案.py --图 W 重出其节）' % p for p in 所改之件(文) if p not in 名们 and os.path.basename(p) not in 名们]
++
++
++def 图之析(root=ROOT):
++    """→ (行之文, 件)：体系总图 之析（import 之·⛔另析·今树即算·⛔取远）。"""
++    import 体系总图 as _图
++    _, _, 件 = _图.生(root, 取=False)
++    return _图.行之文, 件
++
++
++def _图件(件, p):
++    b = os.path.basename(p)
++    if b in 件:
++        return 件[b]
++    return next((v for v in 件.values() if b in (v.get('员') or ())), None)
++
++
++def _格(x):
++    return str(x).replace('|', '｜').replace('\n', ' ').strip()
++
++
++def 图之用之节(W, 文, 析=None):
++    """→ 「## 图之用」之节（md 之行）：逐环所改之件逐件出 部、谁跑、谁读、判（体系总图之一件一行·全列⛔截）。析：(行之文, 件)（自测注之）。"""
++    行文, 件 = 析 or 图之析()
++    L = ['## 图之用', '', '> 由 `python3 工具/方案.py --图 %s` 自 体系总图 之析机出（今树即算·%s）；逐环所改之件逐件：部、谁跑、谁读、判。'
++         '「谁读」与今析不合即 --验 ⚠（图已变·重出）。' % (W, time.strftime('%m-%d', time.gmtime())), '',
++         '| 件 | 部 | 谁跑 | 谁读 | 判 |', '|---|---|---|---|---|']
++    诸 = 所改之件(文)
++    诸 += [k for k in (图之用之表(文) or {}) if re.search(r'\.(py|js|yml|json|md)$', k) and k not in 诸
++           and os.path.basename(k) not in {os.path.basename(x) for x in 诸}]   # 旧表所列之余件（逐环未书其路者）亦重出
++    for p in 诸:
++        v = _图件(件, p)
++        if v is None:
++            L.append('| %s | — | （图中无此件：新立，入主後随图） | — | — |' % p)
++            continue
++        r = 行文(v, True)
++        L.append('| %s | %s | %s | %s | %s |' % (p, _格(r[1]), _格(r[3]), _格(r[5]), _格(r[7])[:80]))
++    return L
++
++
++def _读者名(x):
++    return re.sub(r'^(席|流|git钩)·', '', x)
++
++
++def 图之用之警(文, 析=None):
++    """→ [⚠]：表之「谁读」与今析不合（今析之读者不见於表、或表书读者而今析无）——只 ⚠（图已变·重出）。"""
++    表 = 图之用之表(文) or {}
++    if not 表:
++        return []
++    _, 件 = 析 or 图之析()
++    警 = []
++    for k, 行 in 表.items():
++        v = _图件(件, k)
++        if v is None:
++            continue
++        读 = 行.get('谁读', '')
++        今 = sorted({_读者名(b) for _, b in v['读']})
++        缺 = [x for x in 今 if x not in 读]
++        if 缺:
++            警.append('⚠ 图之用之谁读与今析不合：%s 今析之读者 %s 不在表（重出：python3 工具/方案.py --图 W）' % (k, '、'.join(缺[:6]) + ('等 %d' % len(缺) if len(缺) > 6 else '')))
++        elif not 今 and 读 not in ('', '—', '-', '无'):
++            警.append('⚠ 图之用之谁读与今析不合：%s 表书「%s」而今析无读者' % (k, 读[:30]))
++    return 警
++
++
+ def 验(W, root=ROOT):
+     p = os.path.join(root, 目录, '%s.md' % W)
+     if not os.path.exists(p):
+         return False, ['无方案：%s（先 `python3 工具/方案.py --模板 %s 题`，逐环确证了再开）' % (os.path.relpath(p, root), W)]
+     文 = open(p, encoding='utf-8').read()
+     坏 = 验文(文)
++    if 要图(W):                         # 〔W912 环3〕居诸检之首（⛔与 W911 之缓存之算同处·免并之冲突）
++        坏 += 图之用之坏(文)
+     if re.fullmatch(r'W0\d+', str(W)):                # 〔W911 补〕前导零（W0913）：新律以号定界、总编辑之件 判 False 即逃律——⛔免，验即坏（--开 随之拒）
+         坏.append('号「%s」带前导零（W0913 之类即逃新律之界）——去其零再立方案' % W)
+     if _号(W) >= 坑之检之起:
+@@ -606,6 +731,50 @@ def 立模板(W, 题, root=ROOT):
+     return p
+ 
+ 
++def _图之自测(好):
++    """〔W912 环3〕图之用之验之自测 → (过, 共)——自 自测 之首调之（其段⛔与他件之自测同处·免三方并之冲突）。"""
++    ok = 共 = 0
++    择 = '## 虫洞之择\n- 候甲：器自算——效：全；费：$0；险：低\n- 候乙：开席逐条——效：同；费：$12；质：同\n- 取：候甲——由：效同而费最省、险最小\n'
++    # ★W912 环3（作者 1120「这不是每次都要用吗」）：W912 起之 W9xx 须「## 图之用」，逐环所改之件俱入其表（缺即坏）；W911 以下、W1xx 免；
++    #   表之「谁读」与今析不合只 ⚠；--图 自体系总图之析机出（此注假析·⛔真生）；W912 本身合
++    图文 = 好.replace('| 1 | 对拍 |', '| 1 | 改 工具/甲.py 与 设定/乙.json、工具/席/丙.js、.github/workflows/丁.yml（工具/<器>.py 占位⛔认） |')
++    节图 = ('\n## 图之用\n| 件 | 部 | 谁跑 | 谁读 | 判 |\n|---|---|---|---|---|\n| 工具/甲.py | 长 | 全测·甲 | 引之者：乙器 | 用 |\n'
++          '| 设定/乙.json | 长 | — | 引之者：甲 | 用 |\n| 丙.js | 心 | — | — | 用 |\n| `.github/workflows/丁.yml` | 觉 | GitHub | — | 用 |\n')
++    检择 = '\n## 坑之检\n- ⑤ 等推用 推.py --等\n' + 择
++    共 += 1; ok += 所改之件(图文) == ['工具/甲.py', '设定/乙.json', '工具/席/丙.js', '.github/workflows/丁.yml']   # 占位⛔认；表以路或档名认
++    t3 = tempfile.mkdtemp()
++    try:
++        os.makedirs(os.path.join(t3, 目录))
++        w = lambda W, s: open(os.path.join(t3, 目录, W + '.md'), 'w', encoding='utf-8').write(s)
++        # 〔并 W911〕W913 起守新律（兜底之隔之声明·「## 预审」）：其样兼备二者，令本钉只验图之用之律（⛔为新律之缺而坏）
++        新律 = lambda 文, W: 文 + ('\n## 预审\n- 预审者：wf_0000aaaa-%s（攻者二）\n- 审之指：%s\n- 险（环1）：甲器之改漏其读者｜防：自测钉其读者之表\n'
++                               '- 险（环2）：五执笔之费估低｜防：自测 3/3 钉其界\n- 险（取）：候甲之费未算冷唤｜防：驳：候甲⛔改唤隔，冷暖同档\n- 判：可施\n') % (W[1:], 预审之指(文))
++        os.makedirs(os.path.join(t3, '设定'), exist_ok=True)
++        json.dump({'行': [{'键': 'wf_0000aaaa-%s' % W[1:], '名': '%s·预审' % W, '席': 2, '美元': 1} for W in ('W913', 'W914', 'W915')]},
++                  open(os.path.join(t3, '设定', '费账.json'), 'w', encoding='utf-8'), ensure_ascii=False)
++        检择新 = 检择 + '- 兜底之隔：不改\n'
++        w('W912', 图文 + 检择); w('W913', 新律(图文 + 检择新 + 节图.replace('| 设定/乙.json | 长 | — | 引之者：甲 | 用 |\n', ''), 'W913'))
++        w('W914', 新律(图文 + 检择新 + 节图, 'W914')); w('W911', 图文 + 检择)
++        w('W915', 新律(好.replace('| 1 | 对拍 |', '| 1 | 兜底之令⛔改；巡.yml 之 cron 照旧（述之） |') + 检择新, 'W915'))      # 逐环⛔书一件（全路）→ ⛔索其节（W911 自测之样即此式）
++        g912, g913, g914, g911, g915 = (验(W, t3) for W in ('W912', 'W913', 'W914', 'W911', 'W915'))
++    finally:
++        shutil.rmtree(t3)
++    共 += 1; ok += (g912[0] is False and any('无「## 图之用」' in x for x in g912[1]))                        # 缺节 → 坏
++    共 += 1; ok += (g913[0] is False and g913[1] == ['图之用缺 设定/乙.json（python3 工具/方案.py --图 W 重出其节）'])   # 缺件 → 坏（唯缺者）
++    共 += 1; ok += (g914[0] is True and g911[0] is True and not 要图('W911') and not 要图('W151') and not 要图('W1000') and 要图('W912'))   # 全 → 过；W911 以下、W1xx 免
++    共 += 1; ok += (g915 == (True, []) and 所改之件(好) == [])                                           # 无件可图 → ⛔索其节（与 W911 之样并而⛔误坏）
++    假件 = {'甲.py': {'读': {('引', '乙器'), ('引', '席·造章')}, '员': None}, '乙.json': {'读': set(), '员': None}}
++    假行 = lambda v, 全=False: ['甲.py', '长', '职', '全测·甲', '每推', '引之者：乙器、席·造章', '—', '用（机判：有跑有读）', '工具/甲.py', '🟢〔—〕']
++    出图 = 图之用之节('W914', 图文 + 节图, (假行, 假件))
++    共 += 1; ok += ('| 工具/甲.py | 长 | 全测·甲 | 引之者：乙器、席·造章 | 用（机判：有跑有读） |' in 出图
++                    and '| 工具/席/丙.js | — | （图中无此件：新立，入主後随图） | — | — |' in 出图 and 出图[0] == '## 图之用')
++    警 = 图之用之警(图文 + 节图, (假行, 假件))
++    共 += 1; ok += (len(警) == 2 and '工具/甲.py 今析之读者 造章 不在表' in 警[0] and '设定/乙.json 表书「引之者：甲」而今析无读者' in 警[1]
++                    and 图之用之警(图文 + 节图.replace('引之者：乙器', '乙器、席·造章').replace('引之者：甲', '—'), (假行, 假件)) == [])   # 谁读不合只 ⚠
++    共 += 1; ok += 验('W912')[0]                                                                        # W912 本身合（其图之用由 --图 机出）
++    return ok, 共
++
++
+ def 自测():
+     ok = 共 = 0
+     好 = """# 方案·W9·测
+@@ -620,6 +789,7 @@ def 自测():
+ - 时：41 分；费：$80；据：费账 wf_e7912fa3-a0c
+ """
+     共 += 1; ok += (验文(好) == [])
++    _过, _共 = _图之自测(好); ok += _过; 共 += _共                                                    # 〔W912 环3〕图之用
+     共 += 1; ok += any('无实据' in x for x in 验文(好.replace('费账 wf_e7912fa3-a0c：执笔每席 $13—26', '大概能行')))      # 猜 → 红
+     共 += 1; ok += any('谁办' in x for x in 验文(好.replace('模型：创作，机器办不了', '模型')))                     # 模型须写为何
+     共 += 1; ok += any('败则' in x for x in 验文(好.replace('一席死即 resume', '—')))
+@@ -884,7 +1054,19 @@ if __name__ == '__main__':
+     if a[:1] == ['--验'] and len(a) == 2:
+         o, 坏 = 验(a[1])
+         print('✓ 方案 %s：逐环俱有确证、时、费、败则；无未确证' % a[1] if o else '⛔ 方案 %s：\n  ' % a[1] + '\n  '.join(坏))
++        if o and 要图(a[1]):                     # 〔W912 环3〕图之用之谁读与今析不合只 ⚠
++            try:
++                for x in 图之用之警(open(os.path.join(ROOT, 目录, a[1] + '.md'), encoding='utf-8').read()):
++                    print('  ' + x)
++            except Exception as e:
++                print('  ⚠ 图之用之谁读未比（体系总图 之析不得：%s）' % str(e)[:80])
+         sys.exit(0 if o else 1)
++    if a[:1] == ['--图'] and len(a) == 2:        # 〔W912 环3〕印「## 图之用」之节（以供贴入）
++        p = os.path.join(ROOT, 目录, a[1] + '.md')
++        if not os.path.exists(p):
++            print('⛔ 无方案：%s' % os.path.relpath(p, ROOT)); sys.exit(1)
++        print('\n'.join(图之用之节(a[1], open(p, encoding='utf-8').read())))
++        sys.exit(0)
+     if a[:1] == ['--预审之指'] and len(a) == 2:      # 〔W911 环6〕审之指：取行、兜底之隔之声明与逐环之 做什么／败则 之 sha1 前八位
+         print(预审之指(open(os.path.join(ROOT, 目录, a[1] + '.md'), encoding='utf-8').read()))
+         sys.exit(0)
+@@ -896,12 +1078,19 @@ if __name__ == '__main__':
+         sys.exit(0)
+     if a == ['--验全']:
+         fs = sorted(glob.glob(os.path.join(ROOT, 目录, 'W*.md')))
+-        全坏 = 0
++        全坏, 析 = 0, None
+         for f in fs:
+             W = os.path.basename(f)[:-3]
+             o, 坏 = 验(W)
+             if not o:
+                 全坏 += 1; print('⛔ %s：%s' % (W, '；'.join(坏)[:300]))
++            elif 要图(W):                        # 〔W912 环3〕图之用之谁读：只 ⚠（体系总图之析一回）
++                try:
++                    析 = 析 or 图之析()
++                    for x in 图之用之警(open(f, encoding='utf-8').read(), 析):
++                        print('⚠ %s：%s' % (W, x[2:]))
++                except Exception as e:
++                    print('⚠ %s：图之用之谁读未比（%s）' % (W, str(e)[:80]))
+         print('方案：%d 份，不过 %d' % (len(fs), 全坏))
+         sys.exit(0 if not 全坏 else 1)
+     print(__doc__); sys.exit(2)
+diff --git a/工具/法用之守.py b/工具/法用之守.py
+index 62b3e3766..ae9cd4d62 100644
+--- a/工具/法用之守.py
++++ b/工具/法用之守.py
+@@ -49,7 +49,7 @@
+   python3 工具/法用之守.py --验 N [--前]     # 封版之验（封版 --前 带 --前：记席之前·阶後之证免）；并验执行之守·丝滑之守；红 rc=1
+   python3 工具/法用之守.py --开 N            # 开章：本章须用之法 → 其证（≤10 行；自走於【判】起印之）
+   python3 工具/法用之守.py --册              # 印册、量之势、待、废
+-  python3 工具/法用之守.py --报              # 全测之格（只报）：完备、册之形、逾限之待、废、写者、同功、演之数、未行之数（只许降）
++  python3 工具/法用之守.py --报 [--无图]     # 〔W912〕末行之上添「图·用之红、⚠、🔴（今算）」（--无图 即免·推.py 速检用之）；全测之格（只报）：完备、册之形、逾限之待、废、写者、同功、演之数、未行之数（只许降）
+   python3 工具/法用之守.py --报 --首        # 一行之要（会话开头之钩印之·⛔析写者：约一秒）
+   python3 工具/法用之守.py --未行 [--降]     # 未行之数之分（--降：今 < 底 即降其底·棘轮唯一处）
+   python3 工具/法用之守.py --纸证 [--立|--降] # 纸证之数之详（法、到限之待、令、条）；--立：册未有「纸证」即以今数立其底；--降：只许降
+@@ -1552,6 +1552,20 @@ def 报(root=ROOT):
+             '?' if 纸数 is None else 纸数, 纸底_ if isinstance(纸底_, int) else '未立', 末)]
+ 
+ 
++def 图之行(root=ROOT):
++    """〔W912 环4③·作者 1120「执行主义……通过这个方式去判断」〕--报 之末之一行：「图·用之红 N、⚠ M、🔴 K（今算）」——import 体系总图（⛔另析）；
++    用之红、🔴（当跑而未跑或末跑败）即书 ⛔，其数⛔入 --报 之判（⛔拖累写书：其红归全测之格「体系总图」与执行之图）；败即「图之摘不得」⛔红。"""
++    try:
++        import 体系总图 as _图
++        d = _图.图之数(root)
++        return '%s 图·用之红 %d、⚠ %d、🔴 %d（今算·体系总图；🔴＝当跑而未跑或末跑败·详 python3 工具/体系总图.py --摘）' % (
++            '⛔' if d['红'] or d['🔴'] else ('⚠' if d['警'] else '✓'), d['红'], d['警'], d['🔴'])
++    except KeyboardInterrupt:
++        raise
++    except BaseException as e:
++        return '⚠ 图之摘不得（%s %s）——⛔红' % (type(e).__name__, str(e)[:60])
++
++
+ # ───────── 回放（以史） ─────────
+ def 回放(n0, n1, root=ROOT, 册=None):
+     """以史回放 n0—n1：盘取第 N 章封版之提交，法取 立 ≤ N 者（⛔看起），跑取其章器之迹，报与枝取第 N+1 章封版之前者。
+@@ -3535,6 +3549,8 @@ if __name__ == '__main__':
+         print(报首()); sys.exit(0)
+     if '--报' in a:
+         ok, L = 报()
++        if '--无图' not in a:            # 〔W912 环4③〕末添图之一行（总结行之上：全测之格读其末行）；推.py 速检传 --无图（约七秒·⛔拖累写书）
++            L.insert(len(L) - 1, 图之行())
+         print('\n'.join(L)); sys.exit(0 if ok else 1)
+     if '--纸证' in a:                  # 〔1119 执行之审·治2〕纸证之数之详；--立（册未有其底即立）、--降（只许降）
+         if '--于' in a:                # 〔W908 环6〕某版之树之数（史之盘·同 末封 之 n）：推.py 纸证之闸较分叉点与 HEAD——只拦本推所增
+diff --git a/工具/账并.py b/工具/账并.py
+index 30d6f36bf..ca5a909d8 100644
+--- a/工具/账并.py
++++ b/工具/账并.py
+@@ -34,6 +34,9 @@ GitHub 之并（gate.yml 备候 `git merge`）一冲突即「败·因 merge」
+   设定/总编辑复核账.json  json  裁←规＋时                               写 dump1（总编辑复核.py）→ 拼
+   设定/方法账.md          md表  （两写者俱有改旧行之提交：8521b402f 封版#458、575371a19 封版#467、d45ae4107 等——⛔内建 union）
+   dict 以其键并（递归）；上表所列之 list 以其字为键（元两侧俱改方入元内以字并）；余之 list 两侧俱改者以元为行做序列三方并。
++生成之图（W912 环2①·坑63 之由即去）：设定/体系总图.md 係器之所生（封版 --後 与总编辑之 --随治 两写者俱重画·⛔手改）——%P 合者
++  ⛔并其行（机算之果，逐行三方并即生两版相杂之假图）：取 %A（ours）原样、rc 0、stderr 印「生成之图·取 ours（⚠ 待下回重生）」；
++  其旧由 --验 报「档旧」、下一封版或 --随治 重生（推.py 图之闸 拦总编辑之坐之旧图）。
+ 
+ 用法：
+   python3 工具/账并.py %O %A %B %P [%L]   # git 调之（.gitattributes：<档> merge=账并）
+@@ -76,6 +79,10 @@ DRIVER = ('command -v python3 >/dev/null 2>&1 && [ -f 工具/账并.py ] && exec
+ }
+ 
+ 
++# 〔W912 环2①〕生成之图：两侧俱器之所生——取 ours 原样（⚠ 待下回重生），⛔逐行并（见 docstring「生成之图」）
++生成之图 = ('设定/体系总图.md',)
++
++
+ class 不可(Exception):
+     """不可自并之由（→ 留冲突、rc 1）。行之并净时：语义之冲突 → 推翻内建、留全档之冲突。"""
+ 
+@@ -692,7 +699,11 @@ def _写(p, s):
+ 
+ 
+ def 驱(O, A, B, P, L=7, 册们=None):
+-    """git 之 driver：结果写 %A；0 净或自并｜1 留冲突。git merge-file 坏即抛（驱安 复 %A、留冲突之标）。"""
++    """git 之 driver：结果写 %A；0 净或自并｜1 留冲突。git merge-file 坏即抛（驱安 复 %A、留冲突之标）。
++    生成之图（%P 在 生成之图）：%A 原样（取 ours）、rc 0、印一行——⛔读、⛔并。"""
++    if P in 生成之图:
++        _印('账并：%s 生成之图·取 ours（⚠ 待下回重生）' % P)
++        return 0
+     册们 = 册 if 册们 is None else 册们
+     try:
+         oT, aT, bT = (open(p, 'rb').read().decode('utf-8') for p in (O, A, B))
+@@ -1236,11 +1247,94 @@ def 自测():
+             T('㊱之二 设计之验 f743735c6 对 de2715a62（全档）：并成、键无重无失、每行之值取自一侧',
+               0 < 并文(A_, O_, B_)[1] < 128 and rc == 0 and len(kr) == len(set(kr)) and set(kr) == {x['键'] for x in a行 + b行}
+               and all(any(同(x, y) for y in a行 + b行 if y['键'] == x['键']) for x in r行), '%d 行；%s' % (len(kr), e.strip()[:60]))
++        # ㊲（W912 环2①）生成之图：驱直调——两侧俱改图 → rc 0、%A 原样（取 ours）、无冲突之标、印一行；册外之他档照旧（不在册 → 留冲突）
++        图 = 生成之图[0]
++        O图, A图, B图 = '# 图\n\n- 截至第 1 章\n- 件 9\n', '# 图\n\n- 截至第 2 章\n- 件 9\n', '# 图\n\n- 截至第 1 章\n- 件 10\n'
++        rc, s, e = 跑(O图, A图, B图, 图)
++        rc他, s他, _ = 跑(O图, A图.replace('件 9', '件 8'), B图.replace('件 10', '件 7'), '设定/他之图.md')
++        T('㊲ 生成之图（%s）两侧俱改 → 取 ours 原样、rc 0、无冲突之标、印「生成之图·取 ours（⚠ 待下回重生）」；册外之档照旧留冲突' % 图,
++          rc == 0 and s == A图 and '<<<<<<<' not in s and '生成之图·取 ours（⚠ 待下回重生）' in e and e.count('账并：') == 1
++          and rc他 == 1 and '<<<<<<<' in s他, e.strip()[:80])
++        # ㊲之二 真 git merge（临时之仓·.gitattributes 含图之行·装 driver）：两侧俱改图 → 并成、无冲突之标、档＝ours；无其行 → 冲突（对照）
++        def 图仓(附):
++            d = tempfile.mkdtemp(dir=t)
++            g(d, 'init', '-q')
++            os.makedirs(os.path.join(d, '设定')); os.makedirs(os.path.join(d, '工具'))
++            open(os.path.join(d, 图), 'w', encoding='utf-8').write(O图)
++            open(os.path.join(d, '.gitattributes'), 'w', encoding='utf-8').write(('%s merge=账并\n' % 图) if 附 else '')
++            shutil.copy(os.path.abspath(__file__), os.path.join(d, '工具', '账并.py'))
++            g(d, 'add', '-A'); g(d, 'commit', '-qm', '基')
++            g(d, 'checkout', '-qb', '章')
++            open(os.path.join(d, 图), 'w', encoding='utf-8').write(B图)
++            g(d, 'commit', '-qam', '章之封·图重画')
++            g(d, 'checkout', '-q', '主')
++            open(os.path.join(d, 图), 'w', encoding='utf-8').write(A图)
++            g(d, 'commit', '-qam', '总编辑之治·--随治')
++            装(d, 印=False)
++            m = g(d, 'merge', '--no-edit', '-m', '并', '章')
++            return m, open(os.path.join(d, 图), encoding='utf-8').read(), g(d, 'status', '--porcelain').stdout
++        m1, f1, st1 = 图仓(True)
++        m0, f0, _ = 图仓(False)
++        T('㊲之二 真 git merge：两侧俱改图（封版之重画×总编辑之 --随治）→ 并成、无冲突之标、档＝ours、印见於 git 之 stderr；无其行即冲突（坑63 之由）',
++          m1.returncode == 0 and f1 == A图 and '<<<<<<<' not in f1 and not st1.strip() and '生成之图·取 ours' in m1.stderr
++          and m0.returncode != 0 and '<<<<<<<' in f0, (m1.stderr.strip().split('\n') or [''])[-1][:80])
++        # ㊳ 回放 476／477 之章与治之并（本仓之史·git merge-tree 於 --shared 之临时裸仓；info/attributes 加图之行、driver 指今之器）：
++        #    冲突之档集 ⊆ 无其行之集（⛔新冲突）；强基之局（两侧俱改图：第476章之封 × 第477章之封，基＝475 之并）→ 图⛔冲突、其 blob＝ours。浅仓即 ⚠ 不计
++        并们 = ('ef9535690', '663d5ae59', 'd3ac58725', '08814d5be')
++        if any(史('cat-file', '-e', x + '^{commit}').returncode for x in 并们 + ('02e9a74ff', '092aa5387', '4aa802217')):
++            print('  ⚠ ㊳ 回放 476／477：史不在（浅仓）——不计')
++        else:
++            裸 = os.path.join(t, '回放.git')
++            r裸 = subprocess.run(['git', 'clone', '-q', '--bare', '--shared', ROOT, 裸], capture_output=True, env=_净env())
++            令 = 'python3 %s %%O %%A %%B %%P %%L' % os.path.abspath(__file__)
++
++            def 树并(*a):
++                # 〔W912 并主〕裸仓之 attr 默取 HEAD 之树（git ≥2.42）：本仓 .gitattributes 既含图之行，对照（无其行）即失——钉 attr.tree 为空树，唯认 info/attributes
++                r = subprocess.run(['git', '-C', 裸, '-c', 'attr.tree=4b825dc642cb6eb9a060e54bf8d69288fbee4904', '-c', 'core.quotepath=off',
++                                    '-c', 'merge.账并.driver=' + 令, 'merge-tree', '--write-tree',
++                                    '--name-only'] + list(a), capture_output=True, text=True, env=_净env(), timeout=120)
++                行 = (r.stdout or '').split('\n')
++                冲 = set()
++                for x in 行[1:]:
++                    if not x.strip():
++                        break
++                    冲.add(x.strip())
++                return r.returncode, (行[0].strip() if 行 else ''), 冲, r.stderr or ''
++
++            def 加行(有):
++                os.makedirs(os.path.join(裸, 'info'), exist_ok=True)
++                open(os.path.join(裸, 'info', 'attributes'), 'w', encoding='utf-8').write(('%s merge=账并\n' % 图) if 有 else '')
++            诸 = []
++            if r裸.returncode == 0:
++                for cm in 并们:
++                    加行(False)
++                    rc0, _, 冲0, _ = 树并(cm + '^1', cm + '^2')
++                    加行(True)
++                    rc1, _, 冲1, e1 = 树并(cm + '^1', cm + '^2')
++                    诸.append((cm, rc0, 冲0, rc1, 冲1))
++                加行(False)
++                rcq0, _, 冲q0, _ = 树并('--merge-base=02e9a74ff', '092aa5387', '4aa802217')
++                加行(True)
++                rcq1, 树1, 冲q1, eq1 = 树并('--merge-base=02e9a74ff', '092aa5387', '4aa802217')
++                bo = subprocess.run(['git', '-C', 裸, 'rev-parse', '%s:%s' % (树1, 图), '092aa5387:' + 图], capture_output=True, text=True,
++                                    env=_净env()).stdout.split()
++                坏rc = [x for x in [rc for _, a, _, b, _ in 诸 for rc in (a, b)] + [rcq0, rcq1] if x not in (0, 1)]
++            else:
++                坏rc = []
++            if r裸.returncode == 0 and 坏rc:              # 省取之仓（GitHub 片闸 blob:limit）缺大 blob（阅读器、总圣经…）即 merge-tree 不得——⚠ 不计
++                print('  ⚠ ㊳ 回放 476／477：merge-tree 不得（rc %s·省取之仓缺 blob？）——不计' % sorted(set(坏rc)))
++            else:
++                T('㊳ 回放 476／477 之章与治之并（%s）：加图之行而冲突之档⛔增（%s）；强基之局（476 封×477 封·两侧俱改图）：无其行即图冲突、有其行即图⛔冲突而取 ours'
++                  % ('、'.join(并们), '；'.join('%s %d→%d' % (cm[:7], len(a), len(b)) for cm, _, a, _, b in 诸)),
++                  r裸.returncode == 0 and len(诸) == len(并们) and all(b <= a and 图 not in b for _, _, a, _, b in 诸)
++                  and 图 in 冲q0 and 图 not in 冲q1 and len(bo) == 2 and bo[0] == bo[1] and '生成之图·取 ours' in eq1,
++                  '强基：冲 %d→%d' % (len(冲q0), len(冲q1)) if r裸.returncode == 0 else (r裸.stderr or b'')[:80].decode('utf-8', 'replace'))
+         # ㉑ .gitattributes 与册同（册中每档俱 merge=账并；attributes 之 账并 俱在册）
+         ga = os.path.join(ROOT, '.gitattributes')
+         行们 = [l.split() for l in open(ga, encoding='utf-8').read().splitlines() if l.strip() and not l.lstrip().startswith('#')] if os.path.exists(ga) else []
+         并者 = {x[0] for x in 行们 if 'merge=%s' % 名 in x[1:]}
+-        T('㉑ .gitattributes 与册同', 并者 == set(册), '缺 %s｜余 %s' % (sorted(set(册) - 并者), sorted(并者 - set(册))))
++        T('㉑ .gitattributes 与册同（册之账＋生成之图）', 并者 == set(册) | set(生成之图),
++          '缺 %s｜余 %s' % (sorted((set(册) | set(生成之图)) - 并者), sorted(并者 - set(册) - set(生成之图))))
+         # ㉒ 推.py 每推之前装（交、直推）
+         try:
+             推 = open(os.path.join(ROOT, '工具', '推.py'), encoding='utf-8').read()
+diff --git a/设定/工作流账.json b/设定/工作流账.json
+index 16605bd57..917d27bb3 100644
+--- a/设定/工作流账.json
++++ b/设定/工作流账.json
+@@ -4052,6 +4052,28 @@
+    "换法": "两回不成即换法：环2 改用 autopush 报步之末 dispatch 巡（方案环2 之败则）；早止判不稳即⛔早止（環跑满九十分）",
+    "有效之据": "挡路：环11 之裁（方法账·限 480）逾限即红；效之据：占机 24 时/日 → 约 3—8 时/日（条款负担之款之疑去其九成），章界三觉（合入之卡、交棒、唤而未应）仍 ≤5 分；坑之检：见 设定/方案/W910.md「## 坑之检」；零token之检：環与早止之判俱零 token 之脚本，非模型不可者唯改判与 yml 之码、诸消费者之文、怀疑之验——故开施工席"
+   },
++  {
++   "id": "W912",
++   "名": "体系总图之随变与必用（机制之流入图·方法一变图即随·每件之设计必用图）",
++   "目的": "体系总图之随变与必用（机制之流入图·方法一变图即随·每件之设计必用图）",
++   "状态": "进行",
++   "产出": [
++    {
++     "档": "设定/方案/W912.md",
++     "说明": "方案"
++    }
++   ],
++   "验": "照 设定/方案/W912.md「前定之验」",
++   "依": [],
++   "续之令": "照 设定/方案/W912.md 逐环续",
++   "裁": [],
++   "预估": "$52（低估之由：同类末五件之均係多组并施；W912 单组一施一审一修，同类单组之实 W909 $43.84、W910 $63.25）",
++   "停止线": "体系总图立机制之流（mermaid）与近之进化；账并认生成之图、推.py 图之闸（只拦总编辑之坐）、--随治；方案.py --图 与 W912 起「图之用」之验；三视角复验之要害俱修；自测与所涉之格俱绿；图当回重画入主",
++   "起": "2026-11-20T10:44Z",
++   "时限": 3.0,
++   "换法": "两回不成即换法：账并之支不过即退图之闸为 ⚠；件之析不稳即只验「图之用」之节在",
++   "有效之据": "挡路：作者 1120 二令（全图随方法之进化而更新；体系之件须每次用起来、⛔囤灰）；效之据：今图迟一章（巡.yml 之行仍书每五分）、机制之流⛔在图、方案之消费者手 grep（坑㊱ 屡发）；坑之检：见 设定/方案/W912.md「## 坑之检」；零token之检：图之生、验、随治、方案之 --图 俱零 token 之脚本，非模型不可者唯立码与流之边之表、怀疑之验——故开施工席"
++  },
+   {
+    "id": "W911",
+    "名": "巡之钟（例行之巡离总编辑之大坐：Haiku 之钟推枝起 GitHub 之巡·总编辑三时一全巡）",
+diff --git a/设定/执行之制.md b/设定/执行之制.md
+index 55f063fb5..2ee221ef3 100644
+--- a/设定/执行之制.md
++++ b/设定/执行之制.md
+@@ -13,6 +13,7 @@
+ | 三 | 治10—治15（虫洞实数、换号不重计延、每章一进之量、立停之巡、哨入账、普查必裁） | 须补 | — | 480 |
+ | 四 | 治16—治19（盲读不想读之回写、报/演之旧红、同功之判、封後之红入复盘） | 须补 | — | 484 |
+ | 待甲 | 总编辑之坐之钩复载 | 弃（以巡代钩：用户级 settings 之载波及诸施工之席、写之为平台之检所拒；治1 之巡每巡代扫自决、代印开头之串·方法账「钩复载…弃」；其待已删） | 02a528176、840bb2c5a | 476 |
++| 图 | 执行之查以体系总图为据（W912·法用#体系总图）：总编辑之巡（接棒守 --巡）於补印之後印「── 执行之图 ──」（体系总图 --摘：今树即算·⛔即红、🔴 当跑而未跑、🟡 迟、⚠、半用／未用各带其由、图档旧否）；法用之守 --报 之末添「图·用之红、⚠、🔴（今算）」；图之件带活之色（🟢🟡🔴⚪·末跑取其迹）；方法一变图即随（推.py 图之闸拦总编辑之坐之旧图·--随治·账并 之生成之图一支）；W912 起之方案须「## 图之用」 | 今有（随本提交·W912 环1—5） | W912 | — |
+ 
+ ---
+ 
+diff --git a/设定/方案/W912.md b/设定/方案/W912.md
+new file mode 100644
+index 000000000..2ae3e732f
+--- /dev/null
++++ b/设定/方案/W912.md
+@@ -0,0 +1,86 @@
++# 方案·W912·体系总图之随变与必用（机制之流入图·方法一变图即随·每件之设计必用图）
++
++> 先设计、後实施（1009 作者令）：每一环都先确证它能做成——确证须引实据（档:行、试：命令及其果），⛔猜。
++
++由：
++- 1120 作者令（原话）：「方法上的更新和不断的进化……整体的那个全图也要随之更新」；同日续令（二）：「这个东西它是要随时不断更新和进化的……本来就是为了让我们的工作变得更加的轻松和更加的灵活和自由，和更加的这个高效……我们的执行主义肯定要把所有的这些东西都去执行起来，而不是说你弄出来之後就放那儿囤灰不用了……这不是每次都要用吗？……跟执行主义不是都要结合起来会使用吗？」
++- 同日续令（三）：「每次执行主义……不是都会去看这张体系总图，然後来确定哪个地方到底没有去执行吗，或者是哪个地方到底没有及时去更新吗？……这个全图它不是最新版的，那这个执行主义它能够去执行好吗，这几个不都是连在一起的吗」——图之鲜、图之用、执行之查三者一链。
++- 同日续令（四）：「这个全图……只要执行起来，这个全图里面这个东西它不会发亮吗？它或者变绿对吧，也就说明它真正去执行了。那这个执行主义它就要通过这个方式去判断这个东西，它有没有认真的去工作……如果说这个总图它跟……所有的零部件，它没有对应起来，也没有产生相应的共鸣，那做这个东西的意义是什么呢？」——图之件须与其真跑之迹相应：跑即亮绿。
++
++据（11-20 普查·零 token）：
++- 体系总图（W909·设定/体系总图.md）唯 封版 --後 重写（工具/体系总图.py:39「写者唯一……坑63：总编辑⛔手跑入主——两写必并冲突」）：方法之变（W910 之環 401338cb9 入主）至图之随须候下章之封——今图「巡.yml」之行仍书「每五分……cron */5」（截至第 477 章）。
++- 图只画「档」：器、席、流、账（件 327）；平台之件（定时之令：兜底甲乙丙、【派】；会话：总编辑、写书之坐、巡之钟）与诸事之链（章推→環→早止；钟推→巡·钟→云巡→哨 PR→总编辑）⛔在图。
++- 图无「近之进化」：方法之更（工作流账 W9xx 之裁·方法账之行）⛔见於图。
++- 图之「末真用」唯取写书之坐之 _器之迹.md（GitHub 之跑、定时之令、诸会话、存底守、钟俱「无迹」）——跑而不亮，图与零件⛔相应。
++- 实跑之迹俱在 git 之枝（零 token 可读）：备份/报（autopush、演练、运营卡之报，带时）、备份/巡印（云巡每跑）、备份/巡应（总编辑之巡）、备份/心跳（写书之坐之活）、存底之枝（存底守）、章-N／治-* 之报。
++- 图之用：`python3 工具/体系总图.py --件 巡.yml` 即出其部、何职、谁跑、何时、谁读、判（今树即算·试：11-20 实跑见 W910 之新值）——而诸方案之「坑之检·消费者」俱手 grep（坑㊱ 屡发·W910 复盘），⛔用图。
++- 账并（工具/账并.py:39 `%O %A %B %P`·.gitattributes 七账）只并账；生成之图无并法——两写即冲突（坑63 之由）。
++
++## 虫洞之择
++
++- 候甲：留今（图唯随封版·方案手 grep 消费者）——效：图迟一章、机制之流⛔见、方案之消费者恃记性（坑㊱）；费：0；险：图与实相违而治依之（误导）；质：不变。
++- 候乙：①图添「机制之流」（mermaid·GitHub 即绘为图）与「近之进化」，俱自码与账机取（巡.yml 等之 on 与 job 之 if、接棒守.兜底之令／钟之令／总编辑／巡警枝、工作流账之裁）；②方法一变图即随：总编辑之治改器／流／法用册而图旧 → 推.py rc 3 ⛔交（只拦总编辑之坐·写书之坐之治照旧），账并认生成之图（两侧俱生成之物：取 ours、⚠ 待下回重生）免冲突；③每件必用：W912 起之方案须有「## 图之用」——逐环所改之件逐件书其「谁跑／谁读」（`方案.py --图 W` 自图机出其节），方案.py 验其覆盖、工作流账 --开 即拦——效：图随方法当回而变，机制入图，每设计必经图（消费者以图为源·坑㊱ 之根治）；费：施约 $45、日常 0（重画约十秒）；险：账并之新支误并 → 回放三章之真并钉之；质：⛔增写书之坐之一字（写书之治⛔拦）。
++- 候丙：GitHub autopush 每并後重画而推——效：图随一切之并；费：0；险：动 autopush（关键之路）且 GitHub 为第二写者、与章-N 之图必冲突；质：⛔动关键之路——弃。
++- 候丁：推.py 凡推（含写书之坐）自重画而自提交——效：图恒鲜；费：写书之坐每推增约十秒与一提交；险：写书之路增步（拖累写书）、自提交之签名与钩之变；质：违「⛔拖累写书」——弃。
++- 取：候乙——由：图当回随方法而变（总编辑之治即方法之变之所出）、机制之流入图、每件之设计必用图（执行主义：图⛔囤灰），而写书之路⛔增一步；冲突以账并之生成之图一支免之（坑63 之由即去）；候丙动关键之路、候丁拖累写书、候甲迟而图⛔用。
++
++## 逐环
++
++| 环 | 做什么 | 谁办 | 确证 | 时 | 费 | 败则 |
++|---|---|---|---|---|---|---|
++| 1 | 工具/体系总图.py：立「⑥ 机制之流」——mermaid flowchart（心→脉→觉→长→学之诸件与平台之件：作者、总编辑之坐〔接棒守.总编辑〕、写书之坐〔心跳之锁〕、造章之席、封版、推.py、治／章之枝、autopush（gate 分片）、主枝、备份/报、巡.yml 诸 job 与其触〔自 yml 之 on 与 if 机取〕、云巡、哨 PR〔接棒守.巡警枝〕、兜底之令〔表〕、钟之令〔若在〕、【派】、复盘／方法账／进化树／法用之守），其边自码机取者注其源，余边立一表（源档:行）并验其码在（不在即⓪报「流之边失据」）；并出文本之链（终端可读）。立「⑦ 近之进化」——工作流账 W9xx 之裁之末八（件、名、裁、时、所废／较旧 之摘）。①一眼添二行（流之边数、近之进化之末件） | 模型：流之图须读诸 yml、接棒守 之表与码而定其节与边 | 试：`python3 工具/体系总图.py --件 巡.yml` 今树即算（cron */30、push 章-*）；设定/工作流账.json 为 dict 含「件」（W909、W910 之裁在） | 45 分 | $14 | mermaid 析不得即只出文本之链；边之据失即⓪报而⛔崩 |
++| 2 | 方法一变图即随：①工具/账并.py 认「生成之图」（设定/体系总图.md）：两侧俱生成之物——取 %A（ours）原样、rc 0、印「生成之图·取 ours（⚠ 待下回重生）」；.gitattributes 加其行；②工具/推.py 立「图之闸」（照 纸证之闸 之式）：总编辑之坐（CLAUDE_CODE_SESSION_ID 或尾＝接棒守.总编辑）之 治 改 工具/*.py、工具/席/*.js、.github/workflows/*、设定/法用册.json 而 `体系总图.py --验` ⚠ 档旧 → rc 3 ⛔交、印「先 python3 工具/体系总图.py --随治 而并交」；写书之坐之推、章-N ⛔拦；--强 越而记；③体系总图.py 立 --随治（写之·唯总编辑之坐；他坐 rc 2 拒）、其「写者唯一」之语与 坑63 之注正为「封版 --後 与总编辑之治（账并之生成之图一支免冲突）」 | 模型：推之闸与账并之支须读其码与自测 | 试：工具/推.py:286 纸证之闸 之式可仿；工具/账并.py:61 DRIVER 以 %P 知档 | 35 分 | $12 | 账并之支回放不过即⛔并此支、图之闸只 ⚠ |
++| 3 | 每件必用图：工具/方案.py 立 `--图 W`（读方案逐环之「做什么」所书之件〔工具/<器>.py、工具/席/<x>.js、.github/workflows/<x>.yml、设定/<账>〕，逐件以 体系总图 之析出「件｜部｜谁跑｜谁读｜判」之表，印「## 图之用」之节以供贴入）；`--验`：W912 起之方案须有「## 图之用」，逐环所改之件俱在其表（缺即坏），表之「谁读」与图今之析不合即 ⚠（图已变·重出）；工作流账 --开 照 方案.验 拦之；法用册「体系总图」之法添此用之证（文本之替） | 模型：方案之析与其验 | 试：工具/方案.py:166 验() 已有 虫洞之择之坏 之式可仿；`体系总图.py --件` 之析可 import | 30 分 | $10 | 件之析不稳即只验节在 |
++| 4 | 执行之查以图为据：①体系总图.py 立 `--摘`（今树即算·⛔读旧档：一眼之数、⛔即红、⚠ 随治、半用／未用之件〔各带其由〕、图档旧否与首异之处·≤25 行·≤15 秒）；②接棒守 之总编辑之全巡（--巡·沙盒）於 补印 之後印「── 执行之图 ──」＋ --摘 之出（⛔云巡、⛔巡之钟——只总编辑之坐；逾时二十秒即印「⚠ 图之摘逾时」⛔拦巡）；图档旧 → 印「图旧·方法已变：python3 工具/体系总图.py --随治」；③法用之守 --报 之末添「图·用之红 N、⚠ M（今算）」一行（import 体系总图·⛔另析）；④设定/执行之制.md 之状表添「图」之行（执行之查之据·法用#体系总图） | 模型：三器之接线 | 试：`python3 工具/体系总图.py --件 巡.yml` 今树即算；工具/接棒守.py:1051 补印 为总编辑之巡之末印之处 | 25 分 | $8 | 摘逾时即只印图档旧否 |
++| 5 | 活之色（图与零件相应·跑即亮）：每件、每流之节带其灯——🟢 当跑而已跑（末跑 ≤ 其期×1.5）｜🟡 迟（≤ 期×3）｜🔴 当跑而未跑（逾期×3）或末跑败｜⚪ 按需（无定期·唯示末跑）。期取「何时跑」之机判（每章／每推／每五分／每三十分／每三时／常驻）；末跑取实迹（git 之枝之末提交之时与其体：备份/报 之 报/推/*.json 之果与时、备份/巡印、备份/巡应、备份/心跳、存底之枝、章之 _器之迹.md）——各迹之源立一表（件→迹之源·取法），取不得即 ⚪「迹不可取」⛔猜；mermaid 以 classDef 绿黄红灰著诸节之色（GitHub 即见其亮）；②之表添「灯」栏；①一眼添「🟢 N·🟡 N·🔴 N·⚪ N」；--摘 列 🔴、🟡 之件与其由；执行之查（接棒守 之执行之图、法用之守 --报 之末行）以 🔴 为红 | 模型：迹之源与期之判须读诸器之写与诸枝之体 | 试：`git log -1 --format=%ct origin/备份/巡印` 等可取其时；备份/报 之 报/推/章-477.json 带果与时（推报.读） | 35 分 | $12 | 某迹不可取即其件 ⚪ 而书由；色之判不稳即只出末跑之时 |
++| 6 | 怀疑之验（三视角：图之真〔流之边与码合否·抽十边〕、并与闸之回归〔账并回放 476／477 之真并·推之闸之写书之坐⛔拦〕、方案之验之误红〔回放 W905—W911〕）、逐条反驳、确者修、终验 | 模型：反例须读码而构 | 试：python3 工具/体系总图.py --自测；python3 工具/账并.py --自测；python3 工具/推.py --自测；python3 工具/方案.py --自测 | 40 分 | $16 | 红而修不得即⛔推 |
++
++## 图之用
++
++> 由 `python3 工具/方案.py --图 W912` 自 体系总图 之析机出（今树即算·11-20）；逐环所改之件逐件：部、谁跑、谁读、判。「谁读」与今析不合即 --验 ⚠（图已变·重出）。
++
++| 件 | 部 | 谁跑 | 谁读 | 判 |
++|---|---|---|---|---|
++| 工具/体系总图.py | 长 | 口·接棒守、封版·後、全测·体系总图 | 载之者：方案、法用之守；引之者：全测、封版、接棒守、推 | 用（机判：有跑有读） |
++| 工具/账并.py | 脉 | git·merge 驱、全测·负测·账并（唯自测）、流·gate | 引之者：全测、推、流·gate | 用（机判：有跑有读） |
++| 设定/体系总图.md | 长 | —（账：随其读写之器） | 引之者：封版、推、账并 | 用（机判：有跑有读） |
++| 工具/推.py | 脉 | 口·接棒守、口·自走（印令）、封版·後（印令）、席·造章、全测·负测·推（唯自测） | 引之者：README、会话之守、全测、封版、席·造章、席在跑吗、总章、接棒守、推报、方案、机械账、法用之守、自走、自进化环、账并、费审、链之检 | 用（机判：有跑有读） |
++| 设定/法用册.json | 长 | —（账：随其读写之器） | 引之者：囤灰闸、处方旗哨、复盘、工作流账、总章、总编辑复核、推、法用之守、裁之生效、账并、进化树 | 用（机判：有跑有读） |
++| 工具/方案.py | 长 | 全测·方案 | 载之者：工作流账；引之者：全测、总章、续跑之守、链之检 | 用（机判：有跑有读） |
++| 设定/执行之制.md | 觉 | —（账：随其读写之器） | 引之者：总章 | 用（机判：有跑有读） |
++| 工具/接棒守.py | 觉 | 入口、口·自走（印令）、口·自走（载）、封版·後（印令）、席·造章、全测·负测·接棒守（唯自测）、流·巡 | 载之者：会话之守、席在跑吗、推、暂停令、自走；引之者：全测、囤灰闸、封版、席·造章、总章、推报、法用之守、流·巡、运营卡 | 用（机判：有跑有读） |
++| 工具/法用之守.py | 长 | 口·接棒守（印令）、口·自走（印令）、口·自走（载）、封版·前、封版·後、钩·SessionStart:startup｜comp…、全测·法用之守、全测·负测·法用之守（唯自测） | 载之者：推、自走、费哨；引之者：全测、封版、总章、接棒守、运营卡、钩 | 用（机判：有跑有读） |
++
++## 未确证
++
++- 无
++
++## 注
++
++- 怀疑之验之修（十二要害）——灯之比：一眼之灯行之红名之尾（有 🔴 方附）⛔入 --验／--摘 之比，红与不红之翻⛔作「档旧」、图之闸⛔因之误拦（自测㉙之二）。
++- 封与图档取 HEAD 与 origin/<主枝> 之并；树无而主枝有之章之 _器之迹 以 git show 取之（末四章）；--摘 首行注「树落後主枝 N 提交」（自测㉛之二）。origin/<主枝> 自旧（主枝⛔取）者仍待「版之鲜」之环。
++- 共迹⛔借：巡·huan／xun 共 force 写 备份/巡印（⛔辨 job）——唯最密之 job 认其迹，余 ⚪「迹不可取」；兜底之令之节借巡应（兜底、哨 PR 之唤、手跑 --巡 共写）⚪；总编辑之坐仍取巡应（自测㉗之二）。W911 入主後落巡印加 job／事之键、落巡应书其触，方复其灯（接棒守之函本件⛔动）。
++- 败报⛔连坐：末报「败·因 merge」唯着 autopush 与治章枝（书「合入之卡」）；推取 报/推/治-*（交已至 GitHub）、推报取报在；流所调者只承其时；全测之 流·autopush 取 gate 真跑之报（自测㉗之三）。
++- gate 之全测⛔借而静绿：唯「全测·X」所跑而无真路之件（哨、负测）取之——其格在报之「免」（活态之格）、「全测·X·自测」⛔算，在报之「红」→ 🔴；有真路者取其真路之迹、全测之期⛔算（自测㉗之四）。今树真路久无迹者四件转 🔴（大师之关、总编辑复核、改单、段案验）——执行之查所当见，归 W914 判其接或汰。
++- 暂停：随写书与兜底之期（每章、每推、每十章、常驻、兜底之令合、心跳之限、钟之令合）俱 ⚪「暂停中」，GitHub 之 cron、末跑败照判；解停之後首期自暂停令之「解」之时起算（自测㉙之三）。
++- 本地之引或旧：取=False（封版 --後 之写、--验、图之数）之 巡印／巡应／巡钟（写书之坐⛔取）与取败之枝，逾期 → ⚪「迹未取」⛔作当跑而未跑；在期内照 🟢（旧引为下界）（自测㉗之五）。
++- 自派直连其所派之流（手派之节唯外来之派·⛔作诸流之中转）；图之闸见 --验 崩或无出即 ⚠（⛔静放·推自测㉓）；逐环⛔书一件之 W9xx ⛔索「## 图之用」（无件可图）。
++- 轻而⛔修：①写书之节之期——章间之隙常逾心跳之限而非停写，直判即误红，停写之觉归接棒守之巡；②本坐两处——尺已一处（心跳.坐），体系总图 之 --随治 以 ast 读 根 之接棒守（自测注样仓）而推 import 本树，源异⛔合；③裸名认作所改之件——裸名多述而非改（本件环1 之 巡.yml、工作流账俱只读），认之即误坏，须逐环另立「所改」之栏方可。
++
++## 合计
++
++- 时：约 2.5 时（与 W911 并施·各隔离之树）；费：约 $72（环1 $14＋环2 $12＋环3 $10＋环4 $8＋环5 $12＋环6 $16）；据：W909 $43.84（立图）、W910 $63.25。
++
++## 质之铁律
++
++- ⛔增写书之坐之一字一令：图之闸只拦总编辑之坐；方案之「图之用」只及 W9xx（总编辑之件）——写书之坐之 W1xx 照旧。
++- ⛔动 autopush.yml、gate.yml；账并之新支只及生成之图。
++- 图只读、只算：⛔改正文、⛔改账之判。
++
++## 坑之检
++
++- 坑53（同功两处）：图之析唯 体系总图.py（方案之 --图 import 之·⛔另写）；流之边取码之表（兜底之令、钟之令、巡警枝）⛔另抄。
++- 坑㊱（一义跨器）：改「写者唯一」之尺。消费者：grep -rn '写者唯一\|手跑入主\|坑63\|图待下一封版' 工具/体系总图.py 工具/全测.py 工具/封版.py 设定/写者册.json → 工具/体系总图.py（:39、--验与 --随治 之语、自测⑯之五）、工具/封版.py（体系总图之步之注）、工具/全测.py（体系总图之格之语）——俱改；设定/写者册.json 无体系总图之条（⛔改）。
++- 坑63（两写者之账）：图由二写者（封版、总编辑之治）——账并之生成之图一支免冲突，回放钉之。
++- 坑⑩：工作流之脚本先 `python3 工具/席法.py <档>`。
++- W905 之教：施工在 scratchpad/wt912，成而验後方入主；与 W911（wt911）并施——交集：工具/方案.py（W911 之缓存之算与本件之图之用：本件之节注居「坑之检」之前、验之图之用居诸检之首、自测之段立 _图之自测 而自 自测 之首调之——三处⛔与 W911 相邻，试：git merge-file 基 5ae2e8596·甲 wt912·乙 wt911 → rc 0；逐环⛔书一件之方案⛔索其节，并後 方案·自测 46/46、W911 与 W912 俱验过）、工具/接棒守.py（相邻·文本净并）；法用册 W911 ⛔动。
+diff --git a/设定/法用册.json b/设定/法用册.json
+index 1383c1add..2fc526e5c 100644
+--- a/设定/法用册.json
++++ b/设定/法用册.json
+@@ -745,7 +745,7 @@
+   },
+   {
+    "id": "体系总图",
+-   "名": "体系总图：本仓一切之器、席、流、账按「心（作家·造章诸席）—脉（丝滑：推、闸、并、存底）—觉（守：巡、云巡、执行之守、诸哨）—长（进化：坑账、方法账、进化树、复盘、法用之守）—学（写书之道诸档）」成一图——一件一行：部、何职、谁跑、何时、谁读、末真用、判（用／半用／未用／死）、其源；③用之审之红（未用、死者逐件，随治者书其限）；零 token、⛔另写 囤灰闸 已有之析；**每章封版 --後 自随**（器之迹之後·写者唯一），器崩亦写最小之图（⛔拦封）；全测验其不旧（器红级·旧只 ⚠·析崩与用之红即红）",
++   "名": "体系总图：本仓一切之器、席、流、账按「心（作家·造章诸席）—脉（丝滑：推、闸、并、存底）—觉（守：巡、云巡、执行之守、诸哨）—长（进化：坑账、方法账、进化树、复盘、法用之守）—学（写书之道诸档）」成一图——一件一行：部、何职、谁跑、何时、谁读、末真用、判（用／半用／未用／死）、其源；③用之审之红（未用、死者逐件，随治者书其限）；零 token、⛔另写 囤灰闸 已有之析；**每章封版 --後 自随**（器之迹之後），总编辑之治改器／流／法用册即 --随治（推.py 图之闸拦其旧图；两写之并由 账并 之生成之图一支），器崩亦写最小之图（⛔拦封）；全测验其不旧（器红级·旧只 ⚠·析崩与用之红即红）；W912 起：⑥ 机制之流、⑦ 近之进化、活之色（每件之灯取其真跑之迹）、执行之查以图为据（接棒守 --巡 之执行之图、法用之守 --报 之末行）、方案之「图之用」",
+    "据": "设定/00_作者常令_不停之律.md 1119 作者令（一切成果体系化而完美地存於 GitHub·体系分工明确）、1119 作者令（一切所求所造俱执行而用起来·用之审入体系总图）；W909（wf_a5f2c317-737）",
+    "立": 475,
+    "起": 477,
+@@ -769,6 +769,11 @@
+      "含": "截至第 {N} 章",
+      "起": 477,
+      "示": "本章封版 --後 已随本章重生体系总图（章迹·行为之证；477 起）"
++    },
++    {
++     "档": "工具/方案.py",
++     "含": "图之用",
++     "示": "W912 起之方案须「## 图之用」（逐环所改之件俱入其表·方案.py --验；--图 W 自图机出）：每件之设计必用图"
+     }
+    ],
+    "示": "体系总图每章随封版重生、截至本章（法用#体系总图）"

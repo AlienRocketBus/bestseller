@@ -44,7 +44,7 @@ try:
     import _账
 except Exception:
     pass
-import glob, io, os, re, sys
+import glob, io, json, os, re, sys
 
 根 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 式 = re.compile(r'python3\s+(工具/[^\s`\'"]+\.py)\s+((?:--[\w一-龥]+[ \t]*)+)')
@@ -83,9 +83,26 @@ def 旗之实(器路, 旗, 根路=None):
         return True           # ⛔读不着即不报（「查不着」不是红之由）
 
 
+def 废之旗(根路=None):
+    """〔1120·W908 环7〕法用册「废」之去证以「无文」宣告某器已除之旗（如 连读重出：{无文: "--连读", 于: [工具/看官.py]}）——
+    其旗之旧引俱係史录（裁、回执、圣经之史），⛔算「器不认之旗」：废之去证要器⛔含其字，本器要器认其字，二尺相抵，以废为准。→ [(器, 无文之式)]"""
+    try:
+        册 = json.load(io.open(os.path.join(根路 or 根, '设定', '法用册.json'), encoding='utf-8'))
+    except Exception:
+        return []
+    出 = []
+    for x in 册.get('废') or []:
+        for c in x.get('去证') or [] if isinstance(x, dict) else []:
+            if isinstance(c, dict) and isinstance(c.get('无文'), str) and c['无文'].startswith('--'):
+                出 += [(t, c['无文']) for t in (c.get('于') or [])]
+    return 出
+
+
 def 量(根路=None):
     出 = 诸处方(根路)
-    红 = [(f, t, g) for f, t, g in 出 if not 旗之实(t, g, 根路)]
+    免 = 废之旗(根路)
+    红 = [(f, t, g) for f, t, g in 出 if not 旗之实(t, g, 根路)
+          and not any(t.endswith(器) and (g == 式 or re.fullmatch(式, g)) for 器, 式 in 免)]
     return 出, 红
 
 
@@ -138,6 +155,19 @@ def 自测():
             '# 其旗 %s 亦认\n' % 假)
         _, 红3 = 量(tmp)
         R.append(('⑦宽判：旗只在注里提过亦算认得（其红归零）', 红3 == []))
+        # ⑨〔1120〕废之去证以「无文」宣告已除之旗 → 其旧引免红（废与本器相抵·以废为准）
+        t9 = tempfile.mkdtemp(prefix='处方旗哨九_')
+        try:
+            os.makedirs(os.path.join(t9, '工具')); os.makedirs(os.path.join(t9, '设定'))
+            io.open(os.path.join(t9, '工具', 甲), 'w', encoding='utf-8').write('pass\n')
+            io.open(os.path.join(t9, '设定', '令.md'), 'w', encoding='utf-8').write('旧：python3 工具/%s %s\n' % (甲, 假))
+            _, 红9a = 量(t9)
+            io.open(os.path.join(t9, '设定', '法用册.json'), 'w', encoding='utf-8').write(
+                json.dumps({'废': [{'id': 'x', '去证': [{'无文': 假, '于': ['工具/' + 甲]}]}]}, ensure_ascii=False))
+            _, 红9b = 量(t9)
+            R.append(('⑨废之去证「无文」所宣已除之旗：其旧引免红（无废则红）', len(红9a) == 1 and 红9b == []))
+        finally:
+            shutil.rmtree(t9, ignore_errors=True)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     # ⑧⛔本器不许认自己（其档首写满了假旗）

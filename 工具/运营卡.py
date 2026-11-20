@@ -1047,7 +1047,7 @@ def 自测():
     # ⑩—⑭ 复核之钉（W908 环5·静探之实、步挂之底、坑53）
     今源 = 读文(ROOT)
     今A = 今源['.github/workflows/autopush.yml']
-    去注 = re.sub(r'(?m)^(\s*)python3 工具/推报\.py --注 "\$D"(\s+#)', r'\1true\2', 今A, count=1)
+    去注 = re.sub(r'(?m)^(\s*)python3 工具/推报[.]py --注 "\$D"(\s+#)', r'\1true\2', 今A, count=1)
     键 = lambda 卡_: {x['键'] for x in 卡_['扣']}
     卡10, 卡10b = (算(迹, dict(今源, **{'.github/workflows/autopush.yml': t}), 样['算於'], 祖器(None, 样), 样['报史']) for t in (今A, 去注))
     T('⑩观·红行无注之探唯其码：今树 autopush.yml（推报 --注 之调）⛔扣；去其调而留头注之「::error」字 → 扣（注中之字⛔充其实·同 推报 ⑳）',

@@ -11,6 +11,9 @@
   ②读（沙盒）：`读(枝)`、`读演(名)` git show 云端之报——推.py --候、接棒守 --候主 俱经此；`坏(d)` 判坏果（败·重派 係在飞、⛔作坏）；`快进()`。
     `泊(名)`／`归()`（1117·法用#停钩空转）：推「章-N」／「治-<sha12>」成即本地泊於同名之枝（平台 Stop 钩以 origin/<当前枝> 量未推→0），快进先归主枝。
     `诸报()` 一取而读 报/推、报/演 之全（法用之守：自走之首之 报之读、流程之法之 演录）。
+    `诸报之史()`（W908 环5）一回 git log＋一批 cat-file 读 备份/报 之史之诸版（运营卡之报史、卡之趋）——报之读唯在本器（坑53）。
+  ⑤观（W908 环4）：`摘`（summary 之 md）、`注`（::error 注实因）、`片注`（片之红分等注之——分等调 全测.分等；只器之红 rc 0——判归并判、⛔改判）。
+    演之期红唯对并判之红：带因之红（器之红）期作过、原期存「期之原」（成演报·读者⛔「果＝期即消」）。钉之律唯 `钉式之缺`（⑲ 与 运营卡 共之）。
   ③验：`验(诸文, 钩)` 静验二形——乙（分片：autopush 调 gate.yml，备候、N 片、并判、推候、器红账、演章、演练）照乙之律；
     甲（一 job·推时之钩即闸，97286329 之形）照甲之律；旧 yml（540c1c91·一树二跑）回灌须红。`验盘` 另索乙形（坑54）。⛔依 PyYAML（片之机无之）：本器自析其子集。
   ④演：以桩真跑诸 workflow（式之值、job 之序、矩阵、复用之流、上下传之件）於临时之裸库——成、已在、红、器红、逾限、拒、片崩、闸中主进而重派、
@@ -19,8 +22,11 @@
   python3 工具/推报.py --读 章-411        # 印云端之报（无即 rc=1；坏果 rc=3）
   python3 工具/推报.py --读演 <名>        # 印演练之报（无 rc=1；红 rc=3）
   python3 工具/推报.py --验               # 静验 .github/workflows/{autopush,gate,演练}.yml 与 工具/githooks/pre-push
-  python3 工具/推报.py --写 --ref R --sha S --果 G [--因 Y] [--试 K] --印 档 --主 SHA --跑 URL --出 目 [--候 C --判 档 --演 档]
-  python3 工具/推报.py --写演 --名 N --ref R --sha S --果 过|红 [--因 Y] --印 档 --跑 URL --出 目 [--候 C --判 档]
+  python3 工具/推报.py --写 --ref R --sha S --果 G [--因 Y] [--试 K] --印 档 --主 SHA --跑 URL --出 目 [--候 C --判 档 --演 档 --冲突 JSON]
+  python3 工具/推报.py --写演 --名 N --ref R --sha S --果 过|红 [--因 Y] [--期 过|红] --印 档 --跑 URL --出 目 [--候 C --判 档]
+  python3 工具/推报.py --摘 目|档            # W908 环4：报 → summary 之 md（果、因、期、冲突之档、红行、run）——>> $GITHUB_STEP_SUMMARY
+  python3 工具/推报.py --注 目|档            # W908 环4：报 → ::error／::warning 之注（实因：冲突之档、红行；器红只 warning）
+  python3 工具/推报.py --片注 档 --rc N --名 k/N   # W908 环4（gate 之片）：读者可见之红、留字 → ::error 而 rc 照旧；只器之红 → ::warning 而 rc 0
   python3 工具/推报.py --落 目 --信 语      # 目下诸档并入 备份/报（GitHub 之机用）
   python3 工具/推报.py --泊 章-460          # 手泊（封版、推.py 交 已自泊；存底 --标 手推者用之）：云端同名之枝即 HEAD 方泊，否则照旧
   python3 工具/推报.py --归                 # 手归主枝（快进、推.py 之枝正 已自归）
@@ -107,7 +113,7 @@ def _读演之印(档):
     return {'果': '过' if 末.startswith('✓') else '红', '语': 末[:300]}
 
 
-def 成报(ref, sha, 果, 印, 主='', 跑='', 因='', 试=0, 时=None, 候='', 判=None, 演=None):
+def 成报(ref, sha, 果, 印, 主='', 跑='', 因='', 试=0, 时=None, 候='', 判=None, 演=None, 冲突=None):
     果 = 果 if 果 in 诸果 else '败'
     红 = 红行(印) if 果 in 坏果 else []
     if 果 in ('拒', '败') and not 红:
@@ -122,7 +128,21 @@ def 成报(ref, sha, 果, 印, 主='', 跑='', 因='', 试=0, 时=None, 候='', 
         d['免'] = list(判['免'])              # 1117 片去活态：GitHub 片闸所免之活态之格（法用#片去活态）
     if 演 is not None:
         d['演'] = 演
+    if 冲突:
+        d['冲突'] = [str(x) for x in 冲突][:20]   # W908 环4：gate 之 merge 败出其冲突之档（接棒守.冲突之档 读之）
     return d
+
+
+def _冲突之参(v):
+    """--冲突 之值（gate 之 output chong：JSON 之列；或「|」「、」分）→ [档]。"""
+    v = (v or '').strip()
+    if not v:
+        return []
+    try:
+        x = json.loads(v)
+        return [str(a) for a in x if str(a).strip()] if isinstance(x, list) else [str(x)]
+    except ValueError:
+        return [a.strip() for a in re.split(r'[|、\n]', v) if a.strip()]
 
 
 def 写(d, 印, 出目):
@@ -135,14 +155,23 @@ def 写(d, 印, 出目):
     return j, x
 
 
-def 成演报(名, ref, sha, 果, 印, 跑='', 因='', 候='', 判=None, 时=None):
+def 成演报(名, ref, sha, 果, 印, 跑='', 因='', 候='', 判=None, 时=None, 期='过'):
     判 = 判 or {}
     果 = '过' if 果 == '过' else '红'
+    期 = '红' if 期 == '红' else '过'                 # W908 环4·治17：演之「期」（对照之演期红）——读者果＝期即消、跑之色＝果对期
     红 = 红行(印) if 果 == '红' else []
     if 果 == '红' and not 红:
         红 = 要行(印) or ['⛔%s' % (因 or '未判')]
+    # 期红唯对并判之红（因空）；带因之红（merge／fetch／片／逾时／未判……）係器之红、未经并判——⛔作意中之红：期作过、原期存「期之原」，
+    #   读者（法用之守 报之读：果＝期即消）与跑之色（演练.yml：期红而 YIN 非空即 exit 1）同判（旧 sha 之对照与今主并而冲突即此）
+    器之红 = 期 == '红' and 果 == '红' and bool(因)
+    if 器之红:
+        期 = '过'
+        红 = ['⛔期红而器红（因 %s）：未经并判、⛔作意中之红' % 因] + 红
     d = {'名': 演名(名), 'ref': ref, 'sha': sha, '果': 果, '红': 红,
-         '时': 时 or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'run_url': 跑 or '', '候': 候 or '', '因': 因 or ''}
+         '时': 时 or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'run_url': 跑 or '', '候': 候 or '', '因': 因 or '', '期': 期}
+    if 器之红:
+        d['期之原'] = '红'
     if 判.get('片秒'):
         d['片'] = {'数': len(判['片秒']), '秒': 判['片秒']}
     if 判.get('免'):
@@ -244,22 +273,13 @@ def 诸报(root=ROOT, 取=True, 类=('推', '演'), 并=(), 引=None):
         路们 = [p for p in r.stdout.split('\n') if p.endswith('.json')] if r.returncode == 0 else []
         if not 路们:
             return []
-        e = {k: v for k, v in os.environ.items() if k not in _定库之变}
-        b = subprocess.run(['git', 'cat-file', '--batch'], input=''.join('%s:%s\n' % (远, p) for p in 路们).encode('utf-8'),
-                           cwd=root, capture_output=True, timeout=120, env=e).stdout
+        诸体 = _批取(root, ['%s:%s' % (远, p) for p in 路们])
     except Exception:
         return []
-    出, i = [], 0
-    for p in 路们:
-        j = b.find(b'\n', i)
-        if j < 0:
-            break
-        头 = b[i:j].split()
-        if len(头) < 3 or 头[1] != b'blob':
-            i = j + 1
+    出 = []
+    for p, 体 in zip(路们, 诸体):
+        if 体 is None:
             continue
-        n = int(头[2])
-        体, i = b[j + 1:j + 1 + n], j + 1 + n + 1
         try:
             d = json.loads(体.decode('utf-8'))
         except Exception:
@@ -268,6 +288,69 @@ def 诸报(root=ROOT, 取=True, 类=('推', '演'), 并=(), 引=None):
             d['路'], d['类'] = p, p.split('/')[1]
             出.append(d)
     return 出
+
+
+def _批取(root, 键们, 限=120):
+    """git cat-file --batch 一批取诸物（键＝<引>:<路>）→ [bytes｜None]（同序；物不在即 None）。诸报、诸报之史 共之（⛔各造）。"""
+    e = {k: v for k, v in os.environ.items() if k not in _定库之变}
+    b = subprocess.run(['git', 'cat-file', '--batch'], input=''.join('%s\n' % k for k in 键们).encode('utf-8'),
+                       cwd=root, capture_output=True, timeout=限, env=e).stdout
+    出, i = [], 0
+    for _ in 键们:
+        j = b.find(b'\n', i)
+        if j < 0:
+            break
+        头 = b[i:j].split()
+        if len(头) < 3 or 头[1] != b'blob':
+            出.append(None)
+            i = j + 1
+            continue
+        n = int(头[2])
+        出.append(b[j + 1:j + 1 + n])
+        i = j + 1 + n + 1
+    return 出 + [None] * (len(键们) - len(出))
+
+
+def 诸报之史(root=ROOT, 引=None, 路们=('报/推', '报/演'), 至=None, 顶=None):
+    """→ 备份/报 之史里 路们（目即其下一层之 *.json；档即其档）每笔所改之版：[dict]（各添 路、类、笔、笔时；笔之时升序）；读不出即 []（⛔抛）。
+    〔W908 环5〕运营卡之报史（报每 ref 覆写，旧果取其旧版）与卡之趋经此。一回 git log＋一批 cat-file 取百余版——
+    诸报(引=笔) 一笔一读（每笔一 ls-tree 一批），逐笔取史则百余回而慢，故史之批读立於此、与 诸报 同器（⛔另造报之读）。"""
+    远 = 引 or 'refs/remotes/origin/' + 报枝
+
+    def 中(l):
+        for p in 路们:
+            if p.endswith('.json'):
+                if l == p:
+                    return True
+            elif l.startswith(p + '/') and '/' not in l[len(p) + 1:] and l.endswith('.json'):
+                return True
+        return False
+    try:
+        r = _git(['log', '--format=@@%H %ct', '--name-only'] + (['-%d' % 顶] if 顶 else []) + [远, '--'] + list(路们), root)
+        if r.returncode != 0:
+            return []
+        诸, 笔 = [], None
+        for l in r.stdout.split('\n'):
+            if l.startswith('@@'):
+                h, t = l[2:].split()
+                笔 = (h, int(t))
+            elif 笔 and 中(l) and (至 is None or 笔[1] <= 至):
+                诸.append((笔[0], 笔[1], l))
+        if not 诸:
+            return []
+        诸体 = _批取(root, ['%s:%s' % (h, p) for h, _, p in 诸])
+    except Exception:
+        return []
+    出 = []
+    for (h, t, p), 体 in zip(诸, 诸体):
+        try:
+            d = json.loads(体.decode('utf-8')) if 体 is not None else None
+        except Exception:
+            continue
+        if isinstance(d, dict):
+            d['路'], d['类'], d['笔'], d['笔时'] = p, (p.split('/')[1] if p.count('/') >= 2 else os.path.splitext(os.path.basename(p))[0]), h, t
+            出.append(d)
+    return sorted(出, key=lambda d: d['笔时'])
 
 
 def 报之语(d):
@@ -284,6 +367,108 @@ def 报之语(d):
     if d.get('run_url'):
         L.append('    · ' + d['run_url'])
     return L
+
+
+# ═══ 二之二、观（W908 环4·GitHub 运营满分：一跑一眼知其果与因）═══
+def 目之报(径):
+    """--摘／--注 之入：档即其报；目即 目/报/推、目/报/演 下诸 json（本跑所写）。→ [dict]（各添「类」「路」——路即其於 备份/报 之路）。
+    运营卡（W908 环5）之本跑之报（尚未 --落）亦经此（⛔另造报之读）。"""
+    诸 = []
+    if os.path.isfile(径 or ''):
+        诸 = [径]
+    else:
+        for 类 in ('推', '演'):
+            d0 = os.path.join(径 or '', '报', 类)
+            诸 += [os.path.join(d0, f) for f in sorted(os.listdir(d0)) if f.endswith('.json')] if os.path.isdir(d0) else []
+    出 = []
+    for f in 诸:
+        d = _读json(f)
+        if d:
+            d.setdefault('类', '演' if ('名' in d or os.sep + '演' + os.sep in f) else '推')
+            d.setdefault('路', '报/%s/%s' % (d['类'], os.path.basename(f)))
+            出.append(d)
+    return 出
+
+
+def _注之文(x):
+    """GitHub 注之文：去换行、转 %（workflow 命令之义）、至多二百字。"""
+    return str(x).replace('%', '%25').replace('\r', ' ').replace('\n', ' ')[:200]
+
+
+def _坏或违期(d):
+    return d.get('果') != d.get('期', '过') if d.get('类') == '演' else 坏(d)
+
+
+def 摘(诸):
+    """诸报 → summary 之 md：果、因、期、冲突之档、红行（至多八）、器红、逾、演章、run_url。"""
+    L = []
+    for d in 诸:
+        演 = d.get('类') == '演'
+        标 = ('⛔' if _坏或违期(d) else '✓') if 演 else ('✓' if d.get('果') in ('成', '已在') else ('·' if not 坏(d) else '⛔'))
+        L.append('### %s %s %s：%s%s%s' % (标, '演' if 演 else '推', d.get('名') or d.get('ref'), d.get('果'),
+                                         ('（因 %s）' % d['因']) if d.get('因') else '',
+                                         (('·期 %s' % d.get('期', '过')) + (('（原期 %s·器之红⛔作意中之红）' % d['期之原']) if d.get('期之原') else ''))
+                                         if 演 else ''))
+        L.append('')
+        L.append('- sha `%s`%s%s' % (str(d.get('sha', ''))[:12], ('·候 `%s`' % str(d['候'])[:12]) if d.get('候') else '',
+                                   ('·主枝 `%s`' % str(d['main_after'])[:12]) if d.get('main_after') else ''))
+        if d.get('冲突'):
+            L.append('- 冲突之档：' + '、'.join('`%s`' % x for x in d['冲突'][:10]))
+        for x in (d.get('红') or [])[:8]:
+            L.append('- 红：%s' % str(x)[:200])
+        if d.get('器红'):
+            L.append('- 器红（只报不拦·限三章治）：' + '、'.join(d['器红']))
+        if d.get('逾'):
+            L.append('- ⛔ 器红逾限（拦）：' + '、'.join(d['逾']))
+        if isinstance(d.get('演'), dict):
+            L.append('- 演章：' + str(d['演'].get('语', ''))[:200])
+        if (d.get('片') or {}).get('秒'):
+            L.append('- 片 %d：%s 秒' % (d['片'].get('数', 0), '、'.join('%s' % v for v in list(d['片']['秒'].values())[:6])))
+        if d.get('run_url'):
+            L.append('- ' + d['run_url'])
+        L.append('')
+    return '\n'.join(L)
+
+
+def 注(诸):
+    """诸报 → workflow 之注（::error 注实因：首注书果与因、冲突之档；余注逐红行（至多五）；器红 ::warning）。"""
+    L = []
+    for d in 诸:
+        名 = '%s·%s' % ('演' if d.get('类') == '演' else '推', d.get('名') or d.get('ref'))
+        if _坏或违期(d):
+            因 = '冲突之档 ' + '、'.join(d['冲突'][:6]) if d.get('冲突') else ((d.get('红') or [''])[0] or '看 run 之志')
+            L.append('::error title=%s %s%s::%s' % (名, d.get('果'), ('（因 %s）' % d['因']) if d.get('因') else '', _注之文(因)))
+            for x in (d.get('红') or [])[1 if not d.get('冲突') else 0:][:5]:
+                L.append('::error title=%s·红行::%s' % (名, _注之文(x)))
+        if d.get('器红'):
+            L.append('::warning title=%s·器红（只报不拦·限三章治）::%s' % (名, _注之文('、'.join(d['器红']))))
+    return L
+
+
+def 片注(档, rc, 名=''):
+    """gate 之片之果 → (注之行, 新 rc)。读者可见之红、留字、未毕、果坏 → ::error 而 rc 照旧（片之 job 红＝真红）；
+    只器之红 → ::warning 而 rc 0（器红只报不拦·判归 advance 之 --并果——本函⛔判，全测.并判 一字⛔动；片之 job 绿而跑绿，色与果同）。"""
+    rc = int(rc or 0)
+    if rc == 0:
+        return [], 0
+    d = _读json(档)
+    if not d:
+        return ['::error title=片 %s::片之果不在或坏（rc %d）——并判见其缺' % (名, rc)], rc
+    红 = [(x[0], str(x[2]).split('\n')[0]) for x in d.get('果') or [] if isinstance(x, list) and len(x) > 2 and not x[1]]
+    try:
+        import 全测
+        读 = set(全测.分等([n for n, _ in 红])[0])        # 分等唯 全测.分等 一处（并判同之·⛔另立表）
+    except Exception as e:
+        return ['::error title=片 %s::读者可见之闸读不出（%s）——诸红俱作真红' % (名, _注之文(e))], rc
+    读红, 器红 = [x for x in 红 if x[0] in 读], [x for x in 红 if x[0] not in 读]
+    L = ['::error title=片 %s·读者可见之红::%s：%s' % (名, n, _注之文(t)) for n, t in 读红[:6]]
+    L += ['::warning title=片 %s·器红（只报·判归并判）::%s：%s' % (名, n, _注之文(t)) for n, t in 器红[:6]]
+    if d.get('留字'):
+        L.append('::error title=片 %s·留字::%s' % (名, _注之文('、'.join(map(str, d['留字'][:6])))))
+    if not d.get('毕'):
+        L.append('::error title=片 %s::片未毕（逾时或崩）——并判见其缺' % 名)
+    只器 = bool(红) and not 读红 and not d.get('留字') and d.get('毕')
+    return L, (0 if 只器 else rc)
 
 
 def 快进(root=ROOT):
@@ -685,6 +870,35 @@ def _验删(步, 全文):
     return 缺
 
 
+def 诸uses(文):
+    """workflow 之 uses → [(行号, 值, 注)]（./ 之复用流免；注＝行末「# …」之文）。"""
+    出 = []
+    for i, l in enumerate((文 or '').split('\n'), 1):
+        m = re.match(r'\s*(?:-\s+)?uses:\s*(\S+)(.*)$', l)
+        if m and not m.group(1).startswith('./'):
+            c = re.match(r'\s+#\s*(.*)$', m.group(2))
+            出.append((i, m.group(1), c.group(1).strip() if c else ''))
+    return 出
+
+
+def 钉式之缺(文):
+    """钉之律（W908 环4·供应链·唯此一处）：uses 须钉 40 位 sha 而注其版（「# vX…」）→ [(行号, 值, 由)]。
+    推报 ⑲（推闸之静验）与 运营卡（安·钉，并验 Node24 之版）俱调之——⛔各写。"""
+    缺 = []
+    for i, u, 注 in 诸uses(文):
+        if not re.search(r'@[0-9a-f]{40}$', u):
+            缺.append((i, u, '未钉 40 位 sha'))
+        elif not re.match(r'v\d', 注):
+            缺.append((i, u, '钉 sha 而未注其版'))
+    return 缺
+
+
+def _验钉(诸文):
+    """⑲钉（W908 环4·供应链）：诸流之 uses 须钉 40 位 sha 而注其版（「# vX.Y.Z」）——免 ./ 之复用流。→ [缺]"""
+    return ['⑲钉：%s:%d %s 须钉 40 位 sha 并注其版（免 ./·%s）' % (名, i, u, 由)
+            for 名, t in sorted((诸文 or {}).items()) for i, u, 由 in 钉式之缺(t)]
+
+
 def 验乙(诸文, 钩):
     """乙形（坑54·分片）之律 → [缺]。诸文：{autopush.yml, gate.yml, 演练.yml: 文}。"""
     缺 = []
@@ -828,20 +1042,27 @@ def 验乙(诸文, 钩):
     if not re.search(r'git branch -f 候 "\$C" && git bundle create[^\n]* 候 --not "\$B0" "\$T"', 备跑):
         缺.append('⑫片：候须以 git bundle 交诸片（⛔推临时之枝）')
     # ⑦报
-    def 报步(J, 键们):
+    def 报步(J, 键们, 条='always()'):
         for j in J.values():
             for s in j.get('steps') or []:
                 r = s.get('run') or ''
-                if 'always()' in str(s.get('if', '')) and all(x in r for x in 键们) and '推报.py --落' in r \
+                if 条 in str(s.get('if', '')) and all(x in r for x in 键们) and '推报.py --落' in r \
                         and not re.search(r'success\(\)|env\.GUO', str(s.get('if', ''))):
                     return r
         return None
     a报 = 报步(AJ, ('推报.py --写 ', '--ref', '--sha', '--果', '--印', '--主', '--跑', '--出', '--候', '--判', '--演'))
     if not a报:
         缺.append('⑦报：autopush 须有 if: always()（⛔系於成败）之步：推报.py --写（键俱）而 --落 备份/报')
-    y报 = 报步(YJ, ('推报.py --写演', '--名', '--ref', '--sha', '--果', '--印', '--跑', '--出'))
-    if not y报:
-        缺.append('⑦报：演练 须有 if: always() 之步：推报.py --写演 而 --落 备份/报')
+    # W908 环4：演练之报 if: !cancelled()（取消之跑⛔落红报·bf35ac373）——job 与步俱然
+    y报 = 报步(YJ, ('推报.py --写演', '--名', '--ref', '--sha', '--果', '--印', '--跑', '--出'), '!cancelled()')
+    if not y报 or not any('!cancelled()' in str(j.get('if', '')) and any((s.get('run') or '') == y报 for s in j.get('steps') or []) for j in YJ.values()):
+        缺.append('⑦报：演练 须有 if: !cancelled() 之 job 与步：推报.py --写演 而 --落 备份/报（取消之跑⛔落红报）')
+    # ⑳观（W908 环4）：autopush 报步 ::error 注实因（推报 --注）与 summary（推报 --摘）；演练 summary；冲突之档入报
+    if a报 and not (re.search(r'推报\.py --注 "\$D"', a报) and re.search(r'推报\.py --摘 "\$D" >> "\$GITHUB_STEP_SUMMARY"', a报)
+                   and '--冲突 "${CHONG:-}"' in a报):
+        缺.append('⑳观：autopush 之报步须 推报 --注（::error 注实因）、--摘 >> $GITHUB_STEP_SUMMARY、--写 带 --冲突')
+    if y报 and not re.search(r'推报\.py --摘 "\$D" >> "\$GITHUB_STEP_SUMMARY"', y报):
+        缺.append('⑳观：演练之报步须 推报 --摘 >> $GITHUB_STEP_SUMMARY')
     # ⑧删
     缺 += _验删(_诸步(A), 诸文.get('autopush.yml') or '')
     for 名 in ('gate.yml', '演练.yml'):
@@ -872,6 +1093,15 @@ def 验乙(诸文, 钩):
     yp = ((yon.get('push') or {}) if isinstance(yon.get('push'), dict) else {}).get('branches') or []
     if not ({'ref', 'name'} <= set(yin) and yp == [演之前缀 + '*']):
         缺.append('⑮演练：须 workflow_dispatch（inputs ref、name）与 push 於 %s*（推之触⛔待默认枝）' % 演之前缀)
+    if not ('qi' in yin and y报 and '--期 "$QI"' in y报 and re.search(
+            r'if \[ "\$\{GUO:-红\}" != "\$QI" \] \|\| \{ \[ "\$QI" = 红 \] && \[ -n "\$YIN" \]; \}; then[^\n]*\n(?:[^\n]*\n){0,4}?\s*exit 1\n', y报)
+            and re.search(r'(?m)^\s*\[ -n "\$\{GUO:-\}" \] \|\| YIN="\$\{YIN:-未判\}"', y报)):
+        缺.append('⑮之二 演练之期（治17）：inputs qi、--写演 --期 "$QI"、果≠期或期红而器红（YIN 非空；判未跑即 YIN=未判）方 exit 1'
+                  '（意之红⛔成败跑、器之红⛔作意之红·跑之色＝果对期）')
+    # ⑫片注（W908 环4）：片之红分等注之——只器之红 rc 0（片之 job 色与果同），判仍归 --并果
+    if 片 and '推报.py --片注 "$O/shard$K.json" --rc "$rc"' not in '\n'.join(s.get('run') or '' for s in 片[0][1].get('steps') or []):
+        缺.append('⑫片注：片之红须经 推报 --片注 分等注之（读者可见之红 ::error、只器之红 ::warning 而 rc 0）')
+    缺 += _验钉({n: 诸文.get(n) for n in 流之档})
     return 缺 + _验钩(钩)
 
 
@@ -893,6 +1123,9 @@ def 读流(root=ROOT):
             诸[n] = open(os.path.join(root, '.github', 'workflows', n), encoding='utf-8').read()
         except OSError:
             诸[n] = ''
+    f = os.path.join(root, '.github', 'workflows', '巡.yml')       # ⑲钉：巡.yml 亦验（W908 环4）
+    if os.path.exists(f):
+        诸['巡.yml'] = open(f, encoding='utf-8').read()
     return 诸
 
 
@@ -901,6 +1134,7 @@ def 验诸(诸, 钩):
     缺 = 验(诸.get('autopush.yml') or '', 钩, 诸)
     if not 是乙(诸.get('autopush.yml') or ''):
         缺.append('⑰须分片（坑54）：盘上 autopush.yml 须调 gate.yml（甲形之一 job 串跑，闸十余分卡关键路）')
+    缺 += _验钉({n: t for n, t in 诸.items() if n not in 流之档})     # ⑲钉：余流（巡.yml 等）亦钉
     return 缺
 
 
@@ -1089,6 +1323,8 @@ def _跑一job(jid, j, 境, wenv, 世, k):
     os.makedirs(rt)
     genv = os.path.join(rt, '.genv')
     open(genv, 'w').close()
+    摘档 = os.path.join(rt, '.summary')                 # W908 环4：GITHUB_STEP_SUMMARY 之桩（诸步同档；跑毕入 世['摘']）
+    open(摘档, 'w').close()
     境 = dict(境, matrix=({'k': k} if k is not None else {}), runner={'temp': rt})
     env = {a: _串(_插(b, 境)) for a, b in (wenv or {}).items()}
     for a, b in (j.get('env') or {}).items():
@@ -1119,7 +1355,7 @@ def _跑一job(jid, j, 境, wenv, 世, k):
             e = dict(世['基env'])
             e.update(env)
             e.update({a: _串(_插(b, 境s)) for a, b in (s.get('env') or {}).items()})
-            e.update(GITHUB_ENV=genv, GITHUB_OUTPUT=out, RUNNER_TEMP=rt, GITHUB_SHA=gh['sha'], GITHUB_REF_NAME=gh['ref_name'],
+            e.update(GITHUB_ENV=genv, GITHUB_OUTPUT=out, GITHUB_STEP_SUMMARY=摘档, RUNNER_TEMP=rt, GITHUB_SHA=gh['sha'], GITHUB_REF_NAME=gh['ref_name'],
                      GITHUB_REPOSITORY=gh['repository'], GITHUB_SERVER_URL=gh['server_url'], GITHUB_RUN_ID=gh['run_id'],
                      GITHUB_API_URL=gh['api_url'], GITHUB_WORKSPACE=工, GITHUB_EVENT_NAME=gh['event_name'])
             r = subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', sp], cwd=工, env=e, capture_output=True, text=True, timeout=600)
@@ -1135,6 +1371,9 @@ def _跑一job(jid, j, 境, wenv, 世, k):
             世['印'] += ['告 %s/%s：%s' % (jid, 名, l) for l in r.stdout.split('\n') if l.startswith('::warning::')]   # 告（降级之印）⛔被截
         成 = 成 and (ok or str(s.get('continue-on-error')).lower() == 'true')     # 步之 continue-on-error（outcome 败而 job 续）
     outs = {a: _串(_插(b, dict(境, steps=诸步, env=env))) for a, b in (j.get('outputs') or {}).items()}
+    摘 = open(摘档, encoding='utf-8').read()
+    if 摘.strip():
+        世.setdefault('摘', []).append('── %s%s ──\n%s' % (jid, '' if k is None else '·%s' % k, 摘))
     return {'result': 'success' if 成 else 'failure', 'outputs': outs}
 
 
@@ -1191,8 +1430,9 @@ def 跑流(诸文, 档, 事, 裸, 目, 基env, 省败=False):
           'repository': '演/仓', 'server_url': 'file://' + 目, 'api_url': 'http://api.invalid'}
     件 = tempfile.mkdtemp(dir=目, prefix='件_')
     世 = {'目': 目, '裸': 裸, '件': 件, '印': [], '基env': 基env, 'gitenv': _净env(), 'wenv': w.get('env') or {}, '省败': 省败}
+    世['摘'] = []
     果 = _跑诸job(w, 诸文, {'github': gh, 'inputs': inputs, 'vars': {}}, 世)
-    return 果, '\n'.join(世['印'])
+    return 果, '\n'.join(世['印']) + ('\n══ 摘 ══\n' + '\n'.join(世['摘']) if 世['摘'] else '')
 
 
 _桩全测 = r'''#!/usr/bin/env python3
@@ -1237,7 +1477,9 @@ if 懒 and '--片' in sys.argv and sys.argv[sys.argv.index('--片') + 1].startsw
                     '--recurse-submodules=no', '--filter=blob:none', '--stdin'], input='0' * 40 + '\n', text=True, capture_output=True,
                    env=dict(os.environ, GIT_ALLOW_PROTOCOL='none'))
     红 = set(名们)
-sys.exit(m.main())
+读者可见之闸 = m.读者可见之闸
+if __name__ == '__main__':          # 推报 --片注 import 之（W908 环4）：⛔跑
+    sys.exit(m.main())
 '''
 _桩名数 = 47
 
@@ -1261,7 +1503,8 @@ def 演乙(诸文, 钩, 景, 目):
     """以桩真跑乙形诸 workflow 於 目 下之裸库。景：
     成｜器红｜红｜逾（器红账首见已逾）｜拒（改 workflows）｜片崩｜章（章-9 触·演章）｜主动（闸中他坐推进主枝 → 重派 → 续跑而成）｜
     重派尽（tries 2 而主动）｜中已在（闸中他坐以他并含本枝）｜演（演练·派：改 workflows 之枝照演）｜演红｜演推（演练·推 备份/演/<名>）｜
-    省败（带 filter 之省取俱败 → 降级全取）｜懒败（片一於省取之仓懒取而败、其格俱红 → 降级全取重跑）——法用#闸取仓之速。
+    省败（带 filter 之省取俱败 → 降级全取）｜懒败（片一於省取之仓懒取而败、其格俱红 → 降级全取重跑）——法用#闸取仓之速｜
+    冲突（他坐改同行·备候真冲突）｜演对照（qi 红）｜演对照冲突（qi 红而备候真冲突·器之红⛔作意之红）——W908 环4。
     → {果, 报, 演报, 器红账, 计, 主, T, R, 枝们, 派, 印, 二, 沙, 他sha}"""
     import importlib
     env0 = _净env()
@@ -1274,7 +1517,7 @@ def 演乙(诸文, 钩, 景, 目):
     工具 = os.path.dirname(os.path.abspath(__file__))
     档们 = {'工具/githooks/pre-push': 钩, '工具/全测.py': _桩全测, '设定/全测均秒.json': '{}\n',
            '正文/第四百二十章.md': '一\n', 'a.txt': '甲\n', 'b.txt': '乙\n'}
-    for n in ('全测并.py', '推报.py', '存底.py'):
+    for n in ('全测并.py', '推报.py', '存底.py', '运营卡.py'):          # 运营卡（W908 环5）：autopush 报步之调真跑（Actions 之迹不可取·只报与静析）
         档们['工具/' + n] = open(os.path.join(工具, n), encoding='utf-8').read()
     档们['工具/_真全测.py'] = open(os.path.join(工具, '全测.py'), encoding='utf-8').read()
     for n, t in 诸文.items():
@@ -1303,6 +1546,8 @@ def 演乙(诸文, 钩, 景, 目):
         shutil.copytree(沙, 沙 + '旧', symlinks=True)
         泊果 = 泊(R, 沙)
     _g(['clone', '-q', '-b', 主枝, 裸, 他], 目)
+    if 景 in ('冲突', '演对照冲突'):     # W908 环4：他坐改同行 → 备候之并真冲突（a.txt）
+        open(os.path.join(他, 'a.txt'), 'a', encoding='utf-8').write('他坐之改\n')
     open(os.path.join(他, 'b.txt'), 'a', encoding='utf-8').write('乙之进\n')
     _g(['commit', '-qam', '他坐先进'], 他)
     _g(['push', '-q', 'origin', 'HEAD:refs/heads/' + 主枝], 他)          # 主枝先进一笔：候係真并（⛔快进）
@@ -1329,7 +1574,7 @@ def 演乙(诸文, 钩, 景, 目):
     os.chmod(os.path.join(桩bin, 'curl'), 0o755)
     计 = os.path.join(目, '闸计')
     基 = dict(env0, PATH=桩bin + os.pathsep + env0.get('PATH', ''), ZM_STUB_CNT=计, ZM_STUB_MAIN=主枝,
-             ZM_STUB={'红': '红', '演红': '红', '器红': '器红', '逾': '器红'}.get(景, '绿'))
+             ZM_STUB={'红': '红', '演红': '红', '演对照': '红', '器红': '器红', '逾': '器红'}.get(景, '绿'))
     for k in ('GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'):
         基.pop(k, None)                                  # 机之身由 yml 之 git config 定（⛔借测者之身）
     if 他sha:
@@ -1338,8 +1583,9 @@ def 演乙(诸文, 钩, 景, 目):
         基['ZM_STUB_CRASH'] = '2'
     if 景 == '懒败':
         基['ZM_STUB_LAN'] = '1'
-    if 景 in ('演', '演红'):
-        事 = {'event_name': 'workflow_dispatch', 'ref_name': 主枝, 'sha': '', 'inputs': {'ref': R, 'name': '试一'}}
+    if 景 in ('演', '演红', '演对照', '演对照冲突'):
+        事 = {'event_name': 'workflow_dispatch', 'ref_name': 主枝, 'sha': '',
+              'inputs': dict({'ref': R, 'name': '试一'}, **({'qi': '红'} if 景 in ('演对照', '演对照冲突') else {}))}
         档 = '演练.yml'
     elif 景 == '演推':
         事, 档 = {'event_name': 'push', 'ref_name': R, 'sha': T}, '演练.yml'
@@ -1363,7 +1609,7 @@ def 演乙(诸文, 钩, 景, 目):
     读 = lambda p: (json.loads(_g(['show', 'refs/heads/%s:%s' % (报枝, p)], 裸, 必=False) or 'null')
                    if subprocess.run(['git', 'cat-file', '-e', 'refs/heads/%s:%s' % (报枝, p)], cwd=裸, env=env0, capture_output=True).returncode == 0 else None)
     in主 = lambda x: bool(x) and subprocess.run(['git', 'merge-base', '--is-ancestor', x, 主], cwd=裸, env=env0, capture_output=True).returncode == 0
-    return {'果': 果, '报': 读(报径(R)), '演报': 读(演径('试一')), '器红账': 读('报/器红账.json'), '均秒': 读('报/均秒.json'),
+    return {'果': 果, '报': 读(报径(R)), '演报': 读(演径('试一')), '器红账': 读('报/器红账.json'), '均秒': 读('报/均秒.json'), '卡': 读('报/卡.json'),
             '计': open(计, encoding='utf-8').read().split() if os.path.exists(计) else [], '主': 主, 'T': T, 'R': R, '枝们': 枝们,
             'T在主': in主(T), '他在主': in主(他sha), '派': open(派档, encoding='utf-8').read() if os.path.exists(派档) else '',
             '印': 印, '二': 二, '沙': 沙, '沙旧': 沙 + '旧', '泊': 泊果}
@@ -1579,6 +1825,69 @@ def 自测():
     源们 = {n: open(os.path.join(ROOT, '工具', n), encoding='utf-8').read() for n in ('接棒守.py', '推.py')}
     T('①之七 候者（接棒守 --候主、推.py --候）以 推报.坏 判坏报（败·重派 係在飞、⛔早返）——⛔以 推报.坏果 直判',
       all('推报.坏(' in s and '推报.坏果' not in s for s in 源们.values()))
+    # W908 环4：冲突之档入报（gate 之 output chong·JSON 之列）；演之「期」；摘（summary）；注（::error 注实因）；片注（片之红分等）
+    d冲 = 成报('章-473', 'f' * 40, '败', '⛔备候不成（因 merge）——未入片闸；看 run_url\n', 因='merge', 冲突=_冲突之参('["设定/费账.json","设定/方法账.md"]'))
+    e期 = 成演报('试', 'x', 'a' * 40, '红', '  ✗ 字数闸  坏\n', 期='红')
+    摘文, 注文 = 摘([dict(d冲, 类='推'), dict(e期, 类='演'), dict(成报('治-a', 'b' * 40, '成', 印), 类='推')]), 注([dict(d冲, 类='推'), dict(e期, 类='演')])
+    T('①之八〔W908 环4〕冲突之档入报（JSON 之列／「|」分俱解；⛔改红行）；演之期（缺即过）；摘书果因期、冲突之档、红行；注：坏报 ::error 首注实因（冲突之档）、果＝期之演⛔注',
+      d冲.get('冲突') == ['设定/费账.json', '设定/方法账.md'] and _冲突之参('a.txt|b.txt') == ['a.txt', 'b.txt'] and _冲突之参('') == []
+      and d冲['红'] == ['⛔备候不成（因 merge）——未入片闸；看 run_url'] and e期['期'] == '红' and 成演报('试', 'x', 'a', '过', '')['期'] == '过'
+      and '### ⛔ 推 章-473：败（因 merge）' in 摘文 and '冲突之档：`设定/费账.json`' in 摘文 and '### ✓ 演 试：红·期 红' in 摘文 and '器红（只报不拦' in 摘文
+      and 注文 and 注文[0] == '::error title=推·章-473 败（因 merge）::冲突之档 设定/费账.json、设定/方法账.md' and not any('演·试' in x for x in 注文))
+    with tempfile.TemporaryDirectory() as t:
+        def _片(果, 留=(), 毕=True):
+            f = os.path.join(t, 'shard%d.json' % len(os.listdir(t)))
+            json.dump({'果': 果, '留字': list(留), '毕': 毕}, open(f, 'w', encoding='utf-8'), ensure_ascii=False)
+            return f
+        器只 = 片注(_片([['字数闸', True, 'ok', 1], ['跑账', False, '坏一处\n次行', 1]]), 1, '1/3')
+        读之 = 片注(_片([['字数闸', False, '缺字', 1], ['跑账', False, '坏', 1]]), 1, '2/3')
+        留之 = 片注(_片([['跑账', False, '坏', 1]], 留=['设定/x.md']), 1, '3/3')
+        未毕 = 片注(_片([['跑账', False, '坏', 1]], 毕=False), 1, '3/3')
+        无档 = 片注(os.path.join(t, '无.json'), 1, '1/3')
+    T('①之九〔W908 环4〕片注：只器之红 → ::warning 而 rc 0；读者可见之红、留字、未毕、片之果不在 → ::error 而 rc 照旧；rc 0 ⛔注（判归并判）',
+      器只 == (['::warning title=片 1/3·器红（只报·判归并判）::跑账：坏一处'], 0) and 读之[1] == 1 and 读之[0][0] == '::error title=片 2/3·读者可见之红::字数闸：缺字'
+      and any(x.startswith('::warning') and '跑账' in x for x in 读之[0]) and 留之[1] == 1 and any('留字' in x for x in 留之[0])
+      and 未毕[1] == 1 and 无档[1] == 1 and 片注('/无', 0) == ([], 0))
+    # W908 环4·复核：期红而器红（因非空：备候败、片崩、逾时、未判）⛔作意中之红；坑53：分等、钉律、报之读（本跑、史）唯一处
+    e器 = 成演报('试', 'x', 'a' * 40, '红', '⛔备候不成（因 merge）——未入片闸；看 run_url\n', 因='merge', 期='红')
+    摘器, 注器 = 摘([dict(e器, 类='演')]), 注([dict(e器, 类='演')])
+    T('①之十〔W908 环4·复核〕期红而器红（因 merge）→ 报之期作过、期之原 红、红行首「⛔期红而器红」；摘 ⛔ 书原期、注 ::error（读者⛔「果＝期即消」）；'
+      '期红而并判之红（因空）照存期红',
+      e器['期'] == '过' and e器.get('期之原') == '红' and e器['红'][0].startswith('⛔期红而器红（因 merge）') and '### ⛔ 演 试：红（因 merge）·期 过（原期 红' in 摘器
+      and 注器 and 注器[0].startswith('::error title=演·试 红（因 merge）') and e期['期'] == '红' and '期之原' not in e期
+      and 成演报('试', 'x', 'a', '过', '', 因='', 期='红')['期'] == '红')
+    _片源 = re.search(r'(?ms)^def 片注\(.*?(?=^def )', open(os.path.abspath(__file__), encoding='utf-8').read())
+    T('①之十一〔W908 环5·坑53〕片注 之分等调 全测.分等（⛔自读 读者可见之闸 另分）；钉律唯 钉式之缺 一处（⑲ 与 运营卡 共之）：tag、短 sha、未注版 俱缺，钉 sha 注版合、./ 免',
+      bool(_片源) and '全测.分等(' in _片源.group(0) and '读者可见之闸)' not in _片源.group(0)
+      and [x[2] for x in 钉式之缺('  - uses: actions/checkout@v5\n  - uses: actions/x@%s\n  - uses: a/b@%s # 版\n' % ('a' * 12, 'b' * 40))]
+      == ['未钉 40 位 sha', '未钉 40 位 sha', '钉 sha 而未注其版']
+      and 钉式之缺('      - uses: actions/checkout@%s # v5.1.0\n      uses: ./.github/workflows/gate.yml\n' % ('c' * 40)) == []
+      and _验钉({'x.yml': '  - uses: actions/checkout@v5\n'}) == ['⑲钉：x.yml:1 actions/checkout@v5 须钉 40 位 sha 并注其版（免 ./·未钉 40 位 sha）'])
+    with tempfile.TemporaryDirectory() as t:
+        目 = os.path.join(t, '目')
+        写(d冲, '', 目)
+        写演(e器, '', 目)
+        目报 = 目之报(目)
+        库 = os.path.join(t, '库')
+        _g(['init', '-q', 库], t)
+        for k, (档们, 秒) in enumerate(((({'报/推/a.json': {'果': '红'}, '报/演/b.json': {'果': '过'}}), 1700001000),
+                                     (({'报/推/a.json': {'果': '成'}, '报/卡.json': {'算於': 'x'}}), 1700002000),
+                                     (({'报/推/深/c.json': {'果': '红'}, '报/器红账.json': {}, '报/推/a.txt': 'x'}), 1700003000))):
+            for p, v in 档们.items():
+                os.makedirs(os.path.dirname(os.path.join(库, p)), exist_ok=True)
+                open(os.path.join(库, p), 'w', encoding='utf-8').write(json.dumps(v, ensure_ascii=False) if isinstance(v, dict) else v)
+            _g(['add', '-A'], 库)
+            _g(['commit', '-qm', '笔%d' % k], 库, env=_净env(GIT_COMMITTER_DATE='@%d +0000' % 秒, GIT_AUTHOR_DATE='@%d +0000' % 秒))
+        史 = 诸报之史(库, 引='HEAD')
+        史至 = 诸报之史(库, 引='HEAD', 至=1700001500)
+        卡史 = 诸报之史(库, 引='HEAD', 路们=('报/卡.json',), 顶=9)
+        史无 = 诸报之史(库, 引='refs/无此引')
+    T('①之十二〔W908 环5·坑53〕诸报之史（运营卡之报史与卡之趋经此·⛔另造）：报/推、报/演 下一层之 json 每笔之版（笔时升序·带 路 类 笔 笔时；深层、txt、器红账免）；'
+      '至 截其时；路们 可指一档（报/卡.json）；引无 → []。目之报 带 类、路（运营卡之本报经此）',
+      [(d['路'], d['果'], d['笔时']) for d in 史] == [('报/推/a.json', '红', 1700001000), ('报/演/b.json', '过', 1700001000), ('报/推/a.json', '成', 1700002000)]
+      and all(d['类'] in ('推', '演') and re.fullmatch(r'[0-9a-f]{40}', d['笔']) for d in 史)
+      and [d['路'] for d in 史至] == ['报/推/a.json', '报/演/b.json'] and [(d['类'], d['算於']) for d in 卡史] == [('卡', 'x')] and 史无 == []
+      and sorted((x['类'], x['路']) for x in 目报) == [('推', '报/推/章-473.json'), ('演', '报/演/试.json')])
     # ②验：今盘（乙）绿；PyYAML 与本器之析同；旧 yml 回灌红；甲形（97286329）照甲律为合而盘上须乙；诸改坏各红
     诸 = 读流(ROOT)
     钩 = open(os.path.join(ROOT, '工具', 'githooks', 'pre-push'), encoding='utf-8').read()
@@ -1610,8 +1919,7 @@ def 自测():
         '重派无界': ('autopush.yml', a.replace('"${TRIES:-0}" -lt 2', '"${TRIES:-0}" -lt 9')),
         '⛔重派': ('autopush.yml', a.replace('/actions/workflows/autopush.yml/dispatches', '/x')),
         '去 治-* 之触': ('autopush.yml', a.replace("branches: ['章-*', '治-*']", "branches: ['章-*']")),
-        '报⛔always': ('autopush.yml', a.replace("      - name: 报（备份/报·报/推/<枝>.json 与 .txt；器红账、均秒）\n        if: always()\n",
-                                                "      - name: 报（备份/报·报/推/<枝>.json 与 .txt；器红账、均秒）\n        if: success()\n")),
+        '报⛔always': ('autopush.yml', re.sub(r'(      - name: 报（[^\n]*\n)        if: always\(\)\n', r'\1        if: success()\n', a, count=1)),
         '删及章标': ('autopush.yml', a.replace("refs/heads/治-*) git merge-base", "refs/heads/治-*|refs/heads/章-*) git merge-base").replace(
             "'refs/heads/治-*')", "'refs/heads/治-*' 'refs/heads/章-*')")),
         '删治不问已并': ('autopush.yml', a.replace('refs/heads/治-*) git merge-base --is-ancestor "$S" "origin/$MAIN" && D+=(":$N") ;;', 'refs/heads/治-*) D+=(":$N") ;;')),
@@ -1620,8 +1928,7 @@ def 自测():
         '片一红消他片': ('gate.yml', g.replace('fail-fast: false', 'fail-fast: true')),
         '片红败及闸': ('gate.yml', g.replace('    continue-on-error: true\n', '')),
         '片⛔验其树即候': ('gate.yml', g.replace('if [ "$(git rev-parse HEAD)" != "$CAND" ]', 'if false')),
-        '片果⛔always 上件': ('gate.yml', g.replace("      - uses: actions/upload-artifact@v4\n        if: always()\n        with:\n          name: shard-",
-                                                   "      - uses: actions/upload-artifact@v4\n        with:\n          name: shard-")),
+        '片果⛔always 上件': ('gate.yml', re.sub(r'(      - uses: actions/upload-artifact@[^\n]*\n)        if: always\(\)\n(        with:\n          name: shard-)', r'\1\2', g, count=1)),
         'gate 可写': ('gate.yml', g.replace('permissions:\n  contents: read', 'permissions:\n  contents: write')),
         '二处 --片（一树二闸）': ('gate.yml', g.replace('python3 工具/全测.py --片 "$K/$N"', 'python3 工具/全测.py --片 "$K/$N" --出 x; python3 工具/全测.py --片 "$K/$N"')),
         '器红账⛔落': ('autopush.yml', a.replace('cp "$RUNNER_TEMP/器红账.新.json" "$D/报/器红账.json"', 'true')),
@@ -1643,6 +1950,21 @@ def 自测():
         '演练推主枝·${MAIN}': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$CAND:refs/heads/${MAIN}"\n          python3 工具/推报.py --落 "$D"')),
         '演练推同名之枝': ('演练.yml', y.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$MAIN"\n          python3 工具/推报.py --落 "$D"')),
         'autopush 二推主枝·短式': ('autopush.yml', a.replace('          python3 工具/推报.py --落 "$D"', '          git -c core.hooksPath="$RUNNER_TEMP/无钩" push origin "$GITHUB_SHA:$MAIN"\n          python3 工具/推报.py --落 "$D"')),
+        # W908 环4：钉（40 位 sha 并注版）、演练之 !cancelled 与期、报步之注与摘、片注
+        'uses 以 tag 钉': ('autopush.yml', re.sub(r'actions/checkout@[0-9a-f]{40} # v[\d.]+', 'actions/checkout@v5', a, count=1)),
+        'uses 钉 sha 而未注版': ('gate.yml', re.sub(r'(actions/setup-python@[0-9a-f]{40}) # v[\d.]+', r'\1', g, count=1)),
+        'uses 钉短 sha': ('演练.yml', re.sub(r'(actions/download-artifact@[0-9a-f]{12})[0-9a-f]{28}', r'\1', y, count=1)),
+        '演练报 always（取消落红报）': ('演练.yml', y.replace("      - name: 报（备份/报·报/演/<名>.json；summary；果≠期即红）\n        if: ${{ !cancelled() }}\n",
+                                                       "      - name: 报（备份/报·报/演/<名>.json；summary；果≠期即红）\n        if: always()\n")),
+        '演练 report job always': ('演练.yml', y.replace("    needs: gate\n    if: ${{ !cancelled() }}\n", "    needs: gate\n    if: always()\n")),
+        '演练⛔期': ('演练.yml', y.replace(' --期 "$QI"', '')),
+        '演练果≠期⛔红': ('演练.yml', re.sub(r'(?m)^            exit 1\n(          fi)', r'\1', y, count=1)),
+        '演练期红而器红⛔红（器之红作意之红）': ('演练.yml', y.replace(' || { [ "$QI" = 红 ] && [ -n "$YIN" ]; }', '')),
+        '演练判未跑⛔记未判': ('演练.yml', y.replace('[ -n "${GUO:-}" ] || YIN="${YIN:-未判}"', 'true')),
+        'autopush 报⛔注': ('autopush.yml', a.replace('          python3 工具/推报.py --注 "$D"', '          true')),
+        'autopush 报⛔摘': ('autopush.yml', a.replace('python3 工具/推报.py --摘 "$D" >> "$GITHUB_STEP_SUMMARY"', 'true')),
+        'autopush ⛔冲突之档': ('autopush.yml', a.replace(' --冲突 "${CHONG:-}"', '')),
+        '片⛔片注': ('gate.yml', g.replace('python3 工具/推报.py --片注 "$O/shard$K.json" --rc "$rc"', 'exit "$rc" #')),
     }
     错 = [k for k, (n, v) in 坏形.items() if v == 诸[n] or not 验乙(dict(诸, **{n: v}), 钩)]
     T('②之五 乙形诸改坏（%d 形）各红%s' % (len(坏形), ('：未红 ' + '、'.join(错)) if 错 else ''), not 错)
@@ -1668,7 +1990,7 @@ def 自测():
       all(o[k] == (1, False, '') for k in ('挪章', '删章', '挪治', '主＋挪章')) and all(o[k][:2] == (0, False) for k in ('同章', '章＋新治', '删治')))
     # ④乙形诸 workflow 之真跑（桩之全测载真 全测、全测并、推报、存底；裸库）
     import concurrent.futures as _cf
-    景们 = ('成', '器红', '红', '逾', '拒', '片崩', '章', '主动', '重派尽', '中已在', '演', '演红', '演推', '省败', '懒败')
+    景们 = ('成', '器红', '红', '逾', '拒', '片崩', '章', '主动', '重派尽', '中已在', '演', '演红', '演推', '省败', '懒败', '冲突', '演对照', '演对照冲突')
 
     def 演一(景):
         t = tempfile.mkdtemp(prefix='推报演_')
@@ -1786,6 +2108,37 @@ def 自测():
     e = 演['演推']
     T('④之十三 演练（推 备份/演/<名>）：名去前缀、所演即其树、果「过」%s' % 示(e), (e.get('演报') or {}).get('果') == '过'
       and e['演报'].get('ref') == 演之前缀 + '试一' and not e['T在主'])
+    # W908 环4：观（summary、注）、片注、冲突之档、演之期、运营之卡之调
+    e = 演['成']
+    T('④之十七〔W908 环4〕成：报步 summary 书果（推报 --摘）、运营之卡（工具/运营卡.py）随本跑之报同一 --落 入 备份/报（报/卡.json·流俱、算於）%s' % 示(e),
+      '### ✓ 推 %s：成' % e.get('R') in e.get('印', '') and set(('autopush', 'gate', '巡', '演练')) <= set((e.get('卡') or {}).get('流') or {})
+      and re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', str((e.get('卡') or {}).get('算於'))) and '### 运营卡' in e.get('印', ''))
+    e = 演['器红']
+    T('④之十八〔W908 环4〕只器之红：片 ::warning 而 rc 0（片之 job 绿·gate 绿）、判仍成而报带器红（判归并判）%s' % 示(e),
+      '::warning title=片' in e.get('印', '') and '::error title=片' not in e.get('印', '') and (e.get('果') or {}).get('gate', {}).get('result') == 'success'
+      and 报合(e, '成') and e['报'].get('器红') == ['桩器乙'])
+    e = 演['红']
+    T('④之十九〔W908 环4〕读者可见之红：片 ::error（字数闸）而 job 红；报步 ::error 注实因（推·<枝> 红）%s' % 示(e),
+      '::error title=片' in e.get('印', '') and '字数闸' in e.get('印', '') and (e.get('果') or {}).get('gate', {}).get('result') == 'failure'
+      and ('::error title=推·%s 红' % e.get('R')) in e.get('印', ''))
+    e = 演['冲突']
+    T('④之二十〔W908 环4〕真冲突：备候出冲突之档（chong）→ 报「败·merge」带冲突（a.txt）、summary 与注书之；⛔降级全取（全取亦冲突）%s' % 示(e),
+      报合(e, '败') and e['报'].get('因') == 'merge' and e['报'].get('冲突') == ['a.txt'] and not e.get('计') and not e['T在主']
+      and '冲突之档：`a.txt`' in e.get('印', '') and ('::error title=推·%s 败（因 merge）::冲突之档 a.txt' % e.get('R')) in e.get('印', '')
+      and '省取降级' not in e.get('印', ''))
+    e1, e2, e3 = 演['演'], 演['演红'], 演['演对照']
+    jr = lambda e: ((e.get('果') or {}).get('report') or {}).get('result')
+    T('④之二一〔W908 环4·治17〕演之期：过而期过 → 绿；红而期过 → report 红（::error 果≠期）；对照（qi 红）红而期红 → 绿；报俱带期%s%s%s' % (示(e1), 示(e2), 示(e3)),
+      jr(e1) == 'success' and (e1.get('演报') or {}).get('期') == '过' and jr(e2) == 'failure' and (e2.get('演报') or {}).get('期') == '过'
+      and '::error title=演练·果≠期' in e2.get('印', '') and jr(e3) == 'success' and (e3.get('演报') or {}).get('果') == '红'
+      and (e3.get('演报') or {}).get('期') == '红')
+    e4 = 演['演对照冲突']
+    b4 = e4.get('演报') or {}
+    T('④之二二〔W908 环4·复核〕对照（qi 红）而备候真冲突（YIN=merge·器之红）→ report 红（::error 果≠期或器红）、报「红·因 merge」期作过而期之原 红、'
+      '红行首「⛔期红而器红」——器之红⛔作意之红（旧 sha 之对照与今主并而冲突即此）%s' % 示(e4),
+      jr(e4) == 'failure' and b4.get('果') == '红' and b4.get('因') == 'merge' and b4.get('期') == '过' and b4.get('期之原') == '红'
+      and str((b4.get('红') or [''])[0]).startswith('⛔期红而器红（因 merge）') and '::error title=演练·果≠期或器红' in e4.get('印', '')
+      and '（原期 红·器之红⛔作意中之红）' in e4.get('印', '') and not e4.get('计') and not e4.get('T在主'))
     # 1117 GitHub 化之审·F（法用#闸取仓之速）：省取（partial clone）与其降级
     省 = re.search(r'filter: (\S+)', 诸['gate.yml'])
     省 = 省.group(1) if 省 else ''
@@ -1888,16 +2241,35 @@ if __name__ == '__main__':
         印 = _读印(_参(a, '--印'))
         d = 成报(_参(a, '--ref'), _参(a, '--sha'), _参(a, '--果', '败'), 印, _参(a, '--主'), _参(a, '--跑'), _参(a, '--因'), _参(a, '--试', '0') or 0,
                候=_参(a, '--候'), 判=_读json(_参(a, '--判')) if _参(a, '--判') else None,
-               演=_读演之印(_参(a, '--演')) if _参(a, '--演') else None)
+               演=_读演之印(_参(a, '--演')) if _参(a, '--演') else None, 冲突=_冲突之参(_参(a, '--冲突')))
         j, x = 写(d, 印, _参(a, '--出', '.'))
         print('✓ 报：%s（%s）' % (j, d['果']))
         sys.exit(0)
     if '--写演' in a:
         印 = _读印(_参(a, '--印'))
         d = 成演报(_参(a, '--名'), _参(a, '--ref'), _参(a, '--sha'), _参(a, '--果', '红'), 印, _参(a, '--跑'), _参(a, '--因'), _参(a, '--候'),
-                 _读json(_参(a, '--判')) if _参(a, '--判') else None)
+                 _读json(_参(a, '--判')) if _参(a, '--判') else None, 期=_参(a, '--期', '过'))
         print('✓ 演报：%s（%s）' % (写演(d, 印, _参(a, '--出', '.')), d['果']))
         sys.exit(0)
+    if '--摘' in a:
+        print(摘(目之报(_参(a, '--摘', '.'))))
+        sys.exit(0)
+    if '--注' in a:
+        print('\n'.join(注(目之报(_参(a, '--注', '.')))))
+        sys.exit(0)
+    if '--片注' in a:
+        try:
+            行, rc = 片注(_参(a, '--片注'), _参(a, '--rc', '0'), _参(a, '--名'))
+        except Exception as e:                       # 注之器崩⛔改片之色：照原 rc
+            行, rc = ['::warning title=片注崩::%s' % _注之文(e)], int(_参(a, '--rc', '0') or 0)
+        print('\n'.join(行))
+        if 行 and os.environ.get('GITHUB_STEP_SUMMARY'):
+            try:
+                open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8').write(
+                    '- 片 %s：%s（rc %s → %d）\n' % (_参(a, '--名'), '；'.join(re.sub(r'^::\w+ title=[^:]*::', '', x) for x in 行)[:600], _参(a, '--rc', '0'), rc))
+            except OSError:
+                pass
+        sys.exit(rc)
     if '--落' in a:
         ok, 语 = 落(_参(a, '--落'), _参(a, '--信', '报'))
         print(语)

@@ -3264,6 +3264,32 @@ def chk_zijinhua():
     return True, '%s/%s 全通' % (m.group(1), m.group(2))
 
 
+def chk_tixi_zongtu():
+    """体系总图（1119 作者令「体系……分工……最完美地呈现」「做出来的都执行和用起来」·法用#体系总图·W909）：`工具/体系总图.py --自测` 全通、
+    `--验`：档旧只 ⚠（唯封版 --後 重写·写者唯一·坑63 总编辑⛔手跑入主；下一封版即随）；③用之红（器之机判未用、W908 名单之死而无治、逾 W908 之限）
+    与析崩（rc 1：「⛔ 析崩」之行）即红。器红·⛔读者可见。"""
+    r = run('体系总图·自测', ['工具/体系总图.py', '--自测'], timeout=300, 带码=True)
+    if r is None:
+        return False, '自测运行失败（崩或逾时）'
+    out, rc = r
+    m = re.search(r'体系总图·自测 (\d+)/(\d+)', out)
+    if rc != 0 or not m or m.group(1) != m.group(2):
+        return False, '自测 %s' % (('%s/%s' % m.groups()) if m else '未见其数')
+    r2 = run('体系总图', ['工具/体系总图.py', '--验'], timeout=120, 带码=True)
+    if r2 is None:
+        return False, '验运行失败（崩或逾时）'
+    out2, rc2 = r2
+    if '体系总图·验' not in out2:
+        return False, '器未出声（无「体系总图·验」之头）'
+    红 = [x.strip() for x in out2.split('\n') if x.strip().startswith('⛔ ③')]
+    崩 = [x.strip() for x in out2.split('\n') if x.strip().startswith('⛔ 析崩')]   # 析崩即红（器之码坏、囤灰闸载不得、末章不得、名单之块与上文异）
+    if 红 or 崩 or rc2 != 0:
+        return False, '用之红 %d、析崩 %d：%s' % (len(红), len(崩), (崩 + 红 or ['验红 rc=%d' % rc2])[0][:150])
+    旧 = any(x.strip().startswith('⚠ 档旧') for x in out2.split('\n'))
+    警 = sum(1 for x in out2.split('\n') if x.strip().startswith('⚠'))
+    return True, '自测 %s/%s｜验%s' % (m.group(1), m.group(2), ('：图待下一封版随（⚠ %d）' % 警) if 旧 else ('绿' + ('｜⚠ %d' % 警 if 警 else '')))
+
+
 def chk_jinhuashu():
     """进化树（1119 作者令「进化路线·进化树……认认真真保存在 GitHub 的主线」·法用#进化树）：`工具/进化树.py --自测` 全通、`--验`：
     ①档在、④「截至」为 HEAD 之祖且 git 之部以其史再生逐字同——红（谱被篡、截至悬空）；②缺节、③账之部未随三账——只 ⚠（谱唯封版 --後 --随
@@ -4183,6 +4209,7 @@ def 诸项(quick):
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))
         items.append(('进化链', chk_jinhualian))
+        items.append(('体系总图', chk_tixi_zongtu))    # ★1119 作者令·体系总图（法用#体系总图·W909）：一件一行、用之审之红（器红级）；图旧只 ⚠·唯封版重写
         items.append(('进化树', chk_jinhuashu))         # ★1119 作者令·进化树（法用#进化树）：谱随三账、截至为 HEAD 之祖（谱旧只 ⚠·唯封版重写）
         items.append(('负测·上瘾四问', chk_shangyin))
         items.append(('负测·造章令', chk_zaozhang_ling))

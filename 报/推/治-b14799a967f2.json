@@ -1,0 +1,25 @@
+{
+ "ref": "治-b14799a967f2",
+ "sha": "b14799a967f2aafbb3a928a170b486d24ed62938",
+ "果": "成",
+ "红": [],
+ "main_after": "b14799a967f2aafbb3a928a170b486d24ed62938",
+ "时": "2026-11-20T11:08:58Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44724742839",
+ "因": "",
+ "试": 0,
+ "器红": [],
+ "逾": [],
+ "候": "b14799a967f2aafbb3a928a170b486d24ed62938",
+ "片": {
+  "数": 3,
+  "秒": {
+   "1": 83.41,
+   "2": 97.36,
+   "3": 83.89
+  }
+ },
+ "免": [
+  "接力"
+ ]
+}

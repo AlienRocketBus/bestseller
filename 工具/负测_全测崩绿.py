@@ -6,7 +6,8 @@
    chk_grand_audit／chk_huixiu／chk_duiwei／chk_object_roll_all 七项，皆只在印里找「⛔」或某个数——
    ★★★以一段 traceback 灌之，旧式 run()（原样返 stdout＋stderr）之下 **7/7 返 True**。
    ⛔1027：chk_huixiu、chk_duiwei 随回修、对位汰；换入 chk_outside_voice（旧式亦只认其数——今补索其自印之头），今六项。
-★★★★而一份在旧式下也全过的测就是陪跑（令§六③）——**故其要害在①：旧式回灌须六项俱绿，方证此洞是真的。**
+   ⛔1119 W908 环7：chk_two_ledger 随 两册对限 废（裁七），今五项。
+★★★★而一份在旧式下也全过的测就是陪跑（令§六③）——**故其要害在①：旧式回灌须 HOOKS 诸项（K 项）俱绿，方证此洞是真的。**（〔1119 W908 环7〕旧书「六项」——项数随 HOOKS 增减，⛔写死其数）
 ★★★★★另测第11条：旧式超时以 SIGKILL 杀子进程，子进程之 finally 不跑——负测在真仓库上改的档留在盘上。
 """
 import os as _o, sys as _s
@@ -25,7 +26,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TB = ('Traceback (most recent call last):\n  File "工具/大问表.py", line 1, in <module>\n'
       "    import nothing_here\nModuleNotFoundError: No module named 'nothing_here'\n")
-HOOKS = ('chk_big_questions', 'chk_person_ledger', 'chk_two_ledger', 'chk_grand_audit',
+HOOKS = ('chk_big_questions', 'chk_person_ledger', 'chk_grand_audit',
          'chk_outside_voice', 'chk_object_roll_all')
 K = len(HOOKS)
 

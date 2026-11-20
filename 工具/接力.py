@@ -101,13 +101,23 @@ def 续跑末步():
     p = os.path.join(ROOT, '_任务流.json')
     try:
         d = json.load(open(p, encoding='utf-8'))
-        步 = d.get('步') or []
-        if not 步:
-            return None
-        import calendar
-        return calendar.timegm(time.strptime(步[-1].get('时', ''), '%Y-%m-%d %H:%M:%S'))
     except Exception:
         return None
+    return 末步之时(d.get('步') or [])
+
+
+def 末步之时(步):
+    """〔1119 W908 环7〕续跑末一步之时（秒·UTC）——**略过存底之流水**（照 自走.判锁滞：存底流水不算段）。
+    旧取 步[-1]：存底每数分一笔，席停而存底照记，乙路遂以存底之刻为「活在动」（续跑被存底之流水蒙），空转报不出。→ 秒｜None。"""
+    import calendar
+    for 笔 in reversed(步):
+        if str((笔 or {}).get('事') or '').startswith('存底'):
+            continue
+        try:
+            return calendar.timegm(time.strptime(笔.get('时', ''), '%Y-%m-%d %H:%M:%S'))
+        except Exception:
+            return None
+    return None
 
 
 _末锁坐 = ''
@@ -380,6 +390,14 @@ def 自测():
     T('㉔心跳先取云端之锁、读不出方退本地（1022：写书之坐在他机，本机之档陈即假断流）',
       '_hb._远()' in _段 and _段.index('_hb._远()') < _段.index("'_心跳.json'"))
     T('㉕锁为他机之坐所持⛔判空转（本机无其版本目录）', 'if 有人 and 章 and not 他机:' in _src)
+    # ㉖〔1119 W908 环7〕续跑末步略过存底之流水（照 自走.判锁滞）：席停而存底照记，⛔以存底之刻充「活在动」
+    _步 = [{'事': '313·起草', '时': '2026-11-19 10:00:00'}, {'事': '存底·自动', '时': '2026-11-19 11:30:00'},
+          {'事': '存底', '时': '2026-11-19 11:40:00'}]
+    import calendar as _cal
+    T('㉖续跑末步略过存底之流水：末笔为存底者取其前之真步；全为存底／空／时坏 → None',
+      末步之时(_步) == _cal.timegm(time.strptime('2026-11-19 10:00:00', '%Y-%m-%d %H:%M:%S'))
+      and 末步之时(_步[1:]) is None and 末步之时([]) is None and 末步之时([{'事': '甲', '时': '坏'}]) is None,
+      repr(末步之时(_步)))
 
     # ★★1117 H 审（法用#片去活态·审者变异所逮）：GitHub 片闸免「接力」之真跑後，其守唯本自测——而上诸格俱 印=False，
     #   **印之块（查() 之末）与真跑之路一行未跑**：变异「print('  ✓ 接上了。' % 下)」接力即崩，旧自测照绿。

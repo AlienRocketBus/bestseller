@@ -8,6 +8,7 @@
 
 待（1023 立·作者令「写完第410章，然后大审完之後，先暂停」）：令可带 `"待": {"大审至": N}`——大审之册至第 N 章
 （非空模子）成之前令「待」而不在（诸器照常走到那一步），成即自在（自走印【判】停、会话之守拦开会话、段序之守拦开庭开写）；
+★1120 又可带 `"待": {"段案至": S}`（作者令「把480章写完，把接下来的十章的情节设计出来之後……先保存」）——设定/段案/S-(S+9).md 在且 段案验 无坏之前不在，立而验过即在；
 ⛔凭某坐记得到点去立令（409、410 与大审俱由接力之会话自跑，无人盯）。
 
 防滥（⛔拿一个旗把闸关掉）：令须引作者原话（「令」含「作者令」），其「据」须指到入口档里真有「暂停令」三字之那一行；
@@ -82,7 +83,29 @@ def 在(root=ROOT):
             return False, '⛔待之「大审至」非章号——不认'
         if not 审至(至, root):
             return False, '待：大审之册至第%d章成即停（未到·诸器照常）——%s' % (至, str(d.get('令', ''))[:100])
+    if isinstance(待, dict) and 待.get('段案至') is not None:
+        try:
+            段 = int(待['段案至'])
+        except (TypeError, ValueError):
+            return False, '⛔待之「段案至」非章号——不认'
+        成, 由 = 段案已立(段, root)
+        if not 成:
+            return False, '待：第%d—%d章之段案立而验过即停（未到·诸器照常：%s）——%s' % (段, 段 + 9, 由, str(d.get('令', ''))[:100])
     return True, '暂停令在（立 %s·据 %s）：%s' % (d.get('立', ''), d.get('据', ''), str(d.get('令', ''))[:160])
+
+
+def 段案已立(段, root=ROOT):
+    """★1120 待之「段案至」：设定/段案/段-(段+9).md 在、且 段案验.验 无坏（与 段案验.py 同一把·⛔另判）→ (True, '')；否 → (False, 由)。
+    验坏者⛔算立（剧情庭照常可改段案而⛔被暂停所拦）。"""
+    p = os.path.join(root, '设定', '段案', '%d-%d.md' % (段, 段 + 9))
+    if not os.path.exists(p):
+        return False, '段案未立'
+    try:
+        import 段案验
+        坏 = 段案验.验(open(p, encoding='utf-8').read(), 段, 段 + 9)
+    except Exception as e:
+        return False, '段案验崩（%s）' % type(e).__name__
+    return (not 坏), ('段案验坏 %d 条' % len(坏) if 坏 else '')
 
 
 def 审至(至, root=ROOT):
@@ -336,6 +359,28 @@ def 自测():
         finally:
             _大.空模子 = 原空
         共 += 1; ok += (r待[0] is False and '待' in r待[1] and r空[0] is False and r成[0] is True)   # 待：407 册在、410 空模子⛔算、410 成即在
+        # 1120 待：段案至 S（作者令「把480章写完，把接下来的十章的情节设计出来之後……先保存」）——设定/段案/S-(S+9).md 在且 段案验.验 无坏方在
+        import 段案验 as _验
+        原验 = _验.验
+        w({'立': 'x', '令': '作者令：段案立毕即停', '据': '设定/交.md:2', '解': None, '待': {'段案至': 481}})
+        r段无 = 在(t)
+        os.makedirs(os.path.join(t, '设定', '段案'), exist_ok=True)
+        open(os.path.join(t, '设定', '段案', '481-490.md'), 'w', encoding='utf-8').write('## 481')
+        try:
+            _验.验 = lambda 文, a, b, 日=None, 厚=None: ['第481章缺魂路'] if (a, b) == (481, 490) else []
+            r段坏 = 在(t)
+            _验.验 = lambda 文, a, b, 日=None, 厚=None: [] if (a, b) == (481, 490) else ['错段']
+            r段成 = 在(t)
+        finally:
+            _验.验 = 原验
+        共 += 1; ok += (r段无[0] is False and '段案' in r段无[1] and r段坏[0] is False and '段案' in r段坏[1] and r段成[0] is True)   # 段案无／验坏 → 待（照常）；验过 → 在
+        w({'立': 'x', '令': '作者令：段案立毕即停', '据': '设定/交.md:2', '解': None, '待': {'段案至': '四八一'}})
+        try:
+            _验.验 = lambda 文, a, b, 日=None, 厚=None: []      # 段案俱过亦⛔停：号坏即不认
+            r号坏 = 在(t)
+        finally:
+            _验.验 = 原验
+        共 += 1; ok += r号坏[0] is False and '段案至' in r号坏[1]            # 段案至之号坏⛔认（⛔误停）
         w({'立': 'x', '令': '作者令：审完即停', '据': '设定/交.md:2', '解': None, '待': {'大审至': 'x'}})
         共 += 1; ok += 在(t)[0] is False                                   # 待之章号坏⛔认（⛔误停）
         with contextlib.redirect_stdout(io.StringIO()):

@@ -24,9 +24,13 @@
      报（同 sha）为红／拒／败即印其红返 3；逾限返 2（GitHub 或停摆 → `--直`）。
   ⑧ （1117·法用#停钩空转）交成即本地泊於「治-<sha12>」（推报.泊：平台 Stop 钩以 origin/<当前枝> 量未推，泊後 0、⛔每回合空转）；
      `--候` 之快进、枝正 俱先归主枝；泊不成即照旧（其钩照报）。
+  ⑨ （W908 环6·裁五·纸证之棘轮之拦处）交 治-* 前跑 `法用之守 --纸证`：数＞底、本推改其源（法用册、常令、总章）、⛔含封版之笔、
+     且本推增其数（HEAD 之树之数 ＞ max(底, 分叉点之树之数)·`--纸证 --于 <版>`）→ rc 3 ⛔交——拦总编辑之纸；`--强` 越之而记（.git/推.log）。
+     余俱只印（⛔拦写书）：未改其源、含「封版#N」之笔（写书之坐之推：章之纸由章封 ⚠）、逾底係前推所遗（本推未增）、底未立、算不得。
 
 用法：
-  python3 工具/推.py                  # 交 GitHub：推 治-<sha12>（後台跑亦可）→ 印候之令
+  python3 工具/推.py                  # 交 GitHub：推 治-<sha12>（後台跑亦可）→ 印候之令｜rc 3：纸证之闸 ⛔交
+  python3 工具/推.py --强             # 同上，纸证逾底亦交（越而记 .git/推.log）
   python3 工具/推.py --候 <sha> [分]  # 零 token 候（run_in_background）：0 主枝已含（已快进）｜3 报红／拒／败｜2 逾限（默九十分）
   python3 工具/推.py --直             # 兜底：直推主枝（本地 pre-push 全闸）——只於报「拒」或 GitHub 停摆
   python3 工具/推.py --状             # 有无推送在跑、本地超前几笔
@@ -265,6 +269,63 @@ def 装并器(root=ROOT):
         print('⚠ 账并 --装 不成（退回内建之并）：%s' % e)
 
 
+纸证之源 = ('设定/法用册.json', '设定/00_作者常令_不停之律.md', '00_总章.md')   # 纸证之数之所读：法、待（册）、令（常令）、条（总章）
+封版之笔 = re.compile(r'封版#\d+')                                             # 写书之坐之封版之提交（「…封版（造式二代·封版#N）…」）
+
+
+def _纸数于(root, 版):
+    """`法用之守 --纸证 --于 <版>`：某版之树之纸证之数 → int｜None（算不得、崩、逾时）。"""
+    try:
+        r = _跑([sys.executable, os.path.join(root, '工具', '法用之守.py'), '--纸证', '--于', 版], root, timeout=60)
+    except subprocess.TimeoutExpired:
+        return None
+    m = re.search(r'纸证之数 (\d+)', ([l for l in (r.stdout or '').split('\n') if l.strip()] or [''])[-1])
+    return int(m.group(1)) if r.returncode == 0 and m else None
+
+
+def 纸证之闸(root=ROOT, 强=False, 基=None):
+    """〔W908 环6·裁五〕交 治-* 前跑 `法用之守 --纸证`（照 装并器 之式）→ (rc, 语)。只拦本推所增之纸（拦总编辑之纸·⛔拦写书）：
+    其末行「⛔ 纸证之数」（数＞底），且本推（与 origin/<主枝> 分叉以来）改其源（纸证之源）、⛔含封版之笔、
+    HEAD 之树之数 ＞ max(底, 分叉点之树之数)（同尺：俱 --纸证 --于 <版>）→ (3, 语) ⛔交；强（--强）→ (0, 语) 越之、记 .git/推.log。
+    只印 (0, ⚠语)：分叉点不得；未改其源；含「封版#N」之笔（写书之坐之推——章所添之纸由章封 ⚠、⛔拦其後之治）；
+      本推未增（逾底係前推所遗：前坐 --强 越之、或主枝新令入而底未重立——合主後重立其底）；HEAD 未逾底（逾者係盘上未提交之纸）；二数算不得。
+    ✓、底未立（⚠）、算不得、崩、逾时、器缺 → (0, '') ⛔拦。"""
+    f = os.path.join(root, '工具', '法用之守.py')
+    if not os.path.exists(f):
+        return 0, ''
+    try:
+        r = _跑([sys.executable, f, '--纸证'], root, timeout=60)
+    except subprocess.TimeoutExpired:
+        return 0, '⚠ 纸证之闸：法用之守 --纸证 逾一分（⛔拦）'
+    末 = ([l.strip() for l in (r.stdout or '').split('\n') if l.strip()] or [''])[-1]
+    if not (r.returncode == 1 and 末.startswith('⛔ 纸证之数')):
+        return 0, ''
+    语 = 末[2:]
+    mb = _跑(['git', 'merge-base', 基 or 'refs/remotes/origin/' + 枝, 'HEAD'], root).stdout.strip()
+    if not mb:
+        return 0, '⚠ 纸证之闸：%s——分叉点不得，不辨本推添否（⛔拦）' % 语[:200]
+    改 = [x for x in _跑(['git', '-c', 'core.quotepath=off', 'diff', '--name-only', mb, 'HEAD', '--'] + list(纸证之源), root).stdout.split('\n') if x.strip()]
+    if not 改:
+        return 0, '⚠ 纸证之闸：%s——本推未改其源（%s），⛔拦（拦总编辑之纸、⛔拦写书）' % (语[:200], '、'.join(纸证之源))
+    封 = [x for x in _跑(['git', 'log', '--format=%s', mb + '..HEAD'], root).stdout.split('\n') if 封版之笔.search(x)]
+    if 封:
+        return 0, '⚠ 纸证之闸：%s——本推含封版之笔（%s：写书之坐之推），⛔拦（章封只 ⚠）' % (语[:200], 封版之笔.search(封[0]).group(0))
+    今, 前 = _纸数于(root, 'HEAD'), _纸数于(root, mb)
+    if 今 is None or 前 is None:
+        return 0, '⚠ 纸证之闸：%s——HEAD／分叉点之数算不得（%s／%s），不辨本推增否（⛔拦）' % (语[:200], 今, 前)
+    底 = re.search(r'（底 (\d+)）', 末)
+    if 今 <= int(底.group(1) if 底 else 0):
+        return 0, '⚠ 纸证之闸：%s——HEAD 之树之数 %d 未逾底（逾者係盘上未提交之纸），⛔拦' % (语[:200], 今)
+    if 今 <= 前:
+        return 0, ('⚠ 纸证之闸：%s——本推未增其数（分叉点 %s %d → HEAD %d）：逾底係前推所遗（前坐 --强 越之、或主枝新令入而底未重立），⛔拦；'
+                   '底宜重立（手改册「纸证」之底为今数、记「MMDD 合主重立：N」一行·执行之制 治2(e)）' % (语[:200], mb[:9], 前, 今))
+    if 强:
+        _记(root, '纸证越底（--强）：%s｜本推 %d → %d｜改 %s' % (语[:300], 前, 今, '、'.join(改)))
+        return 0, '⚠ 纸证之闸·--强 越之（已记 .git/推.log）：%s' % 语[:200]
+    return 3, ('⛔ 纸证之闸（W908 裁五·拦总编辑之纸）：%s\n  本推增纸证 %d → %d（改 %s）——新添之法／待／令须带行为之证'
+               '（详 python3 工具/法用之守.py --纸证）；确要越之：python3 工具/推.py --强（越而记）' % (语[:300], 前, 今, '、'.join(改)))
+
+
 def 直推(root=ROOT, 推法=None, 最多=5):
     """兜底（--直·旧法）：直推主枝、本地 pre-push 全闸。→ 0 推平｜1 被拦｜2 已有人在推（已登记待推）。"""
     待 = os.path.join(_git目录(root), '推.待')
@@ -370,9 +431,9 @@ def 泊之(名, root=ROOT):
     return '  ' + 语 if ok else '  ⚠ ' + 语.lstrip('·⚠ ')
 
 
-def 交(root=ROOT, 交法=None, 最多=5):
+def 交(root=ROOT, 交法=None, 最多=5, 强=False):
     """默（1027 坑51）：推 HEAD 於 治-<sha12>（暂存之枝：pre-push 免闸），GitHub autopush 分片而闸、过即并入主枝（1027 坑54）。
-    → 0 已交（或 HEAD 已在主枝）｜1 被拦（枝歪、速检红、推不上）｜2 已有人在推（已登记待推）。⛔本地全测。"""
+    → 0 已交（或 HEAD 已在主枝）｜1 被拦（枝歪、速检红、推不上）｜2 已有人在推（已登记待推）｜3 纸证之闸 ⛔交（W908 环6·强 越之）。⛔本地全测。"""
     待 = os.path.join(_git目录(root), '推.待')
     锁 = 取锁(root)
     if 锁 is None:
@@ -395,6 +456,12 @@ def 交(root=ROOT, 交法=None, 最多=5):
                     print('⛔ 速检红（未交 GitHub）——先治：\n%s' % '\n'.join(速红))
                     _记(root, '速检红：' + '｜'.join(速红)[:500])
                     return 1
+                纸rc, 纸语 = 纸证之闸(root, 强)      # 〔W908 环6·裁五〕数＞底而本推改其源即 ⛔交（--强 越而记）
+                if 纸语:
+                    print(纸语)
+                if 纸rc:
+                    _记(root, '纸证之闸 ⛔交：' + 纸语.split('\n')[0][:300])
+                    return 纸rc
                 _跑([sys.executable, os.path.join(ROOT, '工具', '存底.py'), '--存'], root, timeout=280)
                 装并器(root)
             sha = _跑(['git', 'rev-parse', 'HEAD'], root).stdout.strip()
@@ -429,7 +496,7 @@ def 交(root=ROOT, 交法=None, 最多=5):
     finally:
         锁.close()
         if os.path.exists(待) and 交法 is None:
-            return 交(root, 交法, 最多)
+            return 交(root, 交法, 最多, 强)
 
 
 def 候(sha, 限分=90, 隔=60, 查=None, 读=None, 进=None, 取=None, 今=time.time, 睡=time.sleep, root=ROOT):
@@ -613,7 +680,7 @@ def 自测():
                     and "已 = 已交之枝(sha, root) if 交法 is None else []" in open(os.path.abspath(__file__), encoding='utf-8').read())  # ⑯之二 同树已交（章标或治枝）⛔再交、印其候之令
     # ⑰默路交（⛔直推）、--直 方直推、--候 方候；直推仍走闸（⛔--no-verify）
     _主 = open(os.path.abspath(__file__), encoding='utf-8').read().rsplit("if __name__ == '__main__':", 1)[1]
-    共 += 1; ok += (_主.rstrip().endswith('rc = 交()\n    sys.exit(0 if rc in (0, 2) else 1)')
+    共 += 1; ok += (_主.rstrip().endswith("rc = 交(强=a == ['--强'])\n    sys.exit(rc if rc == 3 else 0 if rc in (0, 2) else 1)")
                     and "if a == ['--直']:\n        rc = 直推()" in _主 and "if a[:1] == ['--候']" in _主)
     # ⑱候之真取（临时裸库）：云端无 备份/报（首报未推）而主枝已含 → 默之 取／查 照见主枝、返 0（⛔同取全败而候满九十分）
     _r, _c = tempfile.mkdtemp(), tempfile.mkdtemp()
@@ -720,6 +787,85 @@ def 自测():
     _wl = 取锁(_w); _wl在 = _wl is not None and os.path.exists(os.path.join(_wg, '推.lock')); _wl.close()
     共 += 1; ok += (_git目录(_w) == _wg and _wl在 and _git目录(t) == os.path.join(t, '.git')
                     and 枝正(_w, 交=True) is None and (枝正(_w) or '').startswith('  ✗ 枝正：git worktree'))
+    # ㉒（W908 环6·裁五）纸证之闸：临时之仓、桩之 法用之守（--纸证、--纸证 --于 <版> 之印与 rc 照真器之约；其数＝100＋待之数）——
+    #   只拦本推所增之纸：逾底、改其源、无封版之笔、HEAD 之数＞分叉点之数 → 3（印 --强 之路）；--强 → 0、记 .git/推.log；
+    #   只印 ⚠、rc 0：未改其源；本推未增（〔复核〕回放二：前推 --强 越底入主，写书之坐之治添带真证之法）；
+    #   含「封版#N」之笔（〔复核〕回放一：章封添纸〔--验 只 ⚠〕，其後报红而正文之治）；HEAD 未逾底（盘上未提交之纸）；二数算不得；分叉点不得。
+    #   ✓／底未立／崩 → (0, '')。交() 之默路真调之（速检之後、存底之前）→ 3、⛔交、记之
+    _z = tempfile.mkdtemp()
+    _gz = lambda *a: subprocess.run(['git'] + list(a), cwd=_z, capture_output=True, text=True, env=_e)
+    os.makedirs(os.path.join(_z, '工具')); os.makedirs(os.path.join(_z, '设定'))
+    open(os.path.join(_z, '工具', '法用之守.py'), 'w', encoding='utf-8').write('''import sys, os, json, subprocess
+a = sys.argv[1:]
+if '--纸证' not in a:
+    print('✓ 他'); raise SystemExit(0)
+if os.path.exists(os.path.join('.git', '桩崩')):
+    raise ValueError('崩')
+if '--于' in a:
+    if os.path.exists(os.path.join('.git', '桩于崩')):
+        print('⚠ 纸证之数 ?（算不得）'); raise SystemExit(2)
+    s = subprocess.run(['git', 'show', a[a.index('--于') + 1] + ':设定/法用册.json'], capture_output=True, text=True).stdout
+else:
+    s = open(os.path.join('设定', '法用册.json'), encoding='utf-8').read()
+册 = json.loads(s)
+数, 底 = 100 + len(册.get('待') or []), (册.get('纸证') or {}).get('底')
+if 底 is None:
+    print('⚠ 纸证之数 %d（待 %d）（底 未立）｜纸证之棘轮未立（只印）' % (数, 数 - 100)); raise SystemExit(0)
+if 数 > 底:
+    print('⛔ 纸证之数 %d（待 %d）（底 %d）｜纸证之数 %d ＞ 底 %d——新添之法／待／令／条须带行为之证' % (数, 数 - 100, 底, 数, 底))
+    raise SystemExit(0 if '--于' in a else 1)
+print('✓ 纸证之数 %d（待 %d）（底 %d）｜纸证之数 %d ＝ 底 %d' % (数, 数 - 100, 底, 数, 底))
+''')
+    def _册(提=None, **册):
+        open(os.path.join(_z, '设定', '法用册.json'), 'w', encoding='utf-8').write(json.dumps(册, ensure_ascii=False) + '\n')
+        if 提:
+            _gz('add', '-A'); _gz('commit', '-q', '-m', 提)
+    def _正文(字, 提):
+        open(os.path.join(_z, 'a.md'), 'w', encoding='utf-8').write(字 + '\n'); _gz('add', '-A'); _gz('commit', '-q', '-m', 提)
+    _入主 = lambda: _gz('update-ref', 'refs/remotes/origin/' + 枝, 'HEAD')
+    _gz('init', '-q', '-b', 枝)
+    _册(None, 纸证={'底': 101}, 待=['x']); _正文('甲', '基'); _入主()
+    _平 = 纸证之闸(_z)                                                          # 101 ＝ 底
+    _册('总编辑之纸（--强 越底而入主·前推）', 纸证={'底': 101}, 待=['x', 'y']); _入主()
+    _正文('乙', '写书之治（正文）'); _未改 = 纸证之闸(_z)                          # 102 ＞ 101 而本推未改其源
+    _册('写书之治：添带真证之法（数不升）', 纸证={'底': 101}, 待=['x', 'y'], 法=['真'])
+    _未增 = 纸证之闸(_z)                                                        # 回放二：改其源而数 102 → 102
+    _册('第475章《某》封版（造式二代·封版#475）', 纸证={'底': 101}, 待=['x', 'y', 'z'], 法=['真'])
+    _正文('丙', '写书之治（报红後·正文）'); _含封 = 纸证之闸(_z)                   # 回放一：章封添纸 102 → 103、其後正文之治
+    _入主()                                                                     # 章与其治已入主
+    _册('总编辑添待（纸）', 纸证={'底': 101}, 待=['x', 'y', 'z', 'w'], 法=['真'])
+    _拦, _无基 = 纸证之闸(_z), 纸证之闸(_z, 基='refs/remotes/origin/无此枝')       # 本推 103 → 104
+    open(os.path.join(_z, '.git', '桩于崩'), 'w').close(); _于崩 = 纸证之闸(_z); os.remove(os.path.join(_z, '.git', '桩于崩'))
+    with _cl.redirect_stdout(_io.StringIO()) as _o:
+        _交rc = 交(_z)
+    _强 = 纸证之闸(_z, 强=True)
+    _志 = open(os.path.join(_z, '.git', '推.log'), encoding='utf-8').read() if os.path.exists(os.path.join(_z, '.git', '推.log')) else ''
+    _册(None, 纸证={'底': 104}, 待=['x', 'y', 'z', 'w', 'v'], 法=['真']); _盘纸 = 纸证之闸(_z)   # 盘上未提交之纸 105 ＞ 104，HEAD 之树 104 ⛔逾
+    _册(None, 待=['x']); _未立 = 纸证之闸(_z)
+    open(os.path.join(_z, '.git', '桩崩'), 'w').close(); _崩 = 纸证之闸(_z)
+    _sh.rmtree(_z, ignore_errors=True)
+    try:                                                                         # 真器之约：--纸证 之末行与 rc、--于 之数（今仓之 HEAD）
+        import 法用之守 as _法
+        _约 = _法.纸证之印(102, [], {'纸证': {'底': 101}}).startswith('⛔ 纸证之数') and _法.纸证之判(101, {'纸证': {'底': 101}})[0] == '✓' \
+            and "print(纸证之印(数, 分, 册)); sys.exit(1 if 纸证之判(数, 册)[0] == '⛔' else 0)" in open(_法.__file__, encoding='utf-8').read() \
+            and isinstance(_纸数于(ROOT, 'HEAD'), int) and _纸数于(ROOT, '无此版·甲') is None
+    except Exception as e:
+        print('  ✗ 法用之守 读不出：%s' % e)
+        _约 = False
+    _交体 = open(os.path.abspath(__file__), encoding='utf-8').read().split('\ndef 交(')[1].split('\ndef ')[0]
+    _细 = {'平': _平 == (0, ''), '未改': _未改[0] == 0 and '本推未改其源' in _未改[1],
+          '未增': _未增[0] == 0 and '本推未增其数' in _未增[1] and '102 → HEAD 102' in _未增[1],
+          '含封': _含封[0] == 0 and '本推含封版之笔（封版#475' in _含封[1],
+          '拦': _拦[0] == 3 and '设定/法用册.json' in _拦[1] and '本推增纸证 103 → 104' in _拦[1] and 'python3 工具/推.py --强' in _拦[1],
+          '无基': _无基[0] == 0 and '分叉点不得' in _无基[1], '于崩': _于崩[0] == 0 and '算不得' in _于崩[1],
+          '盘纸': _盘纸[0] == 0 and 'HEAD 之树之数 104 未逾底' in _盘纸[1],
+          '交': _交rc == 3 and '⛔ 纸证之闸' in _o.getvalue() and '已交' not in _o.getvalue() and '纸证之闸 ⛔交' in _志,
+          '强': _强[0] == 0 and '越之' in _强[1] and '纸证越底（--强）' in _志 and '103 → 104' in _志,
+          '未立崩': _未立 == (0, '') and _崩 == (0, ''), '约': _约,
+          '序': _交体.index('速红 = 速检(root)') < _交体.index('纸证之闸(root, 强)') < _交体.index("'存底.py'")}
+    if not all(_细.values()):
+        print('  ✗ ㉒ 纸证之闸：%s' % '、'.join(k for k, v in _细.items() if not v))
+    共 += 1; ok += all(_细.values())
     print('推·自测 %d/%d%s' % (ok, 共, ' 全通' if ok == 共 else ' ⛔未过'))
     return ok == 共
 
@@ -737,7 +883,7 @@ if __name__ == '__main__':
     if a == ['--直']:
         rc = 直推()
         sys.exit(0 if rc in (0, 2) else 1)
-    if a:
+    if a and a != ['--强']:
         print(__doc__); sys.exit(2)
-    rc = 交()
-    sys.exit(0 if rc in (0, 2) else 1)
+    rc = 交(强=a == ['--强'])
+    sys.exit(rc if rc == 3 else 0 if rc in (0, 2) else 1)

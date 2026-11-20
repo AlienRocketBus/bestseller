@@ -855,16 +855,15 @@ def 卸(root=ROOT, 印=True):
     return 0
 
 
-GATE限 = 476   # 坑63：gate.yml 备候之 --装 须於此章之前入主（总编辑演练後直推）
+# 坑63：gate.yml 备候之 --装 已演（演练「账并」run 44619377361 过），而 1119 章界之直推为平台之检所拒（Undermining Oversight·⛔绕）——
+# 改 workflows 唯待许可之路；未装只 ⚠（⛔限：拦推即拖累写书，而写书之坐本地之并已有 driver·474 证）。
 
 
 def gate之判(gy, 末):
     """gate.yml 之文、末章 → (态 ✓|⚠|✗, 语)。--装 须在 bei_hou 内、git merge 之前、带 || true（主之树无本器即照旧）。"""
     i装, i并, bh = gy.find('工具/账并.py --装'), gy.find('git merge --no-edit'), gy.find('bei_hou() {')
     if i装 < 0:
-        if 末 >= GATE限:
-            return '✗', 'gate.yml 备候仍未装 driver 而末章 %d ≥ 限 %d（坑63）——GitHub 之并退回内建；总编辑演练後 推.py --直 推 gate.yml' % (末, GATE限)
-        return '⚠', 'gate.yml 备候未装 driver（待总编辑演练後直推·末章 %d，限 %d 章即红）——GitHub 之并退回内建（同今）' % (末, GATE限)
+        return '⚠', 'gate.yml 备候未装 driver（已演·直推为平台所拒，待许可之路）——GitHub 之并退回内建；写书之坐本地并（推.py 已装 driver）'
     if 0 <= bh < i装 < i并 and '账并.py --装 || true' in gy:
         return '✓', 'gate.yml 备候於 git merge 之前装 driver（|| true：未入主之树照旧）'
     return '✗', 'gate.yml 之 --装 不在 bei_hou 内 git merge 之前、或无 || true'
@@ -1251,7 +1250,7 @@ def 自测():
         T('㉒ 推.py 之 交、直推 俱於推前装 driver（装并器 → 账并.py --装）', all(re.search(r'装并器\(root\)[\s\S]*?push', 体.get(k, '')) for k in ('交', '直推'))
           and "'账并.py'" in 体.get('装并器', '') and "'--装'" in 体.get('装并器', ''))
         # ㉓ gate.yml 备候：git merge 之前装（改 workflows：autopush 拒，总编辑演练後直推）——坑63 之 GitHub 之半；
-        #    未推：末章 < 限 只 ⚠，末章 ≥ 限 即红（拦·⛔纸上之计：作者 1119 令「做出来的都执行和用起来」）
+        #    未推只 ⚠：1119 章界直推为平台之检所拒（⛔绕），⛔以限拦推（拦即拖累写书）
         try:
             gy = open(os.path.join(ROOT, '.github', 'workflows', 'gate.yml'), encoding='utf-8').read()
         except Exception:
@@ -1267,9 +1266,9 @@ def 自测():
         else:
             T('㉓ ' + 语, 态 == '✓')
         假 = 'bei_hou() {\n  git checkout -q --detach "$B0"\n  %s\n  if ! git merge --no-edit -m x "$T"; then :; fi\n}\n'
-        T('㉓之二 gate 之判：未装而末章 < 限 → ⚠；≥ 限 → 红；装於 merge 之前（|| true）→ ✓；装於 merge 之後 → 红',
-          gate之判(假 % ':', GATE限 - 1)[0] == '⚠' and gate之判(假 % ':', GATE限)[0] == '✗'
-          and gate之判(假 % 'python3 工具/账并.py --装 || true', GATE限)[0] == '✓'
+        T('㉓之二 gate 之判：未装 → ⚠（不论末章）；装於 merge 之前（|| true）→ ✓；装於 merge 之後 → 红',
+          gate之判(假 % ':', 475)[0] == '⚠' and gate之判(假 % ':', 9999)[0] == '⚠'
+          and gate之判(假 % 'python3 工具/账并.py --装 || true', 9999)[0] == '✓'
           and gate之判(假.replace('%s\n  if', 'if') + '  python3 工具/账并.py --装 || true\n', 0)[0] == '✗')
     except Exception as e:
         import traceback

@@ -1564,12 +1564,39 @@ def _比之文(文):
     return [l for l in (文 or '').split('\n') if not l.startswith(云记)]
 
 
+def 败图(根, 迹):
+    """器崩之最小之图：「截至第 N 章」（N＝正文之末章，以文件名之汉数计；⛔依囤灰闸——其或即崩之源）、⓪ 书器败与迹之末。"""
+    _数 = {'零': 0, '〇': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+
+    def 汉(t):
+        n, 段 = 0, 0
+        for ch in t:
+            if ch in _数:
+                段 = _数[ch]
+            elif ch in '十百千':
+                n += (段 or 1) * {'十': 10, '百': 100, '千': 1000}[ch]
+                段 = 0
+        return n + 段
+    末 = max([汉(m.group(1)) for f in glob.glob(os.path.join(根, '正文', '*.md'))
+             for m in [re.search(r'第([零〇一二两三四五六七八九十百千]+)章', os.path.basename(f))] if m] or [0])
+    尾 = '\n'.join((迹 or '').strip().split('\n')[-6:])
+    return ('# 体系总图（器败·最小之图）\n\n- 截至第 %d 章（正文之末章）；⛔ 器败：工具/体系总图.py 生图时崩——五部、一件一行、用之红俱缺；治器後由下一封版重生。\n\n'
+            '## ⓪ 源之鲜\n\n- ⛔ 器败：\n\n```\n%s\n```\n' % (末, 尾))
+
+
 def 写(根=None):
     """封版 --後 之步（写者唯一·坑63：总编辑⛔手跑入主）；rc 恒 0（⛔拦封），析崩只印——全测之格「体系总图」红之。"""
     根 = 根 or ROOT
-    文, 源, 件 = 生(根)
     p = os.path.join(根, 图名)
     os.makedirs(os.path.dirname(p), exist_ok=True)
+    try:
+        文, 源, 件 = 生(根)
+    except Exception:                    # 〔1119·法用#体系总图之行为之证〕器崩亦写最小之图——题照末章、⓪书器败；rc 1 而封版之步非必：⛔拦封
+        import traceback
+        with open(p, 'w', encoding='utf-8') as f:
+            f.write(败图(根, traceback.format_exc()))
+        print('⛔ 体系总图 器败——已写最小之图（截至末章、⓪书其迹）；治器後由下一封版重生')
+        return 1
     with open(p, 'w', encoding='utf-8') as f:
         f.write(文)
     计 = lambda 判: sum(1 for v in 件.values() if v['判'] == 判)
@@ -2012,6 +2039,16 @@ def 自测():
       源R['W908']['在'] and not 源R['W908']['误'] and len(W) >= 40 and set(源R['W908']['批'].values()) == {'甲', '乙'}
       and not [x for x in 源R['崩'] if 'W908' in x], str((源R['W908']['误'], 源R['W908']['数'])))
     T('⑱之五 真仓：析崩 0（囤灰闸 载得、末章得、诸器之码可析）', not 源R['崩'] and 源R['末章'] > 0, str(源R['崩'][:3]))
+    import tempfile as _tf, shutil as _sh
+    _d = _tf.mkdtemp(prefix='体系败_')
+    try:
+        os.makedirs(os.path.join(_d, '正文'))
+        for _nm in ('镇冢秘术_第四章_死局.md', '镇冢秘术_第四百七十六章_某.md'):
+            open(os.path.join(_d, '正文', _nm), 'w', encoding='utf-8').write('x')
+        _b = 败图(_d, 'Traceback\n  File x\nZeroDivisionError: 假')
+        T('⑳ 器崩之护（1119·法用#体系总图之行为之证）：败图「截至第 476 章」、⓪书器败与其迹（⛔依囤灰闸）', '截至第 476 章' in _b and '⛔ 器败' in _b and 'ZeroDivisionError' in _b, _b[:80])
+    finally:
+        _sh.rmtree(_d, ignore_errors=True)
     print('体系总图·自测 %d/%d%s' % (ok, ok + len(坏), ' 全通' if not 坏 else '｜未过：' + '；'.join(坏)))
     return not 坏
 

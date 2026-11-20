@@ -31,6 +31,14 @@ import glob
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 〔1120 坑64〕pre-push 钩中 git 传 GIT_DIR 诸变於子进程——负测之临时仓（git init、-C t commit、config）承之则写真仓：
+#   1120 章界之直推，真仓之 core.bare 被置 true、user 被置 t@t、所推之树被提交「x」三笔。库只由 ROOT 定（cwd），起即去之。
+try:
+    from 推报 import _定库之变 as _钩境
+except Exception:
+    _钩境 = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
+for _k in tuple(_钩境) + ('GIT_PREFIX',):
+    os.environ.pop(_k, None)
 ENV = dict(os.environ, ZM_STREAM=os.environ.get('ZM_STREAM', 'streamA-cli'))
 
 

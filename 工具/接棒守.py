@@ -1797,7 +1797,7 @@ def 自测():
     T('⑪之四 云巡：读旧言败即作无旧言（宁多唤⛔不唤）；哨 PR 不在即红；巡印每跑俱落（止亦落）',
       "旧 = []" in _段云 and '哨 PR' in _段云 and 'return 1' in _段云
       and _段云.index('落巡印(') < _段云.index('if rc == 0 and not 试'))
-    T('⑪之三 巡.yml：每五分之 cron、跑 --云巡、可写言（issues／pull-requests）、可推巡印（contents）；沙盒之 --巡 验巡印（rc 5）、GitHub 之 --巡⛔验；'
+    T('⑪之三 巡.yml：每五分之 cron、跑 --云巡、可写言（issues）、哨 PR 之言须 pull-requests 之写（1120 巡演 --试：只读即 403·⛔再收）、可推巡印（contents）；沙盒之 --巡 验巡印（rc 5）、GitHub 之 --巡⛔验；'
       '環（1117·cron 首一时零跑）：huan 之入、每巡取本 ref 之新、满分自派後继（dispatches 之 POST）、concurrency 巡环 排候、job 之限 355、'
       '再起之器认 run-name「巡环」、巡.yml 被停即止；rc 5 之印起環（"huan":"1"）',
       "cron: '*/5 * * * *'" in _流 and '接棒守.py --云巡' in _流 and 'issues: write' in _流 and 'pull-requests: write' in _流

@@ -3317,6 +3317,32 @@ def chk_jinhuashu():
                                      ('｜⚠ %d' % 警) if 警 else '')
 
 
+def chk_juqing_quantu():
+    """剧情全图（W907·1119 作者令「一眼……定位哪里的剧情有问题、哪里还可升级，随书进化」·法用#剧情全图）：
+    `工具/剧情全图.py --自测` 全通（标签漂移、源缺、限算、诸析之钉……）——红；`--验`：图不在、结构坏（rc 1）——红；
+    图旧（rc 2：与诸源不同）——只 ⚠（照进化树之例·W907 复核须修④）：诸源（二稿账、到期账、canon、段案、大审……）封版之外随时有人改，
+    图唯 封版 --後 之「剧情全图」步重写（写者唯一·⛔总编辑之坐重跑提交而两坐并时相冲）；下一封版即随。
+    ⛔入快测：写中之章诸源随轮而变。器红·⛔读者可见。"""
+    r = run('剧情全图·自测', ['工具/剧情全图.py', '--自测'], timeout=300, 带码=True)
+    if r is None:
+        return False, '自测运行失败（崩或逾时）'
+    out, rc = r
+    m = re.search(r'剧情全图·自测 (\d+)/(\d+)', out)
+    if rc != 0 or not m or m.group(1) != m.group(2):
+        坏 = [x.strip() for x in out.split('\n') if x.strip().startswith('⛔')]
+        return False, '自测 %s%s' % (('%s/%s' % m.groups()) if m else '未见其数', ('｜' + 坏[0][:120]) if 坏 else '')
+    r2 = run('剧情全图', ['工具/剧情全图.py', '--验'], timeout=120, 带码=True)
+    if r2 is None:
+        return False, '验运行失败（崩或逾时）'
+    out2, rc2 = r2
+    头 = [x.strip() for x in out2.split('\n') if '剧情全图·验' in x]
+    if not 头:
+        return False, '器未出声（无「剧情全图·验」之头）'
+    if rc2 == 2 and '⚠ 图旧' in 头[0]:
+        return True, '自测 %s/%s｜验 ⚠ 图待下一封版随（%s）' % (m.group(1), m.group(2), 头[0].split('（', 1)[-1].split('）', 1)[0][:40])
+    return rc2 == 0, '自测 %s/%s｜%s' % (m.group(1), m.group(2), 头[0][:150])
+
+
 def chk_jinhualian():
     """进化链＋其棘轮（2026-09-24 立·作者令「完整的进化链，犯过的错不能再犯」）。
     ⛔**「无守之环」（只写在纸上、无器守着的教训）之数只许往下走**——新添教训而不配器即红。"""
@@ -4211,6 +4237,7 @@ def 诸项(quick):
         items.append(('进化链', chk_jinhualian))
         items.append(('体系总图', chk_tixi_zongtu))    # ★1119 作者令·体系总图（法用#体系总图·W909）：一件一行、用之审之红（器红级）；图旧只 ⚠·唯封版重写
         items.append(('进化树', chk_jinhuashu))         # ★1119 作者令·进化树（法用#进化树）：谱随三账、截至为 HEAD 之祖（谱旧只 ⚠·唯封版重写）
+        items.append(('剧情全图', chk_juqing_quantu))   # ★1119 W907 作者令（法用#剧情全图）：自测＋验（图旧只 ⚠·唯封版重写·照进化树）；⛔快测（写中之章诸源随轮而变）
         items.append(('负测·上瘾四问', chk_shangyin))
         items.append(('负测·造章令', chk_zaozhang_ling))
         items.append(('席令之禁', chk_xiling_jin))

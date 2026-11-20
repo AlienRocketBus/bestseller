@@ -30,16 +30,42 @@ def 节之文(t, 名):
     return m.group(1).strip() if m else ''
 
 
-def 站们(root=ROOT):
-    """总览「② 按站」之「### E? 名（第 a—b 章…）」→ [(a, b, 题)]"""
-    t = open(os.path.join(root, 记, '总览.md'), encoding='utf-8').read()
+_站式 = re.compile(r'^### (E\d+[^\n]*?)（第 ?(\d+) ?(?:[—–-] ?(\d+) ?)?章', re.M)
+
+
+def 站之析(t):
+    """总览「② 按站」之诸站题 → [(a, b, 题)]，照首章排。
+    认二式：「### E4 巴蜀水下（第 273—330 章：…）」（止照书）、「### E6 公输…（兖鼎）（第 396 章起：约 396—425；写至 425）」
+    （止＝下一站之首−1；末站无止，作 10**6）。题里可带括号（「E5 贺兰（冀鼎）」）。
+    ★1119（W907 环1）：旧只认「第 a—b」与首个「第 N 章起」，331 以後俱落 E5（E6—E8 无题）——今诸「起」俱认、界由下站定。"""
+    m = re.search(r'^## ②[^\n]*\n(.*?)(?=^## |\Z)', t, re.M | re.S)
+    诸 = sorted((int(x.group(2)), int(x.group(3)) if x.group(3) else None, x.group(1).strip())
+               for x in _站式.finditer(m.group(1) if m else t))
     出 = []
-    for m in re.finditer(r'^### (E\d[^\n]*?)（第 (\d+)—(\d+)', t, re.M):
-        出.append((int(m.group(2)), int(m.group(3)), m.group(1).strip()))
-    m = re.search(r'^### (E\d[^\n]*?)（第 (\d+) 章起', t, re.M)   # 「E5 贺兰（冀鼎）（第 331 章起」：题里可带括号
-    if m:
-        出.append((int(m.group(2)), 10 ** 6, m.group(1).strip()))
-    return sorted(出)
+    for i, (a, b, 题) in enumerate(诸):
+        if b is None:
+            b = 诸[i + 1][0] - 1 if i + 1 < len(诸) else 10 ** 6
+        出.append((a, b, 题))
+    return 出
+
+
+def 站之病(站):
+    """[(a, b, 题)] → 界之病 [语]：首站不起於 1、相邻两站重或漏、止小於首。空＝不重不漏。"""
+    病 = []
+    if not 站:
+        return ['总览② 无一站之题可认']
+    if 站[0][0] != 1:
+        病.append('首站 %s 起於 %d，不起於 1' % (站[0][2], 站[0][0]))
+    for (a, b, 题), (a2, b2, 题2) in zip(站, 站[1:]):
+        if a2 != b + 1:
+            病.append('%s（%d—%d）与 %s（起 %d）%s' % (题, a, b, 题2, a2, '重' if a2 <= b else '漏 %d—%d' % (b + 1, a2 - 1)))
+    病 += ['%s 之止 %d 小於其首 %d' % (题, b, a) for a, b, 题 in 站 if b < a]
+    return 病
+
+
+def 站们(root=ROOT):
+    """总览「② 按站」→ [(a, b, 题)]（析见 站之析；剧情全图等器 import 此函，⛔另析）"""
+    return 站之析(open(os.path.join(root, 记, '总览.md'), encoding='utf-8').read())
 
 
 def 索引(root=ROOT):
@@ -51,6 +77,12 @@ def 索引(root=ROOT):
         if len(c) >= 3 and c[0].isdigit():
             出[int(c[0])] = (c[1], c[2])
     return 出
+
+
+def 索引之缺(root=ROOT):
+    """有详记（第N章.md）而总览③无其行之章 → [N]（剧情链遂书「### N　　〔〕」）。"""
+    有 = {int(m.group(1)) for f in glob.glob(os.path.join(root, 记, '第*章.md')) for m in [re.search(r'第(\d+)章\.md$', f)] if m}
+    return sorted(有 - set(索引(root)))
 
 
 def 生(root=ROOT):
@@ -117,6 +149,19 @@ def 自测():
     t, 缺 = 生()
     共 += 1; ok += ('### 1　' in t and '### 388　' in t and not 缺)
     共 += 1; ok += len(站们()) >= 5
+    # ★1119（W907 环1）：站题之二式、界由下站定、题带括号；重漏即报
+    _样 = ('## ② 按站\n### E1 甲（第 1—41 章）\n### E5 贺兰（冀鼎）（第 331 章起：起身之程 331—360；写至 395）\n'
+          '### E4 乙（第 42—330 章：本站 42—313）\n### E6 丙（兖鼎）（第 396 章起：约 396—425；写至 425）\n## ③ 逐章\n### E9 伪（第 9 章起）\n')
+    共 += 1; ok += 站之析(_样) == [(1, 41, 'E1 甲'), (42, 330, 'E4 乙'), (331, 395, 'E5 贺兰（冀鼎）'), (396, 10 ** 6, 'E6 丙（兖鼎）')]
+    共 += 1; ok += (站之病(站之析(_样)) == [] and 站之病([(1, 41, '甲'), (43, 60, '乙')]) == ['甲（1—41）与 乙（起 43）漏 42—42']
+                   and 站之病([(1, 41, '甲'), (40, 60, '乙')]) == ['甲（1—41）与 乙（起 40）重'] and 站之病([]) != [])
+    # 钉真料：E1—E8 俱出、界不重不漏、E6/E7/E8 起於 396/426/451、链里 E6—E8 有题且 451 落 E8、总览③无缺行
+    站 = 站们()
+    起 = {题.split()[0]: a for a, b, 题 in 站}
+    共 += 1; ok += ([题.split()[0] for a, b, 题 in 站][:8] == ['E%d' % i for i in range(1, 9)] and not 站之病(站)
+                   and (起.get('E6'), 起.get('E7'), 起.get('E8')) == (396, 426, 451) and next(b for a, b, 题 in 站 if 题.startswith('E5 ')) == 395)
+    共 += 1; ok += all(('\n## E%d ' % i) in t for i in (6, 7, 8)) and t.index('\n## E8 ') < t.index('\n### 451　') < t.index('\n### 452　')
+    共 += 1; ok += not 索引之缺() and not re.search(r'(?m)^### \d+　　〔', t)
     print('剧情链·自测 %d/%d（%d 字节、缺一句之要 %d 章）' % (ok, 共, len(t.encode()), len(缺)))
     return ok == 共
 
@@ -134,3 +179,5 @@ if __name__ == '__main__':
         sys.exit(0 if 同 else 1)
     open(p, 'w', encoding='utf-8').write(t)
     print('✓ 写 %s（%d 章、%d KB；缺一句之要 %d 章%s）' % (链档, t.count('\n### '), len(t.encode()) // 1024, len(缺), ('：' + str(缺[:10])) if 缺 else ''))
+    for 语 in 站之病(站们()) + ['总览③ 缺 %d 章之行：%s' % (len(x), x[:10]) for x in [索引之缺()] if x]:   # ⛔静默：站界之病、索引之缺照印
+        print('⚠ 剧情链：' + 语)

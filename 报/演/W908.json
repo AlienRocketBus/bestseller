@@ -1,20 +1,20 @@
 {
  "名": "W908",
  "ref": "备份/演/W908",
- "sha": "7065eca5912df45fa6e29dbc944b30a3ecb214a5",
+ "sha": "693c19714c4676967f1b77d0fb2cf4dc6b98e22d",
  "果": "过",
  "红": [],
- "时": "2026-11-20T01:48:50Z",
- "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44655894329",
- "候": "7065eca5912df45fa6e29dbc944b30a3ecb214a5",
+ "时": "2026-11-20T01:54:30Z",
+ "run_url": "https://github.com/AlienRocketBus/ojedmksaemckdsokjmenjncdklerfml/actions/runs/44656602144",
+ "候": "25d3fc001f4100525b82a5ec8242669eb52f7556",
  "因": "",
  "期": "过",
  "片": {
   "数": 3,
   "秒": {
-   "1": 144.75,
-   "2": 56.29,
-   "3": 74.91
+   "1": 78.02,
+   "2": 128.02,
+   "3": 115.51
   }
  },
  "免": [

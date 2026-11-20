@@ -302,5 +302,31 @@ chk('㊱模子问五：「参考之带」「铁底 2,000」「⚠暗线之厚只
 chk('㊱之二·模子凡含「本章」之行⛔书 d,ddd—d,ddd 之带（⛔与段案之带相抵·X119）',
     not any(_re10.search(r'\d,\d{3}\s*[—\-～~]+\s*\d,\d{3}', l) for l in _新卡.split('\n') if '本章' in l))
 
+# ── 十一·〔1119 W908 环7 复核〕问七：看官账冻（看官欠哨、连读客汰），_check7 ⛔索「看官账」——用法之档同之 ──────
+#   ★复核所逮：码与模已去，而 用法 §问七 与「认卡之字」表仍书「看官账」之格与其索（新卡之「其由见」仍指此档）。
+_c7码 = _源.split('def _check7')[1].split('\ndef ')[0].split('"""')[2].split('\n\n\n')[0]   # 去其 docstring 与其後之注
+_用 = open(os.path.join(ROOT, '设定', '开镜卡_用法.md'), encoding='utf-8').read()
+_字7 = [w for l in _用.split('\n') if l.startswith('|') and '`_check7`' in l
+        for w in _re10.findall(r'「([^」]+)」', l.split('|')[1])]
+_节7 = _用.split('## §问七')[1].split('\n## ')[0]
+_题7 = _re10.search(r'模子之题：「(.+?)」。', _节7)
+_卡7 = _新卡.split('问七')[1].split('问八')[0]
+chk('㊲用法「认卡之字」表 _check7 一行所书之字（%s）俱为 _check7 之码所索；§问七 之模子之题逐字在模；模与表俱⛔「看官账」之格' % '、'.join(_字7),
+    bool(_字7) and all(("'%s'" % w) in _c7码 for w in _字7) and '看官账' not in _字7
+    and bool(_题7) and _题7.group(1) in _新卡 and '看官账' not in _卡7 and '看官账' not in _c7码)
+_旧ROOT7 = _零.ROOT
+_零.ROOT = _tf.mkdtemp()
+try:
+    os.makedirs(os.path.join(_零.ROOT, '版本', '第999章'))
+    _写7 = lambda s: open(os.path.join(_零.ROOT, '版本', '第999章', '_开镜卡.md'), 'w', encoding='utf-8').write(s)
+    _写7('## 问七\n- **大审所挂·限本章者**：无\n')
+    _过7 = _零._check7(999)[0]
+    _写7('## 问七\n- 看官账未清者：无\n')
+    _败7 = _零._check7(999)[0]
+finally:
+    _sh.rmtree(_零.ROOT, ignore_errors=True)
+    _零.ROOT = _旧ROOT7
+chk('㊳_check7：卡带「大审」而无「看官账」→ 过（⛔索死账）；无「大审」→ 红（大审所挂照索）', _过7 is True and _败7 is False)
+
 print('  负测·开镜卡带三条：%d/%d' % (过, 过 + 败))
 sys.exit(1 if 败 else 0)

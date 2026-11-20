@@ -330,12 +330,14 @@ def L3():
         return 3 if '书之族' in x['器'] else 2
     无器 = [x for x in 族 if _无器(x) and x['例'] >= _限(x)]
     器不在 = []
-    # ★1027：随汰之族（「〔随汰·…`工具/<器>` 已彻删〕」而其器真不在）退役——⛔作「器不在」；判借 进化链.随汰（一处判，⛔两份码；器仍在即⛔认）
-    _汰 = _器('进化链').随汰
+    # ★1027：随汰之族（「〔随汰·…`工具/<器>` 已彻删〕」而其器真不在）退役——⛔作「器不在」；判借 裁之生效.随汰（一处判，⛔两份码；器仍在即⛔认）
+    #   〔W908 环7〕旧借 进化链.随汰——进化链之器废，其判移 裁之生效
+    _汰 = _器('裁之生效').随汰
     for x in 族:
         if _汰(x['器'], ROOT):
             continue
-        for f in re.findall(r'`([^`]+\.py)`', x['器']):
+        # 〔1119 W908 环7 复核〕名带「::函」者（`看官欠哨.py::_重跑其数`）旧正则不认——其器已删而 L3 仍绿；今认其器名
+        for f in re.findall(r'`([^`]+?\.py)(?:::[^`]*)?`', x['器']):
             if not os.path.exists(os.path.join(ROOT, '工具', os.path.basename(f))):
                 器不在.append('%s→%s' % (x['名'], f))
     if 无器 or 器不在:
@@ -346,21 +348,8 @@ def L3():
             语.append('⛔L3 自进化：%d 族所登之器盘上不在：%s' % (len(器不在), '、'.join(器不在)))
         return False, 语
     语.append('✓L3 自进化：病族 %d 族，逮到二回以上者皆有器管它' % len(族))
-    # ★★★★★2026-09-24 补·**进化链之棘轮**（作者令「要一个完整的进化链，犯过的错不能再犯」）：
-    #   **犯过的每一个错，今天有没有一道器在守着；「无守」之数只许往下走。**
-    try:
-        import contextlib
-        链 = _器('进化链')
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            ok = 链.跑()
-        行 = [l.strip() for l in buf.getvalue().split('\n') if '共 ' in l or '棘轮' in l]
-        语.append(('✓' if ok else '⛔') + 'L3 进化链：' + '｜'.join(行)[:150])
-        if not ok:
-            return False, 语
-    except Exception as e:
-        语.append('⛔L3 进化链跑不起来：%s' % e)
-        return False, 语
+    # 〔1119 W908 环7〕旧於此跑 进化链之棘轮（每跑重写 设定/进化链.md）——进化链之器废（裁九：并入进化树·同功两处），
+    #   其源（体检账、病族账）冻於 1027、其分已标史（执行之制 治2(d)）；进化之路唯进化树（封版 --後 唯一写），设定/进化链.md 留作史
     return True, 语
 
 

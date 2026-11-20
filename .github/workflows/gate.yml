@@ -160,6 +160,7 @@ jobs:
           fi
           if [ -z "$GUO" ]; then
             git checkout -q --detach "$B0"
+            python3 工具/账并.py --装 || true   # 〔1119 治6〕两写者之账之并器（.gitattributes merge=账并）；主之树无本器即 || true——退回内建之并（同旧）
             if ! git merge --no-edit -m "autopush：并入 $R" "$T"; then
               CHONG="$(git -c core.quotepath=off diff --name-only --diff-filter=U | head -n 20 \
                 | python3 -c 'import json,sys;print(json.dumps([l for l in sys.stdin.read().split("\n") if l],ensure_ascii=False))')"

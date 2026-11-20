@@ -9,6 +9,10 @@
 #     片中懒取有败（GIT_TRACE2_EVENT 计之）即自降级而重跑，⛔因省取而红；片印「省取：懒取 n 回、败 m、s 秒」（可观）。
 #     全取之取（zai_shi）照 actions/checkout 之 RetryHelper：至多三回、回间随候 10—20 秒；所求之 sha 不在诸枝即专取之（同其 testRef 後之再取）——
 #     係网取之再试（一取之败），⛔1027 所废之「机内取并再试」（主枝动则机内再取再并·今 API 重派 tries ≤ 2）。
+# W908 环4：checkout 步限 4 分（#68 prepare 之取挂 14 分 10 秒·44132652475）——逾即其步败、降级全取（自治）；
+#   merge 之败出冲突之档（output chong·JSON 之列 → 调者 推报 --写 --冲突）；真冲突（有未并之档）⛔降级全取（全取亦冲突·白耗）；
+#   片之红：读者可见之红、留字 → ::error 而 rc 照旧；只器之红 → ::warning 而 rc 0（推报 --片注；判归并判·全测.并判 一字⛔动）；
+#   uses 钉 40 位 sha（Node24 原生之版·注其版）；quan_qu 之 base64 头 ::add-mask::。runtime（python 3.12／node 20 → 3.13／22）另一改（裁六·演练对拍）。
 name: gate
 on:
   workflow_call:
@@ -36,6 +40,8 @@ on:
         value: ${{ jobs.prepare.outputs.sha }}
       cand:
         value: ${{ jobs.prepare.outputs.cand }}
+      chong:
+        value: ${{ jobs.prepare.outputs.chong }}
       n:
         value: ${{ jobs.prepare.outputs.n }}
 permissions:
@@ -58,8 +64,11 @@ env:
       echo "::warning::省取降级·全取（$2）——照旧式 fetch-depth 0 无 filter 重取"
       cd "$GITHUB_WORKSPACE" || return 1
       find . -mindepth 1 -delete
+      local b64
+      b64="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+      echo "::add-mask::$b64"
       git init -q . && git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" && git config --local gc.auto 0 \
-        && git config --local "http.$GITHUB_SERVER_URL/.extraheader" "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
+        && git config --local "http.$GITHUB_SERVER_URL/.extraheader" "AUTHORIZATION: basic $b64" \
         && zai_shi git -c protocol.version=2 fetch -q --prune --no-recurse-submodules origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' \
         || return 1
       if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then
@@ -112,12 +121,14 @@ jobs:
       base: ${{ steps.p.outputs.base }}
       sha: ${{ steps.p.outputs.sha }}
       cand: ${{ steps.p.outputs.cand }}
+      chong: ${{ steps.p.outputs.chong }}
       n: ${{ steps.p.outputs.n }}
       ks: ${{ steps.p.outputs.ks }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         id: qu
         continue-on-error: true
+        timeout-minutes: 4
         with:
           ref: ${{ inputs.sha || inputs.ref }}
           fetch-depth: 0
@@ -140,7 +151,7 @@ jobs:
           git config user.name autopush
           git config user.email autopush@users.noreply.github.com
           rm -rf "$D"; mkdir -p "$D"
-          GUO=; YIN=; GO=0; C=; N=; KS='[1]'
+          GUO=; YIN=; GO=0; C=; N=; KS='[1]'; CHONG=
           T="$(git rev-parse --verify -q 'HEAD^{commit}')"
           if ! git fetch -q origin "+refs/heads/$MAIN:refs/remotes/origin/$MAIN"; then GUO=败; YIN=fetch; fi
           B0="$(git rev-parse --verify -q "origin/$MAIN")"
@@ -149,7 +160,14 @@ jobs:
           fi
           if [ -z "$GUO" ]; then
             git checkout -q --detach "$B0"
-            if ! git merge --no-edit -m "autopush：并入 $R" "$T"; then git merge --abort; GUO=败; YIN=merge; fi
+            python3 工具/账并.py --装 || true   # 〔1119 治6〕两写者之账之并器（.gitattributes merge=账并）；主之树无本器即 || true——退回内建之并（同旧）
+            if ! git merge --no-edit -m "autopush：并入 $R" "$T"; then
+              CHONG="$(git -c core.quotepath=off diff --name-only --diff-filter=U | head -n 20 \
+                | python3 -c 'import json,sys;print(json.dumps([l for l in sys.stdin.read().split("\n") if l],ensure_ascii=False))')"
+              [ "$CHONG" = '[]' ] && CHONG=
+              [ -n "$CHONG" ] && echo "⛔并主枝冲突之档：$CHONG"
+              git merge --abort; GUO=败; YIN=merge
+            fi
           fi
           if [ -z "$GUO" ] && [ "$MODE" = 推 ] && [ -n "$(git diff --name-only "$B0" HEAD -- .github/workflows)" ]; then
             GUO=拒; YIN=workflow
@@ -169,12 +187,13 @@ jobs:
           fi
           }
           bei_hou
-          if [ "$GUO" = 败 ] && sheng_cang; then quan_qu "$WANT" "省取之仓备候败（因 $YIN）" && bei_hou; fi
+          # 真冲突（merge 而有未并之档 CHONG）⛔降级——全取亦冲突、白耗（W908 环4）；余败（取、包、省取之仓之懒取）照降级全取
+          if [ "$GUO" = 败 ] && [ -z "$CHONG" ] && sheng_cang; then quan_qu "$WANT" "省取之仓备候败（因 $YIN）" && bei_hou; fi
           {
-            echo "go=$GO"; echo "guo=$GUO"; echo "yin=$YIN"; echo "base=$B0"; echo "sha=$T"; echo "cand=$C"; echo "n=$N"; echo "ks=$KS"
+            echo "go=$GO"; echo "guo=$GUO"; echo "yin=$YIN"; echo "base=$B0"; echo "sha=$T"; echo "cand=$C"; echo "n=$N"; echo "ks=$KS"; echo "chong=$CHONG"
           } >> "$GITHUB_OUTPUT"
           echo "· 候 ${C:0:12}（主 ${B0:0:12} ＋ $R ${T:0:12}）｜片 ${N:-—}｜${GUO:-入闸}｜取 $(git config --get remote.origin.partialclonefilter || echo 全)"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: steps.p.outputs.go == '1'
         with:
           name: cand
@@ -194,20 +213,21 @@ jobs:
       matrix:
         k: ${{ fromJSON(needs.prepare.outputs.ks) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         id: qu
         continue-on-error: true
+        timeout-minutes: 4
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           fetch-depth: 0
           filter: blob:limit=1m
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '20'
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: cand
           path: ${{ runner.temp }}/cand
@@ -226,6 +246,8 @@ jobs:
           eval "$QUANQU"
           D="$RUNNER_TEMP/cand"; O="$RUNNER_TEMP/shard"; T2="$RUNNER_TEMP/t2"
           { [ "$QU" = success ] && git rev-parse --verify -q 'HEAD^{commit}' > /dev/null; } || quan_qu "$WANT" "检出不成：$QU" || exit 2
+          # 片注：读者可见之红 ::error 而 rc 照旧；只器之红 ::warning 而 rc 0（候之树之推报无此口即照原 rc）
+          pian_zhu() { grep -q "'--片注'" 工具/推报.py || return "$rc"; python3 工具/推报.py --片注 "$O/shard$K.json" --rc "$rc" --名 "$K/$N"; }
           while :; do
             SHENG=; sheng_cang && SHENG="$(git config --get remote.origin.partialclonefilter)"
             rm -rf "$O" "$T2"; mkdir -p "$O" "$T2"
@@ -241,13 +263,13 @@ jobs:
             python3 工具/全测.py --片 "$K/$N" --秒表 "$D/secs.json" --出 "$O/shard$K.json"
             rc=$?
             unset GIT_TRACE2_EVENT
-            [ -n "$SHENG" ] || exit $rc
+            [ -n "$SHENG" ] || { pian_zhu; exit $?; }
             read -r LAN BAI MIAO <<< "$(lan_qu "$T2")"
             echo "· 省取（$SHENG）：懒取 $LAN 回、败 $BAI、$MIAO 秒"
-            [ "$BAI" = 0 ] && exit $rc
+            [ "$BAI" = 0 ] && { pian_zhu; exit $?; }
             rm -rf "$O"; quan_qu "$WANT" "片中懒取败 $BAI 回" || exit 2
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: shard-${{ matrix.k }}

@@ -25,7 +25,6 @@
 
 用法：
   python3 工具/书级体检.py            # 跑六检，报并闸
-  python3 工具/书级体检.py --存基线    # 跑毕存入 设定/书级基线.json
   python3 工具/书级体检.py --静        # 只报闸之成败（供全测调用）
 """
 import os as _o, sys as _s
@@ -43,7 +42,7 @@ import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEXT_DIR = os.path.join(ROOT, '正文')
-BOOK_JSON = os.path.join(ROOT, '设定', '书级基线.json')
+# 〔1119 W908 环7〕--存基线（设定/书级基线.json）汰：其档无读者、自立後⛔再存（死账）
 DUE_JSON = os.path.join(ROOT, '设定', '到期账.json')
 VER_DIR = os.path.join(ROOT, '版本')
 
@@ -64,7 +63,7 @@ VER_DIR = os.path.join(ROOT, '版本')
 #   ⛔而只改这一个数：⑤ 三判照旧（已逾终点／清不完／到期章逾终点），负测照 m.END_CH 取数，一格不松。
 # 〔1119 死规之审·gates漏2·终局之令〕END_CH 今只係「今之估」，⛔目标、⛔指标：终局由事定（作者 1119：「有可能写到400多章结局，
 #   也有可能510多、520多、530多……千万不要烂尾」）；待「终局之位」（法用册·限 480·骊山段剧情庭开题前总编辑判）判後随改。
-#   名⛔改（负测之钉、书级基线之「终点章」俱读此名）；⑤ 三判俱只印 ⚠、⛔入「不过」。
+#   名⛔改（负测之钉读此名）；⑤ 三判俱只印 ⚠、⛔入「不过」。
 #   今之估（终局由事定·作者 1119·待终局之位判後随改）：
 END_CH = 510
 
@@ -567,7 +566,6 @@ def check_loss(chs):
 
 def main():
     quiet = '--静' in sys.argv
-    save = '--存基线' in sys.argv
     chs = load_chapters()
     if not chs:
         print('⛔ 未见正文')
@@ -667,22 +665,6 @@ def main():
     else:
         print('  ✓书级体检通过。')
 
-    if save:
-        base = {
-            '章': cur,
-            '时': datetime.datetime.now().strftime('%Y-%m-%d'),
-            '终点章': END_CH,
-            '正文净重': sum(net_len(v) for v in chs.values()),
-            '人物末次': {w: last.get(w) for w in PRESENCE_LIMIT},
-            '章型连锁': {'型': chain[0], '连': chain[1], '自': chain[2]},
-            '账': {'未清': len(op), '近十章净': net_d, '距终点': left},
-            '日数速率': round(pace[4], 3) if pace else None,
-            '轮记开销比': round(ovh[2], 2) if ovh else None,
-            '连续无失': loss_run,
-        }
-        with open(BOOK_JSON, 'w', encoding='utf-8') as f:
-            json.dump(base, f, ensure_ascii=False, indent=1)
-        print('  ✓基线已存：设定/书级基线.json')
     return 0
 
 

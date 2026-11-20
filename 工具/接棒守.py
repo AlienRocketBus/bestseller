@@ -29,7 +29,9 @@
                                            #   403 未入主枝而其报红／拒／败（或缺章标而 备份/存底 有其封版之提交）→ 自出【重派】之参：自「章-403」（或其源）起、先治（1027 A2）
   python3 工具/接棒守.py --巡              # 停书之巡（总编辑之坐·醒於哨 PR 之言或兜底之巡）：印「止」或【重派】之参（rc 0 止｜2 派｜3 解停｜4 合入之卡：坏报或无果逾三十分、被顶即判〔W908 环2(b)〕｜5 巡印逾三十分·GitHub 之巡停摆→降级｜6 对拍不合｜7 巡印复鲜→复常）；沙盒每跑落 备份/巡应
                                            #   〔1119 执行之审·治1〕沙盒并验活守：钩活、存底刻、钩死之自决代扫与补印、每日首巡（印俱 stderr·stdout 照旧）——见 ⑥活守
+                                           #   〔W908 环12〕印之首行＝00_总章.md 第一律之首句；自决代扫之果（扫至、红、片、首）入巡应——见 ⑦自决之机
   python3 工具/接棒守.py --云巡 [--试]      # GitHub（巡.yml·環之跑每五分一巡）：巡()、落巡印、非止即於哨 PR 留言唤总编辑（--试 必留一言，验唤醒之路）
+                                           #   〔W908 环12〕巡应之自决红未清 → 哨 PR 一言（附片与第一律之句·同局一唤）而红
   python3 工具/接棒守.py --自测
 """
 import os as _o, sys as _s
@@ -570,10 +572,13 @@ def 落巡印(rc, 印, 今, 跑='', 心=None, 私=False):
 
 def 巡应之体(rc, 今, 态=None):
     """→ _巡应.json 之体。〔1119 执行之审·治1(e)〕态（活守() 之返）在即添三键「钩」「存底刻」「钩死起」——云巡之 活守判 以之兜底；
-    活守败（态 None）即⛔添（云巡作旧巡应论、⛔红：缺之由已印於沙盒之 stderr）。"""
+    活守败（态 None）即⛔添（云巡作旧巡应论、⛔红：缺之由已印於沙盒之 stderr）。
+    〔W908 环12②〕态带「自决」（自决之代扫之果：扫至、红、片、首）即并入——云巡之 自决之巡 读之（⛔另立枝）。"""
     d = {'时': 今, '刻': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(今)), 'rc': rc, '坐': os.environ.get('CLAUDE_CODE_SESSION_ID', '')}
     if isinstance(态, dict):
         d.update({'钩': 态.get('钩'), '存底刻': 态.get('存底刻'), '钩死起': 态.get('钩死起')})
+        if isinstance(态.get('自决'), dict):
+            d['自决'] = 态['自决']
     return json.dumps(d, ensure_ascii=False)
 
 
@@ -1057,7 +1062,7 @@ def 活守(今=None, 守先在=True, 态档=None, 迹=None, 志=None, 录=None, 
         print(迟)
     # (c) 钩不活：扫本坐转录（自决）、补印
     路 = 本坐转录() if 录 is None else 录
-    上 = 0
+    上, 决 = 0, None                 # 决：〔W908 环12②〕自决之代扫之果（钩死而转录可读方扫）——入巡应，云巡读之
     if 路:
         换 = 路 != 旧.get('录') or not isinstance(旧.get('偏'), int)
         if 换:                       # 初跑：自末 4MB 起；换档（坑62·会话换目录而续）：新档自首起——俱以 扫自 之时滤之
@@ -1077,6 +1082,7 @@ def 活守(今=None, 守先在=True, 态档=None, 迹=None, 志=None, 录=None, 
                 片 = 自决之守.中问(文)
                 if 片 and 片 not in [x for _, x in 中]:
                     中.append((t, 片))
+            决 = 自决之果(中, 今, 旧.get('自决首'))
             for t, 片 in 中[-5:]:
                 print('⛔ 自决红：「%s」（%s UTC）——钩死而 Stop 之自决之守不在：第一律⛔候作者之许，照最好之法自决自办、办毕再报' % (片.strip(), _刻(t)))
             print('⚠ 钩死（连 %d 巡无 链之检.py 之迹·起 %s UTC）：本坐之钩不载——开头之钩、Stop（自决之守）、PreToolUse（链之检、续跑之守⑤）俱停；'
@@ -1091,6 +1097,9 @@ def 活守(今=None, 守先在=True, 态档=None, 迹=None, 志=None, 录=None, 
             态.update(录=路, 偏=偏, 扫自=扫自)
     elif 态['钩'] == '死':
         print('⚠ 本坐转录读不出（CLAUDE_CODE_SESSION_ID 缺或档不在）——钩死而自决⛔能代扫（缺）')
+    态['自决'] = 决 or {'扫至': None, '红': 0, '片': [], '首': None,
+                     '由': {'活': '钩活（Stop 之自决之守在·⛔代扫）', '疑': '钩疑（未满三巡·⛔扫）'}.get(态['钩'], '转录读不出（⛔能代扫）')}
+    态['自决首'] = 态['自决']['首']
     # (d) 每日首巡：记本坐昨日之费；上下文逾三十万即印「减本坐之活」（一日一印）
     日 = time.strftime('%Y-%m-%d', time.gmtime(今))
     if 旧.get('日') != 日:
@@ -1225,6 +1234,98 @@ def 活守之巡(仓, 今, 应d=None, 号=None, 键们=None, 发=None, 停=None)
         return 1
 
 
+# ── ⑦自决之机·GitHub 之半〔W908 环12·作者 1119 令「GitHub 能否时刻提醒你……让这件事完全奏效」〕──
+#   ①沙盒之 --巡 印之首行＝00_总章.md「第一律·自决」之首句（唯一之源·随仓进化；⛔另写其文）——读不得即「⚠ 第一律读不得」；
+#   ②钩死之自决代扫（⑥活守 (c)·自决之守.中问 同尺）之果——扫至、红、片、首（红之首见之刻）——入每巡既落之 备份/巡应（⛔另立枝）；
+#   ③云巡（诸 rc 俱验·私停之後）读巡应：自决红未清 → 哨 PR 一言唤总编辑之坐，附其片与第一律之句（同局一唤：键「自决·<首>」）而红；
+#     暂停中只印（作者亲令之停·候其令下合第一律）；无红零 API。回：删此节、活守之「决」、巡应之体之「自决」、云巡之 自决之巡 即复旧。
+总章档 = '00_总章.md'
+
+
+def 第一律之句(根=ROOT):
+    """⛔纯（读档·W908 环12①）：00_总章.md 首「**★第一律·自决（…）：」之体之首句（至括、引之外之首「。」）——照录（⛔另写）；读不得即 ''。"""
+    try:
+        文 = open(os.path.join(根, 总章档), encoding='utf-8').read()
+    except Exception:
+        return ''
+    m = re.search(r'^\*\*★?第一律·自决', 文, re.M)
+    if not m:
+        return ''
+    行, 深, 起 = 文[m.start():].split('\n', 1)[0], 0, None
+    for i, ch in enumerate(行):
+        if ch in '（(「『':
+            深 += 1
+        elif ch in '）)」』':
+            深 = max(0, 深 - 1)
+        elif 深 == 0 and ch == '：' and 起 is None:
+            起 = i + 1
+        elif 深 == 0 and ch == '。' and 起 is not None:
+            return 行[起:i + 1].strip()
+    return ''
+
+
+def 第一律之印(根=ROOT):
+    """→ 「第一律·自决（00_总章.md）：<首句>」｜「⚠ 第一律读不得……」——--巡 之首行、自决之唤之言同取此（⛔两写）。"""
+    句 = 第一律之句(根)
+    return ('第一律·自决（%s）：%s' % (总章档, 句)) if 句 else '⚠ 第一律读不得（%s 首「第一律·自决」之首句取不出）' % 总章档
+
+
+def 自决之果(中, 今, 旧首=None):
+    """⛔纯（W908 环12②）：本巡代扫所中 [(时, 片)] → 巡应之「自决」{扫至, 红, 片（末三·各≤80 字）, 首}。
+    首＝红之首见之刻（转录之时）：连红之巡承旧首（同局）；红 0 即清（首 None）——云巡之键取之（同局一唤）。"""
+    红 = len(中)
+    return {'扫至': 今, '红': 红, '片': [str(x).strip()[:80] for _, x in 中[-3:]],
+            '首': (旧首 or min(t for t, _ in 中) or 今) if 红 else None}
+
+
+def 自决之键(应d):
+    """⛔纯判（W908 环12③）：巡应 → (键, 决)｜('', None)。「自决」之红＞0（未清）→ 键「自决·<首·UTC 至分>」；
+    旧巡应（无「自决」）、红 0、坏 → ('', None)（⛔红）。"""
+    决 = 应d.get('自决') if isinstance(应d, dict) else None
+    if not isinstance(决, dict):
+        return '', None
+    try:
+        红, 首 = int(决.get('红') or 0), int(决.get('首') or 0) or int(应d.get('时') or 0)
+    except (TypeError, ValueError):
+        return '', None
+    if 红 <= 0:
+        return '', None
+    return '自决·' + time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime(首)), 决
+
+
+def 自决之巡(仓, 今, 应d=None, 号=None, 键们=None, 发=None, 停=None, 根=ROOT):
+    """云巡（W908 环12③）：巡应之「自决」红未清 → 哨 PR 一言唤总编辑之坐（附其片与第一律之句）而红（rc 1）；
+    同局（键「自决·<红之首见之刻>」）已唤 → 0（同局一唤·红随唤）；无红、旧巡应 → 0（零 API）；暂停中（停 None 即 _暂停中()）→ 只印、0。"""
+    应d = _读枝档(巡应枝, 巡应档) if 应d is None else 应d
+    键, 决 = 自决之键(应d)
+    if not 键:
+        return 0
+    片 = '｜'.join('「%s」' % x for x in (决.get('片') or [])) or '（片缺）'
+    由 = ('⛔ 自决红未清：总编辑之坐之答中「问作者／候作者之许」之式 %s 处（代扫至 %s UTC·自决之守.中问 同尺）：%s'
+          % (决.get('红'), _刻(决.get('扫至')), 片))
+    if _暂停中() if 停 is None else 停:
+        print('· 暂停中⛔唤（自决）：%s' % 由)
+        return 0
+    print(由)
+    try:
+        号 = 哨PR(仓) if 号 is None else 号
+        if not 号:
+            print('⛔ 哨 PR（头枝 %s）不在——唤不得：总编辑立之、订之' % 巡警枝)
+            return 1
+        if 键 in (_诸键(仓, 号, (int(决.get('首') or 0) or 今) - 600) if 键们 is None else 键们):
+            print('· 自决此局已唤（%s）——⛔再唤（同局一唤；红随唤）' % 键)
+            return 0
+        体 = ('【巡警·自决】%s\n\n%s\n\n总编辑：醒即照第一律自决自办（⛔候作者之许、⛔列选项请作者择），办毕再报；'
+              '并沙盒跑 `python3 工具/接棒守.py --巡`（代扫其後之答，无新红即清）。\n\n'
+              '⚠ 本跑红——哨 PR 之言即达作者（同局一唤）。\n\n%s' % (由, 第一律之印(根), 警记 % 键))
+        (发 or (lambda b: _接口('POST', '/repos/%s/issues/%d/comments' % (仓, 号), {'body': b})))(体)
+        print('✓ 已唤（哨 PR #%s·%s）' % (号, 键))
+        return 1
+    except Exception as e:
+        print('⛔ 唤不成：%s' % e)
+        return 1
+
+
 def 云巡(试=False):
     """GitHub（巡.yml）之跑：巡() → 落巡印 → 仓私即自停 → 非止即唤（哨 PR 留一言；唤而未应即红）。→ 0 绿｜1 红（随唤：停逾九十分、器败、合入之卡、唤而未应；唤不成；私停）。"""
     import io, contextlib, traceback
@@ -1248,8 +1349,10 @@ def 云巡(试=False):
         print('⚠ 巡印落不成（备份/巡印）')
     if 私 and not 试:
         return 私停(仓, 今)
+    应 = {} if 试 else (_读枝档(巡应枝, 巡应档) or {})
+    决rc = 0 if 试 else 自决之巡(仓, 今, 应d=应)      # 〔W908 环12③〕自决红未清 → 同局一唤而红（诸 rc 俱验；无红零 API）
     if rc == 0 and not 试:
-        return 活守之巡(仓, 今)          # 〔1119 执行之审·治1(e)〕巡应示钩死／存底迟逾二十四时 → 态变方唤而红（W908 环2(a)）；余 0（零 token）
+        return max(活守之巡(仓, 今, 应d=应), 决rc)   # 〔1119 执行之审·治1(e)〕巡应示钩死／存底迟逾二十四时 → 态变方唤而红（W908 环2(a)）；余 0（零 token）
     try:
         号 = 哨PR(仓)
         if not 号:
@@ -1275,14 +1378,14 @@ def 云巡(试=False):
             唤, 键 = True, '试·%d' % 今
         if not 唤:
             print('· 同局（%s）%d 分内已唤——⛔再唤（红随唤：二十分一红，⛔每五分一邮）' % (键, 唤之隔分))
-            return 0
+            return 决rc
         体 = ('【巡警】%s\n\n```\n%s\n```\n\n总编辑：醒即照总章三之5「醒於【巡】」办——沙盒跑 `python3 工具/接棒守.py --巡` 自验（⛔凭此言径派）。'
               '%s%s\n\n%s' % ('试唤（验唤醒之路·无须派）' if 试 else (卡之题(印) if rc == 4 else ('停书 %s 分' % 停分 if 停分 >= 0 else '器之报')),
                               印.strip()[:3000], ''.join('\n\n' + x for x in (闸由, 应由) if x),
                               '\n\n⚠ 本跑红——哨 PR 之言即达作者。' if (红 and not 试) else '', 警记 % 键))
         _接口('POST', '/repos/%s/issues/%d/comments' % (仓, 号), {'body': 体})
         print('✓ 已唤（哨 PR #%d·%s）' % (号, 键))
-        return 1 if (红 and not 试) else 0
+        return max(1 if (红 and not 试) else 0, 决rc)
     except Exception as e:
         print('⛔ 唤不成：%s' % e)
         return 1
@@ -1737,7 +1840,7 @@ def 自测():
       and _段巡.index('return 5') < _段巡.index('return 7') < _段巡.index('return 6') < _段巡.index("print('止')"))
     T('⑪之八 云巡：仓私即自停（disable·在唤之前）、唤而未应即红；红随唤（不唤之跑⛔红）；落巡印记所判之心跳',
       '私停(仓, 今)' in _段云 and _段云.index('私停(仓, 今)') < _段云.index('哨PR(仓)') and '应判(' in _段云
-      and "return 0\n" in _段云.split('if not 唤:')[1].split('体 =')[0] and '心=d' in _段云 and '_巡之心' in _段云
+      and "return 决rc\n" in _段云.split('if not 唤:')[1].split('体 =')[0] and '心=d' in _段云 and '_巡之心' in _段云   # 〔W908 环12③〕同局已唤⛔红（唯自决之唤之红随之）
       and '/disable' in src.split('def 私停(')[1].split('\ndef ')[0])
     T('⑦之四 诸印之令俱指 --派令（⛔手拟【派】）', src.count('--派令 %s') >= 2 and '令「【派】开第' not in src)
     _起们 = []
@@ -1931,7 +2034,7 @@ def 自测():
         _r4 = 活守之巡('o/r', _今, 应d={'时': _今, 'rc': 0}, 号=1, 键们=set(), 发=_发.append, 停=False)
     T('活守④之二 态变方唤：逾二十四时首跑 → 唤（键「活守·<钩死起>·<存底迟起>」）而红；此态已唤 → ⛔唤⛔红；未逾、旧巡应 → ⛔唤；云巡 rc 0 之支走之（私停之後）',
       _r1 == 1 and len(_发) == 1 and (警记 % _日键) in _发[0] and _r2 == 0 and _r3 == 0 and _r4 == 0
-      and 'return 活守之巡(仓, 今)' in _段云 and _段云.index('私停(仓, 今)') < _段云.index('return 活守之巡(仓, 今)'))
+      and 'return max(活守之巡(仓, 今, 应d=应), 决rc)' in _段云 and _段云.index('私停(仓, 今)') < _段云.index('return max(活守之巡(仓, 今, 应d=应), 决rc)'))
     # 〔1119 执行之审·复核〕暂停中⛔唤：巡判 暂停→止→rc 0→云巡走 活守之巡；巡应停於末回之态，钩死逾二十四时即恒红——每日一唤一红一邮（总章 §三.5「三令俱停」）
     import 暂停令 as _停令2
     _原在2 = _停令2.在
@@ -1962,6 +2065,63 @@ def 自测():
     T('活守⑥〔治1·c〕补印之串＝ .claude/settings.json 之 SessionStart（startup|compact|clear）原令（总章至「## 一、」、法用之守 --报 --首 前六行、费哨 --章）——⛔另拟',
       "awk '/^## 一、/{exit}1' 00_总章.md" in _串 and '法用之守.py --报 --首' in _串 and '费哨.py --章' in _串
       and "'CLAUDE_PROJECT_DIR=根'" not in src and 'CLAUDE_PROJECT_DIR=根' in src.split('def 补印(')[1].split('\ndef ')[0])
+    # 〔W908 环12〕自决之机·GitHub 之半：①--巡 首行印第一律之首句（唯一之源）；②代扫之果入巡应；③云巡读之、自决红未清即唤（同局一唤）。
+    #   回灌：首行另写其文或移於活守之後、句断於括引之内、巡应缺「自决」或漏余态、连红之巡易其首（同局二唤）、红 0 亦取哨 PR、暂停中唤、云巡⛔调或调於私停之前 → 各即红。
+    _句 = 第一律之句()
+    _总文 = open(os.path.join(ROOT, 总章档), encoding='utf-8').read()
+    with tempfile.TemporaryDirectory() as _dz:
+        open(os.path.join(_dz, 总章档), 'w', encoding='utf-8').write('# 总章\n\n**★第一律·自决（甲令「一。二：三」·坑55）：我自决（问之⛔。）；⛔问作者。余句。**\n')
+        _伪句 = 第一律之句(_dz)
+        _dz2 = os.path.join(_dz, '空')
+        os.makedirs(_dz2)
+        _缺句, _缺印 = 第一律之句(_dz2), 第一律之印(_dz2)
+        open(os.path.join(_dz2, 总章档), 'w', encoding='utf-8').write('# 总章\n\n**★唯一之的**：x。\n')
+        _无律 = 第一律之句(_dz2)
+    T('自决①〔W908 环12①〕第一律之句＝00_总章.md「第一律·自决」之首句照录（括、引之内之「：」「。」⛔断）；档缺、无其律即空而印「⚠ 第一律读不得」；'
+      '沙盒之 --巡 首行印之（stderr·在存底守与活守之前）；本器⛔另写其文',
+      bool(_句) and _句 in _总文 and _句.startswith('我是最高责任人') and _句.endswith('。') and '至高无上之权' in _句
+      and 第一律之印() == '第一律·自决（00_总章.md）：' + _句 and _伪句 == '我自决（问之⛔。）；⛔问作者。'
+      and _缺句 == '' and _缺印.startswith('⚠ 第一律读不得') and _无律 == ''
+      and 'sys.stderr.write(第一律之印()' in _段沙 and -1 < _段沙.find('sys.stderr.write(第一律之印()') < _段沙.find('_守先在 = True') < _段沙.find('_态 = 活守(')
+      and '至高无上之权' not in src and '第一律之印(根)' in src.split('def 自决之巡(')[1].split('\ndef ')[0])
+    _体9 = json.loads(巡应之体(0, _今, dict(_s1)))
+    T('自决②〔W908 环12②〕代扫之果入巡应：钩死扫得二红 → 自决｛红 2、片含「要你点头」、首＝11:31 之刻、扫至＝本巡｝；连红之巡承旧首（同局）；'
+      '钩复活 → 红 0、首空、由「钩活」；疑 → 红 0、由「钩疑」；巡应之体并「自决」（余态仍⛔出）；自决之果：红 0 首空、末三片各≤80 字、转录之时坏即取今',
+      _s1['自决']['红'] == 2 and any('要你点头' in x for x in _s1['自决']['片']) and _s1['自决']['首'] == _录时('2026-11-16T11:31:32.984Z')
+      and _s1['自决']['扫至'] == _t and _s1['自决首'] == _s1['自决']['首']
+      and _s2['自决']['红'] == 1 and _s2['自决']['首'] == _s1['自决']['首'] and '要不要我' in _s2['自决']['片'][0]
+      and _s3['自决']['红'] == 0 and _s3['自决']['首'] is None and '钩活' in _s3['自决']['由'] and _s3['自决首'] is None
+      and _s4['自决']['红'] == 0 and '钩疑' in _s4['自决']['由']
+      and _体9.get('自决') == _s1['自决'] and not any(k in _体9 for k in ('偏', '录', '自决首', '无钩', '扫自'))
+      and 自决之果([], 9) == {'扫至': 9, '红': 0, '片': [], '首': None} and 自决之果([(0, 'x')], 9)['首'] == 9
+      and 自决之果([(5, 'a' * 100)], 9)['片'] == ['a' * 80] and 自决之果([(k, str(k)) for k in range(1, 6)], 9, 7) == {'扫至': 9, '红': 5, '片': ['3', '4', '5'], '首': 7})
+    _应9 = {'时': _今, 'rc': 0, '自决': {'扫至': _今, '红': 2, '片': ['这一步要你点头', '跟我说一声'], '首': _今 - 600}}
+    _键9 = 自决之键(_应9)[0]
+    _发9, _调9 = [], []
+    _原接9 = globals()['_接口']
+    try:
+        globals()['_接口'] = lambda 法, 径, 体=None: (_调9.append((法, 径)) or ([{'user': {'type': 'Bot'}, 'body': 警记 % _键9}] if '/comments' in 径 else [{'number': 1}]))
+        with contextlib.redirect_stdout(io.StringIO()) as _o9:
+            _q1 = 自决之巡('o/r', _今, 应d=_应9, 号=1, 键们=set(), 发=_发9.append, 停=False)
+            _q2 = 自决之巡('o/r', _今, 应d=_应9, 号=1, 键们={_键9}, 发=_发9.append, 停=False)
+            _q3 = 自决之巡('o/r', _今, 应d=dict(_应9, 自决=dict(_应9['自决'], 红=0)), 发=_发9.append, 停=False)
+            _q4 = 自决之巡('o/r', _今, 应d={'时': _今, 'rc': 0}, 发=_发9.append, 停=False)
+            _调前 = len(_调9)
+            _q5 = 自决之巡('o/r', _今, 应d=_应9, 号=1, 键们=set(), 发=_发9.append, 停=True)
+            _q6 = 自决之巡('o/r', _今, 应d=_应9, 发=_发9.append, 停=False)      # 键们 None → _诸键（哨 PR 之言）见同键 → ⛔再唤
+    finally:
+        globals()['_接口'] = _原接9
+    _o9 = _o9.getvalue()
+    T('自决③〔W908 环12③〕云巡之自决之巡：自决红未清 → 唤（键「自决·<首>」、言附片与第一律之句）而红；同局已唤（键们、或哨 PR 之言）→ ⛔唤⛔红；'
+      '红 0、旧巡应 → 0 且⛔取哨 PR（零 API）；暂停中 → 只印、0；云巡於私停之後、rc 之分支之前调之（读巡应一回），诸 rc 之返并其 rc',
+      _键9 == '自决·' + time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime(_今 - 600)) and _q1 == 1 and len(_发9) == 1
+      and all(k in _发9[0] for k in ('【巡警·自决】', '「这一步要你点头」', _句, 警记 % _键9, '接棒守.py --巡'))
+      and _q2 == 0 and _q3 == 0 and _q4 == 0 and _调前 == 0 and _q5 == 0 and '暂停中⛔唤（自决）' in _o9 and _q6 == 0 and len(_发9) == 1
+      and any('/comments' in p and 'since=' in p for _, p in _调9)
+      and 自决之键({'时': 1, '自决': '坏'}) == ('', None) and 自决之键({'时': _今, '自决': {'红': 1, '首': None}})[0] == '自决·' + time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime(_今))
+      and "决rc = 0 if 试 else 自决之巡(仓, 今, 应d=应)" in _段云
+      and _段云.index('私停(仓, 今)') < _段云.index('自决之巡(仓, 今, 应d=应)') < _段云.index('if rc == 0 and not 试')
+      and 'return max(1 if (红 and not 试) else 0, 决rc)' in _段云 and '_暂停中() if 停 is None else 停' in src.split('def 自决之巡(')[1].split('\ndef ')[0])
     # 〔1119 执行之审·复核〕治1(d) 之日行⛔与本坐自开之件（W9xx）之主环切片重计（复盘.py:407-409 件有「起」即记「主环:<起>」）——
     #   11-19 实踩：W905（起 17:56Z）、W906（起 18:51Z）俱本坐自开、「进行」，其复盘将记本坐之切；11-20 首巡记 11-19 全日行即两回计。
     #   甲：复盘先（切 [17:56, 23:30) 已在费账）→ 日行只余其外；乙：日行先（件进行·切未记）→ 日行让 [17:56, 24:00)，其後复盘记
@@ -2253,6 +2413,8 @@ if __name__ == '__main__':
     if '--巡' in a:
         if os.environ.get('GITHUB_ACTIONS') == 'true':
             sys.exit(巡())
+        sys.stderr.write(第一律之印() + '\n')   # 〔W908 环12①〕印之首行：00_总章.md 第一律之首句（唯一之源）；读不得即「⚠ 第一律读不得」（stderr·stdout 仍只「止」或旧印）
+        sys.stderr.flush()
         import contextlib as _cl
         _守先在 = True
         try:                         # 1119 作者令「及时备份……防沙盒突然重启」（法用#防失稿三锁）：每巡验本坐之存底守在跑、不在即起——

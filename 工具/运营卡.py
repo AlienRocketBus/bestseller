@@ -56,8 +56,8 @@ Node24之始 = {'actions/checkout': 5, 'actions/setup-python': 6, 'actions/setup
     '非意之败·merge': '治6 账并（gate.yml 备候 git merge 前 --装·总编辑并）', '被顶未吸': '环2(b) 云巡再闸即补', '步挂': '环4 checkout 步限 4 分（省取降级全取）',
     '封前⊉GitHub': '环9 封前之闸与 GitHub 同表', '果因误记': '环4 autopush 已在之支 YIN=', '跑绿果红': '环4 演练「期」：果≠期方 exit 1',
     '取消落红报': '环4 演练 report if: !cancelled()', '对照无期': '环4 演练入参「期」（治17）', 'runtime异': '裁六：唯演练对拍逐项同方切（3.13／22）',
-    '入主迟': '治6 账并＋环2(b)', '手治': '治6 账并＋环2(b)(c)', '活守空唤': '环2(a) 态变方唤', '假⛔': '环6 报之读去对照、果＝期即消',
-    '无summary': '环4 推报 --摘 入 summary', '环末方现': '環之跑六时一步，summary 唯步末现——留（環之制）', '红行无注': '环4 ::error 注实因',
+    '入主迟': '治6 账并＋环2(b)', '手治': '治6 账并＋环2(b)(c)', '活守空唤': '环2(a) 态变方唤；W910 钩死⛔红⛔唤（钩复载已弃·以巡代钩）', '假⛔': '环6 报之读去对照、果＝期即消',
+    '无summary': '环4 推报 --摘 入 summary', '环末方现': '環之跑一步（W910 章推之環至多九十分），summary 唯步末现——留（環之制）', '红行无注': '环4 ::error 注实因',
     '信不书因': '环4 --信 带因', '无run-name': '环4 演练 run-name', '注非实因': '环4 ::error 取印之首⛔行', '片红而跑绿': '环4 片之器红 ::warning 而 rc 0',
     '败不书细因': '环4 冲突之档出 output', '去重rc0': '环4 summary 汇非止之巡', '题误': '环2(e) rc4 之题', '频因无自治': '治6 账并',
     '一类无自治': '环2(b)／环4', '误降级': '环4 真冲突⛔降级', '自愈实死': '环2(d) 同局首唤之时', 'tag或Node20': '环4 钉 40 位 sha 之 Node24 原生之版',
@@ -352,16 +352,21 @@ def _函体(t, 名):
     return m.group(0) if m else ''
 
 
-def _读卡否(源):
-    """一函之码读卡否（ast·函之文档与注⛔算）：调 运营卡.一行（或 from 运营卡 import 一行）、或码中之串含「报/卡.json」。析不出 → False（⛔猜）。"""
+def _码节(源):
+    """一函之码之诸节（ast·函之文档与注⛔算）→ [节]；析不出、非函 → []（⛔猜）。_读卡否、活守空唤之探 同经此（⛔另造一把尺）。"""
     try:
         f = ast.parse(源).body[0]
     except Exception:
-        return False
+        return []
     if not isinstance(f, ast.FunctionDef):
-        return False
+        return []
     体 = f.body[1:] if f.body and isinstance(f.body[0], ast.Expr) and isinstance(getattr(f.body[0], 'value', None), ast.Constant) else f.body
-    for n in ast.walk(ast.Module(body=体, type_ignores=[])):
+    return list(ast.walk(ast.Module(body=体, type_ignores=[])))
+
+
+def _读卡否(源):
+    """一函之码读卡否（ast·函之文档与注⛔算）：调 运营卡.一行（或 from 运营卡 import 一行）、或码中之串含「报/卡.json」。析不出 → False（⛔猜）。"""
+    for n in _码节(源):
         if isinstance(n, ast.Attribute) and n.attr == '一行' and isinstance(n.value, ast.Name) and n.value.id == '运营卡':
             return True
         if isinstance(n, ast.ImportFrom) and n.module == '运营卡' and any(a.name == '一行' for a in n.names):
@@ -491,6 +496,7 @@ def 算(迹, 文, 算於, 祖, 报史=(), 窗=窗数, 旧卡=None, 本跑=''):
         分 = [z[1] for z in 略 if z[0] >= 60]
         限.append('步挂之底 %d 秒（尺无之·本器所加）：逾十倍而 <5 分者略之 %d%s' % (
             步挂之底, len(略), ('；其逾一分者 %d：%s' % (len(分), '；'.join(分[:4]))) if 分 else ''))
+    # 〔W910〕章推之環（题「巡环·章-N」、枝 章-N）⛔入叠之判：其与主枝之環同组排候，重推、次章之推、续環俱常态（⛔误扣）；叠唯主枝之環
     环跑 = [r for r in 跑['巡'] if r['题'].startswith('巡环') and r['枝'] == 主枝]
     叠 = []
     for x in [r for r in 窗跑['巡'] if r in 环跑]:
@@ -564,10 +570,11 @@ def 算(迹, 文, 算於, 祖, 报史=(), 窗=窗数, 旧卡=None, 本跑=''):
             continue
         m = re.search(r'rc：([\d ]+)）', 迹.get('環毕', {}).get(str(r['id'])) or '')
         jm = re.search(r'隔(\d+)秒', r['题'])
-        if m and jm:
+        隔 = int(jm.group(1)) if jm else (300 if r['题'].startswith('巡环·章-') else 0)    # 〔W910〕章推之環（题「巡环·章-N」）隔恒 300 秒
+        if m and 隔:
             rc = m.group(1).split()
             if '1' in rc and rc.index('1') < len(rc) - 1:
-                迟.append('%s 第 %d 巡 rc 1 而跑红迟 %s（環末方红）' % (号(r), rc.index('1') + 1, _分秒((len(rc) - 1 - rc.index('1')) * int(jm.group(1)))))
+                迟.append('%s 第 %d 巡 rc 1 而跑红迟 %s（環末方红）' % (号(r), rc.index('1') + 1, _分秒((len(rc) - 1 - rc.index('1')) * 隔)))
     if 迟:
         扣('巡', '准', '红之色迟', 1, 迟, len(迟))
 
@@ -601,8 +608,15 @@ def 算(迹, 文, 算於, 祖, 报史=(), 窗=窗数, 旧卡=None, 本跑=''):
         扣('autopush', '服', '手治', min(5, 0.5 * (len(手派) + len(手并))),
           ['手派 %d：%s' % (len(手派), ' '.join(x.split()[0] for x in 手派))]
           + ['手并 %d：%s' % (len(手并), ' '.join('%s←#%d %s' % (b, r['n'], r['头'][:9]) for b, r in sorted(手并.items())))], len(手派) + len(手并))
-    if re.search(r"键 = '活守·' \+ time\.strftime\('%Y-%m-%d'", 接):
-        扣('巡', '服', '活守空唤', 3, ['工具/接棒守.py:%d 活守之键带日：钩死不复则每日一空唤' % _行(接, r"键 = '活守·' \+ time\.strftime")])
+    # 活守空唤：旧键带日（钩死不复则每日一空唤）；〔W910〕活守判／活守之键之码（函之文档⛔算）之串言「钩死」——钩死作红与唤之由，
+    #   钩复载已弃（方法账「钩复载…弃」·以巡代钩），钩死係已知、已裁之常态：其红其唤俱空警
+    空唤 = (['工具/接棒守.py:%d 活守之键带日：钩死不复则每日一空唤' % _行(接, r"键 = '活守·' \+ time\.strftime")]
+          if re.search(r"键 = '活守·' \+ time\.strftime\('%Y-%m-%d'", 接) else [])
+    空唤 += ['工具/接棒守.py:%d %s 以钩死为红／唤之由：钩复载已弃（以巡代钩）——已裁之常态之空唤' % (_行(接, r'^def %s\(' % 名), 名)
+           for 名 in ('活守判', '活守之键')
+           if any(isinstance(n, ast.Constant) and isinstance(n.value, str) and '钩死' in n.value for n in _码节(_函体(接, 名)))]
+    if 空唤:
+        扣('巡', '服', '活守空唤', 3, 空唤)
     法 = _函体(文.get('工具/法用之守.py'), '报之读')
     今演 = {}
     for v in 版们:
@@ -1066,10 +1080,14 @@ def 自测():
     T('⑫步挂之底 %d 秒（尺无之）：逾十倍而 <5 分者略而⛔掩——卡之「限」列其数与逾一分者（#116 片 download-artifact 3 分·计否总编辑裁）' % 步挂之底,
       bool(re.search(r'略之 \d+', 略)) and '#116 44546510426' in 略 and 'download-artifact' in 略)
     账 = re.sub(r'(?m)^.*环11·[環环]之占机·裁：.*\n?', '', 今源.get('设定/方法账.md') or '')   # 〔1120〕真账已有裁行：先剔之，方测其判式（⛔为真账所染）
-    卡13 = [算(迹, dict(今源, **{'设定/方法账.md': 账 + x}), 样['算於'], 祖器(None, 样), 样['报史'])
+    今巡 = 今源.get('.github/workflows/巡.yml') or ''
+    旧巡 = re.sub(r'(?m)^    timeout-minutes: \d+$', '    timeout-minutes: 355', 今巡, count=1)    # 〔W910〕今树之環 job 之限 120（章推之環）：探以旧形（355·终日）之变测之
+    卡13 = [算(迹, dict(今源, **{'设定/方法账.md': 账 + x, '.github/workflows/巡.yml': 旧巡}), 样['算於'], 祖器(None, 样), 样['报史'])
            for x in ('\n- 环11 之果：未裁·取不得（旧语）\n', '\n- 环11·環之占机·裁：留（据：GitHub 附加条款 Actions 一节）\n')]
-    T('⑬平台之规未裁之探须裁之式「环11·環之占机·裁：留｜事驱…」：「环11…未裁」⛔销（旧探连「未裁」亦销）；裁之行在 → 销',
-      '巡·安·平台之规未裁' in 键(卡13[0]) and '巡·安·平台之规未裁' not in 键(卡13[1]))
+    卡13b = 算(迹, dict(今源, **{'设定/方法账.md': 账 + '\n- 环11 之果：未裁·取不得（旧语）\n'}), 样['算於'], 祖器(None, 样), 样['报史'])
+    T('⑬平台之规未裁之探须裁之式「环11·環之占机·裁：留｜事驱…」：環终日（job 之限 3xx）而「环11…未裁」⛔销（旧探连「未裁」亦销）；裁之行在 → 销；'
+      '今树（W910 章推之環·job 之限 120）无裁之行亦⛔扣',
+      旧巡 != 今巡 and '巡·安·平台之规未裁' in 键(卡13[0]) and '巡·安·平台之规未裁' not in 键(卡13[1]) and '巡·安·平台之规未裁' not in 键(卡13b))
     with tempfile.TemporaryDirectory() as t:
         推报.写(推报.成报('章-9', 'a' * 40, '败', '⛔备候不成（因 merge）\n', 因='merge', 跑='https://x/actions/runs/7'), '', t)
         推报.写演(推报.成演报('试', 'x', 'b' * 40, '红', '✗ 字数闸  坏\n', 期='红', 跑='https://x/actions/runs/8'), '', t)
@@ -1079,7 +1097,33 @@ def 自测():
       sorted((v['路'], v['类'], v['跑'], v['果'], v['期']) for v in 本) == [('报/推/章-9.json', '推', '7', '败', None), ('报/演/试.json', '演', '8', '红', '红')]
       and all(k in 源 for k in ('推报.目之报(', '推报.诸报之史(', '推报._读报(', '推报.钉式之缺(', '推报.诸uses('))
       and "'cat-file'" not in 源 and '坏果 = (' not in 源)
+    # ⑮〔W910〕事驱之環⛔误扣：章推之環（「巡环·章-N」·枝 章-N）重推叠跑、其末之续環（主枝）⛔入再起漏判；章推之環之红迟以隔 300 秒计
+    样W = json.loads(json.dumps(样))
+    T0 = max(r['毕'] for r in 样W['跑']['巡'] if r['态'] == 'completed') + 600
+    def 跑W(n, 事, 枝, 题, 起, 历, 果='success'):
+        return {'id': 990000 + n, 'n': n, '试': 1, '事': 事, '态': 'completed', '果': 果, '枝': 枝, '头': 'f' * 40, '题': 题,
+                '起': 起, '始': 起, '毕': 起 + 历, '者': 'github-actions[bot]' if 事 == 'workflow_dispatch' else 'AlienRocketBus'}
+    样W['跑']['巡'] += [跑W(33, 'push', '章-477', '巡环·章-477', T0, 1200), 跑W(34, 'push', '章-477', '巡环·章-477', T0 + 300, 2100),
+                       跑W(35, 'workflow_dispatch', 主枝, '巡环·60分·隔300秒', T0 + 2370, 3600),
+                       跑W(36, 'push', '章-478', '巡环·章-478', T0 + 7000, 900, 'failure')]
+    样W['環毕']['990036'] = '環毕：4 巡（rc： 0 1 0 0），历 15 分'
+    tW = T0 + 9000
+    卡W, 卡B = (算(样之迹(x), 文, tW, 祖器(None, 样), 样['报史']) for x in (样W, 样))
+    据 = lambda 卡_, k: next((x['据'] for x in 卡_['扣'] if x['键'] == k), [])
+    T('⑮事驱之環（W910）⛔误扣：章推之環重推而叠（#34 起於 #33 之跑时）、其末之续環（#35·主枝）⛔增再起漏判（据同旧）；章推之環 #36 第 2 巡 rc 1 → 红之色迟以隔 300 秒计',
+      据(卡W, '巡·稳·再起漏判') == 据(卡B, '巡·稳·再起漏判') and not any('#33 ' in x or '#34 ' in x or '#35 ' in x for x in 据(卡W, '巡·稳·再起漏判'))
+      and [x for x in 据(卡W, '巡·准·红之色迟') if x not in 据(卡B, '巡·准·红之色迟')] == ['#36 990036 第 2 巡 rc 1 而跑红迟 %s（環末方红）' % _分秒(600)])
     今卡 = 算(迹, 今源, 样['算於'], 祖器(None, 样), 样['报史'])
+    # ⑯〔W910〕活守空唤之探：钩死作活守之红／唤之由（钩复载已弃·以巡代钩）即扣；函之文档言之⛔扣；旧键带日照扣
+    接今 = 今源.get('工具/接棒守.py') or ''
+    判体 = _函体(接今.split('\ndef 自测(')[0], '活守判')
+    活变 = 接今.replace('：存底迟 %d 时（末一存 %s UTC）——作者知悉', '：钩死 %d 时（末一存 %s UTC）——作者知悉', 1)
+    键变 = 接今.replace("return '活守·%s' % time.strftime('%Y-%m-%dT%H:%MZ'", "键 = '活守·' + time.strftime('%Y-%m-%d', time.gmtime(今))\n    return '活守·%s' % time.strftime('%Y-%m-%dT%H:%MZ'", 1)
+    卡16 = [算(迹, dict(今源, **{'工具/接棒守.py': t}), 样['算於'], 祖器(None, 样), 样['报史']) for t in (活变, 键变)]
+    T('⑯活守空唤之探（W910）：今树之 活守判 唯以存底迟为由（其文档言钩死 → ⛔扣）；其码之串言钩死（钩死作红之由）→ 扣（据指 活守判）；旧键带日 → 扣',
+      '钩死' in 判体 and '巡·服·活守空唤' not in 键(今卡) and 活变 != 接今 and 键变 != 接今
+      and any('活守判 以钩死为红' in x for x in 据(卡16[0], '巡·服·活守空唤'))
+      and any('活守之键带日' in x for x in 据(卡16[1], '巡·服·活守空唤')))
     print('  · 今树之静（样之迹·今之源）：%s' % '、'.join('%s %s' % (f, 今卡['流'][f]['分']) for f in 诸流))
     ok = sum(R)
     print('── 负测·运营卡 %d/%d %s ──' % (ok, len(R), '全通' if ok == len(R) else '未过'))

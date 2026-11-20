@@ -1,32 +1,34 @@
-# 云巡（1117 作者令「定时检查能不能不花费 token 而且能够达到最好的效果……最大程度的去利用 github」；同日「没有额度限制 可以无限跑 放心用」）：
-#   停书之巡交 GitHub——每五分跑 `python3 工具/接棒守.py --云巡`（＝接棒守.巡()，与沙盒同一之判）：「止」即毕——零 token；
+# 云巡（1117 作者令「定时检查能不能不花费 token 而且能够达到最好的效果……最大程度的去利用 github」）：
+#   停书之巡交 GitHub——章推之環每五分跑 `python3 工具/接棒守.py --云巡`（＝接棒守.巡()，与沙盒同一之判）：「止」即毕——零 token；
 #   停写／解停／合入之卡／器自败 → 於哨 PR（头枝 备份/巡警·⛔并）留一言，唤总编辑之坐（其订此 PR 之动静·唯其能派）；同局二十分一唤；
 #   停逾九十分（或器败、合入之卡、唤而三十分未应）→ 唤之跑红：GitHub 邮作者（停书警报·红随唤，二十分一邮）。每跑落 备份/巡印（单提交·force·记所判之心跳）——
-#   总编辑兜底之巡（每三十分）验其鲜、以同一心跳复其判（常对拍）、每跑落 备份/巡应（云巡验其应：闭环）。
+#   总编辑兜底之巡（每三十分）验之（環未随章起即 rc 5）、以同一心跳复其判（常对拍）、每跑落 备份/巡应（云巡验其应：闭环）。
 #   1117 作者续令「效果至少要和现在一样，最好能超越」：仓转私有（Actions 按分计）即自 disable（护 autopush 之额度）——故须 actions: write。
 #   演练（丝滑主义）：推「备份/巡演」即以其树之器跑一回 --试（必留一言、验唤醒之路）；workflow_dispatch shi=1 同。
-# 環（1117 再治·GitHub 之定时不可恃）：巡.yml 入主枝（默枝）逾一时，schedule 之跑零（list_workflow_runs event=schedule → 0），
-#   而 workflow_dispatch 之跑俱成（约十五秒）——*/5 之 cron 迟、丢，⛔可恃。故五分之巡改由「環」自续、⛔倚 cron：
-#   （W908 环4 之正：*/5 之 cron 实约百一——11-17 至 11-19 之 schedule 之跑八，期七百余——只作再起之器、⛔作巡之源。）
-#   ①workflow_dispatch huan=1 起一環之跑（job huan）：每 jian 秒（默 300＝五分）一巡、满 fen 分（默 340）即止——job 之限六时，
-#     timeout-minutes 355 留余；每巡先取本 ref 之新（git fetch＋reset --hard FETCH_HEAD·钩关）：主枝之器之治即生效、⛔须再起；
-#   ②環末（末巡之後、job 之限之前）以 GITHUB_TOKEN 自派後继：POST …/actions/workflows/巡.yml/dispatches（同 ref、同 huan/fen/jian；
-#     GITHUB_TOKEN 所派之 workflow_dispatch 能起跑——autopush 之重派即恃此；败则再试，至三回）；
-#   ③concurrency 巡环-<枝>（⛔cancel-in-progress）：後继排候至前跑毕方起——无缝、恒至多一跑一候（新候顶旧候：重派、重起俱无害）；
-#   ④一巡之败⛔断環（set +e、记其 rc）；红随唤之义存：環中某巡 rc 1 即标 ::error、環末（派後继之後）其跑红；
-#     巡.yml 被停（私停之 disable、或作者手停）→ 環於本巡後即止、⛔派後继（护额）；cancel 環之跑亦断環（後继只於環末派）；
-#   ⑤再起：schedule（GitHub 若偶发）与无 huan、无 shi 之 dispatch ＝再起之器——查本枝有无環在跑／在候（run-name「巡环」），
-#     无即派一環，并自巡一回；有即只巡一回。沙盒兜底之巡见巡印逾三十分（rc 5）→ run_workflow 巡.yml ref 主枝 inputs {"huan":"1"} 起環（并降级每二十分）。
+# 環（W910·环11 之裁「事驱＋疏 cron」：旧一机终日——job 355 分、满即自派後继，占机九成八係 sleep，GitHub 附加条款 Actions :35 负担之款有疑）：
+#   ①環唯事起：「章-N」之推（autopush 同触）即起一環（job huan）——ref 恒主枝（checkout 与每巡之 fetch 俱取主枝、⛔取章枝）、zhi＝N、
+#     每 jian 秒（默 300＝五分）一巡、至多 fen 分（默 90·上限 90；槽与墙钟俱计；job 之限 120）；每巡先取 ref 之新（git fetch＋reset --hard FETCH_HEAD·钩关）：器之治即生效；
+#   ②早止：每巡後跑 `接棒守.py --早止 N`（主枝含章-N 且新坐已接——心跳之章 ≥N+1 而其坐异於章-N 之封者〔其提交之 Claude-Session〕，或暂停 → rc 0）——
+#     其 rc 0 且本巡 rc 0、印之首行「止」连三巡即止；交棒中、主未含、封版之坐未收（其先跳 N+1、後推章-N，至主含方收·复核要害）俱 rc 1、封者不可取 rc 3，俱⛔早止；
+#     「局」唯以印之首行（＝巡() 之判·云巡先印之；其 stderr 另档·⛔乱首行）定；首⛔行只作 summary 与 ::error 之文——活守、自决之红其後印（已唤者 rc 0）⛔阻早止、⛔致续；
+#   ③续（有事方续）：環末唯局悬——末巡之局非止（印之首行非「止」）、或末之 --早止 rc 1（交棒中／主未含／封版之坐未收）——且续之次 xu<4 方以 GITHUB_TOKEN 自派一短環
+#     （fen 60、jian 与 zhi 同、xu+1；败则再试至三回）；早止、局止（末巡止而末之早止之察 rc 0／2／3 或不随章）、xu≥4、巡.yml 被停（私停或手停）、cancel、
+#     本组已有章推之環在候（其守全局·派则顶之）俱⛔续——同局至多约六时（红随唤已达作者）；
+#   ④concurrency 巡环-主枝（⛔cancel-in-progress）：章推之環与主枝之手起同组排候（新候顶旧候：重推、重派俱无害）；备份/巡演 之手起自为一组（演⛔候真環）；
+#   ⑤一巡之败⛔断環（set +e、记其 rc）；環中某巡 rc 1 即标 ::error、環末其跑红（红随唤）；
+#   ⑥cron 三十分只巡一回（GitHub 之定时不可恃·只作疏之补）、⛔起環；无 huan 无 shi 之手 dispatch 方察本组有无環在跑／在候（run-name「巡环」），无即派一環；
+#     沙盒兜底之巡见末封之章推逾十五分而巡印旧於其推（rc 5）→ run_workflow 巡.yml ref 主枝 inputs {"huan":"1","zhi":"N"} 补起（并降级每二十分）；
+#   ⑦两章之间之停写：子会话之败平台即告总编辑之坐（child-session-event），余交兜底之巡（≤三十分）——降占之价（设定/方案/W910.md「注」）。
 # W908 环4：①::error 之文取本巡之印之首⛔行（旧列四可能之因）；summary 唯列非止之巡（rc≠0、或印首非「止」——去重之巡 rc 0 亦见）、環末汇其数；
 #   ②permissions 移 job 级（最小之权）：actions（派環、读跑）、contents（落巡印）、issues 与 pull-requests 写（哨 PR 之言——PR 之 issue 评论须 pull-requests 之写：
 #     1120 备份/巡演 --试〔run 44655946521〕只读即「唤不成：HTTP Error 403」，故复其写·⛔再收）；
 #   ③再起之察一请取诸跑而自滤其态（旧 ?status= 之滤漏判 #19 之環在跑而叠派 #21·11-18）；④xun 先读巡印：鲜（<5 分·環在巡）即只察、⛔再巡；
-#   ⑤uses 钉 40 位 sha（Node24 原生之版·注其版）。環之 24/7 占机之合规待环11 之裁（⛔改環）。
+#   ⑤uses 钉 40 位 sha（Node24 原生之版·注其版）。
 name: 巡
-run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.huan == '1' && format('巡环·{0}分·隔{1}秒', inputs.fen, inputs.jian) || format('巡·{0}', github.event_name) }}
+run-name: ${{ github.event_name == 'push' && startsWith(github.ref_name, '章-') && format('巡环·{0}', github.ref_name) || github.event_name == 'workflow_dispatch' && inputs.huan == '1' && format('巡环·{0}分·隔{1}秒', inputs.fen, inputs.jian) || format('巡·{0}', github.event_name) }}
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
     inputs:
       shi:
@@ -35,114 +37,163 @@ on:
         default: ''
         type: string
       huan:
-        description: 環（1＝起一環之跑：每 jian 秒一巡、满 fen 分自派後继；空＝再起之察＋巡一回）
+        description: 環（1＝起一環之跑：每 jian 秒一巡、至多 fen 分；空＝再起之察＋巡一回）
         required: false
         default: ''
         type: string
       fen:
-        description: 一環之分（默 340；上限 340——job 之限 355）
+        description: 一環之分（默 90；上限 90）
         required: false
-        default: '340'
+        default: '90'
         type: string
       jian:
         description: 巡之隔秒（默 300＝五分；下限 30）
         required: false
         default: '300'
         type: string
+      zhi:
+        description: 所随之章（N＝每巡後察早止：主枝含章-N 且新坐已接〔坐异於章-N 之封者〕连三巡止即止；空＝不早止）
+        required: false
+        default: ''
+        type: string
+      xu:
+        description: 续之次（環末局悬即自派续環 xu+1；至 4 ⛔再续）
+        required: false
+        default: '0'
+        type: string
   push:
-    branches: ['备份/巡演']
+    branches: ['备份/巡演', '章-*']
 permissions: {}
 jobs:
   huan:
-    if: github.event_name == 'workflow_dispatch' && inputs.huan == '1'
+    if: (github.event_name == 'workflow_dispatch' && inputs.huan == '1') || (github.event_name == 'push' && startsWith(github.ref_name, '章-'))
     runs-on: ubuntu-latest
-    timeout-minutes: 355
+    timeout-minutes: 120
     permissions:
       actions: write
       contents: write
       issues: write
       pull-requests: write
     concurrency:
-      group: 巡环-${{ github.ref_name }}
+      group: 巡环-${{ github.event_name == 'push' && 'claude/the-novel-review-4dtuit' || github.ref_name }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event_name == 'push' && 'claude/the-novel-review-4dtuit' || github.ref }}
           fetch-depth: 0
           filter: tree:0
           sparse-checkout: |
             工具
             正文
             设定
-      - name: 環（每 jian 秒一巡、满 fen 分止）
+      - name: 環（每 jian 秒一巡、至多 fen 分；随章即察早止）
         id: huan
         shell: bash
-        timeout-minutes: 349
+        timeout-minutes: 110
         env:
           GH_TOKEN: ${{ github.token }}
           FEN: ${{ inputs.fen }}
           JIAN: ${{ inputs.jian }}
+          ZHI: ${{ inputs.zhi }}
         run: |
           set +e
           git config user.name xun
           git config user.email xun@users.noreply.github.com
-          case "$FEN" in ''|*[!0-9]*) FEN=340 ;; esac
+          REF="$GITHUB_REF_NAME"
+          # 章推之環（push 章-N）：ref 恒主枝（⛔取章枝）、zhi＝N、fen 90、jian 300
+          if [ "$GITHUB_EVENT_NAME" = push ]; then REF=claude/the-novel-review-4dtuit; ZHI="${GITHUB_REF_NAME#章-}"; FEN=90; JIAN=300; fi
+          case "$FEN" in ''|*[!0-9]*) FEN=90 ;; esac
           case "$JIAN" in ''|*[!0-9]*) JIAN=300 ;; esac
-          FEN=$((10#$FEN)); JIAN=$((10#$JIAN))
-          [ "$FEN" -gt 340 ] && FEN=340; [ "$FEN" -lt 1 ] && FEN=1; [ "$JIAN" -lt 30 ] && JIAN=30
+          case "$ZHI" in *[!0-9]*) ZHI= ;; esac
+          FEN=$((10#$FEN)); JIAN=$((10#$JIAN)); [ -n "$ZHI" ] && ZHI=$((10#$ZHI))
+          [ "$FEN" -gt 90 ] && FEN=90; [ "$FEN" -lt 1 ] && FEN=1; [ "$JIAN" -lt 30 ] && JIAN=30
           WF="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/%E5%B7%A1.yml"
-          T0=$(date +%s); N=0; HONG=0; XU=1; RCS=; FZ=0
-          echo "環：每 $JIAN 秒一巡、满 $FEN 分止（ref $GITHUB_REF_NAME）"
-          { echo "### 巡环（每 $JIAN 秒一巡·满 $FEN 分止·ref $GITHUB_REF_NAME）"; echo; echo '非止之巡（rc≠0、或印首非「止」）：'; echo
+          T0=$(date +%s); N=0; HONG=0; XU=1; RCS=; FZ=0; LZ=0; ZAO=0; MO=0; ZR=
+          echo "環：每 $JIAN 秒一巡、至多 $FEN 分（ref $REF·随章 ${ZHI:-无}）"
+          { echo "### 巡环（每 $JIAN 秒一巡·至多 $FEN 分·ref $REF·随章 ${ZHI:-无}）"; echo; echo '非止之巡（rc≠0、或印首非「止」）：'; echo
             echo '| 巡 | 时（UTC） | 器 | rc | 印之首⛔行 |'; echo '|---|---|---|---|---|'; } >> "$GITHUB_STEP_SUMMARY"
           while :; do
             N=$((N + 1))
-            # 每巡取本 ref 之新（钩关）：主枝之器之治即生效、⛔须再起
-            timeout 120 git -c core.hooksPath=/dev/null fetch -q origin "$GITHUB_REF_NAME" \
+            # 每巡取 ref 之新（钩关）：主枝之器之治即生效、⛔须再起
+            timeout 120 git -c core.hooksPath=/dev/null fetch -q origin "$REF" \
               && git -c core.hooksPath=/dev/null reset -q --hard FETCH_HEAD \
               || echo "::warning title=巡环::第 $N 巡取新不成——照旧器跑"
             QI=$(git rev-parse --short=12 HEAD); KE=$(date -u '+%m-%d %H:%M:%S')
             echo "::group::第 $N 巡（$KE UTC·器 $QI）"
-            timeout 270 python3 工具/接棒守.py --云巡 > "$RUNNER_TEMP/巡之印" 2>&1; RC=$?
-            cat "$RUNNER_TEMP/巡之印"
+            # stdout 与 stderr 各档（stdout 入档即块缓冲：并之则 stderr 之行〔警、崩〕先於「止」而乱首行——早止永不成、每章续至 xu 4）
+            timeout 270 python3 工具/接棒守.py --云巡 > "$RUNNER_TEMP/巡之印" 2> "$RUNNER_TEMP/巡之误"; RC=$?
+            cat "$RUNNER_TEMP/巡之印"; [ -s "$RUNNER_TEMP/巡之误" ] && { echo '· stderr：'; cat "$RUNNER_TEMP/巡之误"; }
             echo "::endgroup::"
             echo "· 第 $N 巡 $KE UTC rc=$RC"
             RCS="$RCS $RC"
-            # 印之首⛔行（无⛔即首行；注之文之 % 转义）；印首「止」而 rc 0 即止——余俱非止（去重之巡 rc 0 而态未止者亦列）
-            SHOU="$(python3 -c 'import sys;l=[x.strip() for x in open(sys.argv[1],encoding="utf-8",errors="replace").read().split("\n") if x.strip()];h=[x for x in l if "⛔" in x];print(((h or l or ["（无印）"])[0])[:160].replace("|","｜"))' "$RUNNER_TEMP/巡之印")"
-            if [ "$RC" -ne 0 ] || [ "$SHOU" != 止 ]; then FZ=$((FZ + 1)); echo "| $N | $KE | $QI | $RC | $SHOU |" >> "$GITHUB_STEP_SUMMARY"; fi
+            # TOU＝印之首行（巡() 之判·云巡先印之；唯 stdout）定局：非「止」即 MO=1（去重之巡 rc 0 而态未止者亦是）；
+            # SHOU＝印之首⛔行（无⛔即首行；stdout 空即 stderr 之末行；注之文之 % 转义）只作 summary 与 ::error 之文——活守、自决之红印於巡() 之後，⛔定局
+            { IFS= read -r TOU; IFS= read -r SHOU; } < <(python3 -c 'import sys;r=lambda p:[x.strip() for x in open(p,encoding="utf-8",errors="replace").read().split("\n") if x.strip()];l=r(sys.argv[1]);e=r(sys.argv[2]);h=[x for x in l if "⛔" in x];print((l or ["（无印）"])[0][:160]);print((h or l or e[-1:] or ["（无印）"])[0][:160].replace("|","｜"))' "$RUNNER_TEMP/巡之印" "$RUNNER_TEMP/巡之误")
+            MO=0; [ "$TOU" != 止 ] && MO=1
+            if [ "$RC" -ne 0 ] || [ "$MO" -eq 1 ]; then FZ=$((FZ + 1)); echo "| $N | $KE | $QI | $RC | $SHOU |" >> "$GITHUB_STEP_SUMMARY"; fi
             if [ "$RC" -eq 1 ]; then HONG=1; echo "::error title=巡环·第 $N 巡 rc 1（環续、環末其跑红）::${SHOU//%/%25}"
             elif [ "$RC" -ne 0 ]; then echo "::warning title=巡环·第 $N 巡 rc $RC::${SHOU//%/%25}"; fi
             ST=$(curl -fsS -m 30 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$WF" \
                  | python3 -c 'import json,sys;print(json.load(sys.stdin).get("state",""))' 2>/dev/null)
-            if [ -n "$ST" ] && [ "$ST" != active ]; then echo "巡.yml 已 $ST（私停或手停）——環止、⛔派後继"; XU=0; break; fi
-            NEXT=$((T0 + N * JIAN))
-            [ "$NEXT" -ge $((T0 + FEN * 60)) ] && break
-            NOW=$(date +%s); [ "$NEXT" -gt "$NOW" ] && sleep $((NEXT - NOW))
+            if [ -n "$ST" ] && [ "$ST" != active ]; then echo "巡.yml 已 $ST（私停或手停）——環止、⛔续"; XU=0; break; fi
+            # 早止（W910）：主枝含章-N 且新坐已接（坐异於章-N 之封者·或暂停）而本巡止——连三巡即止；ZR＝末之可读者（0 1 3）之 rc：1 即局悬（续之所据）
+            if [ -n "$ZHI" ]; then
+              timeout 120 python3 工具/接棒守.py --早止 "$ZHI" > "$RUNNER_TEMP/早止之印" 2>&1; ZRC=$?
+              case "$ZRC" in 0|1|3) ZR=$ZRC ;; esac
+              if [ "$ZRC" -eq 0 ] && [ "$RC" -eq 0 ] && [ "$MO" -eq 0 ]; then LZ=$((LZ + 1)); else LZ=0; fi
+              echo "· 早止之察 rc=$ZRC·连止 $LZ（$(head -n 1 "$RUNNER_TEMP/早止之印")）"
+              if [ "$LZ" -ge 3 ]; then ZAO=1; echo "早止：章-$ZHI 已入主、新坐已接（坐已易）——连 $LZ 巡止"; break; fi
+            fi
+            # 槽与墙钟俱计：一巡实耗逾 jian（GitHub 迟滞）而接踵者⛔逾 fen（逾步之限 110 被杀即出不写·局悬亦⛔续）
+            NEXT=$((T0 + N * JIAN)); NOW=$(date +%s)
+            { [ "$NEXT" -ge $((T0 + FEN * 60)) ] || [ "$NOW" -ge $((T0 + FEN * 60)) ]; } && break
+            [ "$NEXT" -gt "$NOW" ] && sleep $((NEXT - NOW))
           done
-          echo "環毕：$N 巡（rc：$RCS），历 $(( ($(date +%s) - T0) / 60 )) 分"
-          { echo; echo "環毕：$N 巡、非止 $FZ（rc 1 $(echo "$RCS" | tr ' ' '\n' | grep -c '^1$')），历 $(( ($(date +%s) - T0) / 60 )) 分"; } >> "$GITHUB_STEP_SUMMARY"
-          { echo "xu=$XU"; echo "hong=$HONG"; echo "fen=$FEN"; echo "jian=$JIAN"; } >> "$GITHUB_OUTPUT"
+          ZM=; [ "$ZAO" = 1 ] && ZM='·早止'
+          echo "環毕：$N 巡（rc：$RCS），历 $(( ($(date +%s) - T0) / 60 )) 分$ZM"
+          { echo; echo "環毕：$N 巡、非止 $FZ（rc 1 $(echo "$RCS" | tr ' ' '\n' | grep -c '^1$')），历 $(( ($(date +%s) - T0) / 60 )) 分$ZM"; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "xu=$XU"; echo "hong=$HONG"; echo "fen=$FEN"; echo "jian=$JIAN"; echo "zhi=$ZHI"; echo "ref=$REF"; echo "zao=$ZAO"; echo "mo=$MO"; echo "zr=$ZR"; } >> "$GITHUB_OUTPUT"
           exit 0
-      - name: 续（派後继之環·concurrency 排候，本跑毕即起）
+      - name: 续（局未解方派一短環·concurrency 排候，本跑毕即起）
         if: ${{ !cancelled() && steps.huan.outputs.xu != '0' }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          FEN: ${{ steps.huan.outputs.fen || inputs.fen }}
           JIAN: ${{ steps.huan.outputs.jian || inputs.jian }}
+          ZHI: ${{ steps.huan.outputs.zhi }}
+          REF: ${{ steps.huan.outputs.ref }}
+          ZAO: ${{ steps.huan.outputs.zao }}
+          MO: ${{ steps.huan.outputs.mo }}
+          ZR: ${{ steps.huan.outputs.zr }}
+          XC: ${{ inputs.xu }}
         run: |
-          J="$(python3 -c 'import json,sys;print(json.dumps({"ref":sys.argv[1],"inputs":{"huan":"1","fen":sys.argv[2],"jian":sys.argv[3]}}))' "$GITHUB_REF_NAME" "${FEN:-340}" "${JIAN:-300}")"
+          case "$XC" in ''|*[!0-9]*) XC=0 ;; esac; XC=$((10#$XC))
+          # 有事方续（W910）：早止、局止（末巡印首「止」而末之早止之察非 1：0 新坐已接｜2 读不出｜3 坐之易不可验｜空 不随章）、同局已四续、環之步未毕（无出）俱⛔派
+          #   ——印其由（步行 bash -eo pipefail：可败之令俱带 ||）；末巡止而早止之察 1（交棒中／主未含／封版之坐未收）係局悬：照续（复核要害·⛔漏其後之交棒）
+          if [ "$ZAO" = 1 ]; then echo "· 早止（章-$ZHI 已入主、新坐已接）——⛔续"; exit 0; fi
+          if [ -z "$MO" ]; then echo "· 環之步未毕（无出）——⛔续（沙盒兜底之巡验巡印）"; exit 0; fi
+          if [ "$MO" != 1 ] && [ "$ZR" != 1 ]; then echo "· 末巡之局止（印之首行「止」）、早止之察未见局悬（zr ${ZR:-无}）——⛔续"; exit 0; fi
+          YOU=末巡非止; [ "$MO" != 1 ] && YOU='末巡止而早止之察见局悬（交棒中／主未含／封版之坐未收）'
+          if [ "$XC" -ge 4 ]; then echo "· 同局已四续（约六时）——⛔再续：红随唤已达作者、沙盒兜底之巡每三十分"; exit 0; fi
+          REF="${REF:-claude/the-novel-review-4dtuit}"
+          # 本组已有章推之環在候（新章已推：其守全局、早止之判更严）→ ⛔派续——派则顶之（新候顶旧候），新章之環即代守於旧章之 zhi；读不出即照派
+          if [ "$REF" = claude/the-novel-review-4dtuit ]; then
+            HOU="$(curl -fsS -m 30 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+                   "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/%E5%B7%A1.yml/runs?per_page=50" \
+                   | python3 -c 'import json,sys;print(" ".join("%s:%s" % (r["id"], r.get("display_title")) for r in json.load(sys.stdin).get("workflow_runs", []) if r.get("status") != "completed" and str(r.get("id")) != sys.argv[1] and (r.get("head_branch") or "").startswith("章-") and (r.get("display_title") or "").startswith("巡环·章-")), end="")' "$GITHUB_RUN_ID" 2> /dev/null)" || HOU=
+            if [ -n "$HOU" ]; then echo "· 本组已有章推之環在候（$HOU）——⛔续：其環守全局（派则顶之）"; exit 0; fi
+          fi
+          J="$(python3 -c 'import json,sys;print(json.dumps({"ref":sys.argv[1],"inputs":{"huan":"1","fen":"60","jian":sys.argv[2],"zhi":sys.argv[3],"xu":sys.argv[4]}}))' "$REF" "${JIAN:-300}" "$ZHI" "$((XC + 1))")"
           # 只 API 之派（败则再试·至三回）——⛔机内取并（法用#机内取并再试 1027 废）
           N=1
           until curl -fsS -m 30 -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
                 "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/%E5%B7%A1.yml/dispatches" -d "$J"; do
-            echo "⚠ 派後继不成（第 $N 试）"; [ "$N" -ge 3 ] && N=0 && break
+            echo "⚠ 派续環不成（第 $N 试）"; [ "$N" -ge 3 ] && N=0 && break
             sleep $((N * 15)); N=$((N + 1))
           done
-          [ "$N" -gt 0 ] && { echo "✓ 已派後继之環（第 $N 试·ref $GITHUB_REF_NAME·fen ${FEN:-340}·jian ${JIAN:-300}）"; exit 0; }
-          echo "::error title=巡环::派後继三试俱败——環断：沙盒兜底之巡见巡印逾三十分（rc 5）即 run_workflow huan=1 再起"
+          [ "$N" -gt 0 ] && { echo "✓ $YOU——已派续環（第 $N 试·ref $REF·fen 60·jian ${JIAN:-300}·zhi ${ZHI:-无}·xu $((XC + 1))）"; exit 0; }
+          echo "::error title=巡环::派续環三试俱败——沙盒兜底之巡验之（rc 5 即 run_workflow huan=1 补起）"
           exit 1
       - name: 红随唤（環中有巡 rc 1）
         if: ${{ !cancelled() && steps.huan.outputs.hong == '1' }}
@@ -151,7 +202,7 @@ jobs:
           echo "::error title=巡环::環中有巡 rc 1（唤之跑红）——见上诸巡之 ::error"
           exit 1
   xun:
-    if: github.event_name != 'workflow_dispatch' || inputs.huan != '1'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.huan != '1') || (github.event_name == 'push' && !startsWith(github.ref_name, '章-'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -172,31 +223,33 @@ jobs:
             工具
             正文
             设定
-      - name: 再起之察（schedule／无 huan 无 shi 之 dispatch：本枝无環在跑／在候即派一環）
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.shi == '')
+      - name: 再起之察（唯无 huan 无 shi 之手 dispatch：本组无環在跑／在候即派一環·schedule ⛔起環）
+        if: github.event_name == 'workflow_dispatch' && inputs.shi == '' && inputs.huan != '1'
         continue-on-error: true
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          FEN: ${{ inputs.fen || '340' }}
+          FEN: ${{ inputs.fen || '90' }}
           JIAN: ${{ inputs.jian || '300' }}
+          ZHI: ${{ inputs.zhi }}
         run: |
           set +e
           WF="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/%E5%B7%A1.yml"
-          # 一请取近百跑而自滤其态（未毕者俱算·W908 环4）：旧逐态 ?status= 之滤漏判 #19 之環在跑（11-18 #20 叠派 #21）
+          # 一请取近百跑而自滤其态（未毕者俱算·W908 环4）：旧逐态 ?status= 之滤漏判 #19 之環在跑（11-18 #20 叠派 #21）；
+          #   本组之環：本枝之「巡环」，主枝之组并章推之環（其枝 章-N·W910）
           R="$(curl -fsS -m 30 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$WF/runs?per_page=100")" \
             || { echo "⚠ 跑之列读不出——作无環论（重派无害：concurrency 新候顶旧候）"; R='{}'; }
-          ZAI="$(printf '%s' "$R" | python3 -c 'import json,sys;a=sys.argv;x=" ".join("%s:%s" % (r["id"], r.get("status")) for r in json.load(sys.stdin).get("workflow_runs", []) if r.get("status") != "completed" and r.get("head_branch") == a[1] and str(r.get("id")) != a[2] and (r.get("display_title") or "").startswith("巡环"));print(x, end="")' "$GITHUB_REF_NAME" "$GITHUB_RUN_ID")"
+          ZAI="$(printf '%s' "$R" | python3 -c 'import json,sys;a=sys.argv;z=lambda b: b == a[1] or (a[1] == "claude/the-novel-review-4dtuit" and b.startswith("章-"));x=" ".join("%s:%s" % (r["id"], r.get("status")) for r in json.load(sys.stdin).get("workflow_runs", []) if r.get("status") != "completed" and z(r.get("head_branch") or "") and str(r.get("id")) != a[2] and (r.get("display_title") or "").startswith("巡环"));print(x, end="")' "$GITHUB_REF_NAME" "$GITHUB_RUN_ID")"
           if [ -n "${ZAI// /}" ]; then echo "環在（$ZAI）——⛔再派（巡印鲜即只察）"; exit 0; fi
-          J="$(python3 -c 'import json,sys;print(json.dumps({"ref":sys.argv[1],"inputs":{"huan":"1","fen":sys.argv[2],"jian":sys.argv[3]}}))' "$GITHUB_REF_NAME" "$FEN" "$JIAN")"
+          J="$(python3 -c 'import json,sys;print(json.dumps({"ref":sys.argv[1],"inputs":{"huan":"1","fen":sys.argv[2],"jian":sys.argv[3],"zhi":sys.argv[4]}}))' "$GITHUB_REF_NAME" "$FEN" "$JIAN" "$ZHI")"
           N=1
           until curl -fsS -m 30 -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
                 "$WF/dispatches" -d "$J"; do
             echo "⚠ 派環不成（第 $N 试）"; [ "$N" -ge 3 ] && N=0 && break
             sleep $((N * 15)); N=$((N + 1))
           done
-          [ "$N" -gt 0 ] && { echo "✓ 本枝（$GITHUB_REF_NAME）无環——已派一環（第 $N 试·fen $FEN·jian $JIAN）"; exit 0; }
-          echo "::error title=巡::无環而派環三试俱败——沙盒兜底之巡 rc 5 即 run_workflow huan=1 再起（本跑仍巡一回）"
+          [ "$N" -gt 0 ] && { echo "✓ 本组（$GITHUB_REF_NAME）无環——已派一環（第 $N 试·fen $FEN·jian $JIAN·zhi ${ZHI:-无}）"; exit 0; }
+          echo "::error title=巡::无環而派環三试俱败——沙盒兜底之巡 rc 5 即 run_workflow huan=1 补起（本跑仍巡一回）"
           exit 1
       - name: 云巡
         shell: bash

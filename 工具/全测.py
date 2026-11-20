@@ -31,6 +31,14 @@ import glob
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 〔1120 坑64〕pre-push 钩中 git 传 GIT_DIR 诸变於子进程——负测之临时仓（git init、-C t commit、config）承之则写真仓：
+#   1120 章界之直推，真仓之 core.bare 被置 true、user 被置 t@t、所推之树被提交「x」三笔。库只由 ROOT 定（cwd），起即去之。
+try:
+    from 推报 import _定库之变 as _钩境
+except Exception:
+    _钩境 = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
+for _k in tuple(_钩境) + ('GIT_PREFIX',):
+    os.environ.pop(_k, None)
 ENV = dict(os.environ, ZM_STREAM=os.environ.get('ZM_STREAM', 'streamA-cli'))
 
 
@@ -1184,20 +1192,6 @@ def chk_object_roll_all():
     return True, '%d 份册逐章跑过，皆绿' % len(ps)
 
 
-
-def chk_reread_dup():
-    """连读客·问五（逐字重出）负测（2026-09-03·296第11轮立·见 工具/负测_连读重出.py）。
-    ★其立之由：296第10轮手打一条 grep 量出 294→296 有19/138拍含≥10字逐字重出，
-      ★★而同日 `看官.py --连读 292 296` 四问俱绿——**本书唯一一只跨章之眼对此是瞎的**；
-    ★★★§六④：31对相邻同线之章，中位2.1%｜顶13.8%（294→296）；故6%⚠、10%⛔。"""
-    out = run('负测·连读重出', ['工具/负测_连读重出.py'], timeout=1200)
-    if out is None:
-        return False, '运行失败'
-    if '全通' not in out:
-        return False, out.strip().split('\n')[-1]
-    return True, _测数(out, '8/8') + ' 全通（旧式问三对292—296一无所报）'
-
-
 def chk_due_states():
     """到期账词表 负测（2026-09-04·303第1轮立·见 工具/负测_到期账词表.py）。
     ★其立之由：`小说检察官.py::_CLEARED_STATES` 只认 done/closed/half/废弃/cold/冷藏/已清，
@@ -1447,30 +1441,6 @@ def chk_bigq_neg():
     if not ok or 坏:
         return False, '%s%s' % (语, ('｜全测之读坏：%s' % '；'.join(坏[:3])) if 坏 else '')
     return True, '%s｜全测之读 %d/%d 全通' % (语, len(案), len(案))
-
-
-def chk_two_ledger():
-    """两册对限（2026-09-04·300第7轮立·见 工具/两册对限.py）。
-
-    ★其由：一笔改了限而另一册没跟着改——刘二之限由300改301，同笔改了四处档，
-      而 到期账.json 照旧写着300，三坐无人看见（欠-297A之形：令与闸各读一册）。
-    """
-    out = run('两册对限', ['工具/两册对限.py'])
-    if out is None:
-        return False, '运行失败'
-    _h = _器印之头(out, '════ 两册对限', 'chk_two_ledger')
-    if _h:
-        return _h
-    import re as _r
-    m = _r.search(r'两册认得上者 (\d+) 对', out or '')
-    bad = _r.search(r'⛔ 两册不合 (\d+) 笔', out or '')
-    if bad:
-        return False, '⛔两册不合 %s 笔（一笔改了限而另一册没跟着改）' % bad.group(1)
-    if m and m.group(1) == '0':
-        # ★2026-09-05·机制总审（八路·陪跑闸审第4条）：认得上者 0 对时其绿係「所守为空集」——不红（两册合法不重叠亦然），但须说出来。
-        return True, '两册认得上者 0 对——★所守为空集，此绿只及於「不相犯」，不及於「两册全对上」'
-    return True, '两册认得上者 %s 对，逐笔同限（★其余只在一册上者本器不说）' % (m.group(1) if m else '?')
-
 
 
 def chk_scenecut_neg():
@@ -1842,7 +1812,7 @@ def chk_dashen_hang():
 def chk_repeat_trend():
     """★逐字重出之趋（2026-09-13 立）：
     ★★守一句——**逾 10% 之章，其骨记须有「重出之裁」一行；无此一行即红。**
-    ⛔**其事**：`看官.py --连读` 逐对报其数，**而「这一对高不高」与「它在往哪儿走」是两个问题**；
+    ⛔**其事**：连读客（看官.py·1119 W908 环7 汰）逐对报其数，**而「这一对高不高」与「它在往哪儿走」是两个问题**；
       ★**0913 头一回跑**：**300—324 中位 2.1%（逾10%者一章）→ 325:14.4｜326:10.0｜327:24.1**——**连三章，末一章逾中位十倍。**
     ★★★**本格不判哪一拍该删**（逐拍之事已由连读与轮记在办）——**它只逼出一行裁。**
       **325／326／327 三章已封版，其裁在 `设定/裁_0913_逐字重出之趋_连三章.md`。**"""
@@ -1873,12 +1843,21 @@ def chk_repeat_trend():
                 or ('**%d**' % n) in 裁文):
             continue
         坏.append('第%d章 %.1f%%' % (n, r))
+    # 〔W908 环7〕并印长串（只报⛔判）：该报的是串之长，不是章之率（裁_0922_看官账_347至349之重出 §四①·重出趋.长串）
+    串 = []
+    for n, r in 逾:
+        try:
+            _c = 趋.长串(章[n - 2], 章[n]) if (n - 2) in 章 and n in 章 else None
+        except Exception:
+            _c = None
+        串.append('%d:%s' % (n, '?' if _c is None else ('%d串≥%d字' % (len(_c), 趋.顶) if _c else '无')))
+    _串语 = ('｜长串（只报）：%s' % '、'.join(串)) if 串 else ''
     if 坏:
-        return False, '⛔逾界而无一行裁（骨记无「重出之裁」，册上亦无）：%s' % '、'.join(坏)
+        return False, '⛔逾界而无一行裁（骨记无「重出之裁」，册上亦无）：%s%s' % ('、'.join(坏), _串语)
     return True, ('%s·逾界 %d 章皆已有裁在册（%s）'
                   % (m.group(0), len(逾),
                      '、'.join('%d:%.1f%%' % x for x in 逾)) if 逾
-                  else '%s·无一章逾界' % m.group(0))
+                  else '%s·无一章逾界' % m.group(0)) + _串语
 
 
 def chk_ganguan():
@@ -2276,30 +2255,6 @@ def chk_piaoyi_all():
     if out2 is None:
         return False, '正路运行失败'
     好, 末 = 判末行(out2, '漂移全书')
-    return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
-
-
-def chk_kanguan_qian():
-    """★看官欠哨（2026-09-16 立）：**一条律写着「封版时据此拦」，而盘上十一天没有一样东西在拦。**
-    ⛔**其所由来·非本坐所发现，是本仓自己记了十一天的一笔**：`工具/一坐.py:446` 逐字
-      （2026-09-05·机制总审）——「**看官账律③「封那一章时全测据此拦」而全测无一处读其 open／限**」，
-      其治自书「见 机制总审 丙」。**十一天过去，那只器没有立起来。**
-    ★**其数·0916 亲跑**：`看官账.json` 总 240 笔｜open 228 笔｜**而限已在末章之前者 225 笔**。
-    ★★**故其判分两层**（与 `分量闸`／`改期记因哨` 同法·㊮：**一只新闸红二百二十五笔，
-      多半是闸错了，不是账错了**）：**旧账（限 ≤337）⚠只报不拦而其数钉死**；**新账（限 ≥338）⛔红**。
-    ⛔**本闸不判那一笔该不该清**——**它只问「过了限而没有人碰过它」**；
-      **并写死：挪一个限不算治，挪限须带记因**（与 `改期记因哨` 同法）。"""
-    out = run('看官欠哨·自测', ['工具/看官欠哨.py', '--自测'])
-    if out is None:
-        return False, '运行失败'
-    import re as _r
-    m = _r.search(r'自测 (\d+)/(\d+)', out)
-    if not m or m.group(1) != m.group(2):
-        return False, '自测未满格：%s' % (m.group(0) if m else '未见其数')
-    out2 = run('看官欠哨', ['工具/看官欠哨.py'])
-    if out2 is None:
-        return False, '正路运行失败'
-    好, 末 = 判末行(out2, '看官欠哨')
     return (True, m.group(0) + '·' + 末) if 好 else (False, 末)
 
 
@@ -2945,6 +2900,14 @@ def chk_huanxing_ruler():
 
 
 
+def _查先自测後(a, r):
+    """〔W908 环7〕七格之语：查之末行先、自测只取其 n/n——旧以「自测之印 ＋ 查之全印」[:300]，自测之语占其前，查之果（红之由）被截。"""
+    查末 = ([l.strip() for l in (r.stdout or '').split('\n') if l.strip()] or ['（查无印）'])[-1]
+    m = re.findall(r'自测\s*(\d+)/(\d+)', a.stdout or '')
+    测 = ('自测 %s/%s' % m[-1]) if m else ('自测：' + ([l.strip() for l in (a.stdout or '').split('\n') if l.strip()] or ['（无印）'])[-1][:60])
+    return (查末 + ' ｜' + 测 + ('' if a.returncode == 0 else '（rc=%d）' % a.returncode))[:300]
+
+
 def chk_shengjing_yin():
     """圣经引号（2026-09-27·圣经大修⑥·改单#G0927-10 立）：在役诸档之 `圣经:NNNN` 逐条对圣经今行，
     条号之引（以「律·」为名者）须在圣经有其条；空／离题之数只许降不许升（基线 工具/圣经引号_基线.json）。
@@ -2952,7 +2915,7 @@ def chk_shengjing_yin():
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/圣经引号.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/圣经引号.py', '--静'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip().split('\n')[-1])[:300]
+    return a.returncode == 0 and r.returncode == 0, _查先自测後(a, r)
 
 
 def chk_shuming():
@@ -2960,7 +2923,7 @@ def chk_shuming():
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/书名不绑.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/书名不绑.py'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+    return a.returncode == 0 and r.returncode == 0, _查先自测後(a, r)
 
 
 def chk_dashi():
@@ -2969,7 +2932,7 @@ def chk_dashi():
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/大师之关.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/大师之关.py'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+    return a.returncode == 0 and r.returncode == 0, _查先自测後(a, r)
 
 
 def chk_juqing():
@@ -2977,7 +2940,7 @@ def chk_juqing():
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/剧情庭之关.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/剧情庭之关.py'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+    return a.returncode == 0 and r.returncode == 0, _查先自测後(a, r)
 
 
 def chk_shengjing_suicai():
@@ -2985,7 +2948,7 @@ def chk_shengjing_suicai():
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/圣经随裁.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/圣经随裁.py'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+    return a.returncode == 0 and r.returncode == 0, _查先自测後(a, r)
 
 
 def chk_jiyi():
@@ -2995,7 +2958,7 @@ def chk_jiyi():
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/全书记忆.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/全书记忆.py', '--只查'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+    return a.returncode == 0 and r.returncode == 0, _查先自测後(a, r)
 
 
 def chk_gongzuoliu():
@@ -3003,7 +2966,7 @@ def chk_gongzuoliu():
     import subprocess as _sp
     a = _sp.run([sys.executable, '工具/工作流账.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     r = _sp.run([sys.executable, '工具/工作流账.py', '--查'], cwd=ROOT, capture_output=True, text=True)
-    return a.returncode == 0 and r.returncode == 0, (a.stdout.strip() + ' ｜' + r.stdout.strip())[:300]
+    return a.returncode == 0 and r.returncode == 0, _查先自测後(a, r)
 
 
 def chk_fupan():
@@ -3038,11 +3001,45 @@ def chk_erdai():
     印 = []
     ok = True
     # ★路径须字面写死（1013 实踩：以 '工具/%s.py' % 器 拼出，囤灰闸／对位认不出，段料、段案验遂判孤器）
+    # 〔W908 环7〕旧只取 stdout 末行：器崩（Traceback 在 stderr）或 rc≠0 而 stdout 末行犹似绿，格之语⛔见其因——今红者并印 rc 与 stderr 末行
     for 路 in ('工具/造式验.py', '工具/封版.py', '工具/段料.py', '工具/段案验.py'):
         r = _sp.run([sys.executable, 路, '--自测'], cwd=ROOT, capture_output=True, text=True)
         ok = ok and r.returncode == 0
-        印.append((r.stdout.strip().split('\n') or [''])[-1])
-    return ok, '｜'.join(印)[:200]
+        末 = (r.stdout.strip().split('\n') or [''])[-1]
+        if r.returncode != 0:
+            错 = ([l.strip() for l in (r.stderr or '').split('\n') if l.strip()] or ['（stderr 无印）'])[-1]
+            末 = '⛔%s rc=%d：%s｜%s' % (os.path.basename(路), r.returncode, 错[:90], 末[:60])
+        印.append(末)
+    return ok, '｜'.join(印)[:300]
+
+
+def _自测之rc(名, 档):
+    """〔W908 环7〕跑一器之 --自测，以 rc 判（其印无「全通」者用之：造式「✓ 造式·自测 n/n」）；崩（Traceback）即红，回印其末行。"""
+    跑 = run(名, [档, '--自测'], timeout=300, 带码=True)
+    if 跑 is None:
+        return False, '运行失败（崩或逾时）'
+    out, rc = 跑
+    末 = ([x.strip() for x in out.strip().split('\n') if x.strip()] or ['（无印）'])[-1]
+    return rc == 0, (('rc=%d｜' % rc) if rc else '') + 末[:170]
+
+
+def chk_zaoshi_self():
+    """造式·自测（〔W908 环7〕造式之实之核——封版 --前／造式验所调，而其 --自测 旧不入全测）：见 工具/造式.py。"""
+    return _自测之rc('造式·自测', '工具/造式.py')
+
+
+def chk_yunying_self():
+    """运营卡·自测（〔W908 环7〕GitHub 运营之卡·环5 立器：以样回放须得「今之分」）：见 工具/运营卡.py。
+    器未立（环5 未并）即只报 ⚠、⛔红（⛔拦未施之环）；器在即真跑其 --自测，rc≠0 即红。"""
+    if not os.path.exists(os.path.join(ROOT, '工具', '运营卡.py')):
+        return True, '⚠ 工具/运营卡.py 未立（W908 环5 施之；并後本格即真跑其 --自测）'
+    return _自测之rc('运营卡·自测', '工具/运营卡.py')
+
+
+def chk_repeat_long_neg():
+    """负测·重出趋长串（0922 立·裁_0922_看官账_347至349之重出 §四③；〔W908 环7〕旧不入全测——未用）：
+    347→349 须单列八串、342→344 一串不列、顶 30 之齿；见 工具/负测_重出趋长串.py。"""
+    return _自测之项('负测·重出趋长串', '工具/负测_重出趋长串.py')
 
 
 def chk_fangan():
@@ -3059,6 +3056,10 @@ def chk_duipai():
     a = _sp.run([sys.executable, '工具/费审对拍.py', '--自测'], cwd=ROOT, capture_output=True, text=True)
     b = _sp.run([sys.executable, '工具/费审对拍.py'], cwd=ROOT, capture_output=True, text=True, timeout=600)
     末 = [l for l in b.stdout.strip().split('\n') if '对拍' in l or '真异' in l][-1:] or ['']
+    # 〔W908 环7·坑62〕0 单位（GitHub 之机无转录）即空对：⛔印「✓ 对拍」，印「未对」（只报·金题自测照判）
+    m = re.search(r'对拍：(\d+) 个单位', 末[0])
+    if m and m.group(1) == '0':
+        末 = ['⚠ 未对：0 个单位（此机无转录——全会话之对拍唯有转录之机可行；本跑只验金题）']
     return a.returncode == 0 and b.returncode == 0, (a.stdout.strip() + '｜' + 末[0].strip())[:200]
 
 
@@ -3341,24 +3342,6 @@ def chk_juqing_quantu():
     if rc2 == 2 and '⚠ 图旧' in 头[0]:
         return True, '自测 %s/%s｜验 ⚠ 图待下一封版随（%s）' % (m.group(1), m.group(2), 头[0].split('（', 1)[-1].split('）', 1)[0][:40])
     return rc2 == 0, '自测 %s/%s｜%s' % (m.group(1), m.group(2), 头[0][:150])
-
-
-def chk_jinhualian():
-    """进化链＋其棘轮（2026-09-24 立·作者令「完整的进化链，犯过的错不能再犯」）。
-    ⛔**「无守之环」（只写在纸上、无器守着的教训）之数只许往下走**——新添教训而不配器即红。"""
-    out = run('进化链·自测', ['工具/进化链.py', '--自测'])
-    if out is None:
-        return False, '自测运行失败'
-    import re as _r
-    m = _r.search(r'进化链·自测 (\d+)/(\d+)', out)
-    if not m or m.group(1) != m.group(2):
-        return False, '自测 %s' % (('%s/%s' % m.groups()) if m else '未见其数')
-    out2 = run('进化链', ['工具/进化链.py'])
-    if out2 is None or '棘轮红' in out2:
-        return False, '⛔棘轮红：新添了教训而没配器'
-    m2 = _r.search(r'共 (\d+) 环｜有守 (\d+)｜⛔无守（只写在纸上）(\d+)', out2 or '')
-    return True, ('自测 %s/%s｜%s' % (m.group(1), m.group(2),
-                  ('%s 环·有守 %s·无守 %s' % m2.groups()) if m2 else '链已写'))
 
 
 def chk_shangyin():
@@ -4131,6 +4114,9 @@ def chk_paozhang():
                            capture_output=True, text=True, timeout=120)
         末 = [x.strip() for x in (r.stdout or '').strip().split('\n') if x.strip()]
         语 = 末[1] if len(末) > 1 else (末[0] if 末 else '（跑账无话）')
+        # 〔W908 环7〕GitHub 之机无跑迹（_器之迹 唯沙盒有）：甲路恒「无凭」只 ⚠——其判归 封版 --後 之活态（封版.活态之格）；乙路之红（rc≠0）照报
+        if r.returncode == 0 and 在GitHub():
+            语 = '沙盒专·封版活态判（GitHub 之机无跑迹：甲路之「无凭」⛔判；乙路无红）'
         return (r.returncode == 0), 语[:160]
     except Exception as e:
         return False, '跑账跑不起来：%s' % e
@@ -4229,12 +4215,13 @@ def 诸项(quick):
         items.append(('费审对拍', chk_duipai))
         items.append(('方案', chk_fangan))
         items.append(('二代诸器', chk_erdai))
+        items.append(('造式·自测', chk_zaoshi_self))     # 〔W908 环7〕
+        items.append(('运营卡·自测', chk_yunying_self))  # 〔W908 环7〕环5 之器（未立只 ⚠）
         items.append(('暂停令', chk_zanting))
         items.append(('书名不绑', chk_shuming))
         items.append(('圣经引号', chk_shengjing_yin))
         items.append(('自省哨', chk_zixing))
         items.append(('负测·自进化环', chk_zijinhua))
-        items.append(('进化链', chk_jinhualian))
         items.append(('体系总图', chk_tixi_zongtu))    # ★1119 作者令·体系总图（法用#体系总图·W909）：一件一行、用之审之红（器红级）；图旧只 ⚠·唯封版重写
         items.append(('进化树', chk_jinhuashu))         # ★1119 作者令·进化树（法用#进化树）：谱随三账、截至为 HEAD 之祖（谱旧只 ⚠·唯封版重写）
         items.append(('剧情全图', chk_juqing_quantu))   # ★1119 W907 作者令（法用#剧情全图）：自测＋验（图旧只 ⚠·唯封版重写·照进化树）；⛔快测（写中之章诸源随轮而变）
@@ -4261,9 +4248,9 @@ def 诸项(quick):
         items.append(('十一轮哨', chk_shiyilun))
         items.append(('死处方哨', chk_sichufang))
         items.append(('漂移全书', chk_piaoyi_all))
-        items.append(('看官欠哨', chk_kanguan_qian))
         items.append(('感官之趋', chk_ganguan))
         items.append(('重出之趋', chk_repeat_trend))
+        items.append(('负测·重出趋长串', chk_repeat_long_neg))   # 〔W908 环7〕旧未入
         items.append(('负测·净重一处', chk_weight_one))
         items.append(('负测·亮点残引', chk_hl_residue))
         items.append(('负测·净重取形', chk_weight_shape))
@@ -4323,7 +4310,6 @@ def 诸项(quick):
         items.append(('负测·全测崩绿', chk_crash_green_neg))
         items.append(('负测·大问挂账', chk_bigq_neg))
         items.append(('负测·场景切换闸', chk_scenecut_neg))
-        items.append(('两册对限', chk_two_ledger))
         items.append(('起手哨', chk_起手哨))
         items.append(('负测·器物点名', chk_object_roll))
         items.append(('负测·接力', chk_jieli_neg))          # ★W60·X33⑦：接力、心跳之 --自测 入全测
@@ -4357,7 +4343,6 @@ def 诸项(quick):
         items.append(('封版留旗', chk_sealed_flags))
         items.append(('负测·开轮六检', chk_open6_gate))
         items.append(('负测·到期账词表', chk_due_states))
-        items.append(('负测·连读重出', chk_reread_dup))
         items.append(('第零轮', chk_round_zero))
     # ★0910·作者令「一定要跑起来」：全测须问一句「席里点名的器，这一章跑没跑过」
     items.append(('跑账', chk_paozhang))

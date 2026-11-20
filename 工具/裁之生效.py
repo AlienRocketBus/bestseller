@@ -9,7 +9,7 @@
   （或它本身是 `全测.py`／`自走.py` 每跑必调之器）。**
   ——只写在纸上、没有一样器在守的裁，就是「做了而没生效」的那一种。
 
-★旧裁以棘轮守（同 `进化链.py`）：**未生效之裁数只许降、不许升**；
+★旧裁以棘轮守：**未生效之裁数只许降、不许升**；
   0924（含）以後所立之裁，一份也不许未生效——立裁之日须同日配器。
 
 ★1027·执行之审 #75 #129 #56（总编辑之裁·线 D）：
@@ -19,6 +19,8 @@
     `改单#G…`（在改单账且已结）；⛔只点器者判未生效。
     **0924—1026 之裁过渡**：只点器而无行之证者印其数（「只点器之底」·棘轮只许降），⛔拦。
   ③**旧裁未生效之底至第 420 章须 0**（限章），未达即红——⛔只禁涨不逼降。
+〔1119 W908 环7〕进化链之器废（裁九·并入进化树）：其所借之 随汰／删过之器（git 史之删）归本器（一处判·自进化环、负测_自进化环 借之），
+  末章径借 囤灰闸.末章（旧经 进化链 转借）。
 """
 import os as _o, sys as _s
 _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
@@ -49,29 +51,51 @@ def _在役():
 
 
 def 守器(裁文):
-    """裁文里点名之器：`工具/xxx.py`、`xxx.py`、`工具/席/xxx.js`。"""
+    """裁文里点名之器：`工具/xxx.py`、`xxx.py`、`工具/席/xxx.js`。
+    〔1119 W908 环7 复核〕〔随汰…〕之标内所点之器⛔算守（借标续命：标书「其守归 X.py」，X 在役即判生效，而 X 未必守其往前之令——
+      0919／0922 看官账四裁之标初书「逐字重出之守归 重出趋.py」，重出趋只报逾 10% 之章，⛔守 345至347 §三 之永禁一句）。"""
+    裁文 = re.sub(r'〔随汰[^〕]*〕', '', 裁文 or '')
     names = set(re.findall(r'([\w一-鿿]+\.py)', 裁文)) | set(re.findall(r'(席/[\w一-鿿]+\.js)', 裁文))
     return {n for n in names if os.path.exists(os.path.join(ROOT, '工具', n))}
 
 
-def 随汰(裁文):
-    """★1027：裁之退役——文中「〔随汰·<日>：所守之法 `工具/<器>` 已彻删……〕」而其器真已不在盘上 → 其器名；否则 ''。
-    ⛔借 进化链.随汰（一处判，⛔两份码）；其器仍在、或从未有过（git 史中无其删），俱⛔认（防借标关闸）。"""
-    return _链().随汰(裁文, ROOT)
+def 随汰(文, root=None):
+    """★1017 淘汰之律·1027 裁之退役：文中「〔随汰·<日>：所守之法 `工具/<器>` 已彻删……〕」，
+    且其所点之器**真已不在盘上、且 git 史中真删过**，方认 → 其器名（如 '核轮.py'、'席/一章.js'）；否则 ''。
+    ⛔器仍在、或从未有过之名（不在盘上≠已删），俱⛔认（防借标关闸）。一处判：自进化环（病族之随汰）借之，⛔两份码。
+    〔W908 环7〕旧借 进化链.随汰——进化链之器废，其判移此（判法照旧）。"""
+    m = re.search(r'〔随汰[^〕]*`工具/([^`]+)`[^〕]*〕', 文 or '')
+    if not m:
+        return ''
+    名 = m.group(1)
+    if os.path.exists(os.path.join(root or ROOT, '工具', 名)):
+        return ''
+    删 = 删过之器(root)
+    return 名 if 删 is None or 名 in 删 else ''
 
 
-_链模 = []
+_删之器 = {}
 
 
-def _链():
-    """进化链之模（一回载入、缓存：随汰之判与 git 史之删器集俱借之）。"""
-    if not _链模:
-        import importlib.util as _u
-        _sp = _u.spec_from_file_location('_jhl', os.path.join(ROOT, '工具', '进化链.py'))
-        _m = _u.module_from_spec(_sp)
-        _sp.loader.exec_module(_m)
-        _链模.append(_m)
-    return _链模[0]
+def 删过之器(root=None):
+    """→ git 史中真删过之器（`工具/` 下之相对名，如 '核轮.py'、'席/一章.js'）之集；一回 git log 取之、缓存。
+    浅克隆或非 git 之仓 → None（验不得：照旧只验不在盘上，⛔误拦）。〔W908 环7〕旧在 进化链.py，移此。"""
+    root = root or ROOT
+    if root in _删之器:
+        return _删之器[root]
+    import subprocess
+    出 = None
+    try:
+        浅 = subprocess.run(['git', 'rev-parse', '--is-shallow-repository'], cwd=root, capture_output=True, text=True)
+        if 浅.returncode == 0 and 浅.stdout.strip() == 'false':
+            r = subprocess.run(['git', '-c', 'core.quotepath=off', 'log', '--no-renames', '--diff-filter=D',
+                                '--name-only', '--format=', '--', '工具/'], cwd=root, capture_output=True, text=True)
+            if r.returncode == 0:
+                出 = {l.strip()[len('工具/'):] for l in r.stdout.split('\n') if l.strip().startswith('工具/')}
+    except Exception:
+        出 = None
+    _删之器[root] = 出
+    return 出
 
 
 def _读json(rel):
@@ -163,10 +187,10 @@ def 跨年之名(名):
 
 
 def 末章():
-    """盘上正文之末章（借 进化链.末章）；读不出 → 0（限章⛔判）。"""
+    """盘上正文之末章（借 囤灰闸.末章：档名之汉数）；读不出 → 0（限章⛔判）。〔W908 环7〕旧经 进化链 转借，进化链之器废即径借。"""
     try:
         import importlib.util as _u
-        _sp = _u.spec_from_file_location('_jhl2', os.path.join(ROOT, '工具', '进化链.py'))
+        _sp = _u.spec_from_file_location('_tg_cszx', os.path.join(ROOT, '工具', '囤灰闸.py'))
         _m = _u.module_from_spec(_sp)
         _sp.loader.exec_module(_m)
         _m.ROOT = ROOT
@@ -250,9 +274,13 @@ def 自测():
         h2 = os.path.join(d, '裁_0999_借名.md'); io.open(h2, 'w', encoding='utf-8').write('〔随汰·1027：所守之法 `工具/并不存在之器.py` 已彻删〕')
         R.append(('⑤随汰（所守之器 git 史中真已彻删·接坐记）之裁退役、⛔计未生效', 查([g], 在役='', **K) == []))
         R.append(('⑥⛔借标：随汰所点之器仍在者照旧判', 查([h], 在役='', **K) != []))
-        _删 = _链().删过之器(ROOT)
+        _删 = 删过之器(ROOT)
         R.append(('⑥之二⛔借名：随汰所点之名从未有过（不在盘上≠已删）者照旧判（git 史验不得时略）',
                   _删 is None or 查([h2], 在役='', **K) != []))
+        # ⑥之三〔W908 环7 复核〕借标续命：随汰之标内所点之在役之器⛔算守；标外者照算
+        _标 = '〔随汰·1119：所守之法 `工具/并不存在之器.py` 已彻删——其守归 重出趋.py〕'
+        R.append(('⑥之三⛔借标续命：〔随汰〕标内所点之器（重出趋.py）⛔算守；标外所点者（分量闸.py）照算',
+                  守器(_标) == set() and 守器(_标 + '由 `工具/分量闸.py` 守。') == {'分量闸.py'}))
         # ⑦ 1027·#75 行之证：1027 起之裁只点器（在役）即判未生效；书真行之证即过；伪证俱⛔
         def 新(名, 文):
             p = os.path.join(d, '裁_1028_%s.md' % 名); io.open(p, 'w', encoding='utf-8').write(文); return p
@@ -288,10 +316,15 @@ def 自测():
     finally:
         shutil.rmtree(d, ignore_errors=True)
     # ⑩ 回灌真仓：裁_1020_D1落式（只点 行号随移.py 等）若照 1027 之律判，即未生效——证此律真红（⛔空验）
+    #   〔W908 环7〕其裁已〔随汰〕（行号随移.py 彻删）：回灌之本并去其随汰之标（⛔借退役而空验）；⑩之二 验真档随汰即退役
     p = os.path.join(ROOT, '设定', '裁_1020_D1落式.md')
     if os.path.exists(p):
         t = io.open(p, encoding='utf-8').read()
-        t1 = re.sub(r'改单#\s*G\d{4}-\d{2}', '', t)
+        t1 = re.sub(r'〔随汰[^〕]*〕', '', re.sub(r'改单#\s*G\d{4}-\d{2}', '', t))
+        _删10 = 删过之器(ROOT)
+        _汰10 = 随汰(t)
+        R.append(('⑩之二 裁_1020_D1落式带〔随汰〕：其器（%s）git 史中已删即退役、⛔计未生效（史验不得或未提交其删者略）' % (_汰10 or '—'),
+                  ('〔随汰' in t) and (_删10 is None or '行号随移.py' not in _删10 or (_汰10 == '行号随移.py' and 查([p], 末=410) == []))))
         q = tempfile.mkdtemp()
         try:
             f = os.path.join(q, '裁_1028_D1落式之回灌.md'); io.open(f, 'w', encoding='utf-8').write(t1)
@@ -300,6 +333,14 @@ def 自测():
             shutil.rmtree(q, ignore_errors=True)
     else:
         R.append(('⑩回灌真仓：裁_1020_D1落式不在', False))
+    # ⑩之三〔W908 环7 复核〕0919／0922 看官账四裁：带〔随汰〕点 看官欠哨.py；其删入 git 史即退役（未提交其删、或史验不得者略）
+    _看 = [os.path.join(ROOT, '设定', n) for n in ('裁_0919_看官账263_342至344之重出.md', '裁_0919_看官账_345至347之重出.md',
+                                                  '裁_0922_看官账_逾353三笔_按串长分判.md', '裁_0922_看官账_限354八笔_按串长分判.md')]
+    _看在 = [x for x in _看 if os.path.exists(x)]
+    _删看 = 删过之器(ROOT)
+    R.append(('⑩之三 看官账四裁（在 %d）带〔随汰〕点 `工具/看官欠哨.py`；其删入 git 史即退役、⛔计未生效（未提交其删者略）' % len(_看在),
+              len(_看在) == 4 and all('〔随汰' in io.open(x, encoding='utf-8').read() and '`工具/看官欠哨.py`' in io.open(x, encoding='utf-8').read() for x in _看在)
+              and (_删看 is None or '看官欠哨.py' not in _删看 or 查(_看在, 末=410) == [])))
     for n, o in R:
         print('  %s %s' % ('✓' if o else '⛔', n))
     k = sum(1 for _, o in R if o)

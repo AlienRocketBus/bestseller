@@ -9,6 +9,7 @@
   python3 工具/承.py 397 --裁 "总编辑之裁"   # 「致命未净」後总编辑亲治、续记（args.裁 写入 _承.js；旧 _承.json 之裁承之）
   python3 工具/承.py 452 --裁 "已亲治读误：…" --销   # X101①：亲治後单席补盲读已验销 → 造章.js（N≥452）越 盲读·2／逻辑审·2、只跑记席
   python3 工具/承.py 411 --查 甲 版本/第411章/起草_稿三.md   # 查席之器（N≥411·造章.js 补派整席之前派之）：留前席构思之底、量之入账，验盘稿
+  python3 工具/承.py 472 --共病已治 "段案拍六已改…、章料已重出"   # X120：选判共病而病只在料之一行——治料（段案或开镜卡改、章料重出，俱在选之後）後销共病、留选与诸稿续合（⛔手改包、⛔毁稿重造）
   python3 工具/承.py --自测
 
 1023（坑㊻·续跑之守之审所逮）：
@@ -328,6 +329,35 @@ def 造(n, 承, 旧=None, 重=None, 魂路=None, 再=False, 裁=None, 补=True, 
     return a
 
 
+def 共病治料之验(n, root=None):
+    """X120（472 逮）：→ '' 合；否则由。治料之凭须机证：段案之档或开镜卡之改晚於选（_行家评.md 选席所写），章料（_料.md）又晚於其改。"""
+    root = root or ROOT
+    章目 = os.path.join(root, '版本', '第%d章' % n)
+    评 = os.path.join(章目, '_行家评.md')
+    料 = os.path.join(章目, '_料.md')
+    if not os.path.exists(评):
+        return '无 _行家评.md（选未成，何来共病）'
+    选时 = os.path.getmtime(评)
+    改 = [f for f in sorted(glob.glob(os.path.join(root, '设定', '段案', '[0-9]*-[0-9]*.md'))) + [os.path.join(章目, '_开镜卡.md')]
+         if os.path.exists(f) and os.path.getmtime(f) > 选时]
+    if not 改:
+        return '段案与开镜卡俱未改於选之後——料未治，⛔销共病'
+    if not os.path.exists(料) or os.path.getmtime(料) < max(os.path.getmtime(f) for f in 改):
+        return '章料未於治料之後重出（python3 工具/章料.py %d）——⛔销共病' % n
+    return ''
+
+
+def 销共病(承, 凭, 时=None):
+    """所承之选：common_fatal 移入 共病之裁（总编辑之凭＋时），留 ranking 与诸稿——造章.js 照胜稿续合。"""
+    import time
+    选 = dict(承.get('选') or {})
+    原 = 选.get('common_fatal') or ''
+    选['共病之裁'] = '%s 总编辑裁（承.py --共病已治）：原共病「%s」已治於料——%s' % (time.strftime('%m%d', time.gmtime(时)), 原[:120], 凭.strip())
+    选['common_fatal'] = ''
+    承['选'] = 选
+    return 承
+
+
 def 旧之滤(旧, 旧路, 界):
     """重造前之 _承.json：旧轮之选、草、盲、审、裁、稿⛔承，只留章之设（重、魂路、须厚）——1023 复核逮：只滤 收 而⛔滤旧档，重造之界形同虚设。"""
     if 旧 and 界 and os.path.getmtime(旧路) < 界:
@@ -502,6 +532,23 @@ def 自测():
         档 = os.path.join(t, '承_重造.json')
         记重造(9, 档=档, 时=123.0)
         R.append(('⑫记重造／重造之时 往返；他章 0', 重造之时(9, 档) == 123.0 and 重造之时(8, 档) == 0))
+        # X120：共病已治之验——段案／开镜卡晚於选、章料又晚於其改方合；销後留选之名次、common_fatal 空、裁在
+        章9 = os.path.join(t, '版本', '第9章')
+        评9 = os.path.join(章9, '_行家评.md'); 卡9 = os.path.join(章9, '_开镜卡.md'); 料9 = os.path.join(章9, '_料.md')
+        for x in (评9, 卡9, 料9):
+            open(x, 'w').write('x')
+        os.utime(评9, (200, 200)); os.utime(卡9, (100, 100)); os.utime(料9, (300, 300))
+        r1 = 共病治料之验(9, root=t)
+        os.utime(卡9, (250, 250)); os.utime(料9, (240, 240))
+        r2 = 共病治料之验(9, root=t)
+        os.utime(料9, (260, 260))
+        r3 = 共病治料之验(9, root=t)
+        销 = 销共病({'选': {'ranking': ['稿一'], 'common_fatal': '三台之图前文零见'}}, '开镜卡拍六已改、章料重出')
+        R.append(('⑱X120 共病已治：料未改→拦；改而章料未重出→拦；俱後→合；销後名次留、共病空、裁在',
+                  '未改' in r1 and '重出' in r2 and r3 == '' and 销['选']['ranking'] == ['稿一']
+                  and 销['选']['common_fatal'] == '' and '三台之图' in 销['选']['共病之裁']))
+        for x in (评9, 卡9, 料9):
+            os.remove(x)
         try:
             造(9, 承)
             R.append(('⑥无 重／魂路 即停', False))
@@ -551,6 +598,19 @@ def main():
     界 = 重造之时(n)
     旧 = 旧之滤(旧, 旧路, 界)
     魂路 = 取('--魂路').split(',') if 取('--魂路') else None
+    凭 = 取('--共病已治')
+    if '--共病已治' in a:
+        if not (承.get('选') or {}).get('common_fatal'):
+            print('  ⚠ --共病已治：所收之选无共病——照常承')
+        else:
+            由 = 共病治料之验(n) if (凭 or '').strip() and len(凭.strip()) >= 8 else '须带治料之凭（≥8 字：改了何档何拍、章料已重出）'
+            if 由:
+                print('  ⛔ --共病已治：' + 由)
+                sys.exit(3)
+            承 = 销共病(承, 凭)
+    elif (承.get('选') or {}).get('common_fatal') and ((旧 or {}).get('承', {}).get('选') or {}).get('共病之裁') \
+            and (旧['承']['选'].get('ranking') == 承['选'].get('ranking')):
+        承['选'] = dict(旧['承']['选'])          # 前回已销之共病：同一之选承其裁（⛔复停）
     args = 造(n, 承, 旧, 取('--重'), 魂路, 再=再, 裁=取('--裁'), 补='--不补' not in a, 界=界, 销='--销' in a)
     print('承·第%d章：journal %d 份；诸稿 %d（%s）；%s' % (
         n, len(来), len(args['承'].get('诸稿', [])),
@@ -559,7 +619,7 @@ def main():
     if len(args['承'].get('诸稿', [])) < 3:
         print('  ⚠ 诸稿不足三——包裹已带「补」，造章.js 补派缺席之执笔' if args['承'].get('补') else '  ⛔诸稿不足三而无补——造章.js 必停')
     if (args['承'].get('选') or {}).get('common_fatal'):
-        print('  ⛔所承之选有共病（%s）——承之即复停於共病；治料後以 args 重造:true 新派' % str(args['承']['选']['common_fatal'])[:60])
+        print('  ⛔所承之选有共病（%s）——承之即复停於共病。病只在料之一处：治料（段案／开镜卡改、`章料.py %d` 重出）→ `承.py %d --共病已治 "<治料之凭>"`；病在诸稿之骨方以 args 重造:true 新派' % (str(args['承']['选']['common_fatal'])[:60], n, n))
     if '--印' in a:
         return
     with open(旧路, 'w', encoding='utf-8') as o:

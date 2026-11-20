@@ -343,6 +343,44 @@ def 方法账之草(W, 题, 平台, 总金, root=ROOT):
     return 行
 
 
+def 执笔之终(诸, root=ROOT):
+    """★X126（W906 环2）：诸 (Run 目录, 费审之行) → 「## 执笔之终」表之行（⛔手书败因：400—473 手书之误五）。
+    终因、拒、API 错、撞顶取费审；稿在盘取其 Run 之 journal（执笔之 label → result 之 file），照 承.查 之尺：≥200 字节、有【本章亮点】。"""
+    表 = []
+    for d, 行 in 诸:
+        档 = {}
+        jp = os.path.join(d, 'journal.jsonl')
+        if os.path.exists(jp):
+            标 = {}
+            for l in open(jp, encoding='utf-8', errors='replace'):
+                try:
+                    e = json.loads(l)
+                except Exception:
+                    continue
+                if e.get('type') == 'started' and str(e.get('label', '')).startswith('执笔'):
+                    标[e.get('key')] = e['label']
+                elif e.get('type') == 'result' and e.get('key') in 标:
+                    m = re.search(r'"file":\s*"([^"]+)"', json.dumps(e.get('result'), ensure_ascii=False))
+                    if m:
+                        档[标[e['key']]] = m.group(1)
+        for r in 行:
+            if not r['名'].startswith('执笔'):
+                continue
+            f = 档.get(r['名'])
+            p = f if (f and os.path.isabs(f)) else os.path.join(root, f) if f else ''
+            if not p:
+                盘 = '无交'
+            elif not os.path.exists(p) or os.path.getsize(p) < 200:
+                盘 = '缺／不足200字节'
+            else:
+                盘 = '在' if '【本章亮点】' in open(p, encoding='utf-8', errors='replace').read() else '稿半（无【本章亮点】）'
+            表.append('| %s | %s | %d | %s | %d | %s |' % (r['名'], r.get('终因') or '—', r.get('拒', 0), '/'.join(r.get('错') or []) or '—', r.get('截', 0),
+                                                       ('%s（%s）' % (盘, os.path.basename(f))) if f else 盘))
+    if not 表:
+        return ['- （无执笔之席）']
+    return ['| 席 | 终因（末回 stop_reason） | 拒 | API 错 | 撞顶 | 稿在盘 |', '|---|---|---|---|---|---|'] + 表
+
+
 def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平台=None):
     日 = 日 or time.strftime('%m%d', time.gmtime())
     出 = os.path.join(root, '设定', '复盘', '%s_%s_%s.md' % (日, W, 题))
@@ -358,6 +396,7 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
     自 = 自 or 件.get('起')
     费段, 疑 = [], []
     费审之行 = []
+    诸终 = []
     流程 = []
     总金 = 0.0
     机总 = 0.0          # ★1027 复核所逮：诸 Run 之机器之活之席（费审.类）——简式之「机器能办而花token」照填（旧恒填 $0，#5 #58 之验遂空）
@@ -367,6 +406,7 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
             费段.append('- Run %s：找不到其目录（非工作流之席，耗费照其回执手填）' % r); continue
         行 = 费审.审(d)
         费审之行 += 行
+        诸终.append((d, 行))
         rid = os.path.basename(d.rstrip('/'))
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
@@ -417,6 +457,7 @@ def 起草(W, 题, runs, root=ROOT, 日=None, 自=None, 至=None, 简=False, 平
          '## 制作过程（任务起後之提交·git 自动）', ''] + 制作(自, root, 至) + ['',
          '## 产出', '', '（总编辑填：成了什么、质之实据——致命数、行家对拍库之分、盲读）', '',
          '## 耗费', '', '- 合计美元（诸席）：$%.2f（各 Run 详下；逐回照 设定/价目.json 精算，已入 设定/费账.json）' % 总金] + 主段 + [''] + 费段 + ['',
+         '## 执笔之终（X126·器录⛔手书）', ''] + 执笔之终(诸终, root) + ['',
          '## 资源分配（资源分配官·1009）', '', 分配表(费审之行), '',
          '## 效（每任务必记·1009 作者令「token 有没有浪费、有没有服务於最该服务之目标」）', '',
          '- 类：（填：一章／造剧情／核验／治器设计……——效账按类比上回）',
@@ -484,6 +525,15 @@ def 自测():
         s = open(f, encoding='utf-8').read() if f else ''
         ok = bool(f) and g is None and all(k in s for k in ('## 耗费', '## 无用功', '## 改进方案', '## 坑', '## 流程', '## 制作过程')) and '机器之活' in s and '主环非写作之活' in s and '## 虹吸之问' in s and '## 完美之问' in s
         ok = ok and 验(t)[0] is False                                   # 草稿之坑节、效节未填 → 闸红
+        ok = ok and '## 执笔之终' in s
+        # ★X126：执笔之终——journal 之执笔 label 认其稿；拒、API 错、稿在盘照录
+        稿 = os.path.join(t, '起草_稿一.md'); open(稿, 'w', encoding='utf-8').write('字' * 120 + '【本章亮点】')
+        open(os.path.join(rd, 'journal.jsonl'), 'w').write('\n'.join(json.dumps(x, ensure_ascii=False) for x in (
+            {'type': 'started', 'key': 'a', 'label': '执笔·甲·物证'}, {'type': 'result', 'key': 'a', 'result': {'draft': {'file': 稿}}},
+            {'type': 'started', 'key': 'b', 'label': '执笔·乙·回声'})))
+        表 = 执笔之终([(rd, [dict(名='执笔·甲·物证', 终因='end_turn', 拒=0, 错=[], 截=0), dict(名='执笔·乙·回声', 终因='API错:529', 拒=1, 错=['529'], 截=0),
+                          dict(名='选·行家兼两眼', 终因='end_turn')])], t)
+        ok = ok and len(表) == 4 and '在（起草_稿一.md）' in 表[2] and 'API错:529 | 1 | 529' in 表[3] and '无交' in 表[3]
         s2 = open(f, encoding='utf-8').read()
         s2 = re.sub(r'- 类：.*', '- 类：核验', s2); s2 = re.sub(r'- 目标：.*', '- 目标：测', s2)
         s2 = re.sub(r'- 服务目标之费：.*', '- 服务目标之费：$0', s2); s2 = re.sub(r'- 浪费：.*', '- 浪费：$0', s2)

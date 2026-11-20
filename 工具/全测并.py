@@ -36,6 +36,14 @@ import threading
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 〔1120 坑64〕pre-push 钩中 git 传 GIT_DIR 诸变於子进程——负测之临时仓（git init、-C t commit、config）承之则写真仓：
+#   1120 章界之直推，真仓之 core.bare 被置 true、user 被置 t@t、所推之树被提交「x」三笔。库只由 ROOT 定（cwd），起即去之。
+try:
+    from 推报 import _定库之变 as _钩境
+except Exception:
+    _钩境 = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
+for _k in tuple(_钩境) + ('GIT_PREFIX',):
+    os.environ.pop(_k, None)
 片目 = os.path.join(ROOT, '.git', '全测片')
 # 活态之项：读主仓库之现场（忽略之状态档、.git 内之日志、心跳、存底枝、钩之挂载），副本里读不着或读到旧的——留主仓库跑。
 #   ★其名单由一处试定（W51 环3：串并逐项对表，凡不同者归此），⛔凭猜添。
@@ -443,6 +451,12 @@ def 自测():
     R += 片去活态之自测(名们)
     for k, ok in R:
         print('  %s %s' % ('✓' if ok else '✗', k))
+    # 〔1120 坑64〕钩境之隔：带 GIT_DIR 诸变而起 全测、全测并 —— 起即去之（负测之临时仓⛔写真仓）
+    _e = dict(os.environ, GIT_DIR='/不在之库', GIT_WORK_TREE='/不在之树', GIT_INDEX_FILE='/不在之引')
+    _r = subprocess.run([sys.executable, '-c', "import sys,os;sys.path.insert(0,'工具');import 全测并,全测;"
+                         "print(sorted(k for k in ('GIT_DIR','GIT_WORK_TREE','GIT_INDEX_FILE','GIT_PREFIX') if k in os.environ))"],
+                        cwd=ROOT, env=_e, capture_output=True, text=True, timeout=120)
+    R.append(('⑳〔坑64〕钩境之隔：带 GIT_DIR／GIT_WORK_TREE／GIT_INDEX_FILE 而载 全测并、全测 → 俱去之', _r.stdout.strip().endswith('[]')))
     ok = sum(1 for _, o in R if o)
     print('  全测并·自测 %d/%d %s' % (ok, len(R), '全通' if ok == len(R) else '未过'))
     return 0 if ok == len(R) else 1
